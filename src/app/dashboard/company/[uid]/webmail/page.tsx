@@ -9,11 +9,21 @@ import { WebmailClient } from '@/components/webmail/WebmailClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, AlertCircle, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { saveWebmailCredentials, getWebmailCredentials } from '@/lib/webmail-session';
+
+// Debug-Logging für Dashboard-Webmail
+const dashboardWebmailLog = (step: string, data?: Record<string, unknown>) => {
+  console.log(`[HYDRATION-DEBUG][DashboardWebmail] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+};
 
 export default function WebmailPage() {
+  dashboardWebmailLog('RENDER_START');
+  
   const { uid } = useParams<{ uid: string }>();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  dashboardWebmailLog('PARAMS_AND_AUTH', { uid, hasUser: !!user, authLoading });
 
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [manualEmail, setManualEmail] = useState('');
@@ -26,26 +36,61 @@ export default function WebmailPage() {
 
   useEffect(() => {
     async function loadCredentials() {
-      if (!user || authLoading) return;
+      dashboardWebmailLog('loadCredentials_START', { hasUser: !!user, authLoading, uid });
+      
+      if (!user || authLoading) {
+        dashboardWebmailLog('loadCredentials_SKIP', { reason: 'No user or still loading' });
+        return;
+      }
 
       try {
+        // ZUERST: Prüfe localStorage für gespeicherte Credentials
+        dashboardWebmailLog('loadCredentials_CHECK_LOCALSTORAGE', { uid });
+        const localCreds = getWebmailCredentials(uid);
+        
+        if (localCreds && localCreds.email && localCreds.password) {
+          dashboardWebmailLog('loadCredentials_FOUND_IN_LOCALSTORAGE', { 
+            email: localCreds.email.substring(0, 5) + '...' 
+          });
+          setCredentials(localCreds);
+          setLoading(false);
+          return;
+        }
+        
+        dashboardWebmailLog('loadCredentials_NOT_IN_LOCALSTORAGE');
+        
         // Try to load saved email credentials from user's company
+        dashboardWebmailLog('loadCredentials_CHECK_FIRESTORE', { uid });
         const companyDoc = await getDoc(doc(db, 'companies', uid));
+        
         if (companyDoc.exists()) {
           const companyData = companyDoc.data();
+          dashboardWebmailLog('loadCredentials_FIRESTORE_DATA', { 
+            hasEmailCredentials: !!companyData.emailCredentials,
+            hasEmail: !!companyData.email
+          });
           
           // Check if email credentials are stored
           if (companyData.emailCredentials?.email && companyData.emailCredentials?.password) {
-            setCredentials({
+            dashboardWebmailLog('loadCredentials_FOUND_IN_FIRESTORE');
+            const creds = {
               email: companyData.emailCredentials.email,
               password: companyData.emailCredentials.password,
-            });
+            };
+            setCredentials(creds);
+            
+            // Speichere auch in localStorage für schnelleren Zugriff
+            saveWebmailCredentials(uid, creds.email, creds.password);
+            dashboardWebmailLog('loadCredentials_SAVED_TO_LOCALSTORAGE');
           } else if (companyData.email) {
             // Pre-fill email if available
             setManualEmail(companyData.email);
           }
+        } else {
+          dashboardWebmailLog('loadCredentials_NO_COMPANY_DOC');
         }
-      } catch {
+      } catch (err) {
+        dashboardWebmailLog('loadCredentials_ERROR', { error: String(err) });
         setError('Fehler beim Laden der Zugangsdaten');
       } finally {
         setLoading(false);
@@ -58,6 +103,7 @@ export default function WebmailPage() {
   const testConnection = async () => {
     if (!manualEmail || !manualPassword) return;
 
+    dashboardWebmailLog('testConnection_START', { email: manualEmail.substring(0, 5) + '...' });
     setTesting(true);
     setTestResult(null);
 
@@ -70,16 +116,24 @@ export default function WebmailPage() {
       const data = await response.json();
 
       if (data.success) {
+        dashboardWebmailLog('testConnection_SUCCESS');
         setTestResult({ success: true, message: 'Verbindung erfolgreich!' });
+        
+        // Save credentials to localStorage
+        saveWebmailCredentials(uid, manualEmail, manualPassword);
+        dashboardWebmailLog('testConnection_SAVED_TO_LOCALSTORAGE');
+        
         // Save credentials and open webmail
         setCredentials({ email: manualEmail, password: manualPassword });
       } else {
+        dashboardWebmailLog('testConnection_FAILED', data);
         setTestResult({ 
           success: false, 
           message: `Verbindung fehlgeschlagen. IMAP: ${data.imap ? 'OK' : 'Fehler'}, SMTP: ${data.smtp ? 'OK' : 'Fehler'}` 
         });
       }
-    } catch {
+    } catch (err) {
+      dashboardWebmailLog('testConnection_ERROR', { error: String(err) });
       setTestResult({ success: false, message: 'Verbindungsfehler' });
     } finally {
       setTesting(false);
@@ -87,6 +141,7 @@ export default function WebmailPage() {
   };
 
   const handleLogout = () => {
+    dashboardWebmailLog('handleLogout_CALLED');
     setCredentials(null);
     setManualPassword('');
     setTestResult(null);

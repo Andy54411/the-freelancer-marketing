@@ -8,6 +8,24 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase/clients';
 import { getWebmailCredentials } from '@/lib/webmail-session';
 
+// ============ HYDRATION DEBUG LOGGING ============
+const HYDRATION_DEBUG = true;
+
+function hydrationLog(location: string, data?: Record<string, unknown>) {
+  if (!HYDRATION_DEBUG) return;
+  const isServer = typeof window === 'undefined';
+  const prefix = isServer ? '[SERVER]' : '[CLIENT]';
+  const timestamp = new Date().toISOString();
+  console.log(`${prefix} [HYDRATION-DEBUG] ${timestamp} - ${location}`, data || '');
+}
+
+// Log beim Modul-Load (zeigt Server vs Client)
+hydrationLog('MODULE_LOAD', { 
+  isServer: typeof window === 'undefined',
+  hasDocument: typeof document !== 'undefined',
+  hasWindow: typeof window !== 'undefined'
+});
+
 // Lazy load heavy components
 const WebmailClient = dynamic(
   () => import('@/components/webmail/WebmailClient').then((mod) => ({ default: mod.WebmailClient })),
@@ -33,7 +51,10 @@ const HeroHeader = dynamic(
 const COOKIE_NAME = 'webmail_session';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
+hydrationLog('COOKIE_HELPERS_DEFINED');
+
 function encodeCredentials(email: string, password: string): string {
+  hydrationLog('encodeCredentials_CALLED', { email: email.substring(0, 3) + '***' });
   // Unicode-sichere Base64-Kodierung
   const jsonStr = JSON.stringify({ email, password });
   const bytes = new TextEncoder().encode(jsonStr);
@@ -66,7 +87,19 @@ function setCookie(email: string, password: string, remember: boolean): void {
 }
 
 function getCookie(): { email: string; password: string } | null {
+  hydrationLog('getCookie_CALLED', { 
+    hasDocument: typeof document !== 'undefined',
+    isServer: typeof window === 'undefined'
+  });
+  
+  // KRITISCH: Auf Server gibt es kein document - das verursacht Hydration Mismatch!
+  if (typeof document === 'undefined') {
+    hydrationLog('getCookie_SERVER_SKIP', { reason: 'No document on server' });
+    return null;
+  }
+  
   const cookies = document.cookie.split(';');
+  hydrationLog('getCookie_COOKIES_READ', { cookieCount: cookies.length });
   
   for (const cookie of cookies) {
     const trimmed = cookie.trim();
@@ -87,9 +120,17 @@ function deleteCookie(): void {
 }
 
 function WebmailPageContent() {
+  hydrationLog('WebmailPageContent_RENDER_START');
+  
   const searchParams = useSearchParams();
   const composeParam = searchParams.get('compose');
   const toParam = searchParams.get('to');
+  
+  hydrationLog('WebmailPageContent_SEARCH_PARAMS', { 
+    composeParam, 
+    toParam,
+    hasSearchParams: !!searchParams
+  });
   
   const [isMounted, setIsMounted] = useState(false);
   const [email, setEmail] = useState<string>('');
@@ -103,17 +144,39 @@ function WebmailPageContent() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [companyId, setCompanyId] = useState<string | undefined>(undefined);
 
+  hydrationLog('WebmailPageContent_STATE_INITIALIZED', {
+    isMounted,
+    isConnected,
+    isCheckingSession,
+    hasEmail: !!email,
+    hasPassword: !!password
+  });
+
   // Hydration-Fix: Warte bis Client gemountet ist
   useEffect(() => {
+    hydrationLog('MOUNT_EFFECT_TRIGGERED');
     setIsMounted(true);
+    hydrationLog('MOUNT_EFFECT_COMPLETE', { isMounted: true });
   }, []);
 
   useEffect(() => {
     // Nicht starten bis Client gemountet ist
-    if (!isMounted) return;
+    hydrationLog('SESSION_CHECK_EFFECT_TRIGGERED', { isMounted });
+    
+    if (!isMounted) {
+      hydrationLog('SESSION_CHECK_SKIPPED', { reason: 'Not mounted yet' });
+      return;
+    }
+    
     const checkSession = async () => {
+      hydrationLog('checkSession_START');
+      
       // 1. Prüfe Cookie (direkter Webmail-Login)
       const savedCredentials = getCookie();
+      hydrationLog('checkSession_COOKIE_RESULT', { 
+        hasCookie: !!savedCredentials,
+        hasEmail: !!savedCredentials?.email
+      });
       if (savedCredentials && savedCredentials.email && savedCredentials.password) {
         try {
           const response = await fetch('/api/webmail/test', {
@@ -171,15 +234,36 @@ function WebmailPageContent() {
       
       // 2. Prüfe Firestore Credentials (Dashboard-Verbindung)
       // Warte auf Firebase Auth Status
+      hydrationLog('checkSession_FIREBASE_AUTH_CHECK');
+      
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        hydrationLog('checkSession_AUTH_STATE_CHANGED', { 
+          hasUser: !!user, 
+          userId: user?.uid?.substring(0, 8) + '...'
+        });
+        
         if (user) {
           // Setze companyId für AppLauncher (User UID ist Company ID bei Company-Accounts)
           setCompanyId(user.uid);
+          hydrationLog('checkSession_COMPANY_ID_SET', { companyId: user.uid.substring(0, 8) + '...' });
           
           // Zuerst: Prüfe lokale Credentials aus localStorage
+          hydrationLog('checkSession_CHECK_LOCALSTORAGE', { userId: user.uid.substring(0, 8) + '...' });
           const localCredentials = getWebmailCredentials(user.uid);
+          
+          hydrationLog('checkSession_LOCALSTORAGE_RESULT', { 
+            hasCredentials: !!localCredentials,
+            hasEmail: !!localCredentials?.email,
+            hasPassword: !!localCredentials?.password
+          });
+          
           if (localCredentials && localCredentials.email && localCredentials.password) {
+            hydrationLog('checkSession_LOCALSTORAGE_CREDS_FOUND', { 
+              email: localCredentials.email.substring(0, 5) + '...' 
+            });
+            
             try {
+              hydrationLog('checkSession_TESTING_LOCALSTORAGE_CREDS');
               const response = await fetch('/api/webmail/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -192,8 +276,10 @@ function WebmailPageContent() {
               });
 
               const data = await response.json();
+              hydrationLog('checkSession_LOCALSTORAGE_TEST_RESULT', { success: data.success });
 
               if (data.success) {
+                hydrationLog('checkSession_LOCALSTORAGE_SUCCESS - CONNECTING');
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
                 // Setze auch Cookie für konsistente Session
@@ -202,10 +288,14 @@ function WebmailPageContent() {
                 setIsCheckingSession(false);
                 unsubscribe();
                 return;
+              } else {
+                hydrationLog('checkSession_LOCALSTORAGE_TEST_FAILED', data);
               }
-            } catch {
+            } catch (error) {
+              hydrationLog('checkSession_LOCALSTORAGE_NETWORK_ERROR', { error: String(error) });
               // Netzwerkfehler - trotzdem verbinden wenn Credentials valide aussehen
               if (localCredentials.email.includes('@') && localCredentials.password.length > 0) {
+                hydrationLog('checkSession_USING_LOCALSTORAGE_DESPITE_ERROR');
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
                 setCookie(localCredentials.email, localCredentials.password, true);
@@ -215,46 +305,15 @@ function WebmailPageContent() {
                 return;
               }
             }
+          } else {
+            hydrationLog('checkSession_NO_LOCALSTORAGE_CREDS');
           }
           
-          // Zweitens: Prüfe Firestore Credentials (aus companies Collection)
-          try {
-            const response = await fetch('/api/webmail/credentials', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ companyId: user.uid }),
-            });
-            
-            const data = await response.json();
-            
-            if (data.success && data.email && data.password) {
-              // Teste die Credentials
-              const testResponse = await fetch('/api/webmail/test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email: data.email,
-                  password: data.password,
-                  imapHost: 'mail.taskilo.de',
-                  imapPort: 993,
-                }),
-              });
-              
-              const testData = await testResponse.json();
-              
-              if (testData.success) {
-                setEmail(data.email);
-                setPassword(data.password);
-                setCookie(data.email, data.password, true);
-                setIsConnected(true);
-                setIsCheckingSession(false);
-                unsubscribe();
-                return;
-              }
-            }
-          } catch {
-            // Firestore-Abfrage fehlgeschlagen - ignorieren
-          }
+          // Keine API für Credentials - nur Cookie und localStorage werden verwendet
+          // Credentials werden beim manuellen Login gesetzt
+          hydrationLog('checkSession_NO_CREDS_FOUND - SHOWING LOGIN');
+        } else {
+          hydrationLog('checkSession_NO_USER');
         }
         setIsCheckingSession(false);
         unsubscribe();
@@ -331,7 +390,10 @@ function WebmailPageContent() {
     setShowCreateForm(false);
   };
 
+  console.log('[HYDRATION-DEBUG] Render-Entscheidung - isCheckingSession:', isCheckingSession, 'isConnected:', isConnected, 'isMounted:', isMounted);
+  
   if (isCheckingSession) {
+    console.log('[HYDRATION-DEBUG] Rendere: Loading-Screen (Sitzung wird geprüft)');
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#f6f8fc]">
         <div className="flex flex-col items-center gap-4">
@@ -343,6 +405,7 @@ function WebmailPageContent() {
   }
 
   if (isConnected) {
+    console.log('[HYDRATION-DEBUG] Rendere: WebmailClient (verbunden)');
     return (
       <WebmailClient 
         email={email} 
@@ -354,6 +417,8 @@ function WebmailPageContent() {
     );
   }
 
+  console.log('[HYDRATION-DEBUG] Rendere: Login-Formular');
+  
   return (
     <>
       <style jsx>{`

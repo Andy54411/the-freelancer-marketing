@@ -133,16 +133,35 @@ const defaultSettings: WebmailSettings = {
 // LocalStorage Key
 const SETTINGS_KEY = 'taskilo_webmail_settings';
 
+// Debug-Logging für Hydration
+const quickSettingsLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][QuickSettings] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][QuickSettings-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 // Einstellungen laden
 export function loadSettings(): WebmailSettings {
-  if (typeof window === 'undefined') return defaultSettings;
+  quickSettingsLog('loadSettings_CALLED', { isServer: typeof window === 'undefined' });
+  
+  if (typeof window === 'undefined') {
+    quickSettingsLog('loadSettings_SERVER_SKIP');
+    return defaultSettings;
+  }
+  
   try {
     const saved = localStorage.getItem(SETTINGS_KEY);
+    quickSettingsLog('loadSettings_LOCALSTORAGE_READ', { hasSaved: !!saved });
+    
     if (saved) {
-      return { ...defaultSettings, ...JSON.parse(saved) };
+      const parsed = { ...defaultSettings, ...JSON.parse(saved) };
+      quickSettingsLog('loadSettings_PARSED', parsed);
+      return parsed;
     }
-  } catch {
-    // Fehler ignorieren
+  } catch (error) {
+    quickSettingsLog('loadSettings_ERROR', { error: String(error) });
   }
   return defaultSettings;
 }

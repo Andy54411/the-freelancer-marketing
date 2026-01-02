@@ -7,6 +7,15 @@
  * - Nicht auf dem Server gespeichert
  */
 
+// Debug-Logging für Hydration/Session-Probleme
+const sessionLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][WebmailSession] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][WebmailSession-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 const STORAGE_KEY_PREFIX = 'taskilo_webmail_session_';
 const SESSION_EXPIRY_DAYS = 7;
 
@@ -65,7 +74,16 @@ export function saveWebmailCredentials(
   email: string,
   password: string
 ): void {
-  if (typeof window === 'undefined') return;
+  sessionLog('saveWebmailCredentials_CALLED', { 
+    userId: userId.substring(0, 8) + '...', 
+    email: email.substring(0, 5) + '...',
+    isServer: typeof window === 'undefined'
+  });
+  
+  if (typeof window === 'undefined') {
+    sessionLog('saveWebmailCredentials_SERVER_SKIP');
+    return;
+  }
   
   const key = generateSessionKey(userId);
   const expiresAt = Date.now() + (SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
@@ -77,7 +95,13 @@ export function saveWebmailCredentials(
   };
   
   const encrypted = xorEncrypt(JSON.stringify(credentials), key);
-  localStorage.setItem(STORAGE_KEY_PREFIX + userId, encrypted);
+  const storageKey = STORAGE_KEY_PREFIX + userId;
+  localStorage.setItem(storageKey, encrypted);
+  
+  sessionLog('saveWebmailCredentials_SAVED', { 
+    storageKey,
+    expiresAt: new Date(expiresAt).toISOString()
+  });
 }
 
 /**
@@ -87,15 +111,35 @@ export function saveWebmailCredentials(
 export function getWebmailCredentials(
   userId: string
 ): { email: string; password: string } | null {
-  if (typeof window === 'undefined') return null;
+  sessionLog('getWebmailCredentials_CALLED', { 
+    userId: userId ? userId.substring(0, 8) + '...' : 'UNDEFINED',
+    isServer: typeof window === 'undefined'
+  });
   
-  const stored = localStorage.getItem(STORAGE_KEY_PREFIX + userId);
-  if (!stored) return null;
+  if (typeof window === 'undefined') {
+    sessionLog('getWebmailCredentials_SERVER_SKIP');
+    return null;
+  }
+  
+  const storageKey = STORAGE_KEY_PREFIX + userId;
+  const stored = localStorage.getItem(storageKey);
+  
+  sessionLog('getWebmailCredentials_STORAGE_CHECK', { 
+    storageKey,
+    hasStored: !!stored,
+    storedLength: stored ? stored.length : 0
+  });
+  
+  if (!stored) {
+    sessionLog('getWebmailCredentials_NOT_FOUND');
+    return null;
+  }
   
   const key = generateSessionKey(userId);
   const decrypted = xorDecrypt(stored, key);
   
   if (!decrypted) {
+    sessionLog('getWebmailCredentials_DECRYPT_FAILED');
     clearWebmailCredentials(userId);
     return null;
   }
@@ -103,17 +147,30 @@ export function getWebmailCredentials(
   try {
     const credentials: StoredCredentials = JSON.parse(decrypted);
     
+    sessionLog('getWebmailCredentials_PARSED', { 
+      hasEmail: !!credentials.email,
+      hasPassword: !!credentials.password,
+      expiresAt: new Date(credentials.expiresAt).toISOString(),
+      isExpired: Date.now() > credentials.expiresAt
+    });
+    
     // Prüfe ob abgelaufen
     if (Date.now() > credentials.expiresAt) {
+      sessionLog('getWebmailCredentials_EXPIRED');
       clearWebmailCredentials(userId);
       return null;
     }
+    
+    sessionLog('getWebmailCredentials_SUCCESS', { 
+      email: credentials.email.substring(0, 5) + '...'
+    });
     
     return {
       email: credentials.email,
       password: credentials.password,
     };
-  } catch {
+  } catch (error) {
+    sessionLog('getWebmailCredentials_PARSE_ERROR', { error: String(error) });
     clearWebmailCredentials(userId);
     return null;
   }

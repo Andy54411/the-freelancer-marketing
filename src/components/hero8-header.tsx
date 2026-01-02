@@ -27,6 +27,15 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 
+// Debug-Logging für Hydration
+const heroHeaderLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][HeroHeader] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][HeroHeader-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 interface User {
   uid: string;
   email: string | null;
@@ -35,11 +44,21 @@ interface User {
 }
 
 export const HeroHeader = () => {
+  heroHeaderLog('RENDER_START', { isServer: typeof window === 'undefined' });
+  
   const [menuState, setMenuState] = React.useState(false);
   const [isLoginPopupOpen, setIsLoginPopupOpen] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
   const [profilePictureUrl, setProfilePictureUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  
+  heroHeaderLog('STATE_INITIALIZED', { 
+    menuState, 
+    isLoginPopupOpen, 
+    hasUser: !!user, 
+    isLoading,
+    profilePictureUrl: !!profilePictureUrl
+  });
 
   const menuItems = [
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
@@ -173,6 +192,12 @@ export const HeroHeader = () => {
     } catch {}
   };
 
+  heroHeaderLog('BEFORE_RENDER_RETURN', { 
+    isLoading, 
+    hasUser: !!user, 
+    menuState 
+  });
+  
   return (
     <header>
       <nav

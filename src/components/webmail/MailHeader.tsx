@@ -31,6 +31,15 @@ import {
 import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 
+// Debug-Logging für Hydration
+const mailHeaderLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][MailHeader] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][MailHeader-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 interface MailHeaderProps {
   userEmail: string;
   userInitial?: string;
@@ -77,6 +86,14 @@ export function MailHeader({
   companyId,
   isDashboard = false,
 }: MailHeaderProps) {
+  mailHeaderLog('RENDER_START', {
+    userEmail,
+    appName,
+    isDashboard,
+    hasCompanyId: !!companyId,
+    isServer: typeof window === 'undefined'
+  });
+  
   const { isDark: themeIsDark, toggleTheme } = useWebmailTheme();
   // Im Dashboard immer White Mode
   const isDark = isDashboard ? false : themeIsDark;
@@ -85,6 +102,13 @@ export function MailHeader({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  
+  mailHeaderLog('STATE_INITIALIZED', {
+    isDark,
+    searchQuery,
+    isSearchFocused,
+    showAdvancedSearch
+  });
 
   // Dashboard: Unread counts für Badges
   const [unreadEmailsCount, setUnreadEmailsCount] = useState(0);

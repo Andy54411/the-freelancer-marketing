@@ -36,6 +36,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Palette } from 'lucide-react';
 
+// Debug-Logging für Hydration
+const mailSidebarLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][MailSidebar] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][MailSidebar-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 interface Mailbox {
   path: string;
   name: string;
@@ -77,13 +86,19 @@ const LABEL_COLORS = [
 // localStorage Key für Label-Farben
 const LABEL_COLORS_STORAGE_KEY = 'taskilo-webmail-label-colors';
 
-// Lädt benutzerdefinierte Label-Farben aus localStorage
+// lädt benutzerdefinierte Label-Farben aus localStorage
 const getStoredLabelColors = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
+  mailSidebarLog('getStoredLabelColors_CALLED', { isServer: typeof window === 'undefined' });
+  if (typeof window === 'undefined') {
+    mailSidebarLog('getStoredLabelColors_SERVER_SKIP');
+    return {};
+  }
   try {
     const stored = localStorage.getItem(LABEL_COLORS_STORAGE_KEY);
+    mailSidebarLog('getStoredLabelColors_RESULT', { hasStored: !!stored });
     return stored ? JSON.parse(stored) : {};
-  } catch {
+  } catch (error) {
+    mailSidebarLog('getStoredLabelColors_ERROR', { error: String(error) });
     return {};
   }
 };
@@ -183,6 +198,14 @@ export function MailSidebar({
   isMobileOpen = false,
   onMobileClose,
 }: MailSidebarProps) {
+  mailSidebarLog('RENDER_START', { 
+    mailboxesCount: mailboxes.length,
+    currentMailbox,
+    collapsed,
+    isMobileOpen,
+    isServer: typeof window === 'undefined'
+  });
+  
   const { isDark } = useWebmailTheme();
   const [showMore, setShowMore] = useState(false);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
@@ -192,6 +215,8 @@ export function MailSidebar({
   const [error, setError] = useState<string | null>(null);
   // Force re-render when colors change
   const [, setColorVersion] = useState(0);
+  
+  mailSidebarLog('STATE_INITIALIZED', { isDark, showMore, isCreatingLabel, isLoading });
 
   // Close mobile drawer on escape key
   useEffect(() => {

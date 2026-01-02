@@ -6,8 +6,18 @@ import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings,
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
+// Debug-Logging für Hydration
+const appLauncherLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][AppLauncher] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][AppLauncher-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 // Subdomain URLs fuer Produktion
 function getAppUrl(path: string): string {
+  appLauncherLog('getAppUrl_CALLED', { path, isServer: typeof window === 'undefined' });
   if (typeof window === 'undefined') return path;
   
   const hostname = window.location.hostname;
@@ -474,6 +484,13 @@ const getCompanyApps = (companyId: string): AppItem[] => [
 ];
 
 export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode }: AppLauncherProps) {
+  appLauncherLog('RENDER_START', { 
+    hasTheme, 
+    hasCompanyId: !!companyId, 
+    isDarkMode,
+    isServer: typeof window === 'undefined'
+  });
+  
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -482,6 +499,8 @@ export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode
   
   // isDarkMode Prop hat Priorität, sonst Theme-Context
   const isDark = isDarkMode !== undefined ? isDarkMode : themeIsDark;
+  
+  appLauncherLog('STATE_INITIALIZED', { isOpen, isAdmin, isDark });
   
   // Wenn ein Hintergrundbild-Theme aktiv ist, verwende helle Farben
   const useWhiteIcons = hasTheme;

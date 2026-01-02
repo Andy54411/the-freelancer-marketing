@@ -58,6 +58,15 @@ import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 import { EmailCompose as EmailComposeComponent } from '@/components/email-client/EmailCompose';
 import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessage } from '@/components/email-client/types';
 
+// Debug-Logging für Hydration
+const webmailClientLog = (step: string, data?: Record<string, unknown>) => {
+  if (typeof window !== 'undefined') {
+    console.log(`[HYDRATION-DEBUG][WebmailClient] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  } else {
+    console.log(`[HYDRATION-DEBUG][WebmailClient-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+};
+
 // Farbpalette für Labels (gleich wie in MailSidebar)
 const LABEL_COLORS = [
   { id: 'teal', bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
@@ -917,6 +926,13 @@ const convertWebmailToEmailClientMessage = (msg: EmailMessage): EmailClientMessa
 
 // ===== MAIN WEBMAIL CLIENT - LIKE EMAILCLIENT =====
 export function WebmailClient({ email, password, onLogout, initialComposeTo, companyId }: WebmailClientProps) {
+  webmailClientLog('RENDER_START', { 
+    hasEmail: !!email, 
+    hasPassword: !!password, 
+    hasCompanyId: !!companyId,
+    initialComposeTo
+  });
+  
   const {
     mailboxes,
     messages,
