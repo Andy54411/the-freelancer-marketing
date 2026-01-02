@@ -138,13 +138,31 @@ export default function HoursBillingOverview({
 
       const orderDetails = result.order;
       const timeTracking = orderDetails.timeTracking;
+      
+      // Berechne tatsächliche Werte aus den Order-Daten
+      const actualPriceInCents = orderDetails.jobCalculatedPriceInCents 
+        || orderDetails.totalPriceInCents 
+        || orderDetails.totalAmountPaidByBuyer 
+        || (orderDetails.price ? Math.round(orderDetails.price * 100) : 0)
+        || (orderDetails.totalAmount ? Math.round(orderDetails.totalAmount * 100) : 0);
+      
+      const actualHours = orderDetails.jobTotalCalculatedHours 
+        || (orderDetails.auftragsDauer ? parseFloat(orderDetails.auftragsDauer) : 0)
+        || (orderDetails.jobDurationString ? parseFloat(String(orderDetails.jobDurationString)) : 0)
+        || 0;
+      
+      // Stundensatz berechnen (falls nicht vorhanden)
+      const calculatedHourlyRate = actualHours > 0 
+        ? Math.round(actualPriceInCents / actualHours) 
+        : (timeTracking?.hourlyRate || 0);
+      
       const hoursData: HoursOverviewData = {
-        originalPlannedHours: timeTracking?.originalPlannedHours || 24,
+        originalPlannedHours: timeTracking?.originalPlannedHours || actualHours,
         totalLoggedHours: timeTracking?.totalLoggedHours || 0,
         totalApprovedHours: timeTracking?.totalApprovedHours || 0,
         totalBilledHours: timeTracking?.totalBilledHours || 0,
-        hourlyRate: timeTracking?.hourlyRate || 12300,
-        originalJobPrice: orderDetails.originalJobPriceInCents || 98400,
+        hourlyRate: timeTracking?.hourlyRate || calculatedHourlyRate,
+        originalJobPrice: orderDetails.originalJobPriceInCents || actualPriceInCents,
         timeEntries: timeTracking?.timeEntries || [],
         approvalRequests: orderDetails.approvalRequests || [],
       };
