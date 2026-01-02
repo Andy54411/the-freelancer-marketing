@@ -15,27 +15,11 @@ const appLauncherLog = (step: string, data?: Record<string, unknown>) => {
   }
 };
 
-// Subdomain URLs fuer Produktion
+// Pfad-basierte URLs (keine Subdomains mehr)
 function getAppUrl(path: string): string {
-  appLauncherLog('getAppUrl_CALLED', { path, isServer: typeof window === 'undefined' });
-  if (typeof window === 'undefined') return path;
-  
-  const hostname = window.location.hostname;
-  const isProduction = hostname.includes('taskilo.de');
-  
-  if (!isProduction) return path;
-  
-  // Mapping: Pfad -> Subdomain
-  const subdomainMap: Record<string, string> = {
-    '/webmail': 'https://email.taskilo.de',
-    '/webmail/calendar': 'https://kalender.taskilo.de',
-    '/webmail/meet': 'https://meet.taskilo.de',
-    '/webmail/drive': 'https://drive.taskilo.de',
-    '/webmail/tasks': 'https://task.taskilo.de',
-    '/webmail/contacts': 'https://kontakt.taskilo.de',
-  };
-  
-  return subdomainMap[path] ?? path;
+  appLauncherLog('getAppUrl_CALLED', { path });
+  // Einfach den Pfad zurueckgeben - keine Subdomain-Umwandlung
+  return path;
 }
 
 interface AppItem {

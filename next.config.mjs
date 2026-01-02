@@ -112,68 +112,14 @@ const nextConfig = {
     ];
   },
 
-  // Subdomain Rewrites - NUR für Seiten, NICHT für statische Dateien
-  // Die Middleware handhabt das Routing, diese Rewrites sind Fallback
+  // Path-based rewrites - keine Subdomains mehr
   async rewrites() {
     return {
-      // afterFiles: Läuft NACH statischen Dateien, also nur für dynamische Routen
       afterFiles: [
-        // kalender.taskilo.de -> /webmail/calendar (nur Hauptseite)
-        {
-          source: '/',
-          destination: '/webmail/calendar',
-          has: [{ type: 'host', value: 'kalender.taskilo.de' }],
-        },
-        {
-          source: '/',
-          destination: '/webmail/calendar',
-          has: [{ type: 'host', value: 'calendar.taskilo.de' }],
-        },
-        // drive.taskilo.de -> /webmail/drive
-        {
-          source: '/',
-          destination: '/webmail/drive',
-          has: [{ type: 'host', value: 'drive.taskilo.de' }],
-        },
-        // tasks.taskilo.de -> /webmail/tasks
-        {
-          source: '/',
-          destination: '/webmail/tasks',
-          has: [{ type: 'host', value: 'tasks.taskilo.de' }],
-        },
-        {
-          source: '/',
-          destination: '/webmail/tasks',
-          has: [{ type: 'host', value: 'task.taskilo.de' }],
-        },
-        // kontakt.taskilo.de -> /webmail/contacts
-        {
-          source: '/',
-          destination: '/webmail/contacts',
-          has: [{ type: 'host', value: 'kontakt.taskilo.de' }],
-        },
-        {
-          source: '/',
-          destination: '/webmail/contacts',
-          has: [{ type: 'host', value: 'contact.taskilo.de' }],
-        },
-        // meet.taskilo.de -> /webmail/meet
-        {
-          source: '/',
-          destination: '/webmail/meet',
-          has: [{ type: 'host', value: 'meet.taskilo.de' }],
-        },
-        // email/mail.taskilo.de -> /webmail
-        {
-          source: '/',
-          destination: '/webmail',
-          has: [{ type: 'host', value: 'email.taskilo.de' }],
-        },
-        {
-          source: '/',
-          destination: '/webmail',
-          has: [{ type: 'host', value: 'mail.taskilo.de' }],
-        },
+        // Pfad-Rewrites für Webmail-Apps
+        // taskilo.de/kalender -> /webmail/calendar (intern)
+        // taskilo.de/meet -> /webmail/meet (intern)
+        // etc. - werden über vercel.json gehandhabt
       ],
     };
   },

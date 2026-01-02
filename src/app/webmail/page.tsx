@@ -234,36 +234,15 @@ function WebmailPageContent() {
       
       // 2. Prüfe Firestore Credentials (Dashboard-Verbindung)
       // Warte auf Firebase Auth Status
-      hydrationLog('checkSession_FIREBASE_AUTH_CHECK');
-      
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        hydrationLog('checkSession_AUTH_STATE_CHANGED', { 
-          hasUser: !!user, 
-          userId: user?.uid?.substring(0, 8) + '...'
-        });
-        
         if (user) {
           // Setze companyId für AppLauncher (User UID ist Company ID bei Company-Accounts)
           setCompanyId(user.uid);
-          hydrationLog('checkSession_COMPANY_ID_SET', { companyId: user.uid.substring(0, 8) + '...' });
           
           // Zuerst: Prüfe lokale Credentials aus localStorage
-          hydrationLog('checkSession_CHECK_LOCALSTORAGE', { userId: user.uid.substring(0, 8) + '...' });
           const localCredentials = getWebmailCredentials(user.uid);
-          
-          hydrationLog('checkSession_LOCALSTORAGE_RESULT', { 
-            hasCredentials: !!localCredentials,
-            hasEmail: !!localCredentials?.email,
-            hasPassword: !!localCredentials?.password
-          });
-          
           if (localCredentials && localCredentials.email && localCredentials.password) {
-            hydrationLog('checkSession_LOCALSTORAGE_CREDS_FOUND', { 
-              email: localCredentials.email.substring(0, 5) + '...' 
-            });
-            
             try {
-              hydrationLog('checkSession_TESTING_LOCALSTORAGE_CREDS');
               const response = await fetch('/api/webmail/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -276,10 +255,8 @@ function WebmailPageContent() {
               });
 
               const data = await response.json();
-              hydrationLog('checkSession_LOCALSTORAGE_TEST_RESULT', { success: data.success });
 
               if (data.success) {
-                hydrationLog('checkSession_LOCALSTORAGE_SUCCESS - CONNECTING');
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
                 // Setze auch Cookie für konsistente Session
@@ -288,14 +265,10 @@ function WebmailPageContent() {
                 setIsCheckingSession(false);
                 unsubscribe();
                 return;
-              } else {
-                hydrationLog('checkSession_LOCALSTORAGE_TEST_FAILED', data);
               }
-            } catch (error) {
-              hydrationLog('checkSession_LOCALSTORAGE_NETWORK_ERROR', { error: String(error) });
+            } catch {
               // Netzwerkfehler - trotzdem verbinden wenn Credentials valide aussehen
               if (localCredentials.email.includes('@') && localCredentials.password.length > 0) {
-                hydrationLog('checkSession_USING_LOCALSTORAGE_DESPITE_ERROR');
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
                 setCookie(localCredentials.email, localCredentials.password, true);
@@ -305,15 +278,10 @@ function WebmailPageContent() {
                 return;
               }
             }
-          } else {
-            hydrationLog('checkSession_NO_LOCALSTORAGE_CREDS');
           }
           
           // Keine API für Credentials - nur Cookie und localStorage werden verwendet
           // Credentials werden beim manuellen Login gesetzt
-          hydrationLog('checkSession_NO_CREDS_FOUND - SHOWING LOGIN');
-        } else {
-          hydrationLog('checkSession_NO_USER');
         }
         setIsCheckingSession(false);
         unsubscribe();

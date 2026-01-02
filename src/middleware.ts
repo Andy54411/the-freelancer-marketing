@@ -70,44 +70,9 @@ export default async function middleware(request: NextRequest) {
   };
 
   // ============================================
-  // SUBDOMAIN ROUTING - Redirect to path-based URLs
+  // SUBDOMAIN ROUTING REMOVED - Only path-based URLs used
+  // URLs: taskilo.de/webmail, taskilo.de/kalender, taskilo.de/meet, etc.
   // ============================================
-  
-  // email.taskilo.de / mail.taskilo.de -> taskilo.de/webmail
-  if (hostname.startsWith('email.') || hostname.startsWith('mail.')) {
-    logMiddleware('Email Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/webmail${pathname === '/' ? '' : pathname}`);
-  }
-
-  // drive.taskilo.de -> taskilo.de/drive
-  if (hostname.startsWith('drive.')) {
-    logMiddleware('Drive Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/drive${pathname === '/' ? '' : pathname}`);
-  }
-
-  // kalender.taskilo.de / calendar.taskilo.de -> taskilo.de/kalender
-  if (hostname.startsWith('kalender.') || hostname.startsWith('calendar.')) {
-    logMiddleware('Kalender Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/kalender${pathname === '/' ? '' : pathname}`);
-  }
-
-  // meet.taskilo.de -> taskilo.de/meet
-  if (hostname.startsWith('meet.')) {
-    logMiddleware('Meet Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/meet${pathname === '/' ? '' : pathname}`);
-  }
-
-  // task.taskilo.de / tasks.taskilo.de -> taskilo.de/tasks
-  if (hostname.startsWith('task.') || hostname.startsWith('tasks.')) {
-    logMiddleware('Tasks Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/tasks${pathname === '/' ? '' : pathname}`);
-  }
-
-  // kontakt.taskilo.de / contact.taskilo.de -> taskilo.de/kontakte
-  if (hostname.startsWith('kontakt.') || hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
-    logMiddleware('Contacts Subdomain erkannt - redirecting', request, { hostname });
-    return createSubdomainRedirect(`/kontakte${pathname === '/' ? '' : pathname}`);
-  }
 
   // ============================================
   // AUTHENTICATION & AUTHORIZATION CHECKS
