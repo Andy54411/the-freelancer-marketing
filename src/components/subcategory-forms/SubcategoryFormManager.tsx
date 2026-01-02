@@ -1108,6 +1108,59 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     return true;
   };
 
+  // Hilfsfunktion zur Generierung einer strukturierten Beschreibung aus Formulardaten
+  const generateDescriptionFromFormData = (data: SubcategoryData): string => {
+    const parts: string[] = [];
+    
+    // Subcategory als Basis
+    if (data.subcategory) {
+      parts.push(`Auftrag: ${data.subcategory}`);
+    }
+    
+    // Extrahiere relevante Felder dynamisch
+    const fieldLabels: Record<string, string> = {
+      serviceType: 'Serviceart',
+      workType: 'Arbeitsart',
+      projectType: 'Projektart',
+      roomType: 'Raum',
+      buildingType: 'Gebäudetyp',
+      complexity: 'Komplexität',
+      materialProvided: 'Material',
+      timeframe: 'Zeitrahmen',
+      paintType: 'Farbtyp',
+      surfaceCondition: 'Oberflächenzustand',
+      furnitureType: 'Möbelart',
+      problemType: 'Problemart',
+      cleaningType: 'Reinigungsart',
+      platform: 'Plattform',
+      technology: 'Technologie',
+      eventType: 'Eventtyp',
+      guestCount: 'Gästeanzahl',
+      area: 'Fläche',
+      squareMeters: 'Quadratmeter',
+    };
+    
+    for (const [key, label] of Object.entries(fieldLabels)) {
+      if (key in data) {
+        const value = (data as Record<string, unknown>)[key];
+        if (value && typeof value === 'string' && value.trim()) {
+          parts.push(`${label}: ${value}`);
+        } else if (Array.isArray(value) && value.length > 0) {
+          parts.push(`${label}: ${value.join(', ')}`);
+        } else if (typeof value === 'number') {
+          parts.push(`${label}: ${value}`);
+        }
+      }
+    }
+    
+    // Zusätzliche Services falls vorhanden
+    if ('additionalServices' in data && Array.isArray(data.additionalServices) && data.additionalServices.length > 0) {
+      parts.push(`Zusatzleistungen: ${data.additionalServices.join(', ')}`);
+    }
+    
+    return parts.join(' | ');
+  };
+
   const handleNextClick = () => {
     // Extrahiere die Beschreibung aus den Formulardaten
     let description = '';
@@ -1124,15 +1177,28 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       } else if ('notes' in formData && formData.notes) {
         description = formData.notes;
       }
+      
+      // Wenn kein explizites Beschreibungsfeld vorhanden ist, generiere eine strukturierte Beschreibung
+      // aus den Formulardaten - keine Fallback-Werte, sondern echte Datenextraktion
+      if (!description || !description.trim()) {
+        description = generateDescriptionFromFormData(formData);
+      }
 
-      // Setze die Beschreibung im Registration-Context
+      // Setze die Beschreibung im Registration-Context (IMMER wenn Daten vorhanden sind)
       if (description && setDescription) {
         setDescription(description);
       }
     }
 
     const encodedSubcategory = encodeURIComponent(subcategory);
-    router.push(`/auftrag/get-started/${encodedSubcategory}/adresse`);
+    // Description als URL-Parameter übergeben, um Datenverlust bei Navigation zu verhindern
+    const params = new URLSearchParams();
+    if (description) {
+      params.append('description', encodeURIComponent(description));
+    }
+    const queryString = params.toString();
+    const url = `/auftrag/get-started/${encodedSubcategory}/adresse${queryString ? `?${queryString}` : ''}`;
+    router.push(url);
   };
 
   if (!formData) {

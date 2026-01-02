@@ -14,7 +14,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiAuth, authErrorResponse, isAuthorizedForCompany } from '@/lib/apiAuth';
-import { EscrowService } from '@/services/payment/EscrowService';
+import { EscrowServiceServer as EscrowService } from '@/services/payment/EscrowServiceServer';
+import { RevolutCheckoutService } from '@/services/payment/RevolutCheckoutService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'create': {
-        const { orderId, buyerId, providerId, amount, currency, clearingDays, description } = params;
+        const { orderId, buyerId, providerId, amount, currency, clearingDays, description, paymentMethod } = params;
 
         if (!orderId || !buyerId || !providerId || !amount) {
           return NextResponse.json(
@@ -65,6 +66,34 @@ export async function POST(request: NextRequest) {
           clearingDays: clearingDays ? Number(clearingDays) : undefined,
           description,
         });
+
+        // Bei Kartenzahlung: Revolut Checkout erstellen
+        if (paymentMethod === 'card') {
+          console.log('[Escrow API] Creating Revolut checkout for escrow:', escrow.id);
+          
+          const checkoutResult = await RevolutCheckoutService.createOrder({
+            amount: Number(amount),
+            currency: currency || 'EUR',
+            orderId: escrow.id,
+            description: description || `Auftrag ${orderId.slice(-8).toUpperCase()}`,
+          });
+
+          console.log('[Escrow API] Revolut checkout result:', JSON.stringify(checkoutResult));
+
+          if (!checkoutResult.success) {
+            return NextResponse.json({
+              success: false,
+              error: checkoutResult.error || 'Fehler beim Erstellen des Checkouts',
+            }, { status: 500 });
+          }
+
+          return NextResponse.json({
+            success: true,
+            escrow,
+            checkoutUrl: checkoutResult.checkoutUrl,
+            revolutOrderId: checkoutResult.order?.id,
+          });
+        }
 
         return NextResponse.json({
           success: true,

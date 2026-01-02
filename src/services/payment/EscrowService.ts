@@ -134,11 +134,17 @@ export class EscrowService {
       clearingDays,
       clearingEndsAt: null,
       paymentMethod: 'revolut',
-      description,
-      metadata,
       createdAt: now,
       updatedAt: now,
     };
+
+    // Nur definierte optionale Felder hinzufügen (Firestore akzeptiert keine undefined-Werte)
+    if (description !== undefined) {
+      escrow.description = description;
+    }
+    if (metadata !== undefined) {
+      escrow.metadata = metadata;
+    }
 
     await setDoc(doc(db, this.COLLECTION, escrowId), escrow);
 

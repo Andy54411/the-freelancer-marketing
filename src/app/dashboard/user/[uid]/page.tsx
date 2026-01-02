@@ -18,7 +18,6 @@ import {
 } from 'firebase/firestore';
 import {
   db,
-  functions,
   auth,
   onAuthStateChanged,
   signOut,
@@ -37,7 +36,6 @@ import {
 } from 'lucide-react';
 import Modal from './components/Modal';
 import AddressForm from './components/AddressForm';
-import { httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
 import ProfilePictureUploadModal from './components/ProfilePictureUploadModal'; // Pfad korrigiert
 import CreateOrderModal from './components/CreateOrderModal';
@@ -53,18 +51,8 @@ import JobBoardPromoModal from './components/JobBoardPromoModal';
 
 const PAGE_LOG = 'UserDashboardPage:'; // Für Logging
 
-const createSetupIntentCallable = httpsCallable<
-  { firebaseUserId?: string },
-  { clientSecret: string }
->(functions, 'createSetupIntent');
-const getSavedPaymentMethodsCallable = httpsCallable<
-  Record<string, never>,
-  { savedPaymentMethods: SavedPaymentMethod[] }
->(functions, 'getSavedPaymentMethods');
-const detachPaymentMethodCallable = httpsCallable<
-  { paymentMethodId: string },
-  { success: boolean; message?: string }
->(functions, 'detachPaymentMethod');
+// Hinweis: createSetupIntent, getSavedPaymentMethods und detachPaymentMethod
+// sind nicht mehr verfügbar, da Stripe durch Escrow-System ersetzt wurde
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -121,12 +109,8 @@ export default function UserDashboardPage() {
         setShowJobBoardPromo(true);
       }
 
-      const paymentMethodsResult = await getSavedPaymentMethodsCallable({});
-      if (paymentMethodsResult.data?.savedPaymentMethods) {
-        profileData.savedPaymentMethods = paymentMethodsResult.data.savedPaymentMethods;
-      } else {
-        profileData.savedPaymentMethods = [];
-      }
+      // Stripe wurde durch Escrow-System ersetzt - Payment Methods werden nicht mehr von Stripe geladen
+      profileData.savedPaymentMethods = [];
 
       profileData.savedAddresses = (profileData.savedAddresses as SavedAddress[]) || [];
 
@@ -141,13 +125,13 @@ export default function UserDashboardPage() {
       const q1 = query(
         ordersCollectionRef,
         where('customerFirebaseUid', '==', user.uid),
-        orderBy('paidAt', 'desc')
+        orderBy('createdAt', 'desc')
       );
 
       const q2 = query(
         ordersCollectionRef,
         where('kundeId', '==', user.uid),
-        orderBy('paidAt', 'desc')
+        orderBy('createdAt', 'desc')
       );
 
       // Beide Abfragen parallel ausführen
@@ -166,9 +150,9 @@ export default function UserDashboardPage() {
         // Mapping der korrekten Felder
         return {
           id: doc.id,
-          selectedSubcategory: data.selectedSubcategory || 'Unbekannt',
+          selectedSubcategory: data.selectedSubcategory || data.unterkategorie || 'Unbekannt',
           status: data.status || 'unbekannt',
-          totalPriceInCents: data.jobCalculatedPriceInCents || data.totalPriceInCents || 0,
+          totalPriceInCents: data.jobCalculatedPriceInCents || data.totalPriceInCents || (data.totalAmount ? data.totalAmount * 100 : 0) || (data.price ? data.price * 100 : 0),
           jobDateFrom: data.jobDateFrom || null,
           jobTimePreference: data.jobTimePreference || null,
           selectedAnbieterId: data.selectedAnbieterId || null,

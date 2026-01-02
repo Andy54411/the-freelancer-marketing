@@ -4,11 +4,12 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { signOut } from 'firebase/auth';
+import { db, auth } from '@/firebase/clients';
 import UserHeader from '@/components/UserHeader';
 import { MailHeader } from '@/components/webmail/MailHeader';
 import AppHeaderNavigation from '@/components/AppHeaderNavigation';
-import CompanySidebar from '@/components/dashboard/CompanySidebar';
+import CompanySidebar, { type EmployeePermissions } from '@/components/dashboard/CompanySidebar';
 import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
@@ -151,7 +152,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   
   // Berechtigungen aus Employee-Subcollection
   // Wenn keine Permissions gesetzt sind, standardmäßig ALLE aktivieren (volles Dashboard wie Inhaber)
-  const employeePermissions = employeeData?.permissions ?? (isEmployee ? {
+  const employeePermissions: EmployeePermissions | undefined = employeeData?.permissions 
+    ? (employeeData.permissions as unknown as EmployeePermissions) 
+    : (isEmployee ? {
     overview: true,
     personal: true,
     employees: true,
@@ -184,7 +187,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Update Notifications
   const {
     unseenUpdates,
-    unseenCount,
+    unseenCount: _unseenCount,
     showNotificationModal,
     setShowNotificationModal,
     markUpdateAsSeen,
@@ -198,7 +201,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     );
   };
 
-  const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
+  const _isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
   // Auto-expand Finance section when on finance pages
   useEffect(() => {
@@ -504,6 +507,14 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 }}
                 onSearch={(query) => {
                   router.push(`/services?search=${encodeURIComponent(query)}`);
+                }}
+                onLogout={async () => {
+                  try {
+                    await signOut(auth);
+                    router.push('/');
+                  } catch {
+                    window.location.href = '/';
+                  }
                 }}
               />
               <AppHeaderNavigation />

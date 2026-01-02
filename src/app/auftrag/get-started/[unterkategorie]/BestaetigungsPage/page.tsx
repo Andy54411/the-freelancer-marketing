@@ -119,23 +119,20 @@ export default function BestaetigungsPage() {
         unterkategorie,
         postalCode,
         dateFrom,
-        time,
         duration,
-        description,
-        price,
       } = urlParams;
 
-      if (
-        !anbieterId ||
-        !unterkategorie ||
-        !postalCode ||
-        !dateFrom ||
-        !time ||
-        !duration ||
-        !description ||
-        !price
-      ) {
-        setError('Nicht alle erforderlichen Daten vorhanden. Bitte starten Sie den Auftrag neu.');
+      // Nur die wichtigsten Parameter prüfen - time, description und price können optional sein
+      const missingParams: string[] = [];
+      if (!anbieterId) missingParams.push('Anbieter');
+      if (!unterkategorie) missingParams.push('Kategorie');
+      if (!postalCode) missingParams.push('Postleitzahl');
+      if (!dateFrom) missingParams.push('Datum');
+      if (!duration) missingParams.push('Dauer');
+
+      if (missingParams.length > 0) {
+        console.error('[BestaetigungsPage] Fehlende Parameter:', missingParams);
+        setError(`Fehlende Daten: ${missingParams.join(', ')}. Bitte starten Sie den Auftrag neu.`);
         return;
       }
 
@@ -166,6 +163,12 @@ export default function BestaetigungsPage() {
     try {
       // Temporären Job-Entwurf erstellen
       const hours = parseFloat(urlParams.duration);
+      
+      // Description ist Pflichtfeld - Fehler wenn nicht vorhanden
+      if (!urlParams.description || !urlParams.description.trim()) {
+        throw new Error('Beschreibung fehlt. Bitte gehen Sie zurück und geben Sie eine Beschreibung ein.');
+      }
+      
       const orderDataForDraft: TemporaryJobDraftData = {
         customerType: hours >= 8 ? 'business' : 'private', // 8+ Stunden = B2B, weniger = B2C
         selectedCategory: urlParams.unterkategorie.split(' ')[0] || 'Service',
@@ -269,18 +272,15 @@ export default function BestaetigungsPage() {
     );
   }
 
-  // Validiere URL-Parameter
-  const { anbieterId, unterkategorie, postalCode, dateFrom, time, duration, description, price } =
+  // Validiere URL-Parameter - nur die wichtigsten
+  const { anbieterId, unterkategorie, postalCode, dateFrom, duration } =
     urlParams;
   if (
     !anbieterId ||
     !unterkategorie ||
     !postalCode ||
     !dateFrom ||
-    !time ||
-    !duration ||
-    !description ||
-    !price
+    !duration
   ) {
     return (
       <div className="min-h-screen bg-gray-50">

@@ -40,7 +40,7 @@ interface TemporaryJobDraftData {
 
 interface TemporaryJobDraftResult {
   tempDraftId: string;
-  anbieterStripeAccountId?: string | null;
+  paymentMethod?: string; // 'escrow' für Revolut Escrow System
 }
 
 // CustomerAddress, GetOrCreateStripeCustomerPayload, GetOrCreateStripeCustomerResult
@@ -195,7 +195,6 @@ export const createTemporaryJobDraft = onCall(
         // Minimaler Logging für Memory-Optimierung
       }
 
-      let anbieterStripeAccountId: string;
       let providerName: string = UNKNOWN_PROVIDER_NAME;
 
       if (!jobDetails.selectedAnbieterId) {
@@ -246,14 +245,9 @@ export const createTemporaryJobDraft = onCall(
       // Provider name aus den verfügbaren Daten ableiten
       providerName = getUserDisplayName(companyData || anbieterData, UNKNOWN_PROVIDER_NAME);
 
-      // Stripe Account ID zuerst aus companies, dann aus users
-      if (companyData && companyData.stripeAccountId && typeof companyData.stripeAccountId === 'string' && companyData.stripeAccountId.startsWith('acct_')) {
-        anbieterStripeAccountId = companyData.stripeAccountId;
-      } else if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
-        anbieterStripeAccountId = anbieterData.stripeAccountId;
-      } else {
-        throw new HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
-      }
+      // ESCROW SYSTEM: Keine Stripe Account ID mehr erforderlich
+      // Das Escrow/Revolut Payment System handhabt Zahlungen zentral über Taskilo
+      // Anbieter benötigen lediglich ihre Bankverbindung für Auszahlungen
 
       // B2B/B2C spezifische Logik
       const isB2B = jobDetails.customerType === 'business';
@@ -279,7 +273,7 @@ export const createTemporaryJobDraft = onCall(
         jobTotalCalculatedHours: jobDetails.jobTotalCalculatedHours ?? null,
         jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents,
         kundeId: kundeId,
-        anbieterStripeAccountId: anbieterStripeAccountId,
+        paymentMethod: 'escrow', // Escrow/Revolut Payment System
         customerFirstName: customerInfo.firstName,
         customerLastName: customerInfo.lastName,
         customerEmail: customerInfo.email,
@@ -309,7 +303,7 @@ export const createTemporaryJobDraft = onCall(
 
       return {
         tempDraftId: docRef.id,
-        anbieterStripeAccountId: anbieterStripeAccountId,
+        paymentMethod: 'escrow',
       };
 
     } catch (error: any) {

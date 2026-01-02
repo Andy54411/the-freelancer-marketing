@@ -28,7 +28,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { UserProfileData } from '@/types/types';
 import LoginPopup from '@/components/LoginPopup';
 import { TaskiloLevelBadge } from '@/components/level/TaskiloLevelBadge';
-import { type TaskiloLevel, LEVEL_DETAILS } from '@/services/TaskiloLevelService';
+import { type TaskiloLevel } from '@/services/TaskiloLevelService';
 
 // Review Interface
 interface Review {

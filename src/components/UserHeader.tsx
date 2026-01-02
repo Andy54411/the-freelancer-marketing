@@ -541,10 +541,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   const handleLogout = useCallback(async () => {
     try {
-      await signOut(auth);
       setIsProfileDropdownOpen(false);
+      await signOut(auth);
       router.push('/');
-    } catch (error) {}
+      router.refresh();
+    } catch (error) {
+      // Fehler bei der Abmeldung - Seite trotzdem neu laden
+      window.location.href = '/';
+    }
   }, [router]);
 
   const filteredCategories = useMemo(() => {

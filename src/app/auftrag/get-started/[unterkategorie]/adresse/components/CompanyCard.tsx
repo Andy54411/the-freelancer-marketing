@@ -2,18 +2,23 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Star as FiStar,
   Wrench as FiTool,
   Truck as FiTruck,
   MessageSquare as FiMessageCircle,
-  ChevronDown as FiChevronDown,
-  ChevronUp as FiChevronUp,
+  ExternalLink,
 } from 'lucide-react';
 import LanguageTags from '@/components/LanguageTags';
 import { renderStars } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/lib/utils';
 
 import type { Company, RatingInfo, CompanyTaskCategory } from '@/types/types';
+
+// Hilfsfunktion um HTML-Tags zu entfernen
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
 
 interface CompanyCardProps {
   company: Company;
@@ -28,8 +33,8 @@ interface CompanyCardProps {
 export default function CompanyCard({
   company,
   ratingInfo,
-  isExpanded,
-  onToggleDescription,
+  isExpanded: _isExpanded,
+  onToggleDescription: _onToggleDescription,
   onShowProfileDetail,
   onOpenDatePicker,
   isSelectedForPopup,
@@ -120,17 +125,18 @@ export default function CompanyCard({
             Bei diesen Aufträgen kann ich helfen:
           </h4>
           <p
-            className={`text-sm text-gray-700 dark:text-gray-300 ${!isExpanded ? 'line-clamp-3' : ''}`}
+            className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3"
           >
-            {company.description || 'Keine Beschreibung vorhanden.'}
+            {company.description ? stripHtml(company.description) : 'Keine Beschreibung vorhanden.'}
           </p>
-          <button
-            onClick={onToggleDescription}
+          <Link
+            href={`/profile/${company.id}`}
+            target="_blank"
             className="text-sm text-[#14ad9f] hover:underline mt-1 flex items-center"
           >
-            {isExpanded ? 'Weniger anzeigen' : 'Mehr erfahren'}
-            {isExpanded ? <FiChevronUp className="ml-1" /> : <FiChevronDown className="ml-1" />}
-          </button>
+            Mehr erfahren
+            <ExternalLink className="ml-1 w-3 h-3" />
+          </Link>
         </div>
         {company.highlightReview && (
           <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">

@@ -1,45 +1,37 @@
 'use client';
 
 /**
- * EscrowPaymentComponent - Ersetzt alle Stripe-Zahlungskomponenten
+ * EscrowPaymentComponent - Einfache Zahlungskomponente
  * 
- * Integriert mit dem neuen Escrow/Revolut-System für sichere B2B-Zahlungen.
- * Unterstützt:
- * - SEPA-Überweisungen
- * - Revolut Business Payments
- * - Treuhand-basierte Zahlungsabwicklung
+ * Zwei Optionen:
+ * 1. SEPA-Überweisung - zeigt Bankdaten
+ * 2. Kreditkarte via Revolut - leitet zu Checkout weiter
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Loader2,
   CreditCard,
   X,
   CheckCircle,
-  AlertCircle,
   Building2,
   Shield,
-  Clock,
-  ArrowRight,
-  Info,
   Copy,
   Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { getAuth } from 'firebase/auth';
+import { app } from '@/firebase/clients';
 
-// Types
 interface EscrowPaymentProps {
   projectData: {
     projectId: string;
     projectTitle: string;
     projectDescription?: string;
-    amount: number; // in cents
+    amount: number;
     currency?: string;
     paymentType: 'milestone' | 'project_deposit' | 'final_payment' | 'order_payment';
     providerId: string;
@@ -56,32 +48,11 @@ interface EscrowPaymentProps {
   onError: (error: string) => void;
 }
 
-interface PaymentInstructions {
-  escrowId: string;
-  bankDetails: {
-    iban: string;
-    bic: string;
-    bankName: string;
-    accountHolder: string;
-  };
-  reference: string;
-  amount: number;
-  currency: string;
-  expiresAt: string;
-}
-
-type PaymentMethod = 'bank_transfer' | 'revolut';
-type PaymentStep = 'select_method' | 'processing' | 'instructions' | 'success' | 'error';
-
-// Constants
-const TASKILO_BANK_DETAILS = {
-  iban: 'DE89 3704 0044 0532 0130 00', // Taskilo Treuhandkonto
+const TASKILO_BANK = {
+  iban: 'DE89 3704 0044 0532 0130 00',
   bic: 'COBADEFFXXX',
-  bankName: 'Commerzbank',
-  accountHolder: 'Taskilo GmbH - Treuhand',
+  name: 'Taskilo GmbH - Treuhand',
 };
-
-const PLATFORM_FEE_PERCENT = 10;
 
 export function EscrowPaymentComponent({
   projectData,
@@ -91,461 +62,272 @@ export function EscrowPaymentComponent({
   onSuccess,
   onError,
 }: EscrowPaymentProps) {
-  const [step, setStep] = useState<PaymentStep>('select_method');
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [paymentInstructions, setPaymentInstructions] = useState<PaymentInstructions | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showSepa, setShowSepa] = useState(false);
+  const [escrowId, setEscrowId] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [waitingForPayment, setWaitingForPayment] = useState(false);
+  const [revolutOrderId, setRevolutOrderId] = useState<string | null>(null);
 
-  const formatCurrency = useCallback((cents: number, currency = 'EUR') => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: currency.toUpperCase(),
-    }).format(cents / 100);
-  }, []);
-
-  const calculateFees = useCallback((amount: number) => {
-    const platformFee = Math.round(amount * (PLATFORM_FEE_PERCENT / 100));
-    const providerAmount = amount - platformFee;
-    return { platformFee, providerAmount };
-  }, []);
-
-  const copyToClipboard = useCallback(async (text: string, field: string) => {
+  // Prüfe Zahlungsstatus
+  const checkPaymentStatus = useCallback(async () => {
+    if (!revolutOrderId || !escrowId) return;
+    
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/payment/revolut-status?orderId=${revolutOrderId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      const data = await res.json();
+      if (data.success && data.isPaid) {
+        // Zahlung erfolgreich!
+        onSuccess(escrowId);
+        onClose();
+      }
     } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
+      // Ignoriere Fehler beim Status-Check
     }
-  }, []);
+  }, [revolutOrderId, escrowId, onSuccess, onClose]);
 
-  const handleCreateEscrow = async () => {
-    if (!selectedMethod) return;
+  // Polling für Zahlungsstatus
+  useEffect(() => {
+    if (!waitingForPayment || !revolutOrderId) return;
+    
+    const interval = setInterval(checkPaymentStatus, 3000); // Alle 3 Sekunden prüfen
+    return () => clearInterval(interval);
+  }, [waitingForPayment, revolutOrderId, checkPaymentStatus]);
 
+  const amount = (projectData.amount / 100).toFixed(2).replace('.', ',');
+
+  const copy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text.replace(/\s/g, ''));
+    setCopied(field);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const createEscrow = async (method: 'card' | 'sepa') => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/payment/escrow', {
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+      if (!user) throw new Error('Bitte melden Sie sich an');
+      
+      const token = await user.getIdToken();
+      const res = await fetch('/api/payment/escrow', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           action: 'create',
           orderId: projectData.projectId,
-          customerId: customerData.customerId,
+          buyerId: customerData.customerId,
           providerId: projectData.providerId,
           amount: projectData.amount,
           currency: projectData.currency || 'EUR',
-          paymentMethod: selectedMethod === 'revolut' ? 'revolut' : 'bank_transfer',
+          paymentMethod: method,
         }),
       });
 
-      const result = await response.json();
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-      if (!result.success) {
-        throw new Error(result.error || 'Fehler beim Erstellen der Zahlung');
+      setEscrowId(data.escrow.id);
+
+      if (method === 'card') {
+        // Revolut Checkout - in neuem Tab öffnen
+        if (data.checkoutUrl) {
+          setRevolutOrderId(data.revolutOrderId);
+          window.open(data.checkoutUrl, '_blank');
+          // Warte auf Zahlung
+          setWaitingForPayment(true);
+        } else {
+          // Keine Checkout-URL erhalten
+          throw new Error(data.error || 'Kreditkartenzahlung konnte nicht initialisiert werden');
+        }
+      } else {
+        // SEPA - zeige Bankdaten
+        setShowSepa(true);
       }
-
-      // Set payment instructions
-      const escrowData = result.escrow;
-      setPaymentInstructions({
-        escrowId: escrowData.id,
-        bankDetails: TASKILO_BANK_DETAILS,
-        reference: `ESC-${escrowData.id.slice(-8).toUpperCase()}`,
-        amount: projectData.amount,
-        currency: projectData.currency || 'EUR',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 Tage
-      });
-
-      setStep('instructions');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      setError(errorMessage);
-      setStep('error');
-      onError(errorMessage);
+      onError(err instanceof Error ? err.message : 'Fehler');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleConfirmPayment = async () => {
-    if (!paymentInstructions) return;
-
+  const confirmSepa = async () => {
+    if (!escrowId) return;
     setIsLoading(true);
-    setError(null);
-
     try {
-      // In einer echten Implementierung würde hier ein Webhook von Revolut/Bank
-      // den Zahlungseingang bestätigen. Für manuelle Bestätigung:
-      const response = await fetch('/api/payment/escrow', {
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+      if (!user) throw new Error('Bitte melden Sie sich an');
+      
+      const token = await user.getIdToken();
+      await fetch('/api/payment/escrow', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           action: 'hold',
-          escrowId: paymentInstructions.escrowId,
-          paymentId: `MANUAL-${Date.now()}`,
+          escrowId,
+          paymentId: `SEPA-${Date.now()}`,
         }),
       });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Fehler bei der Zahlungsbestätigung');
-      }
-
-      setStep('success');
-      onSuccess(paymentInstructions.escrowId);
+      onSuccess(escrowId);
+      onClose();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      setError(errorMessage);
-      onError(errorMessage);
+      onError(err instanceof Error ? err.message : 'Fehler');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const { platformFee, providerAmount } = calculateFees(projectData.amount);
 
   if (!isOpen) return null;
 
-  const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <CardHeader className="relative">
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Schließen"
-          >
+  const reference = escrowId ? `ESC-${escrowId.slice(-8).toUpperCase()}` : '';
+
+  const modal = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader className="relative pb-2">
+          <button onClick={onClose} className="absolute right-3 top-3 p-1 hover:bg-gray-100 rounded">
             <X className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-teal-600" />
-            <CardTitle>Sichere Zahlung</CardTitle>
+            <Shield className="h-5 w-5 text-teal-600" />
+            <CardTitle className="text-lg">Sichere Zahlung</CardTitle>
           </div>
-          <CardDescription>
-            Treuhand-geschützte Zahlung für {projectData.projectTitle}
-          </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Payment Summary */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Betrag</span>
-              <span className="font-medium">{formatCurrency(projectData.amount)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Davon Plattformgebühr ({PLATFORM_FEE_PERCENT}%)</span>
-              <span className="text-gray-500">{formatCurrency(platformFee)}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Auszahlung an Anbieter</span>
-              <span className="text-gray-600">{formatCurrency(providerAmount)}</span>
-            </div>
+        <CardContent className="space-y-4">
+          {/* Betrag */}
+          <div className="text-center py-4 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-500">Zu zahlen</div>
+            <div className="text-3xl font-bold text-teal-600">{amount} EUR</div>
           </div>
 
-          {/* Step: Select Payment Method */}
-          {step === 'select_method' && (
-            <div className="space-y-4">
-              <h3 className="font-medium">Zahlungsmethode wählen</h3>
-              
-              {/* Bank Transfer */}
-              <button
-                onClick={() => setSelectedMethod('bank_transfer')}
-                className={cn(
-                  'w-full p-4 border rounded-lg text-left transition-all',
-                  selectedMethod === 'bank_transfer'
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-5 w-5 text-teal-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium">SEPA-Überweisung</div>
-                    <div className="text-sm text-gray-500">
-                      Überweisen Sie den Betrag auf unser Treuhandkonto
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-500">1-2 Werktage</span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Revolut */}
-              <button
-                onClick={() => setSelectedMethod('revolut')}
-                className={cn(
-                  'w-full p-4 border rounded-lg text-left transition-all',
-                  selectedMethod === 'revolut'
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <CreditCard className="h-5 w-5 text-teal-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      Revolut Business
-                      <Badge variant="outline" className="text-xs">Empfohlen</Badge>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Sofortige Zahlung über Revolut
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-500">Sofort</span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Escrow Info */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Treuhand-Schutz</AlertTitle>
-                <AlertDescription>
-                  Ihr Geld wird sicher auf unserem Treuhandkonto verwahrt und erst nach 
-                  erfolgreicher Leistungserbringung an den Anbieter ausgezahlt.
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {/* Step: Processing */}
-          {step === 'processing' && (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-12 w-12 text-teal-600 animate-spin" />
-              <p className="mt-4 text-gray-600">Zahlung wird vorbereitet...</p>
-            </div>
-          )}
-
-          {/* Step: Payment Instructions */}
-          {step === 'instructions' && paymentInstructions && (
-            <div className="space-y-4">
-              <Alert className="border-teal-200 bg-teal-50">
-                <CheckCircle className="h-4 w-4 text-teal-600" />
-                <AlertTitle className="text-teal-800">Zahlung erstellt</AlertTitle>
-                <AlertDescription className="text-teal-700">
-                  Bitte überweisen Sie den folgenden Betrag:
-                </AlertDescription>
-              </Alert>
-
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Empfänger</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{paymentInstructions.bankDetails.accountHolder}</span>
-                    <button
-                      onClick={() => copyToClipboard(paymentInstructions.bankDetails.accountHolder, 'accountHolder')}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
-                      {copiedField === 'accountHolder' ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">IBAN</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{paymentInstructions.bankDetails.iban}</span>
-                    <button
-                      onClick={() => copyToClipboard(paymentInstructions.bankDetails.iban.replace(/\s/g, ''), 'iban')}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
-                      {copiedField === 'iban' ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">BIC</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{paymentInstructions.bankDetails.bic}</span>
-                    <button
-                      onClick={() => copyToClipboard(paymentInstructions.bankDetails.bic, 'bic')}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
-                      {copiedField === 'bic' ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Verwendungszweck</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-teal-700">{paymentInstructions.reference}</span>
-                    <button
-                      onClick={() => copyToClipboard(paymentInstructions.reference, 'reference')}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
-                      {copiedField === 'reference' ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Betrag</span>
-                  <span className="font-mono text-lg font-bold text-teal-700">
-                    {formatCurrency(paymentInstructions.amount, paymentInstructions.currency)}
-                  </span>
-                </div>
+          {waitingForPayment ? (
+            /* Warte auf Zahlung */
+            <div className="space-y-4 text-center py-6">
+              <Loader2 className="h-12 w-12 animate-spin text-teal-600 mx-auto" />
+              <div>
+                <h3 className="font-semibold text-lg">Warte auf Zahlung...</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Bitte schließen Sie die Zahlung im Revolut-Tab ab.
+                </p>
               </div>
-
-              <Alert variant="destructive" className="border-amber-200 bg-amber-50">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">Wichtig</AlertTitle>
-                <AlertDescription className="text-amber-700">
-                  Verwenden Sie bitte genau den angegebenen Verwendungszweck, 
-                  damit wir Ihre Zahlung korrekt zuordnen können.
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {/* Step: Success */}
-          {step === 'success' && (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Zahlung eingegangen</h3>
-              <p className="text-gray-500 text-center mt-2">
-                Ihr Geld ist sicher auf unserem Treuhandkonto und wird nach 
-                erfolgreicher Leistung an den Anbieter ausgezahlt.
-              </p>
-            </div>
-          )}
-
-          {/* Step: Error */}
-          {step === 'error' && (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Fehler</h3>
-              <p className="text-gray-500 text-center mt-2">{error}</p>
               <Button
+                onClick={checkPaymentStatus}
                 variant="outline"
                 className="mt-4"
-                onClick={() => {
-                  setStep('select_method');
-                  setError(null);
-                }}
               >
-                Erneut versuchen
+                Zahlungsstatus prüfen
               </Button>
+            </div>
+          ) : !showSepa ? (
+            /* Zahlungsmethoden */
+            <div className="space-y-3">
+              {/* Kreditkarte */}
+              <Button
+                onClick={() => createEscrow('card')}
+                disabled={isLoading}
+                className="w-full h-14 bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Mit Kreditkarte bezahlen
+                  </>
+                )}
+              </Button>
+
+              {/* SEPA */}
+              <Button
+                onClick={() => createEscrow('sepa')}
+                disabled={isLoading}
+                variant="outline"
+                className="w-full h-14"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <Building2 className="mr-2 h-5 w-5" />
+                    Per SEPA-Überweisung
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-center text-gray-500 pt-2">
+                Treuhand-geschützt: Geld wird erst nach Leistung ausgezahlt
+              </p>
+            </div>
+          ) : (
+            /* SEPA Bankdaten */
+            <div className="space-y-3">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                <span className="text-sm text-green-800">Auftrag erstellt. Bitte überweisen Sie:</span>
+              </div>
+
+              {[
+                { label: 'Empfänger', value: TASKILO_BANK.name, key: 'name' },
+                { label: 'IBAN', value: TASKILO_BANK.iban, key: 'iban' },
+                { label: 'BIC', value: TASKILO_BANK.bic, key: 'bic' },
+                { label: 'Verwendungszweck', value: reference, key: 'ref', highlight: true },
+                { label: 'Betrag', value: `${amount} EUR`, key: 'amount', highlight: true },
+              ].map(({ label, value, key, highlight }) => (
+                <div key={key} className="flex justify-between items-center py-2 border-b last:border-0">
+                  <span className="text-sm text-gray-600">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn('font-mono text-sm', highlight && 'font-bold text-teal-700')}>
+                      {value}
+                    </span>
+                    <button onClick={() => copy(value, key)} className="p-1 hover:bg-gray-100 rounded">
+                      {copied === key ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                onClick={confirmSepa}
+                disabled={isLoading}
+                className="w-full mt-4 bg-teal-600 hover:bg-teal-700"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Ich habe überwiesen'}
+              </Button>
+              
+              <button onClick={onClose} className="w-full text-sm text-gray-500 hover:text-gray-700">
+                Später bezahlen
+              </button>
             </div>
           )}
         </CardContent>
-
-        <CardFooter className="flex justify-end gap-3">
-          {step === 'select_method' && (
-            <>
-              <Button variant="outline" onClick={onClose}>
-                Abbrechen
-              </Button>
-              <Button
-                onClick={handleCreateEscrow}
-                disabled={!selectedMethod || isLoading}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird erstellt...
-                  </>
-                ) : (
-                  <>
-                    Weiter
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-
-          {step === 'instructions' && (
-            <>
-              <Button variant="outline" onClick={onClose}>
-                Später bezahlen
-              </Button>
-              <Button
-                onClick={handleConfirmPayment}
-                disabled={isLoading}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird bestätigt...
-                  </>
-                ) : (
-                  <>
-                    Zahlung bestätigen
-                    <CheckCircle className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-
-          {step === 'success' && (
-            <Button onClick={onClose} className="bg-teal-600 hover:bg-teal-700">
-              Fertig
-            </Button>
-          )}
-        </CardFooter>
       </Card>
     </div>
   );
 
-  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null;
 }
 
-// Inline Payment Component - für direkte Einbettung
-interface InlineEscrowPaymentProps {
-  orderId: string;
-  totalAmount: number; // in cents
-  totalHours?: number;
-  customerId: string;
-  providerId: string;
-  onSuccess: (escrowId: string) => void;
-  onError: (error: string) => void;
-}
-
+// Export für Inline-Verwendung
 export function InlineEscrowPayment({
   orderId,
   totalAmount,
@@ -553,7 +335,14 @@ export function InlineEscrowPayment({
   providerId,
   onSuccess,
   onError,
-}: InlineEscrowPaymentProps) {
+}: {
+  orderId: string;
+  totalAmount: number;
+  customerId: string;
+  providerId: string;
+  onSuccess: (escrowId: string) => void;
+  onError: (error: string) => void;
+}) {
   return (
     <EscrowPaymentComponent
       projectData={{
@@ -563,9 +352,7 @@ export function InlineEscrowPayment({
         paymentType: 'order_payment',
         providerId,
       }}
-      customerData={{
-        customerId,
-      }}
+      customerData={{ customerId }}
       isOpen={true}
       onClose={() => {}}
       onSuccess={onSuccess}
@@ -573,5 +360,3 @@ export function InlineEscrowPayment({
     />
   );
 }
-
-export default EscrowPaymentComponent;

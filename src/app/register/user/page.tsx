@@ -15,6 +15,7 @@ import { useRegistration } from '@/contexts/Registration-Context';
 import { Eye, EyeOff, Shield, CheckCircle, User, Mail, Lock, MapPin, Phone, Loader2, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 
 const _PAGE_LOG = 'UserRegisterPage:';
 const _PAGE_ERROR = 'UserRegisterPage ERROR:';
@@ -298,10 +299,10 @@ function UserRegisterFormContent() {
                 className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span className="font-medium">Zurueck</span>
+                <span className="font-medium">Zurück</span>
               </Link>
               <Link href="/" className="text-2xl font-bold text-white">
-                Taskilo
+                <Logo variant="white" className="h-8" />
               </Link>
             </div>
             

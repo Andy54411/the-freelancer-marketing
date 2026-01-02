@@ -519,8 +519,11 @@ export function MailHeader({
               <DropdownMenuItem>Weiteres Konto hinzufuegen</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={onLogout}
-                className="text-red-600 focus:text-red-600"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  if (onLogout) onLogout();
+                }}
+                className="text-red-600 focus:text-red-600 cursor-pointer"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Abmelden

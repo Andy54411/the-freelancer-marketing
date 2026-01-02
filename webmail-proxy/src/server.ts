@@ -19,6 +19,7 @@ import { paymentRouter } from './routes/payment';
 import registrationRouter from './routes/registration';
 import profileRouter from './routes/profile';
 import phoneVerificationRouter from './routes/phone-verification';
+import newsletterRouter from './routes/newsletter';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -118,10 +119,13 @@ app.use('/api/profile', profileRouter);
 // API Routes - Phone Verification (ÖFFENTLICH für nachträgliche Verifizierung)
 app.use('/api/phone-verification', phoneVerificationRouter);
 
+// API Routes - Newsletter (ÖFFENTLICH für Anmeldungen)
+app.use('/api/newsletter', newsletterRouter);
+
 // API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
-  // Registration-, Profile- und Phone-Verification-Endpunkte überspringen (sind öffentlich)
-  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification')) {
+  // Registration-, Profile-, Phone-Verification- und Newsletter-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter')) {
     return next();
   }
   

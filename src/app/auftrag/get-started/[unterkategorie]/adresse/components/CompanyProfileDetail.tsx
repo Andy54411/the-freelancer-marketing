@@ -20,6 +20,11 @@ function renderStars(rating: number) {
   return '★'.repeat(fullStars) + (hasHalfStar ? '⭑' : '') + '☆'.repeat(emptyStars);
 }
 
+// Hilfsfunktion um HTML-Tags zu entfernen
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
+
 export interface CompanyProfileDetailProps {
   company: Company;
   ratingMap: Record<string, RatingInfo>;
@@ -142,7 +147,7 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({
               Beschreibung
             </h3>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {company.description || 'Keine detaillierte Beschreibung verfügbar.'}
+              {company.description ? stripHtml(company.description) : 'Keine detaillierte Beschreibung verfügbar.'}
             </p>
           </div>
 

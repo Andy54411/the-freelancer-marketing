@@ -1,129 +1,13 @@
-// API Route für Newsletter-Versendung über Resend
+// Newsletter Send API - Proxy zu Hetzner
 import { NextRequest, NextResponse } from 'next/server';
-
-// Resend-Client lazy initialisieren - NUR zur Runtime mit dynamic import
-async function getResendClient() {
-  const { Resend } = await import('resend');
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY ist nicht gesetzt');
-  }
-  return new Resend(apiKey);
-} // Einfache Newsletter-Templates
-const NEWSLETTER_TEMPLATES = {
-  welcome: {
-    id: 'welcome',
-    subject: 'Willkommen bei Taskilo!',
-    htmlContent: `
-      <h1>Willkommen bei Taskilo!</h1>
-      <p>Vielen Dank für Ihre Anmeldung zu unserem Newsletter.</p>
-      <p>Wir freuen uns, Sie als Teil unserer Community begrüßen zu dürfen!</p>
-    `,
-  },
-  update: {
-    id: 'update',
-    subject: 'Taskilo Updates',
-    htmlContent: `
-      <h1>Neuigkeiten von Taskilo</h1>
-      <p>Hier sind die neuesten Updates und Verbesserungen:</p>
-      {{content}}
-    `,
-  },
-};
+import { proxyToHetzner } from '@/lib/newsletter-proxy';
 
 export async function POST(request: NextRequest) {
   try {
-    const { templateId, recipients, subject, variables, customContent } = await request.json();
-
-    if (!recipients || recipients.length === 0) {
-      return NextResponse.json({ error: 'Empfänger erforderlich' }, { status: 400 });
-    }
-
-    let htmlContent = '';
-    let finalSubject = subject || 'Newsletter von Taskilo';
-
-    // Template verwenden oder benutzerdefinierten Inhalt
-    if (templateId && NEWSLETTER_TEMPLATES[templateId as keyof typeof NEWSLETTER_TEMPLATES]) {
-      const template = NEWSLETTER_TEMPLATES[templateId as keyof typeof NEWSLETTER_TEMPLATES];
-      htmlContent = template.htmlContent;
-      finalSubject = subject || template.subject;
-
-      // Einfache Variable-Ersetzung
-      if (variables) {
-        Object.entries(variables).forEach(([key, value]) => {
-          htmlContent = htmlContent.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
-          finalSubject = finalSubject.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
-        });
-      }
-    } else if (customContent) {
-      htmlContent = customContent;
-    } else {
-      return NextResponse.json({ error: 'Template oder Inhalt erforderlich' }, { status: 400 });
-    }
-
-    const resend = await getResendClient();
-    const results: Array<{
-      recipient: string;
-      success: boolean;
-      error?: string;
-      messageId?: string;
-    }> = [];
-
-    // Sende an jeden Empfänger einzeln (für bessere Kontrolle)
-    for (const recipient of recipients) {
-      try {
-        const { data, error } = await resend.emails.send({
-          from: 'Taskilo Newsletter <newsletter@taskilo.de>',
-          to: [recipient],
-          subject: finalSubject,
-          html: htmlContent,
-        });
-
-        if (error) {
-          results.push({ recipient, success: false, error: error.message });
-        } else {
-          results.push({ recipient, success: true, messageId: data?.id });
-        }
-      } catch (emailError) {
-        results.push({
-          recipient,
-          success: false,
-          error: emailError instanceof Error ? emailError.message : 'Unbekannter Fehler',
-        });
-      }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-
-    return NextResponse.json({
-      success: true,
-      message: `Newsletter versendet: ${successCount}/${recipients.length} erfolgreich`,
-      results,
-      service: 'Resend',
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Interner Server-Fehler',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// Newsletter-Templates abrufen
-export async function GET(_request: NextRequest) {
-  try {
-    return NextResponse.json({
-      success: true,
-      templates: Object.values(NEWSLETTER_TEMPLATES).map(template => ({
-        id: template.id,
-        subject: template.subject,
-      })),
-      service: 'Resend',
-    });
-  } catch (error) {
-    return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
+    const body = await request.json();
+    const { data, status } = await proxyToHetzner('/api/newsletter/send', { method: 'POST', body });
+    return NextResponse.json(data, { status });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Newsletter-Service nicht erreichbar' }, { status: 503 });
   }
 }

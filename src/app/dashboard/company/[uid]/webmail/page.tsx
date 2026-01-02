@@ -120,7 +120,12 @@ export default function WebmailPage() {
           </Button>
         </div>
         <div className="flex-1">
-          <WebmailClient email={credentials.email} password={credentials.password} />
+          <WebmailClient 
+            email={credentials.email} 
+            password={credentials.password} 
+            onLogout={handleLogout}
+            companyId={uid}
+          />
         </div>
       </div>
     );
