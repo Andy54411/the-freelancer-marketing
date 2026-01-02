@@ -641,4 +641,61 @@ router.get('/health', (req: Request, res: Response) => {
   });
 });
 
+/**
+ * GET /api/payment/transactions
+ * Holt die letzten Transaktionen von Revolut
+ * (Wird vom Vercel SEPA-Cron verwendet wegen IP-Whitelisting)
+ */
+router.get('/transactions', async (req: Request, res: Response) => {
+  try {
+    const accessToken = process.env.REVOLUT_ACCESS_TOKEN;
+    if (!accessToken) {
+      return res.status(500).json({ error: 'No access token configured' });
+    }
+
+    // Hole Transaktionen der letzten 7 Tage
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 7);
+    
+    const response = await fetch(
+      `${revolutConfig.baseUrl}/transactions?from=${fromDate.toISOString()}&count=100`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[Revolut] Transaction fetch failed:', response.status, error);
+      return res.status(response.status).json({ error: 'Revolut API error', details: error });
+    }
+
+    const transactions = await response.json() as Array<{ type: string; state: string; reference?: string }>;
+    
+    // Filtere nur SEPA-Eingänge mit ESC-* Referenz
+    const sepaPayments = transactions.filter((tx) => {
+      if (tx.type !== 'topup' || tx.state !== 'completed') return false;
+      if (!tx.reference) return false;
+      return /ESC-\d{8}/i.test(tx.reference);
+    });
+
+    res.json({
+      success: true,
+      total: transactions.length,
+      sepaPayments: sepaPayments.length,
+      transactions: sepaPayments,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Revolut] Transaction fetch error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch transactions',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export { router as paymentRouter };

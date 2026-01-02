@@ -6,6 +6,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/check-sepa-payments",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/webmail-monthly-invoicing",
       "schedule": "0 8 1 * *"
     },
