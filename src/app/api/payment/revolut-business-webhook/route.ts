@@ -99,14 +99,14 @@ async function processIncomingPayment(
   try {
     // 1. Finde Escrow anhand der Referenz
     const escrowQuery = await firestore
-      .collection('escrows')
+      .collection('escrowPayments')
       .where('paymentReference', '==', escrowReference)
       .limit(1)
       .get();
 
     if (escrowQuery.empty) {
       // Versuche auch mit escrowId direkt
-      const directEscrowDoc = await firestore.collection('escrows').doc(escrowReference).get();
+      const directEscrowDoc = await firestore.collection('escrowPayments').doc(escrowReference).get();
       
       if (!directEscrowDoc.exists) {
         console.log('[Revolut Business Webhook] Escrow not found for reference:', escrowReference);
