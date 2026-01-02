@@ -29,7 +29,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   saveWebmailCredentials, 
   hasWebmailCredentials,
-  clearWebmailCredentials 
+  clearWebmailCredentials,
+  setWebmailSessionCookie,
+  clearWebmailSessionCookie
 } from '@/lib/webmail-session';
 
 interface WebmailConfig {
@@ -115,9 +117,10 @@ export function TaskiloWebmailConnectionCard({
       setError(null);
       await onConnect(email, password);
       
-      // Speichere Credentials lokal im Browser
+      // Speichere Credentials lokal im Browser und setze Cookie
       if (user?.uid) {
         saveWebmailCredentials(user.uid, email, password);
+        setWebmailSessionCookie(email, password, true);
         setHasLocalCredentials(true);
       }
       
@@ -166,9 +169,10 @@ export function TaskiloWebmailConnectionCard({
         throw new Error(saveError.error || 'Zugangsdaten konnten nicht gespeichert werden');
       }
       
-      // Speichere auch lokal für schnelleren Zugriff
+      // Speichere auch lokal und setze Cookie für schnelleren Zugriff
       if (user?.uid) {
         saveWebmailCredentials(user.uid, email, password);
+        setWebmailSessionCookie(email, password, true);
         setHasLocalCredentials(true);
       }
       

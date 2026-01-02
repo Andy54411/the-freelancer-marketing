@@ -9,7 +9,7 @@ import { WebmailClient } from '@/components/webmail/WebmailClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, AlertCircle, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { saveWebmailCredentials, getWebmailCredentials } from '@/lib/webmail-session';
+import { saveWebmailCredentials, getWebmailCredentials, setWebmailSessionCookie, clearWebmailSessionCookie } from '@/lib/webmail-session';
 
 // Debug-Logging für Dashboard-Webmail
 const dashboardWebmailLog = (step: string, data?: Record<string, unknown>) => {
@@ -52,6 +52,8 @@ export default function WebmailPage() {
           dashboardWebmailLog('loadCredentials_FOUND_IN_LOCALSTORAGE', { 
             email: localCreds.email.substring(0, 5) + '...' 
           });
+          // Setze auch Cookie für nahtlosen Übergang zu /webmail
+          setWebmailSessionCookie(localCreds.email, localCreds.password, true);
           setCredentials(localCreds);
           setLoading(false);
           return;
@@ -79,9 +81,10 @@ export default function WebmailPage() {
             };
             setCredentials(creds);
             
-            // Speichere auch in localStorage für schnelleren Zugriff
+            // Speichere in localStorage und Cookie für schnelleren Zugriff
             saveWebmailCredentials(uid, creds.email, creds.password);
-            dashboardWebmailLog('loadCredentials_SAVED_TO_LOCALSTORAGE');
+            setWebmailSessionCookie(creds.email, creds.password, true);
+            dashboardWebmailLog('loadCredentials_SAVED_TO_LOCALSTORAGE_AND_COOKIE');
           } else if (companyData.email) {
             // Pre-fill email if available
             setManualEmail(companyData.email);
@@ -119,9 +122,10 @@ export default function WebmailPage() {
         dashboardWebmailLog('testConnection_SUCCESS');
         setTestResult({ success: true, message: 'Verbindung erfolgreich!' });
         
-        // Save credentials to localStorage
+        // Save credentials to localStorage and cookie
         saveWebmailCredentials(uid, manualEmail, manualPassword);
-        dashboardWebmailLog('testConnection_SAVED_TO_LOCALSTORAGE');
+        setWebmailSessionCookie(manualEmail, manualPassword, true);
+        dashboardWebmailLog('testConnection_SAVED_TO_LOCALSTORAGE_AND_COOKIE');
         
         // Save credentials and open webmail
         setCredentials({ email: manualEmail, password: manualPassword });
@@ -142,6 +146,7 @@ export default function WebmailPage() {
 
   const handleLogout = () => {
     dashboardWebmailLog('handleLogout_CALLED');
+    clearWebmailSessionCookie();
     setCredentials(null);
     setManualPassword('');
     setTestResult(null);

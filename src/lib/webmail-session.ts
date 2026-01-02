@@ -200,3 +200,57 @@ export function refreshWebmailSession(userId: string): void {
     saveWebmailCredentials(userId, credentials.email, credentials.password);
   }
 }
+
+// ============ COOKIE-BASIERTE SESSION ============
+const COOKIE_NAME = 'webmail_session';
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 Tage
+
+/**
+ * Kodiert Credentials für Cookie-Speicherung (Base64)
+ */
+function encodeCredentialsForCookie(email: string, password: string): string {
+  const jsonStr = JSON.stringify({ email, password });
+  const bytes = new TextEncoder().encode(jsonStr);
+  const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+  return btoa(binString);
+}
+
+/**
+ * Setzt ein Webmail-Session-Cookie für nahtlosen Übergang zwischen Dashboard und Webmail
+ */
+export function setWebmailSessionCookie(email: string, password: string, remember: boolean = true): void {
+  sessionLog('setWebmailSessionCookie_CALLED', { 
+    email: email.substring(0, 5) + '...',
+    remember 
+  });
+  
+  if (typeof document === 'undefined') {
+    sessionLog('setWebmailSessionCookie_SERVER_SKIP');
+    return;
+  }
+  
+  // Altes Cookie löschen
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+  
+  const encoded = encodeCredentialsForCookie(email, password);
+  const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
+  
+  // Cookie auf .taskilo.de Domain setzen - gilt für alle Subdomains und Pfade
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; domain=.taskilo.de; SameSite=Lax; Secure`;
+  
+  // Fallback: auch ohne Domain für localhost/Development
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax`;
+  
+  sessionLog('setWebmailSessionCookie_SET', { remember });
+}
+
+/**
+ * Löscht das Webmail-Session-Cookie
+ */
+export function clearWebmailSessionCookie(): void {
+  if (typeof document === 'undefined') return;
+  
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+}
