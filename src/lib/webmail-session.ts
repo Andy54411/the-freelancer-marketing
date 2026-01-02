@@ -10,9 +10,7 @@
 // Debug-Logging für Hydration/Session-Probleme
 const sessionLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][WebmailSession] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][WebmailSession-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

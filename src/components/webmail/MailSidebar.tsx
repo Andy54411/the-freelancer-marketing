@@ -39,9 +39,7 @@ import { Palette } from 'lucide-react';
 // Debug-Logging für Hydration
 const mailSidebarLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][MailSidebar] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][MailSidebar-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

@@ -6,18 +6,8 @@ import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings,
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
-// Debug-Logging für Hydration
-const appLauncherLog = (step: string, data?: Record<string, unknown>) => {
-  if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][AppLauncher] ${step}`, data ? JSON.stringify(data, null, 2) : '');
-  } else {
-    console.log(`[HYDRATION-DEBUG][AppLauncher-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
-  }
-};
-
 // Pfad-basierte URLs (keine Subdomains mehr)
 function getAppUrl(path: string): string {
-  appLauncherLog('getAppUrl_CALLED', { path });
   // Einfach den Pfad zurueckgeben - keine Subdomain-Umwandlung
   return path;
 }
@@ -522,7 +512,6 @@ export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode
         
         // DEBUG: Logge die Webmail-Email
         // eslint-disable-next-line no-console
-        console.log('[AppLauncher] Current Webmail Email:', currentWebmailEmail);
         
         // Wenn ein Webmail-Login aktiv ist, muss die Email mit der Admin-Email übereinstimmen
         if (currentWebmailEmail) {
@@ -534,35 +523,28 @@ export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode
             
             // DEBUG: Logge Admin-Daten
             // eslint-disable-next-line no-console
-            console.log('[AppLauncher] Admin Email:', adminEmail, 'Admin Success:', adminData.success);
             // eslint-disable-next-line no-console
-            console.log('[AppLauncher] Full Admin Data:', JSON.stringify(adminData, null, 2));
             
             // Admin-Apps nur anzeigen wenn Admin-Email existiert UND mit Webmail-Email übereinstimmt
             if (adminData.success && adminEmail) {
               const isMatch = adminEmail.toLowerCase() === currentWebmailEmail.toLowerCase();
               // eslint-disable-next-line no-console
-              console.log('[AppLauncher] Email Match Check:', isMatch, `(${adminEmail} vs ${currentWebmailEmail})`);
               setIsAdmin(isMatch);
             } else {
               // eslint-disable-next-line no-console
-              console.log('[AppLauncher] No admin or no admin email - hiding admin apps');
               setIsAdmin(false);
             }
           } else {
             // eslint-disable-next-line no-console
-            console.log('[AppLauncher] Admin verify failed with status:', adminResponse.status);
             setIsAdmin(false);
           }
         } else {
           // eslint-disable-next-line no-console
-          console.log('[AppLauncher] No Webmail login - checking admin token only');
           // Kein Webmail-Login - prüfe nur ob Admin-Token gültig ist
           const adminResponse = await fetch('/api/admin/auth/verify');
           if (adminResponse.ok) {
             const adminData = await adminResponse.json();
             // eslint-disable-next-line no-console
-            console.log('[AppLauncher] Admin token valid:', adminData.success);
             setIsAdmin(adminData.success === true);
           } else {
             setIsAdmin(false);

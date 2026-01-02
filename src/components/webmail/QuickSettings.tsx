@@ -136,9 +136,7 @@ const SETTINGS_KEY = 'taskilo_webmail_settings';
 // Debug-Logging für Hydration
 const quickSettingsLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][QuickSettings] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][QuickSettings-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

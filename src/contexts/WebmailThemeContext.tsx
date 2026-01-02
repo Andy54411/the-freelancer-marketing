@@ -5,9 +5,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 // Debug-Logging für Hydration
 const themeContextLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][WebmailThemeContext] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][WebmailThemeContext-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

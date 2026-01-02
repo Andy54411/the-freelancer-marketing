@@ -61,9 +61,7 @@ import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessa
 // Debug-Logging für Hydration
 const webmailClientLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][WebmailClient] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][WebmailClient-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

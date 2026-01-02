@@ -30,9 +30,7 @@ import {
 // Debug-Logging für Hydration
 const heroHeaderLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][HeroHeader] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][HeroHeader-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

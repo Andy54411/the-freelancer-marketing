@@ -16,7 +16,6 @@ function hydrationLog(location: string, data?: Record<string, unknown>) {
   const isServer = typeof window === 'undefined';
   const prefix = isServer ? '[SERVER]' : '[CLIENT]';
   const timestamp = new Date().toISOString();
-  console.log(`${prefix} [HYDRATION-DEBUG] ${timestamp} - ${location}`, data || '');
 }
 
 // Log beim Modul-Load (zeigt Server vs Client)
@@ -358,10 +357,8 @@ function WebmailPageContent() {
     setShowCreateForm(false);
   };
 
-  console.log('[HYDRATION-DEBUG] Render-Entscheidung - isCheckingSession:', isCheckingSession, 'isConnected:', isConnected, 'isMounted:', isMounted);
   
   if (isCheckingSession) {
-    console.log('[HYDRATION-DEBUG] Rendere: Loading-Screen (Sitzung wird geprüft)');
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#f6f8fc]">
         <div className="flex flex-col items-center gap-4">
@@ -373,7 +370,6 @@ function WebmailPageContent() {
   }
 
   if (isConnected) {
-    console.log('[HYDRATION-DEBUG] Rendere: WebmailClient (verbunden)');
     return (
       <WebmailClient 
         email={email} 
@@ -385,7 +381,6 @@ function WebmailPageContent() {
     );
   }
 
-  console.log('[HYDRATION-DEBUG] Rendere: Login-Formular');
   
   return (
     <>

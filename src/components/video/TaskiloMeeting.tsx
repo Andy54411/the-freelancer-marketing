@@ -165,7 +165,6 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
     switch (message.type) {
       case 'connected':
-        console.log('[MEETING] Connected with participant ID:', message.payload.participantId);
         myParticipantIdRef.current = message.payload.participantId as string;
         break;
 
@@ -178,7 +177,6 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         // Filtere den eigenen Teilnehmer aus der Liste
         const otherParticipants = (message.payload.participants as MeetingParticipant[])
           .filter(p => p.id !== myParticipantIdRef.current);
-        console.log('[MEETING DEBUG] Joined - myId:', myParticipantIdRef.current, 'participants:', message.payload.participants, 'filtered:', otherParticipants);
         setParticipants(otherParticipants);
         if (message.payload.iceServers) {
           setIceServers(message.payload.iceServers as RTCIceServer[]);
@@ -188,7 +186,6 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         // Der existierende Teilnehmer (der das `participant-joined` Event bekommt) 
         // ist verantwortlich für das Erstellen des Offers.
         // Der neu beitretende Client wartet einfach auf eingehende Offers.
-        console.log('[MEETING DEBUG] Waiting for offers from existing participants...');
         break;
       }
 
@@ -266,13 +263,11 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         break;
 
       case 'error':
-        console.error('[MEETING] Error:', message.payload.message);
         setError(message.payload.message as string);
         break;
 
       case 'ping':
         // Server-seitiger Ping - antworte mit Pong um Connection am Leben zu halten
-        console.log('[MEETING] Received ping from server, sending pong');
         wsRef.current?.send(JSON.stringify({
           type: 'pong',
           payload: {},
@@ -281,13 +276,11 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
       case 'pong':
         // Server hat auf unseren Ping geantwortet (falls wir jemals client-seitig pingen)
-        console.log('[MEETING] Received pong from server');
         break;
 
       // ============== LOBBY/JOIN REQUEST HANDLING ==============
       case 'join-request':
         // Jemand möchte dem Meeting beitreten - nur relevant für den Host
-        console.log('[MEETING] Join request received:', message.payload);
         if (onJoinRequest) {
           onJoinRequest({
             participantId: message.payload.participantId as string,
@@ -311,25 +304,17 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     servers: RTCIceServer[], 
     websocketUrl?: string
   ) => {
-    console.log('[MEETING DEBUG] joinMeetingInternal called');
-    console.log('[MEETING DEBUG] - code:', code);
-    console.log('[MEETING DEBUG] - isJoiningRef.current:', isJoiningRef.current);
-    console.log('[MEETING DEBUG] - wsRef.current:', wsRef.current);
-    console.log('[MEETING DEBUG] - wsRef.current?.readyState:', wsRef.current?.readyState);
 
     // Verhindere doppelte Verbindungen
     if (wsRef.current) {
       const state = wsRef.current.readyState;
-      console.log('[MEETING DEBUG] WebSocket state:', state, '(0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)');
       if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) {
-        console.log('[MEETING DEBUG] WebSocket already connected/connecting, skipping');
         return;
       }
     }
 
     // Verhindere parallele Join-Versuche
     if (isJoiningRef.current) {
-      console.log('[MEETING DEBUG] Already joining, skipping');
       return;
     }
 
@@ -337,14 +322,12 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
     // Abbrechen eines vorherigen Join-Vorgangs
     if (joinAbortControllerRef.current) {
-      console.log('[MEETING DEBUG] Aborting previous join attempt');
       joinAbortControllerRef.current.abort();
     }
     joinAbortControllerRef.current = new AbortController();
     const signal = joinAbortControllerRef.current.signal;
 
     try {
-      console.log('[MEETING DEBUG] Getting user media...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoEnabled,
         audio: audioEnabled,
@@ -352,25 +335,20 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
       // Check ob aborted während getUserMedia
       if (signal.aborted) {
-        console.log('[MEETING DEBUG] Aborted after getUserMedia');
         stream.getTracks().forEach(track => track.stop());
         isJoiningRef.current = false;
         return;
       }
       
-      console.log('[MEETING DEBUG] Got user media stream, tracks:', stream.getTracks().map(t => `${t.kind}:${t.enabled}`));
       localStreamRef.current = stream;
       
       // Setze lokales Video - wir versuchen es direkt und auch nach einem Frame
       if (localVideoRef.current) {
-        console.log('[MEETING DEBUG] Setting local video srcObject immediately');
         localVideoRef.current.srcObject = stream;
       } else {
-        console.log('[MEETING DEBUG] localVideoRef not ready, will retry after render');
       }
 
       const wsEndpoint = websocketUrl || wsUrl || 'wss://mail.taskilo.de/ws/meeting';
-      console.log('[MEETING DEBUG] Creating WebSocket to:', wsEndpoint);
       
       const ws = new WebSocket(wsEndpoint);
       wsRef.current = ws;
@@ -379,9 +357,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       let pingIntervalId: NodeJS.Timeout | null = null;
 
       ws.onopen = () => {
-        console.log('[MEETING DEBUG] WebSocket OPEN - sending join message');
         if (signal.aborted) {
-          console.log('[MEETING DEBUG] Aborted, closing WebSocket');
           ws.close();
           return;
         }
@@ -397,53 +373,42 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         // Starte Heartbeat - sende alle 15 Sekunden einen Ping
         pingIntervalId = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
-            console.log('[MEETING DEBUG] Sending application-level ping');
             ws.send(JSON.stringify({ type: 'ping' }));
           }
         }, 15000);
       };
 
       ws.onmessage = (event) => {
-        console.log('[MEETING DEBUG] WebSocket message received:', event.data.substring(0, 100));
         if (signal.aborted) return;
         handleSignalingMessage(JSON.parse(event.data));
       };
 
       ws.onerror = (wsError) => {
-        console.error('[MEETING DEBUG] WebSocket ERROR:', wsError);
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
       };
 
       ws.onclose = (closeEvent) => {
-        console.log('[MEETING DEBUG] WebSocket CLOSED');
-        console.log('[MEETING DEBUG] - code:', closeEvent.code);
-        console.log('[MEETING DEBUG] - reason:', closeEvent.reason);
-        console.log('[MEETING DEBUG] - wasClean:', closeEvent.wasClean);
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
       };
 
       // Check ob aborted während WebSocket-Setup
       if (signal.aborted) {
-        console.log('[MEETING DEBUG] Aborted after WebSocket setup, closing');
         ws.close();
         isJoiningRef.current = false;
         return;
       }
 
-      console.log('[MEETING DEBUG] Creating RTCPeerConnection');
       const pc = new RTCPeerConnection({ iceServers: servers });
       peerConnectionRef.current = pc;
 
       stream.getTracks().forEach(track => {
-        console.log('[MEETING DEBUG] Adding track:', track.kind);
         pc.addTrack(track, stream);
       });
 
       pc.onicecandidate = (event) => {
         if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
-          console.log('[MEETING DEBUG] Sending ICE candidate');
           wsRef.current.send(JSON.stringify({
             type: 'ice-candidate',
             payload: { candidate: event.candidate },
@@ -452,9 +417,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       };
 
       pc.ontrack = (event) => {
-        console.log('[MEETING DEBUG] Remote track received:', event.track.kind);
         if (remoteVideoRef.current && event.streams[0]) {
-          console.log('[MEETING DEBUG] Setting remote video srcObject');
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
@@ -463,24 +426,19 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       // Bei Multi-Peer würde man hier für jeden Peer ein Offer erstellen
       // Für jetzt: Wir erstellen das Offer wenn ein neuer Teilnehmer beitritt (participant-joined)
       pc.onnegotiationneeded = async () => {
-        console.log('[MEETING DEBUG] Negotiation needed event fired');
         // Wir handlen das im participant-joined Event stattdessen
         // um zu wissen, an wen wir das Offer senden sollen
       };
 
       pc.onconnectionstatechange = () => {
-        console.log('[MEETING DEBUG] PeerConnection state:', pc.connectionState);
       };
 
       pc.oniceconnectionstatechange = () => {
-        console.log('[MEETING DEBUG] ICE connection state:', pc.iceConnectionState);
       };
 
-      console.log('[MEETING DEBUG] Setting meeting state to in-meeting');
       setMeetingState('in-meeting');
       
     } catch (err) {
-      console.error('[MEETING DEBUG] Error:', err);
       isJoiningRef.current = false;
       const message = err instanceof Error ? err.message : 'Failed to setup media';
       setError(message);
@@ -605,11 +563,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
    */
   const approveJoinRequest = useCallback((participantId: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.error('[MEETING] Cannot approve - WebSocket not connected');
       return;
     }
     
-    console.log('[MEETING] Approving join request for:', participantId);
     wsRef.current.send(JSON.stringify({
       type: 'approve-join',
       payload: {
@@ -623,11 +579,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
    */
   const denyJoinRequest = useCallback((participantId: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.error('[MEETING] Cannot deny - WebSocket not connected');
       return;
     }
     
-    console.log('[MEETING] Denying join request for:', participantId);
     wsRef.current.send(JSON.stringify({
       type: 'deny-join',
       payload: {
@@ -694,7 +648,6 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   // Auto-join effect - nur einmal ausführen
   useEffect(() => {
     if (autoJoin && roomCode && !hasJoinedRef.current) {
-      console.log('[MEETING DEBUG] Auto-join effect triggered, hasJoinedRef:', hasJoinedRef.current);
       hasJoinedRef.current = true;
       joinMeeting(roomCode);
     }
@@ -703,28 +656,23 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   // Setze lokales Video wenn Stream vorhanden und ref bereit
   useEffect(() => {
     if (localStreamRef.current && localVideoRef.current && !localVideoRef.current.srcObject) {
-      console.log('[MEETING DEBUG] Setting local video srcObject in effect');
       localVideoRef.current.srcObject = localStreamRef.current;
     }
   });
 
   // Cleanup nur bei echtem Unmount - useRef um Strict Mode double-invoke zu handhaben
   useEffect(() => {
-    console.log('[MEETING DEBUG] Effect mount, isMountedRef was:', isMountedRef.current);
     isMountedRef.current = true;
     
     // Wenn wir einen pending cleanup haben, abbrechen (Strict Mode re-mount)
     if (cleanupTimeoutRef.current) {
-      console.log('[MEETING DEBUG] Cancelling pending cleanup (Strict Mode re-mount)');
       clearTimeout(cleanupTimeoutRef.current);
       cleanupTimeoutRef.current = null;
     }
     
     return () => {
-      console.log('[MEETING DEBUG] Effect cleanup starting');
       // Verzögern des Cleanups um Strict Mode double-invoke zu erkennen
       cleanupTimeoutRef.current = setTimeout(() => {
-        console.log('[MEETING DEBUG] Delayed cleanup executing (real unmount)');
         
         // Abort laufende Join-Vorgänge
         if (joinAbortControllerRef.current) {
@@ -734,21 +682,18 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         
         // Cleanup WebSocket
         if (wsRef.current) {
-          console.log('[MEETING DEBUG] Closing WebSocket');
           wsRef.current.close();
           wsRef.current = null;
         }
         
         // Cleanup PeerConnection
         if (peerConnectionRef.current) {
-          console.log('[MEETING DEBUG] Closing PeerConnection');
           peerConnectionRef.current.close();
           peerConnectionRef.current = null;
         }
         
         // Cleanup local stream
         if (localStreamRef.current) {
-          console.log('[MEETING DEBUG] Stopping media tracks');
           localStreamRef.current.getTracks().forEach(track => track.stop());
           localStreamRef.current = null;
         }

@@ -13,7 +13,6 @@ import { saveWebmailCredentials, getWebmailCredentials, setWebmailSessionCookie,
 
 // Debug-Logging für Dashboard-Webmail
 const dashboardWebmailLog = (step: string, data?: Record<string, unknown>) => {
-  console.log(`[HYDRATION-DEBUG][DashboardWebmail] ${step}`, data ? JSON.stringify(data, null, 2) : '');
 };
 
 export default function WebmailPage() {

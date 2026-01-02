@@ -34,9 +34,7 @@ import { AppLauncher } from './AppLauncher';
 // Debug-Logging für Hydration
 const mailHeaderLog = (step: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
-    console.log(`[HYDRATION-DEBUG][MailHeader] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   } else {
-    console.log(`[HYDRATION-DEBUG][MailHeader-SERVER] ${step}`, data ? JSON.stringify(data, null, 2) : '');
   }
 };
 

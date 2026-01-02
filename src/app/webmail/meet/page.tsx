@@ -157,7 +157,6 @@ export default function WebmailMeetPage() {
     lobbyWsRef.current = ws;
     
     ws.onopen = () => {
-      console.log('[LOBBY] WebSocket connected, requesting to join...');
       ws.send(JSON.stringify({
         type: 'request-join',
         payload: {
@@ -171,7 +170,6 @@ export default function WebmailMeetPage() {
     
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log('[LOBBY] Message:', message.type);
       
       switch (message.type) {
         case 'join-approved':
@@ -192,7 +190,6 @@ export default function WebmailMeetPage() {
           
         case 'host-not-present':
           // Host ist noch nicht da - trotzdem warten lassen
-          console.log('[LOBBY] Host not present yet, waiting...');
           break;
           
         case 'error':
@@ -203,7 +200,6 @@ export default function WebmailMeetPage() {
     };
     
     ws.onerror = () => {
-      console.error('[LOBBY] WebSocket error');
       // Bei Fehler direkt beitreten (Fallback)
       setShowPreJoinModal(false);
       setCurrentRoomCode(roomCode);
@@ -211,7 +207,6 @@ export default function WebmailMeetPage() {
     };
     
     ws.onclose = () => {
-      console.log('[LOBBY] WebSocket closed');
     };
   }, [session?.email]);
 
@@ -241,7 +236,6 @@ export default function WebmailMeetPage() {
 
   // Admin: Beitrittsanfrage genehmigen
   const handleApproveJoinRequest = (request: JoinRequest) => {
-    console.log('[ADMIN] Approving join request:', request.userName);
     // Sende Approve über die Meeting-WebSocket
     if (meetingRef.current) {
       meetingRef.current.approveJoinRequest(request.participantId);
@@ -251,7 +245,6 @@ export default function WebmailMeetPage() {
 
   // Admin: Beitrittsanfrage ablehnen
   const handleDenyJoinRequest = (request: JoinRequest) => {
-    console.log('[ADMIN] Denying join request:', request.userName);
     // Sende Deny über die Meeting-WebSocket
     if (meetingRef.current) {
       meetingRef.current.denyJoinRequest(request.participantId);
@@ -278,11 +271,9 @@ export default function WebmailMeetPage() {
   };
 
   const handleMeetingCreated = (room: MeetingRoom) => {
-    console.log('[WebmailMeet] Meeting created:', room);
   };
 
   const handleMeetingJoined = (room: MeetingRoom) => {
-    console.log('[WebmailMeet] Meeting joined:', room);
     toast.success('Meeting beigetreten');
   };
 
@@ -296,7 +287,6 @@ export default function WebmailMeetPage() {
   };
 
   const handleMeetingError = (error: string) => {
-    console.error('[WebmailMeet] Error:', error);
     toast.error(error);
   };
 
@@ -325,7 +315,6 @@ export default function WebmailMeetPage() {
             onMeetingEnded={handleMeetingEnded}
             onError={handleMeetingError}
             onJoinRequest={(request) => {
-              console.log('[WebmailMeet] Join request received:', request);
               setPendingJoinRequests(prev => [...prev, request]);
             }}
             className="h-full"
