@@ -31,19 +31,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse state to get user info and return URL
-    const stateParts = state.split('|');
-    if (stateParts.length < 3) {
-      return NextResponse.redirect(
-        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Invalid state parameter')}`
-      );
-    }
+    // Check if this is an admin token refresh request (simple state without pipes)
+    const isAdminRefresh = !state.includes('|') && (state === 'refresh_token' || state === 'webhook_registration' || state === 'admin');
+    
+    let userId: string;
+    let companyEmail: string;
+    let returnBaseUrl: string;
+    
+    if (isAdminRefresh) {
+      // Admin token refresh - use admin credentials
+      userId = 'admin';
+      companyEmail = 'andy.staudinger@taskilo.de';
+      returnBaseUrl = 'https://taskilo.de';
+    } else {
+      // Parse state to get user info and return URL (normal user flow)
+      const stateParts = state.split('|');
+      if (stateParts.length < 3) {
+        return NextResponse.redirect(
+          `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Invalid state parameter')}`
+        );
+      }
 
-    const [userId, companyEmail, returnBaseUrl] = stateParts;
-    if (!userId || !companyEmail) {
-      return NextResponse.redirect(
-        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing user data')}`
-      );
+      [userId, companyEmail, returnBaseUrl] = stateParts;
+      if (!userId || !companyEmail) {
+        return NextResponse.redirect(
+          `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing user data')}`
+        );
+      }
     }
 
     // Exchange code for access token
@@ -112,7 +126,22 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
 
-    // Store connection in Firestore
+    // For admin refresh, show the tokens directly (not stored in company doc)
+    if (isAdminRefresh) {
+      // Show tokens to admin - these need to be manually added to .env.local and Vercel
+      const successUrl = new URL('https://taskilo.de/revolut/oauth-success');
+      successUrl.searchParams.set('success', 'admin_token_received');
+      successUrl.searchParams.set('access_token', tokenData.access_token);
+      if (tokenData.refresh_token) {
+        successUrl.searchParams.set('refresh_token', tokenData.refresh_token);
+      }
+      successUrl.searchParams.set('expires_in', String(tokenData.expires_in || 0));
+      successUrl.searchParams.set('info', 'Bitte diese Tokens in .env.local und Vercel speichern');
+      
+      return NextResponse.redirect(successUrl.toString());
+    }
+
+    // Store connection in Firestore (normal user flow)
     const connectionId = `revolut_${Date.now()}`;
     const connectionData = {
       provider: 'revolut',

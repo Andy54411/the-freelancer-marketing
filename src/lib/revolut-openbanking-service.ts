@@ -333,9 +333,25 @@ export const revolutOpenBankingService = new RevolutOpenBankingService();
 /**
  * Helper function to get access token for Business API
  * Used by webhook management and other Business API calls
+ * 
+ * Priority:
+ * 1. Use stored REVOLUT_ACCESS_TOKEN from environment (obtained via OAuth consent)
+ * 2. Fall back to JWT-based authentication (may be blocked by Cloudflare)
  */
 export async function getRevolutBusinessAccessToken(): Promise<string | null> {
-  const service = new RevolutOpenBankingService();
-  const token = await service.getAccessToken('READ');
-  return token;
+  // First, try to use the stored access token from environment
+  const storedToken = process.env.REVOLUT_ACCESS_TOKEN;
+  if (storedToken) {
+    return storedToken;
+  }
+  
+  // Fall back to OAuth/JWT authentication (may be blocked by Cloudflare)
+  try {
+    const service = new RevolutOpenBankingService();
+    const token = await service.getAccessToken('READ');
+    return token;
+  } catch (error) {
+    console.error('[Revolut] Failed to get access token via OAuth:', error);
+    return null;
+  }
 }
