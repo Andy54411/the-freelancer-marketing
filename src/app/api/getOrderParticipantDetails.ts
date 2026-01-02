@@ -1,8 +1,8 @@
 // src/api/getOrderParticipantDetails.ts
 
 export const getOrderParticipantDetails = async (orderId: string, idToken: string) => {
-  // KORRIGIERT: Verwende immer absolute URLs
-  const apiUrl = '/api/getOrderParticipantDetails'; // Absolute path from domain root
+  // KORRIGIERT: Verwende immer absolute URLs (kleingeschrieben für Next.js API Route)
+  const apiUrl = '/api/getorderparticipantdetails';
 
   // CRITICAL: Validate orderId before making API call
   if (!orderId || orderId === 'undefined' || orderId === 'null') {
