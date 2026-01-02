@@ -79,11 +79,18 @@ function verifyWebhookSignature(
     // Payload to sign: "v1.{timestamp}.{raw_payload}"
     const payloadToSign = `v1.${timestamp}.${payload}`;
     
+    // Debug logging
+    console.log('[Revolut Webhook Debug] Received signature:', signatureHeader);
+    console.log('[Revolut Webhook Debug] Timestamp:', timestamp);
+    console.log('[Revolut Webhook Debug] Secret configured:', WEBHOOK_SECRET ? 'yes (length: ' + WEBHOOK_SECRET.length + ')' : 'no');
+    
     // Berechne erwartete Signatur
     const expectedSignature = 'v1=' + crypto
       .createHmac('sha256', WEBHOOK_SECRET)
       .update(payloadToSign)
       .digest('hex');
+    
+    console.log('[Revolut Webhook Debug] Expected signature:', expectedSignature);
     
     // Prüfe ob eine der Signaturen übereinstimmt
     for (const sig of signatures) {
