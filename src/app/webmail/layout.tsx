@@ -16,22 +16,35 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function getCookie(): { email: string; password: string } | null {
+  console.log('[Layout.getCookie] START');
   if (typeof document === 'undefined') {
-    console.log('[getCookie] SSR - no document');
+    console.log('[Layout.getCookie] SSR - no document, returning null');
     return null;
   }
-  console.log('[getCookie] All cookies:', document.cookie);
+  
+  console.log('[Layout.getCookie] hostname:', window.location.hostname);
+  console.log('[Layout.getCookie] pathname:', window.location.pathname);
+  console.log('[Layout.getCookie] All cookies:', document.cookie);
+  
   const cookies = document.cookie.split(';');
+  console.log('[Layout.getCookie] Total cookies:', cookies.length);
+  
   for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    console.log('[getCookie] Checking:', name, '=', value ? value.substring(0, 20) + '...' : 'empty');
+    const trimmed = cookie.trim();
+    const [name, ...valueParts] = trimmed.split('=');
+    const value = valueParts.join('=');
+    console.log('[Layout.getCookie] Checking:', name, '= (length:', value?.length || 0, ')');
+    
     if (name === COOKIE_NAME && value) {
+      console.log('[Layout.getCookie] FOUND webmail_session!');
       const decoded = decodeCredentials(value);
-      console.log('[getCookie] Found webmail_session, decoded:', decoded ? 'SUCCESS' : 'FAILED');
+      console.log('[Layout.getCookie] Decoded:', decoded ? 'SUCCESS - ' + decoded.email : 'FAILED');
       return decoded;
     }
   }
-  console.log('[getCookie] webmail_session NOT found');
+  
+  console.log('[Layout.getCookie] webmail_session NOT FOUND');
+  console.log('[Layout.getCookie] END');
   return null;
 }
 
@@ -73,23 +86,46 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
 
   // DEBUG: Log beim Mount (nur client-side)
   useEffect(() => {
+    console.log('[WebmailLayout] ===== MOUNT EFFECT START =====');
+    console.log('[WebmailLayout] Setting isMounted = true');
     setIsMounted(true);
+    
     // Subdomain-Erkennung nur im Client
     const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const href = window.location.href;
     const subdomain = hostname !== 'taskilo.de' && 
       hostname !== 'www.taskilo.de' &&
       hostname.endsWith('.taskilo.de');
+    
+    console.log('[WebmailLayout] Mount Details:');
+    console.log('  - href:', href);
+    console.log('  - protocol:', protocol);
+    console.log('  - hostname:', hostname);
+    console.log('  - pathname:', pathname);
+    console.log('  - isSubdomain:', subdomain);
+    
     setIsSubdomain(subdomain);
-    console.log('[WebmailLayout] Mount - pathname:', pathname, 'hostname:', hostname, 'isSubdomain:', subdomain);
+    console.log('[WebmailLayout] ===== MOUNT EFFECT END =====');
   }, [pathname]);
 
   // Load session from cookie
   useEffect(() => {
-    if (!isMounted) return;
-    console.log('[WebmailLayout] useEffect - checking cookie...');
+    console.log('[WebmailLayout] ===== COOKIE EFFECT START =====');
+    console.log('[WebmailLayout] isMounted:', isMounted);
+    
+    if (!isMounted) {
+      console.log('[WebmailLayout] Not mounted yet, skipping cookie check');
+      return;
+    }
+    
+    console.log('[WebmailLayout] Checking cookie...');
     console.log('[WebmailLayout] document.cookie:', document.cookie);
+    console.log('[WebmailLayout] document.cookie.length:', document.cookie.length);
+    
     const credentials = getCookie();
-    console.log('[WebmailLayout] credentials:', credentials ? 'FOUND' : 'NOT FOUND');
+    console.log('[WebmailLayout] getCookie() returned:', credentials ? 'FOUND - ' + credentials.email : 'NOT FOUND');
+    
     if (credentials) {
       console.log('[WebmailLayout] Setting session for:', credentials.email);
       setSession({
@@ -97,8 +133,13 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
         password: credentials.password,
         isAuthenticated: true,
       });
+    } else {
+      console.log('[WebmailLayout] No credentials, session stays null');
     }
+    
+    console.log('[WebmailLayout] Setting isLoading = false');
     setIsLoading(false);
+    console.log('[WebmailLayout] ===== COOKIE EFFECT END =====');
   }, [isMounted]);
 
   // Public pages that don't require authentication

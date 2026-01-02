@@ -54,39 +54,85 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function setCookie(email: string, password: string, remember: boolean): void {
+  console.log('[setCookie] START - email:', email, 'remember:', remember);
+  console.log('[setCookie] hostname:', window.location.hostname);
+  console.log('[setCookie] document.cookie BEFORE:', document.cookie);
+  
   // ZUERST alle alten Cookie-Varianten loeschen
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  console.log('[setCookie] Deleted: path=/ only');
   document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; max-age=0`;
+  console.log('[setCookie] Deleted: domain=taskilo.de');
   document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+  console.log('[setCookie] Deleted: domain=.taskilo.de');
   
   const encoded = encodeCredentials(email, password);
+  console.log('[setCookie] encoded length:', encoded.length);
+  
   // Session-Cookie (kein max-age) oder 7 Tage
   const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
+  console.log('[setCookie] expires:', expires);
+  
   // Cookie gilt fuer alle Subdomains (email.taskilo.de, drive.taskilo.de, etc.)
   const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax; Secure${domain}`;
+  console.log('[setCookie] domain:', domain);
+  
+  const cookieString = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax; Secure${domain}`;
+  console.log('[setCookie] SETTING cookie:', cookieString.substring(0, 100) + '...');
+  document.cookie = cookieString;
+  
+  console.log('[setCookie] document.cookie AFTER:', document.cookie);
+  console.log('[setCookie] END');
 }
 
 function getCookie(): { email: string; password: string } | null {
+  console.log('[getCookie] START');
+  console.log('[getCookie] hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+  console.log('[getCookie] document.cookie:', document.cookie);
+  
   const cookies = document.cookie.split(';');
+  console.log('[getCookie] Total cookies found:', cookies.length);
+  
   for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
+    const trimmed = cookie.trim();
+    const [name, ...valueParts] = trimmed.split('=');
+    const value = valueParts.join('='); // Handle values with = in them
+    console.log('[getCookie] Checking cookie:', name, '= (length:', value?.length || 0, ')');
+    
     if (name === COOKIE_NAME && value) {
-      return decodeCredentials(value);
+      console.log('[getCookie] FOUND webmail_session!');
+      const decoded = decodeCredentials(value);
+      console.log('[getCookie] Decoded:', decoded ? 'SUCCESS - ' + decoded.email : 'FAILED');
+      return decoded;
     }
   }
+  
+  console.log('[getCookie] webmail_session NOT FOUND');
+  console.log('[getCookie] END');
   return null;
 }
 
 function deleteCookie(): void {
+  console.log('[deleteCookie] START');
+  console.log('[deleteCookie] hostname:', window.location.hostname);
+  console.log('[deleteCookie] document.cookie BEFORE:', document.cookie);
+  
   // Cookie auf ALLEN moeglichen Domains loeschen (alte + neue Varianten)
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  console.log('[deleteCookie] Deleted: path=/ only');
   document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+  console.log('[deleteCookie] Deleted: domain=.taskilo.de');
   document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; max-age=0`;
+  console.log('[deleteCookie] Deleted: domain=taskilo.de');
+  
   // Auch auf aktueller Subdomain
   if (typeof window !== 'undefined') {
     document.cookie = `${COOKIE_NAME}=; path=/; domain=${window.location.hostname}; max-age=0`;
+    console.log('[deleteCookie] Deleted: domain=' + window.location.hostname);
   }
+  
+  console.log('[deleteCookie] document.cookie AFTER:', document.cookie);
+  console.log('[deleteCookie] END');
 }
 
 function WebmailPageContent() {
