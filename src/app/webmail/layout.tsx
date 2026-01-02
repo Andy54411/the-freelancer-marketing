@@ -31,7 +31,7 @@ function getCookie(): { email: string; password: string } | null {
 }
 
 function deleteCookie(): void {
-  document.cookie = \`\${COOKIE_NAME}=; path=/; max-age=0\`;
+  document.cookie = `\${COOKIE_NAME}=; path=/; max-age=0`;
 }
 
 // Webmail Session Context
@@ -155,7 +155,7 @@ function ThemedWebmailContainer({ children }: { children: ReactNode }) {
   const { isDark } = useWebmailTheme();
   
   return (
-    <div className={\`min-h-screen w-full \${isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'}\`}>
+    <div className={`min-h-screen w-full \${isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'}`}>
       {children}
     </div>
   );
