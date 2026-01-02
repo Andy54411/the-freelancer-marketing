@@ -64,6 +64,32 @@
       ]
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/meet/:path*",
+      "destination": "/webmail/meet/:path*"
+    },
+    {
+      "source": "/kalender/:path*",
+      "destination": "/webmail/calendar/:path*"
+    },
+    {
+      "source": "/drive/:path*",
+      "destination": "/webmail/drive/:path*"
+    },
+    {
+      "source": "/tasks/:path*",
+      "destination": "/webmail/tasks/:path*"
+    },
+    {
+      "source": "/kontakte/:path*",
+      "destination": "/webmail/contacts/:path*"
+    }
+  ],
   "redirects": [
     {
       "source": "/home",
@@ -80,62 +106,66 @@
           "value": "taskilo-*.vercel.app"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "kalender.taskilo.de" }],
-      "destination": "/webmail/calendar/$1"
+      "destination": "https://taskilo.de/kalender/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "calendar.taskilo.de" }],
-      "destination": "/webmail/calendar/$1"
+      "destination": "https://taskilo.de/kalender/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "email.taskilo.de" }],
-      "destination": "/webmail/$1"
+      "destination": "https://taskilo.de/webmail/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "mail.taskilo.de" }],
-      "destination": "/webmail/$1"
+      "destination": "https://taskilo.de/webmail/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "drive.taskilo.de" }],
-      "destination": "/webmail/drive/$1"
+      "destination": "https://taskilo.de/drive/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "tasks.taskilo.de" }],
-      "destination": "/webmail/tasks/$1"
+      "destination": "https://taskilo.de/tasks/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "task.taskilo.de" }],
-      "destination": "/webmail/tasks/$1"
+      "destination": "https://taskilo.de/tasks/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "kontakt.taskilo.de" }],
-      "destination": "/webmail/contacts/$1"
+      "destination": "https://taskilo.de/kontakte/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "contact.taskilo.de" }],
-      "destination": "/webmail/contacts/$1"
+      "destination": "https://taskilo.de/kontakte/:path*",
+      "permanent": true
     },
     {
-      "source": "/((?!_next|api|favicon|images|icon).*)",
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "meet.taskilo.de" }],
-      "destination": "/webmail/meet/$1"
+      "destination": "https://taskilo.de/meet/:path*",
+      "permanent": true
     }
   ]
 }
