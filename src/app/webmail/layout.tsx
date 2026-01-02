@@ -105,8 +105,11 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   }, [isMounted]);
 
   // Public pages that don't require authentication
-  const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success'];
-  const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing'));
+  const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success', '/webmail/register'];
+  // Meet-Seiten sind IMMER öffentlich - Gäste können jederzeit beitreten
+  // Die Authentifizierung wird auf der Meet-Seite selbst gehandhabt (Gast-Name-Modal)
+  const isMeetPage = pathname?.startsWith('/webmail/meet');
+  const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing')) || isMeetPage;
 
   // Redirect to login if not authenticated and not on public page
   useEffect(() => {

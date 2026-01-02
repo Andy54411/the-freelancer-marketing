@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Video, Plus, Users, ArrowRight, Copy, Check } from 'lucide-react';
+import { Video, Plus, Users, ArrowRight, Copy, Check, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,17 +32,44 @@ export default function WebmailMeetPage() {
   const [meetingName, setMeetingName] = useState('');
   const [joinRoomCode, setJoinRoomCode] = useState(roomCodeParam || '');
   const [isInMeeting, setIsInMeeting] = useState(false);
-  const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(roomCodeParam);
+  const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [createdMeetingUrl, setCreatedMeetingUrl] = useState<string | null>(null);
+  
+  // Guest state für nicht-authentifizierte User
+  const [guestName, setGuestName] = useState('');
+  const [showGuestJoinModal, setShowGuestJoinModal] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Auto-join wenn room code in URL
   useEffect(() => {
-    if (session?.isAuthenticated && roomCodeParam) {
-      setCurrentRoomCode(roomCodeParam);
-      setIsInMeeting(true);
+    if (roomCodeParam) {
+      if (session?.isAuthenticated) {
+        // Authentifizierter User - direkt beitreten
+        setCurrentRoomCode(roomCodeParam);
+        setIsInMeeting(true);
+      } else {
+        // Gast - Namen abfragen
+        setShowGuestJoinModal(true);
+      }
     }
   }, [roomCodeParam, session?.isAuthenticated]);
+
+  const handleGuestJoin = () => {
+    if (!guestName.trim()) {
+      toast.error('Bitte gib deinen Namen ein');
+      return;
+    }
+    if (!roomCodeParam) {
+      toast.error('Kein Meeting-Code gefunden');
+      return;
+    }
+    
+    setIsGuest(true);
+    setCurrentRoomCode(roomCodeParam);
+    setIsInMeeting(true);
+    setShowGuestJoinModal(false);
+  };
 
   const handleCreateMeeting = async () => {
     if (!session?.email) return;
@@ -124,6 +151,8 @@ export default function WebmailMeetPage() {
   const handleMeetingEnded = () => {
     setIsInMeeting(false);
     setCurrentRoomCode(null);
+    setIsGuest(false);
+    setGuestName('');
     router.push('/webmail/meet');
     toast.info('Meeting beendet');
   };
@@ -133,18 +162,23 @@ export default function WebmailMeetPage() {
     toast.error(error);
   };
 
+  // Ermittle User-Daten (Session oder Gast)
+  const currentUserEmail = session?.email || (isGuest ? `guest-${Date.now()}@taskilo.de` : '');
+  const currentUserName = session?.email?.split('@')[0] || guestName || 'Gast';
+  const currentUserId = session?.email || `guest-${guestName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
+
   // Wenn im Meeting, zeige TaskiloMeeting Komponente
-  if (isInMeeting && currentRoomCode && session?.email) {
+  if (isInMeeting && currentRoomCode && (session?.email || isGuest)) {
     return (
       <div className="h-screen flex flex-col overflow-hidden">
-        <MailHeader userEmail={session.email} />
+        <MailHeader userEmail={session?.email || `Gast: ${guestName}`} />
         <div className="flex-1 min-h-0">
           <TaskiloMeeting
             roomCode={currentRoomCode}
             source="webmail"
-            userId={session.email}
-            userName={session.email.split('@')[0]}
-            userEmail={session.email}
+            userId={currentUserId}
+            userName={currentUserName}
+            userEmail={currentUserEmail}
             autoJoin={true}
             onMeetingCreated={handleMeetingCreated}
             onMeetingJoined={handleMeetingJoined}
@@ -338,6 +372,52 @@ export default function WebmailMeetPage() {
               Abbrechen
             </Button>
             <Button onClick={handleJoinMeeting} className="bg-teal-500 hover:bg-teal-600">
+              Beitreten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Guest Join Modal - für nicht-authentifizierte Benutzer mit Meeting-Link */}
+      <Dialog open={showGuestJoinModal} onOpenChange={setShowGuestJoinModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-teal-500" />
+              Als Gast beitreten
+            </DialogTitle>
+            <DialogDescription>
+              Gib deinen Namen ein, um dem Meeting beizutreten.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="guestName">Dein Name</Label>
+              <Input
+                id="guestName"
+                placeholder="z.B. Max Mustermann"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGuestJoin()}
+                autoFocus
+              />
+            </div>
+            <p className="text-sm text-gray-500">
+              Du trittst dem Meeting <strong>{roomCodeParam}</strong> bei.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowGuestJoinModal(false);
+              router.push('/webmail/meet');
+            }}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleGuestJoin} 
+              className="bg-teal-500 hover:bg-teal-600"
+              disabled={!guestName.trim()}
+            >
               Beitreten
             </Button>
           </DialogFooter>

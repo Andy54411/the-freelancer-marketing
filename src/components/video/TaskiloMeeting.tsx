@@ -160,6 +160,29 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         if (message.payload.iceServers) {
           setIceServers(message.payload.iceServers as RTCIceServer[]);
         }
+        
+        // WICHTIG: Für jeden bereits existierenden Teilnehmer ein Offer erstellen
+        // Der neu beitretende Client initiiert die Verbindung zu allen bestehenden Teilnehmern
+        if (otherParticipants.length > 0 && pc) {
+          console.log('[MEETING DEBUG] Creating offers for existing participants:', otherParticipants.length);
+          for (const participant of otherParticipants) {
+            try {
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+              
+              wsRef.current?.send(JSON.stringify({
+                type: 'offer',
+                payload: { 
+                  sdp: offer,
+                  targetParticipantId: participant.id,
+                },
+              }));
+              console.log('[MEETING DEBUG] Sent offer to:', participant.id);
+            } catch (offerError) {
+              console.error('[MEETING DEBUG] Error creating offer for', participant.id, offerError);
+            }
+          }
+        }
         break;
       }
 
