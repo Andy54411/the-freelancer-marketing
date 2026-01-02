@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Video, Plus, Users, ArrowRight, Copy, Check, User } from 'lucide-react';
+import { Video, Plus, Users, ArrowRight, Copy, Check, User, Loader2, Clock, CheckCircle, XCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,17 @@ import {
 import { toast } from 'sonner';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { MailHeader } from '@/components/webmail/MailHeader';
-import { TaskiloMeeting, MeetingRoom } from '@/components/video/TaskiloMeeting';
+import { TaskiloMeeting, MeetingRoom, TaskiloMeetingHandle } from '@/components/video/TaskiloMeeting';
+
+// Lobby/Wartezimmer-Status
+type LobbyStatus = 'idle' | 'waiting' | 'approved' | 'denied';
+
+interface JoinRequest {
+  participantId: string;
+  userName: string;
+  userId?: string;
+  timestamp: number;
+}
 
 export default function WebmailMeetPage() {
   const { session } = useWebmailSession();
@@ -40,14 +50,32 @@ export default function WebmailMeetPage() {
   const [guestName, setGuestName] = useState('');
   const [showGuestJoinModal, setShowGuestJoinModal] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  
+  // Admin/Host state - wenn User das Meeting erstellt hat
+  const [isHost, setIsHost] = useState(false);
+  const createdRoomCodeRef = useRef<string | null>(null);
+  
+  // Lobby/Wartezimmer state
+  const [lobbyStatus, setLobbyStatus] = useState<LobbyStatus>('idle');
+  const [showPreJoinModal, setShowPreJoinModal] = useState(false);
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<JoinRequest[]>([]);
+  const lobbyWsRef = useRef<WebSocket | null>(null);
+  
+  // Ref für TaskiloMeeting (approve/deny Funktionen)
+  const meetingRef = useRef<TaskiloMeetingHandle | null>(null);
 
-  // Auto-join wenn room code in URL
+  // Pre-Join Modal wenn room code in URL (nicht-Host)
   useEffect(() => {
     if (roomCodeParam) {
-      if (session?.isAuthenticated) {
-        // Authentifizierter User - direkt beitreten
+      // Prüfe ob der User der Host ist (hat diesen Raum gerade erstellt)
+      if (createdRoomCodeRef.current === roomCodeParam) {
+        // Host - direkt beitreten ohne Lobby
+        setIsHost(true);
         setCurrentRoomCode(roomCodeParam);
         setIsInMeeting(true);
+      } else if (session?.isAuthenticated) {
+        // Authentifizierter User (nicht Host) - Pre-Join Modal zeigen
+        setShowPreJoinModal(true);
       } else {
         // Gast - Namen abfragen
         setShowGuestJoinModal(true);
@@ -56,19 +84,8 @@ export default function WebmailMeetPage() {
   }, [roomCodeParam, session?.isAuthenticated]);
 
   const handleGuestJoin = () => {
-    if (!guestName.trim()) {
-      toast.error('Bitte gib deinen Namen ein');
-      return;
-    }
-    if (!roomCodeParam) {
-      toast.error('Kein Meeting-Code gefunden');
-      return;
-    }
-    
-    setIsGuest(true);
-    setCurrentRoomCode(roomCodeParam);
-    setIsInMeeting(true);
-    setShowGuestJoinModal(false);
+    // Wird nicht mehr direkt aufgerufen - stattdessen handleGuestPreJoin
+    handleGuestPreJoin();
   };
 
   const handleCreateMeeting = async () => {
@@ -122,6 +139,9 @@ export default function WebmailMeetPage() {
   const handleStartMeeting = () => {
     if (createdMeetingUrl) {
       const code = createdMeetingUrl.split('room=')[1];
+      // Merke dass dieser User der Host ist
+      createdRoomCodeRef.current = code;
+      setIsHost(true);
       setCurrentRoomCode(code);
       setIsInMeeting(true);
       setShowCreateModal(false);
@@ -129,6 +149,124 @@ export default function WebmailMeetPage() {
       router.push(`/webmail/meet?room=${code}`);
     }
   };
+
+  // Lobby WebSocket für Beitrittsanfragen
+  const connectToLobby = useCallback((roomCode: string, userName: string) => {
+    const wsEndpoint = 'wss://mail.taskilo.de/ws/meeting';
+    const ws = new WebSocket(wsEndpoint);
+    lobbyWsRef.current = ws;
+    
+    ws.onopen = () => {
+      console.log('[LOBBY] WebSocket connected, requesting to join...');
+      ws.send(JSON.stringify({
+        type: 'request-join',
+        payload: {
+          roomCode,
+          userName,
+          userId: session?.email || `guest-${userName}`,
+        },
+      }));
+      setLobbyStatus('waiting');
+    };
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      console.log('[LOBBY] Message:', message.type);
+      
+      switch (message.type) {
+        case 'join-approved':
+          setLobbyStatus('approved');
+          toast.success('Beitritt genehmigt!');
+          // Kurz warten dann Meeting beitreten
+          setTimeout(() => {
+            setShowPreJoinModal(false);
+            setCurrentRoomCode(roomCode);
+            setIsInMeeting(true);
+          }, 500);
+          break;
+          
+        case 'join-denied':
+          setLobbyStatus('denied');
+          toast.error('Beitritt abgelehnt');
+          break;
+          
+        case 'host-not-present':
+          // Host ist noch nicht da - trotzdem warten lassen
+          console.log('[LOBBY] Host not present yet, waiting...');
+          break;
+          
+        case 'error':
+          toast.error(message.payload?.message || 'Fehler beim Beitritt');
+          setLobbyStatus('idle');
+          break;
+      }
+    };
+    
+    ws.onerror = () => {
+      console.error('[LOBBY] WebSocket error');
+      // Bei Fehler direkt beitreten (Fallback)
+      setShowPreJoinModal(false);
+      setCurrentRoomCode(roomCode);
+      setIsInMeeting(true);
+    };
+    
+    ws.onclose = () => {
+      console.log('[LOBBY] WebSocket closed');
+    };
+  }, [session?.email]);
+
+  // Pre-Join bestätigen - Beitrittsanfrage senden
+  const handlePreJoinConfirm = () => {
+    if (!roomCodeParam) return;
+    const userName = session?.email?.split('@')[0] || 'Unbekannt';
+    connectToLobby(roomCodeParam, userName);
+  };
+
+  // Gast-Pre-Join (nach Namenseingabe)
+  const handleGuestPreJoin = () => {
+    if (!guestName.trim()) {
+      toast.error('Bitte gib deinen Namen ein');
+      return;
+    }
+    if (!roomCodeParam) return;
+    
+    setIsGuest(true);
+    setShowGuestJoinModal(false);
+    setShowPreJoinModal(true);
+    // Nach kurzer Verzögerung Lobby-Verbindung aufbauen
+    setTimeout(() => {
+      connectToLobby(roomCodeParam, guestName);
+    }, 100);
+  };
+
+  // Admin: Beitrittsanfrage genehmigen
+  const handleApproveJoinRequest = (request: JoinRequest) => {
+    console.log('[ADMIN] Approving join request:', request.userName);
+    // Sende Approve über die Meeting-WebSocket
+    if (meetingRef.current) {
+      meetingRef.current.approveJoinRequest(request.participantId);
+    }
+    setPendingJoinRequests(prev => prev.filter(r => r.participantId !== request.participantId));
+  };
+
+  // Admin: Beitrittsanfrage ablehnen
+  const handleDenyJoinRequest = (request: JoinRequest) => {
+    console.log('[ADMIN] Denying join request:', request.userName);
+    // Sende Deny über die Meeting-WebSocket
+    if (meetingRef.current) {
+      meetingRef.current.denyJoinRequest(request.participantId);
+    }
+    setPendingJoinRequests(prev => prev.filter(r => r.participantId !== request.participantId));
+  };
+
+  // Cleanup WebSocket
+  useEffect(() => {
+    return () => {
+      if (lobbyWsRef.current) {
+        lobbyWsRef.current.close();
+      }
+    };
+  }, []);
 
   const copyMeetingLink = () => {
     if (createdMeetingUrl) {
@@ -179,14 +317,59 @@ export default function WebmailMeetPage() {
             userId={currentUserId}
             userName={currentUserName}
             userEmail={currentUserEmail}
+            isHost={isHost}
             autoJoin={true}
+            meetingRef={meetingRef}
             onMeetingCreated={handleMeetingCreated}
             onMeetingJoined={handleMeetingJoined}
             onMeetingEnded={handleMeetingEnded}
             onError={handleMeetingError}
+            onJoinRequest={(request) => {
+              console.log('[WebmailMeet] Join request received:', request);
+              setPendingJoinRequests(prev => [...prev, request]);
+            }}
             className="h-full"
           />
         </div>
+        
+        {/* Pending Join Requests Modal für Host */}
+        {isHost && pendingJoinRequests.length > 0 && (
+          <div className="fixed bottom-4 right-4 z-50 space-y-2">
+            {pendingJoinRequests.map((request) => (
+              <div 
+                key={request.participantId}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 min-w-[300px]"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                    <UserPlus className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">{request.userName}</p>
+                    <p className="text-sm text-gray-500">möchte dem Meeting beitreten</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleDenyJoinRequest(request)}
+                  >
+                    Ablehnen
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-teal-500 hover:bg-teal-600"
+                    onClick={() => handleApproveJoinRequest(request)}
+                  >
+                    Zulassen
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -420,6 +603,108 @@ export default function WebmailMeetPage() {
             >
               Beitreten
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pre-Join Modal - Warte auf Zulassung durch Host */}
+      <Dialog open={showPreJoinModal} onOpenChange={(open) => {
+        if (!open && lobbyStatus !== 'waiting') {
+          setShowPreJoinModal(false);
+          if (lobbyStatus !== 'approved') {
+            router.push('/webmail/meet');
+          }
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {lobbyStatus === 'waiting' && <Clock className="h-5 w-5 text-yellow-500 animate-pulse" />}
+              {lobbyStatus === 'approved' && <CheckCircle className="h-5 w-5 text-green-500" />}
+              {lobbyStatus === 'denied' && <XCircle className="h-5 w-5 text-red-500" />}
+              {lobbyStatus === 'idle' && <UserPlus className="h-5 w-5 text-teal-500" />}
+              {lobbyStatus === 'idle' && 'Meeting beitreten'}
+              {lobbyStatus === 'waiting' && 'Warte auf Zulassung...'}
+              {lobbyStatus === 'approved' && 'Beitritt genehmigt!'}
+              {lobbyStatus === 'denied' && 'Beitritt abgelehnt'}
+            </DialogTitle>
+            <DialogDescription>
+              {lobbyStatus === 'idle' && `Du möchtest dem Meeting ${roomCodeParam} beitreten.`}
+              {lobbyStatus === 'waiting' && 'Der Host muss deinen Beitritt genehmigen. Bitte warte einen Moment.'}
+              {lobbyStatus === 'approved' && 'Du wirst gleich zum Meeting weitergeleitet...'}
+              {lobbyStatus === 'denied' && 'Der Host hat deinen Beitritt abgelehnt.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6">
+            {lobbyStatus === 'idle' && (
+              <div className="text-center">
+                <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Video className="w-10 h-10 text-teal-600" />
+                </div>
+                <p className="text-gray-600">
+                  Bereit, dem Meeting als <strong>{session?.email?.split('@')[0] || guestName || 'Gast'}</strong> beizutreten?
+                </p>
+              </div>
+            )}
+            
+            {lobbyStatus === 'waiting' && (
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 text-teal-500 animate-spin mx-auto mb-4" />
+                <p className="text-gray-500">Der Host wurde benachrichtigt...</p>
+              </div>
+            )}
+            
+            {lobbyStatus === 'approved' && (
+              <div className="text-center">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <p className="text-green-600 font-medium">Willkommen!</p>
+              </div>
+            )}
+            
+            {lobbyStatus === 'denied' && (
+              <div className="text-center">
+                <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <p className="text-red-600">Du kannst diesem Meeting nicht beitreten.</p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            {lobbyStatus === 'idle' && (
+              <>
+                <Button variant="outline" onClick={() => {
+                  setShowPreJoinModal(false);
+                  router.push('/webmail/meet');
+                }}>
+                  Abbrechen
+                </Button>
+                <Button onClick={handlePreJoinConfirm} className="bg-teal-500 hover:bg-teal-600">
+                  Beitritt anfragen
+                </Button>
+              </>
+            )}
+            
+            {lobbyStatus === 'waiting' && (
+              <Button variant="outline" onClick={() => {
+                setShowPreJoinModal(false);
+                setLobbyStatus('idle');
+                lobbyWsRef.current?.close();
+                router.push('/webmail/meet');
+              }}>
+                Abbrechen
+              </Button>
+            )}
+            
+            {lobbyStatus === 'denied' && (
+              <Button variant="outline" onClick={() => {
+                setShowPreJoinModal(false);
+                setLobbyStatus('idle');
+                router.push('/webmail/meet');
+              }}>
+                Schließen
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -46,6 +46,13 @@ export interface MeetingRoom {
   createdBy?: string;
 }
 
+export interface JoinRequest {
+  participantId: string;
+  userName: string;
+  userId?: string;
+  timestamp: number;
+}
+
 export interface TaskiloMeetingProps {
   // Meeting-Daten
   roomCode?: string;              // Für Beitritt
@@ -59,11 +66,18 @@ export interface TaskiloMeetingProps {
   userEmail?: string;
   userAvatarUrl?: string;
   
+  // Host/Lobby-bezogen
+  isHost?: boolean;               // Ist dieser User der Host des Meetings?
+  
   // Callbacks
   onMeetingCreated?: (room: MeetingRoom) => void;
   onMeetingJoined?: (room: MeetingRoom) => void;
   onMeetingEnded?: () => void;
   onError?: (error: string) => void;
+  onJoinRequest?: (request: JoinRequest) => void;  // Callback wenn jemand beitreten möchte
+  
+  // Ref für externe Steuerung (Approve/Deny)
+  meetingRef?: React.MutableRefObject<TaskiloMeetingHandle | null>;
   
   // UI-Optionen
   showParticipants?: boolean;
@@ -71,6 +85,12 @@ export interface TaskiloMeetingProps {
   allowScreenShare?: boolean;
   autoJoin?: boolean;
   className?: string;
+}
+
+// Handle für imperative Kontrolle von außen
+export interface TaskiloMeetingHandle {
+  approveJoinRequest: (participantId: string) => void;
+  denyJoinRequest: (participantId: string) => void;
 }
 
 type MeetingState = 'idle' | 'creating' | 'joining' | 'in-meeting' | 'ended' | 'error';
@@ -86,10 +106,13 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   userName,
   userEmail,
   userAvatarUrl,
+  isHost = false,
   onMeetingCreated,
   onMeetingJoined,
   onMeetingEnded,
   onError,
+  onJoinRequest,
+  meetingRef,
   showParticipants = true,
   showChat = true,
   allowScreenShare = true,
@@ -260,8 +283,22 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         // Server hat auf unseren Ping geantwortet (falls wir jemals client-seitig pingen)
         console.log('[MEETING] Received pong from server');
         break;
+
+      // ============== LOBBY/JOIN REQUEST HANDLING ==============
+      case 'join-request':
+        // Jemand möchte dem Meeting beitreten - nur relevant für den Host
+        console.log('[MEETING] Join request received:', message.payload);
+        if (onJoinRequest) {
+          onJoinRequest({
+            participantId: message.payload.participantId as string,
+            userName: message.payload.userName as string,
+            userId: message.payload.userId as string | undefined,
+            timestamp: Date.now(),
+          });
+        }
+        break;
     }
-  }, []);
+  }, [onJoinRequest]);
 
   // ============== INTERNAL JOIN (uses handleSignalingMessage) ==============
 
@@ -560,6 +597,59 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     setParticipants([]);
     onMeetingEnded?.();
   }, [onMeetingEnded]);
+
+  // ============== LOBBY/JOIN REQUEST CONTROLS ==============
+
+  /**
+   * Host genehmigt einen Beitritt
+   */
+  const approveJoinRequest = useCallback((participantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('[MEETING] Cannot approve - WebSocket not connected');
+      return;
+    }
+    
+    console.log('[MEETING] Approving join request for:', participantId);
+    wsRef.current.send(JSON.stringify({
+      type: 'approve-join',
+      payload: {
+        requestingParticipantId: participantId,
+      },
+    }));
+  }, []);
+
+  /**
+   * Host lehnt einen Beitritt ab
+   */
+  const denyJoinRequest = useCallback((participantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('[MEETING] Cannot deny - WebSocket not connected');
+      return;
+    }
+    
+    console.log('[MEETING] Denying join request for:', participantId);
+    wsRef.current.send(JSON.stringify({
+      type: 'deny-join',
+      payload: {
+        requestingParticipantId: participantId,
+      },
+    }));
+  }, []);
+
+  // Expose approve/deny functions via ref
+  useEffect(() => {
+    if (meetingRef) {
+      meetingRef.current = {
+        approveJoinRequest,
+        denyJoinRequest,
+      };
+    }
+    return () => {
+      if (meetingRef) {
+        meetingRef.current = null;
+      }
+    };
+  }, [meetingRef, approveJoinRequest, denyJoinRequest]);
 
   // ============== MEDIA CONTROLS ==============
 

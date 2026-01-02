@@ -35,7 +35,11 @@ interface MeetingWSMessage {
     | 'raise-hand'
     | 'lower-hand'
     | 'ping'
-    | 'pong';
+    | 'pong'
+    // Lobby/Wartezimmer Messages
+    | 'request-join'
+    | 'approve-join'
+    | 'deny-join';
   payload?: {
     roomCode?: string;
     userId?: string;
@@ -50,6 +54,8 @@ interface MeetingWSMessage {
       video: boolean;
       screenShare: boolean;
     };
+    // Lobby-spezifische Felder
+    requestingParticipantId?: string;
   };
 }
 
@@ -233,6 +239,16 @@ class MeetingWebSocketService {
           // Application-Level Pong - aktualisiere lastPing
           console.log(`[Meeting WS] Application-level pong received from ${participantId}`);
           // lastPing wird bereits oben in handleMessage aktualisiert
+          break;
+        // Lobby/Wartezimmer Messages
+        case 'request-join':
+          await this.handleRequestJoin(participantId, message.payload);
+          break;
+        case 'approve-join':
+          await this.handleApproveJoin(participantId, message.payload);
+          break;
+        case 'deny-join':
+          await this.handleDenyJoin(participantId, message.payload);
           break;
         default:
           console.warn(`[Meeting WS] Unknown message type: ${message.type}`);
@@ -487,6 +503,164 @@ class MeetingWebSocketService {
     });
   }
 
+  // ==================== Lobby/Wartezimmer Handlers ====================
+
+  /**
+   * Gast möchte einem Meeting beitreten - benachrichtigt den Host
+   */
+  private async handleRequestJoin(
+    participantId: string,
+    payload?: { roomCode?: string; userId?: string; userName?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client || !payload?.roomCode) {
+      this.sendToClient(participantId, {
+        type: 'error',
+        payload: { message: 'Room code required' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Client-Daten speichern (noch nicht im Raum)
+    client.userName = payload.userName || 'Gast';
+    client.userId = payload.userId || '';
+
+    // Finde den Host des Raums
+    const roomInfo = meetingRoomService.getRoomByCode(payload.roomCode);
+    if (!roomInfo) {
+      this.sendToClient(participantId, {
+        type: 'join-denied',
+        payload: { message: 'Meeting nicht gefunden' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Finde den Host (erstes Participant mit role=host oder creator)
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const hostParticipant = participants.find(p => p.role === 'host');
+    
+    if (!hostParticipant) {
+      // Kein Host im Raum - automatisch beitreten lassen
+      console.log(`[Meeting WS] No host in room ${payload.roomCode}, auto-approving ${payload.userName}`);
+      this.sendToClient(participantId, {
+        type: 'join-approved',
+        payload: { roomCode: payload.roomCode },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Finde die WebSocket-Verbindung des Hosts
+    const hostClient = this.findClientByParticipantId(hostParticipant.id);
+    if (!hostClient) {
+      console.log(`[Meeting WS] Host ${hostParticipant.id} not connected, auto-approving ${payload.userName}`);
+      this.sendToClient(participantId, {
+        type: 'join-approved',
+        payload: { roomCode: payload.roomCode },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Benachrichtige den Host über die Beitrittsanfrage
+    this.sendToClient(hostParticipant.id, {
+      type: 'join-request',
+      payload: {
+        participantId,
+        userName: payload.userName,
+        userId: payload.userId,
+        roomCode: payload.roomCode,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Join request from ${payload.userName} (${participantId}) for room ${payload.roomCode}, notified host ${hostParticipant.id}`);
+  }
+
+  /**
+   * Host genehmigt einen Beitritt
+   */
+  private async handleApproveJoin(
+    participantId: string,
+    payload?: { roomCode?: string; requestingParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.requestingParticipantId) {
+      console.log(`[Meeting WS] handleApproveJoin: Invalid request - no roomCode or requestingParticipantId`);
+      return;
+    }
+
+    // Prüfe ob der Sender der Host ist
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) return;
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    if (senderParticipant?.role !== 'host') {
+      console.log(`[Meeting WS] handleApproveJoin: ${participantId} is not the host`);
+      return;
+    }
+
+    // Sende Genehmigung an den wartenden Teilnehmer
+    this.sendToClient(payload.requestingParticipantId, {
+      type: 'join-approved',
+      payload: { roomCode: client.roomCode },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} approved join request from ${payload.requestingParticipantId}`);
+  }
+
+  /**
+   * Host lehnt einen Beitritt ab
+   */
+  private async handleDenyJoin(
+    participantId: string,
+    payload?: { roomCode?: string; requestingParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.requestingParticipantId) {
+      console.log(`[Meeting WS] handleDenyJoin: Invalid request - no roomCode or requestingParticipantId`);
+      return;
+    }
+
+    // Prüfe ob der Sender der Host ist
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) return;
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    if (senderParticipant?.role !== 'host') {
+      console.log(`[Meeting WS] handleDenyJoin: ${participantId} is not the host`);
+      return;
+    }
+
+    // Sende Ablehnung an den wartenden Teilnehmer
+    this.sendToClient(payload.requestingParticipantId, {
+      type: 'join-denied',
+      payload: { 
+        roomCode: client.roomCode,
+        message: 'Der Host hat deinen Beitritt abgelehnt.',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} denied join request from ${payload.requestingParticipantId}`);
+  }
+
+  /**
+   * Hilfsfunktion um Client anhand participantId zu finden
+   */
+  private findClientByParticipantId(participantId: string): MeetingClient | undefined {
+    return this.clients.get(participantId);
+  }
+
+  // ==================== End Lobby/Wartezimmer Handlers ====================
+
   private handleDisconnect(participantId: string): void {
     const client = this.clients.get(participantId);
     if (client?.roomCode) {
@@ -534,16 +708,24 @@ class MeetingWebSocketService {
   }
 
   private getICEServers(): object[] {
+    // WICHTIG: STUN/TURN Server laufen auf mail.taskilo.de
+    // Die DNS-Einträge stun.taskilo.de und turn.taskilo.de existieren nicht korrekt
     return [
-      { urls: 'stun:stun.taskilo.de:3478' },
       { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:mail.taskilo.de:3478' },
       {
-        urls: 'turn:turn.taskilo.de:3478',
+        urls: 'turn:mail.taskilo.de:3478',
         username: 'taskilo',
         credential: process.env.TURN_SECRET || 'taskilo-turn-secret',
       },
       {
-        urls: 'turns:turn.taskilo.de:5349',
+        urls: 'turn:mail.taskilo.de:3478?transport=tcp',
+        username: 'taskilo',
+        credential: process.env.TURN_SECRET || 'taskilo-turn-secret',
+      },
+      {
+        urls: 'turns:mail.taskilo.de:5349',
         username: 'taskilo',
         credential: process.env.TURN_SECRET || 'taskilo-turn-secret',
       },

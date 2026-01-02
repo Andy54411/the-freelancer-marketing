@@ -26,11 +26,12 @@ const DEFAULT_CONFIG: TURNConfig = {
   stunServers: [
     'stun:stun.l.google.com:19302',
     'stun:stun1.l.google.com:19302',
-    'stun:stun.taskilo.de:3478', // Eigener STUN Server
+    'stun:mail.taskilo.de:3478', // Eigener STUN Server auf mail.taskilo.de
   ],
   turnServers: [
-    'turn:turn.taskilo.de:3478',
-    'turns:turn.taskilo.de:5349',
+    'turn:mail.taskilo.de:3478',
+    'turn:mail.taskilo.de:3478?transport=tcp',
+    'turns:mail.taskilo.de:5349',
   ],
   turnSecret: process.env.TURN_SECRET || 'taskilo-turn-secret-change-in-production',
   credentialTTL: 86400, // 24 Stunden
