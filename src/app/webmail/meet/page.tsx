@@ -1,20 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  PhoneOff, 
-  Users,
-  Copy,
-  Plus,
-  ScreenShare,
-  ScreenShareOff
-} from 'lucide-react';
+import { Video, Plus, Users, ArrowRight, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,579 +16,229 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { getAppUrl } from '@/lib/webmail-urls';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
-import SimplePeer from 'simple-peer';
-import { getDatabase, ref, onValue, push, set, remove, onChildAdded } from 'firebase/database';
-import { app } from '@/firebase/clients';
 import { MailHeader } from '@/components/webmail/MailHeader';
-
-interface Participant {
-  id: string;
-  name: string;
-  email: string;
-  stream?: MediaStream;
-  isMuted?: boolean;
-  isVideoOff?: boolean;
-}
-
-interface MeetingRoom {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: number;
-  participants: { [key: string]: { name: string; email: string; joinedAt: number } };
-}
+import { TaskiloMeeting, MeetingRoom } from '@/components/video/TaskiloMeeting';
 
 export default function WebmailMeetPage() {
   const { session } = useWebmailSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomIdParam = searchParams.get('room');
+  const roomCodeParam = searchParams.get('room');
+  const { theme } = useWebmailTheme();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [_showJoinModal, setShowJoinModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [meetingName, setMeetingName] = useState('');
-  const [joinRoomId, setJoinRoomId] = useState(roomIdParam || '');
+  const [joinRoomCode, setJoinRoomCode] = useState(roomCodeParam || '');
   const [isInMeeting, setIsInMeeting] = useState(false);
-  const [currentRoom, setCurrentRoom] = useState<MeetingRoom | null>(null);
-  
-  // Media state
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [_isFullscreen, _setIsFullscreen] = useState(false);
-  
-  // Refs
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const peersRef = useRef<Map<string, SimplePeer>>(new Map());
-  const rtdb = getDatabase(app);
+  const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(roomCodeParam);
+  const [copied, setCopied] = useState(false);
+  const [createdMeetingUrl, setCreatedMeetingUrl] = useState<string | null>(null);
 
-  // Session wird bereits vom Layout geprüft
-  // Kein manueller Redirect erforderlich
-
+  // Auto-join wenn room code in URL
   useEffect(() => {
-    // Auto-join if room ID is in URL
-    if (session?.isAuthenticated && roomIdParam) {
-      setJoinRoomId(roomIdParam);
-      // Delay to ensure component is mounted
-      const timer = setTimeout(() => {
-        handleJoinMeeting(roomIdParam);
-      }, 100);
-      return () => clearTimeout(timer);
+    if (session?.isAuthenticated && roomCodeParam) {
+      setCurrentRoomCode(roomCodeParam);
+      setIsInMeeting(true);
     }
-    return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomIdParam, session?.isAuthenticated]);
-
-  useEffect(() => {
-    const peers = peersRef.current;
-    return () => {
-      // Cleanup on unmount
-      peers.forEach((peer) => peer.destroy());
-      peers.clear();
-    };
-  }, []);
-
-  const generateRoomId = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz';
-    const segments: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      let segment = '';
-      for (let j = 0; j < 4; j++) {
-        segment += chars[Math.floor(Math.random() * chars.length)];
-      }
-      segments.push(segment);
-    }
-    return segments.join('-'); // e.g., "abcd-efgh-ijkl"
-  };
-
-  const initializeMedia = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      return stream;
-    } catch (error) {
-      console.error('Failed to get media:', error);
-      toast.error('Kamera/Mikrofon konnte nicht aktiviert werden');
-      return null;
-    }
-  };
+  }, [roomCodeParam, session?.isAuthenticated]);
 
   const handleCreateMeeting = async () => {
     if (!session?.email) return;
 
-    const roomId = generateRoomId();
-    const stream = await initializeMedia();
-    if (!stream) return;
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_MEETING_API_URL || 'https://mail.taskilo.de/api/meeting';
+      const API_KEY = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
 
-    const roomRef = ref(rtdb, `webmail-meetings/${roomId}`);
-    const roomData: MeetingRoom = {
-      id: roomId,
-      name: meetingName || `Meeting von ${session.email.split('@')[0]}`,
-      createdBy: session.email,
-      createdAt: Date.now(),
-      participants: {
-        [session.email.replace(/\./g, '_')]: {
-          name: session.email.split('@')[0],
-          email: session.email,
-          joinedAt: Date.now(),
+      const response = await fetch(`${API_BASE}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
         },
-      },
-    };
+        body: JSON.stringify({
+          userId: session.email,
+          name: meetingName || `Meeting von ${session.email.split('@')[0]}`,
+          type: 'instant',
+          metadata: { source: 'webmail' },
+        }),
+      });
 
-    await set(roomRef, roomData);
-    setCurrentRoom(roomData);
-    setIsInMeeting(true);
-    setShowCreateModal(false);
+      const data = await response.json();
 
-    // Listen for new participants
-    setupParticipantListeners(roomId);
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Erstellen');
+      }
 
-    // Update URL
-    router.push(`/webmail/meet?room=${roomId}`);
-
-    toast.success('Meeting erstellt');
+      const meetingUrl = `${window.location.origin}/webmail/meet?room=${data.room.code}`;
+      setCreatedMeetingUrl(meetingUrl);
+      toast.success('Meeting erstellt! Du kannst den Link jetzt teilen.');
+      
+    } catch (error) {
+      console.error('Create meeting error:', error);
+      toast.error('Meeting konnte nicht erstellt werden');
+    }
   };
 
-  const handleJoinMeeting = async (roomId?: string) => {
-    if (!session?.email) return;
-    const id = roomId || joinRoomId;
-    if (!id) {
-      toast.error('Bitte gib eine Meeting-ID ein');
+  const handleJoinMeeting = () => {
+    if (!joinRoomCode.trim()) {
+      toast.error('Bitte gib einen Meeting-Code ein');
       return;
     }
 
-    const stream = await initializeMedia();
-    if (!stream) return;
-
-    // Check if room exists
-    const roomRef = ref(rtdb, `webmail-meetings/${id}`);
-    
-    return new Promise<void>((resolve) => {
-      onValue(roomRef, async (snapshot) => {
-        const roomData = snapshot.val();
-        if (!roomData) {
-          toast.error('Meeting nicht gefunden');
-          resolve();
-          return;
-        }
-
-        // Add self to participants
-        const participantRef = ref(rtdb, `webmail-meetings/${id}/participants/${session.email.replace(/\./g, '_')}`);
-        await set(participantRef, {
-          name: session.email.split('@')[0],
-          email: session.email,
-          joinedAt: Date.now(),
-        });
-
-        setCurrentRoom(roomData);
-        setIsInMeeting(true);
-        setShowJoinModal(false);
-
-        // Listen for participants and signaling
-        setupParticipantListeners(id);
-        setupSignaling(id);
-
-        // Update URL
-        if (!roomIdParam) {
-          router.push(`/webmail/meet?room=${id}`);
-        }
-
-        toast.success('Meeting beigetreten');
-        resolve();
-      }, { onlyOnce: true });
-    });
+    // Navigiere zur Meeting-URL
+    router.push(`/webmail/meet?room=${joinRoomCode.trim()}`);
+    setShowJoinModal(false);
   };
 
-  const setupParticipantListeners = (roomId: string) => {
-    const participantsRef = ref(rtdb, `webmail-meetings/${roomId}/participants`);
-    
-    onValue(participantsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const participantList: Participant[] = Object.entries(data)
-          .filter(([key]) => key !== session?.email?.replace(/\./g, '_'))
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map(([key, value]: [string, any]) => ({
-            id: key,
-            name: value.name,
-            email: value.email,
-          }));
-        
-        // Create peer connections for new participants
-        participantList.forEach((p) => {
-          if (!peersRef.current.has(p.id)) {
-            createPeerConnection(roomId, p.id, true);
-          }
-        });
-
-        setParticipants(participantList);
-      }
-    });
-  };
-
-  const setupSignaling = (roomId: string) => {
-    if (!session?.email) return;
-    
-    const myId = session.email.replace(/\./g, '_');
-    const signalsRef = ref(rtdb, `webmail-meetings/${roomId}/signals/${myId}`);
-
-    onChildAdded(signalsRef, (snapshot) => {
-      const signal = snapshot.val();
-      if (signal && signal.from !== myId) {
-        const peer = peersRef.current.get(signal.from);
-        if (peer) {
-          peer.signal(signal.data);
-        } else {
-          // Create peer as receiver
-          createPeerConnection(roomId, signal.from, false, signal.data);
-        }
-        // Remove processed signal
-        remove(snapshot.ref);
-      }
-    });
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const createPeerConnection = (roomId: string, participantId: string, initiator: boolean, initialSignal?: any) => {
-    if (!session?.email || !localStream) return;
-
-    const myId = session.email.replace(/\./g, '_');
-    
-    const peer = new SimplePeer({
-      initiator,
-      trickle: false,
-      stream: localStream,
-    });
-
-    // @ts-expect-error SimplePeer event types
-    peer.on('signal', (data: unknown) => {
-      const signalRef = ref(rtdb, `webmail-meetings/${roomId}/signals/${participantId}`);
-      push(signalRef, {
-        from: myId,
-        data,
-        timestamp: Date.now(),
-      });
-    });
-
-    // @ts-expect-error SimplePeer event types
-    peer.on('stream', (stream: MediaStream) => {
-      setParticipants((prev) => 
-        prev.map((p) => 
-          p.id === participantId ? { ...p, stream } : p
-        )
-      );
-    });
-
-    // @ts-expect-error SimplePeer event types
-    peer.on('error', () => {
-      // Silently handle peer error
-    });
-
-    // @ts-expect-error SimplePeer event types
-    peer.on('close', () => {
-      peersRef.current.delete(participantId);
-    });
-
-    if (initialSignal) {
-      peer.signal(initialSignal);
+  const handleStartMeeting = () => {
+    if (createdMeetingUrl) {
+      const code = createdMeetingUrl.split('room=')[1];
+      setCurrentRoomCode(code);
+      setIsInMeeting(true);
+      setShowCreateModal(false);
+      setCreatedMeetingUrl(null);
+      router.push(`/webmail/meet?room=${code}`);
     }
-
-    peersRef.current.set(participantId, peer);
-  };
-
-  const toggleCamera = () => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      setIsCameraOn(!isCameraOn);
-    }
-  };
-
-  const toggleMic = () => {
-    if (localStream) {
-      localStream.getAudioTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      setIsMicOn(!isMicOn);
-    }
-  };
-
-  const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      // Stop screen sharing
-      localStream?.getVideoTracks().forEach((track) => track.stop());
-      const stream = await initializeMedia();
-      if (stream) {
-        // Replace tracks in all peer connections
-        peersRef.current.forEach((peer) => {
-          const videoTrack = stream.getVideoTracks()[0];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sender = (peer as any)._pc?.getSenders()?.find((s: RTCRtpSender) => s.track?.kind === 'video');
-          if (sender && videoTrack) {
-            sender.replaceTrack(videoTrack);
-          }
-        });
-      }
-      setIsScreenSharing(false);
-    } else {
-      try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-        });
-        
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = screenStream;
-        }
-
-        // Replace video track in all peer connections
-        const videoTrack = screenStream.getVideoTracks()[0];
-        peersRef.current.forEach((peer) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sender = (peer as any)._pc?.getSenders()?.find((s: RTCRtpSender) => s.track?.kind === 'video');
-          if (sender && videoTrack) {
-            sender.replaceTrack(videoTrack);
-          }
-        });
-
-        videoTrack.onended = () => {
-          toggleScreenShare();
-        };
-
-        setIsScreenSharing(true);
-      } catch {
-        // Silently handle error
-      }
-    }
-  };
-
-  const cleanupMeeting = () => {
-    // Stop all tracks
-    localStream?.getTracks().forEach((track) => track.stop());
-    
-    // Close all peer connections
-    peersRef.current.forEach((peer) => peer.destroy());
-    peersRef.current.clear();
-
-    // Remove from participants
-    if (currentRoom && session?.email) {
-      const participantRef = ref(rtdb, `webmail-meetings/${currentRoom.id}/participants/${session.email.replace(/\./g, '_')}`);
-      remove(participantRef);
-    }
-
-    setLocalStream(null);
-    setParticipants([]);
-    setIsInMeeting(false);
-    setCurrentRoom(null);
-  };
-
-  const handleLeaveMeeting = () => {
-    cleanupMeeting();
-    router.push('/webmail/meet');
-    toast.info('Meeting verlassen');
   };
 
   const copyMeetingLink = () => {
-    if (currentRoom) {
-      navigator.clipboard.writeText(`${window.location.origin}/webmail/meet?room=${currentRoom.id}`);
-      toast.success('Link kopiert');
+    if (createdMeetingUrl) {
+      navigator.clipboard.writeText(createdMeetingUrl);
+      setCopied(true);
+      toast.success('Link kopiert!');
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  // Meeting View
-  if (isInMeeting && currentRoom) {
+  const handleMeetingCreated = (room: MeetingRoom) => {
+    console.log('[WebmailMeet] Meeting created:', room);
+  };
+
+  const handleMeetingJoined = (room: MeetingRoom) => {
+    console.log('[WebmailMeet] Meeting joined:', room);
+    toast.success('Meeting beigetreten');
+  };
+
+  const handleMeetingEnded = () => {
+    setIsInMeeting(false);
+    setCurrentRoomCode(null);
+    router.push('/webmail/meet');
+    toast.info('Meeting beendet');
+  };
+
+  const handleMeetingError = (error: string) => {
+    console.error('[WebmailMeet] Error:', error);
+    toast.error(error);
+  };
+
+  // Wenn im Meeting, zeige TaskiloMeeting Komponente
+  if (isInMeeting && currentRoomCode && session?.email) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col bg-gray-900">
-        {/* Meeting Header */}
-        <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-white font-medium">{currentRoom.name}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:text-white"
-              onClick={copyMeetingLink}
-            >
-              <Copy className="h-4 w-4 mr-1" />
-              Link kopieren
-            </Button>
-          </div>
-          <div className="flex items-center gap-2 text-white text-sm">
-            <Users className="h-4 w-4" />
-            {participants.length + 1} Teilnehmer
-          </div>
-        </div>
-
-        {/* Video Grid */}
-        <div className="flex-1 p-4 overflow-auto">
-          <div className={`grid gap-4 h-full ${
-            participants.length === 0 ? 'grid-cols-1' :
-            participants.length === 1 ? 'grid-cols-2' :
-            participants.length <= 3 ? 'grid-cols-2' :
-            'grid-cols-3'
-          }`}>
-            {/* Local Video */}
-            <div className="relative bg-gray-800 rounded-xl overflow-hidden aspect-video">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-3 left-3 bg-black/60 text-white px-2 py-1 rounded text-sm">
-                Du {!isMicOn && <MicOff className="inline h-3 w-3 ml-1" />}
-              </div>
-              {!isCameraOn && (
-                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-white text-2xl">
-                    {session?.email?.[0]?.toUpperCase()}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Remote Videos */}
-            {participants.map((participant) => (
-              <div key={participant.id} className="relative bg-gray-800 rounded-xl overflow-hidden aspect-video">
-                {participant.stream ? (
-                  <video
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                    ref={(el) => {
-                      if (el && participant.stream) {
-                        el.srcObject = participant.stream;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-white text-2xl">
-                      {participant.name[0]?.toUpperCase()}
-                    </div>
-                  </div>
-                )}
-                <div className="absolute bottom-3 left-3 bg-black/60 text-white px-2 py-1 rounded text-sm">
-                  {participant.name}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="bg-gray-800 px-4 py-4 flex items-center justify-center gap-4">
-          <Button
-            variant={isMicOn ? 'secondary' : 'destructive'}
-            size="lg"
-            className="rounded-full h-14 w-14"
-            onClick={toggleMic}
-          >
-            {isMicOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-          </Button>
-          <Button
-            variant={isCameraOn ? 'secondary' : 'destructive'}
-            size="lg"
-            className="rounded-full h-14 w-14"
-            onClick={toggleCamera}
-          >
-            {isCameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-          </Button>
-          <Button
-            variant={isScreenSharing ? 'default' : 'secondary'}
-            size="lg"
-            className="rounded-full h-14 w-14"
-            onClick={toggleScreenShare}
-          >
-            {isScreenSharing ? <ScreenShareOff className="h-6 w-6" /> : <ScreenShare className="h-6 w-6" />}
-          </Button>
-          <Button
-            variant="destructive"
-            size="lg"
-            className="rounded-full h-14 w-14"
-            onClick={handleLeaveMeeting}
-          >
-            <PhoneOff className="h-6 w-6" />
-          </Button>
+      <div className="h-screen flex flex-col">
+        <MailHeader userEmail={session.email} />
+        <div className="flex-1">
+          <TaskiloMeeting
+            roomCode={currentRoomCode}
+            source="webmail"
+            userId={session.email}
+            userName={session.email.split('@')[0]}
+            userEmail={session.email}
+            autoJoin={true}
+            onMeetingCreated={handleMeetingCreated}
+            onMeetingJoined={handleMeetingJoined}
+            onMeetingEnded={handleMeetingEnded}
+            onError={handleMeetingError}
+            className="h-full"
+          />
         </div>
       </div>
     );
   }
 
-  const { isDark } = useWebmailTheme();
-
-  // Lobby View
+  // Lobby-Ansicht
   return (
-    <div className={`h-screen flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
-      {/* Header - Einheitlicher MailHeader */}
-      <MailHeader
-        userEmail={session?.email || ''}
-        onLogout={() => window.location.href = getAppUrl('/webmail')}
-        appName="Meet"
-        appHomeUrl="/webmail/meet"
-        hideSearch={true}
-      />
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <MailHeader userEmail={session?.email || ''} />
+      
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-teal-100 rounded-full mb-6">
+            <Video className="w-10 h-10 text-teal-600" />
+          </div>
+          <h1 className={`text-3xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            Taskilo Meet
+          </h1>
+          <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Sichere Video-Meetings direkt aus deinem Webmail
+          </p>
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="mx-auto h-20 w-20 bg-teal-100 rounded-full flex items-center justify-center mb-4">
-              <Video className="h-10 w-10 text-teal-600" />
+        {/* Action Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Neues Meeting erstellen */}
+          <div 
+            className={`p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-teal-500 hover:bg-teal-50/50 ${
+              theme === 'dark' 
+                ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
+                : 'bg-white border-gray-200'
+            }`}
+            onClick={() => setShowCreateModal(true)}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <Plus className="w-6 h-6 text-teal-600" />
+              </div>
+              <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Neues Meeting
+              </h2>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Video-Meetings</h2>
-            <p className="mt-2 text-gray-600">
-              Starte ein neues Meeting oder tritt einem bestehenden bei
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+              Erstelle ein neues Meeting und lade Teilnehmer per Link ein.
             </p>
           </div>
 
-          <div className="space-y-4">
-            <Button
-              className="w-full h-14 text-lg"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Neues Meeting
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+          {/* Meeting beitreten */}
+          <div 
+            className={`p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-teal-500 hover:bg-teal-50/50 ${
+              theme === 'dark' 
+                ? 'bg-gray-800 border-gray-700 hover:bg-gray-750' 
+                : 'bg-white border-gray-200'
+            }`}
+            onClick={() => setShowJoinModal(true)}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Users className="w-6 h-6 text-blue-600" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-50 px-2 text-gray-500">oder</span>
-              </div>
+              <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Meeting beitreten
+              </h2>
             </div>
-
-            <div className="flex gap-2">
-              <Input
-                placeholder="Meeting-Code eingeben"
-                value={joinRoomId}
-                onChange={(e) => setJoinRoomId(e.target.value)}
-                className="h-14"
-              />
-              <Button
-                variant="outline"
-                className="h-14 px-6"
-                onClick={() => handleJoinMeeting()}
-                disabled={!joinRoomId}
-              >
-                Beitreten
-              </Button>
-            </div>
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+              Tritt einem bestehenden Meeting mit dem Meeting-Code bei.
+            </p>
           </div>
+        </div>
+
+        {/* Info */}
+        <div className={`mt-8 p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h3 className={`font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            Funktionen
+          </h3>
+          <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            <li className="flex items-center gap-2">
+              <Video className="w-4 h-4 text-teal-500" /> HD Video & Audio
+            </li>
+            <li className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-teal-500" /> Bis zu 10 Teilnehmer
+            </li>
+            <li className="flex items-center gap-2">
+              <ArrowRight className="w-4 h-4 text-teal-500" /> Bildschirmfreigabe
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -609,24 +248,97 @@ export default function WebmailMeetPage() {
           <DialogHeader>
             <DialogTitle>Neues Meeting erstellen</DialogTitle>
             <DialogDescription>
-              Gib deinem Meeting einen Namen (optional)
+              Gib deinem Meeting einen Namen und erstelle einen Einladungslink.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="meetingName">Meeting-Name</Label>
-            <Input
-              id="meetingName"
-              value={meetingName}
-              onChange={(e) => setMeetingName(e.target.value)}
-              placeholder="z.B. Team-Besprechung"
-            />
+          
+          {!createdMeetingUrl ? (
+            <>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="meetingName">Meeting-Name (optional)</Label>
+                  <Input
+                    id="meetingName"
+                    placeholder="z.B. Team-Besprechung"
+                    value={meetingName}
+                    onChange={(e) => setMeetingName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                  Abbrechen
+                </Button>
+                <Button onClick={handleCreateMeeting} className="bg-teal-500 hover:bg-teal-600">
+                  Meeting erstellen
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium mb-2">Meeting erstellt!</p>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={createdMeetingUrl} 
+                      readOnly 
+                      className="text-sm"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={copyMeetingLink}
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setShowCreateModal(false);
+                  setCreatedMeetingUrl(null);
+                  setMeetingName('');
+                }}>
+                  Schließen
+                </Button>
+                <Button onClick={handleStartMeeting} className="bg-teal-500 hover:bg-teal-600">
+                  Meeting starten
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Join Meeting Modal */}
+      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Meeting beitreten</DialogTitle>
+            <DialogDescription>
+              Gib den Meeting-Code ein, um beizutreten.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="joinCode">Meeting-Code</Label>
+              <Input
+                id="joinCode"
+                placeholder="z.B. abc-defg-hij"
+                value={joinRoomCode}
+                onChange={(e) => setJoinRoomCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinMeeting()}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+            <Button variant="outline" onClick={() => setShowJoinModal(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleCreateMeeting}>
-              Meeting starten
+            <Button onClick={handleJoinMeeting} className="bg-teal-500 hover:bg-teal-600">
+              Beitreten
             </Button>
           </DialogFooter>
         </DialogContent>
