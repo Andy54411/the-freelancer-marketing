@@ -229,6 +229,17 @@ export default function HoursBillingOverview({
 
   if (!data) return null;
 
+  // Komponente nur anzeigen wenn tatsächlich Stunden-Daten vorhanden sind
+  // (nicht anzeigen für Aufträge ohne Stundenangaben)
+  const hasValidHoursData = 
+    data.originalPlannedHours > 0 || 
+    data.totalLoggedHours > 0 || 
+    data.timeEntries.length > 0;
+  
+  if (!hasValidHoursData) {
+    return null;
+  }
+
   // Kategorisiere die Zeiteinträge
   const originalEntries = data.timeEntries.filter(entry => entry.category === 'original');
   const paidAdditionalEntries = data.timeEntries.filter(
