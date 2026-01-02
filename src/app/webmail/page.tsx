@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase/clients';
-import { getWebmailCredentials, saveWebmailCredentials } from '@/lib/webmail-session';
+import { getWebmailCredentials } from '@/lib/webmail-session';
 
 // Lazy load heavy components
 const WebmailClient = dynamic(
@@ -54,14 +54,15 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function setCookie(email: string, password: string, remember: boolean): void {
-  // Altes Cookie loeschen
+  // Altes Cookie loeschen auf allen Domains
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
   
   const encoded = encodeCredentials(email, password);
   const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
   
-  // Einfaches Cookie auf taskilo.de - keine Subdomain-Logik mehr noetig
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax; Secure`;
+  // Cookie auf .taskilo.de Domain setzen - gilt für alle Subdomains und Pfade
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; domain=.taskilo.de; SameSite=Lax; Secure`;
 }
 
 function getCookie(): { email: string; password: string } | null {
@@ -82,6 +83,7 @@ function getCookie(): { email: string; password: string } | null {
 
 function deleteCookie(): void {
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
 }
 
 function WebmailPageContent() {
@@ -270,7 +272,7 @@ function WebmailPageContent() {
     setPassword('');
   }, []);
 
-  const handleEmailCreated = (createdEmail: string) => {
+  const _handleEmailCreated = (createdEmail: string) => {
     setEmail(createdEmail);
     setShowCreateForm(false);
   };
