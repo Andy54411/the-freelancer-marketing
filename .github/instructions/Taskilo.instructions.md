@@ -90,6 +90,110 @@ ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d 
 
 ---
 
+## REVOLUT BUSINESS API (KRITISCH - IP-WHITELISTING!)
+
+### Grundlagen
+| Was | Details |
+|-----|---------|
+| **API Endpunkt** | `https://b2b.revolut.com/api/1.0` (NICHT business.revolut.com!) |
+| **Webhooks API** | `https://b2b.revolut.com/api/2.0/webhooks` |
+| **OAuth Token** | `https://b2b.revolut.com/api/1.0/auth/token` |
+| **Whitelisted IP** | NUR `91.99.79.104` (Hetzner Server) |
+| **Webhook URL** | `https://taskilo.de/api/payment/revolut-business-webhook` |
+| **Private Key** | `/certs/revolut/private.key` |
+
+### WICHTIG: IP-Whitelisting
+- Revolut API erlaubt NUR Anfragen von whitelisted IPs
+- Lokaler Mac funktioniert NICHT (401 Unauthorized)
+- ALLE API-Aufrufe via Hetzner Server machen!
+
+### Token erneuern (Access Token läuft nach 40 Min ab)
+
+**1. JWT Client Assertion erstellen:**
+```bash
+# Header (certs/revolut/header.json)
+{"alg":"RS256","typ":"JWT"}
+
+# Payload (certs/revolut/payload.json) - Zeiten anpassen!
+{
+  "iss": "taskilo.de",
+  "sub": "37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8",
+  "aud": "https://revolut.com",
+  "iat": $(date +%s),
+  "exp": $(date -v+1y +%s)
+}
+
+# JWT generieren
+HEADER=$(cat certs/revolut/header.json | tr -d '\n' | base64 | tr -d '=' | tr '/+' '_-')
+PAYLOAD=$(cat certs/revolut/payload.json | tr -d '\n' | base64 | tr -d '=' | tr '/+' '_-')
+SIGNATURE=$(echo -n "$HEADER.$PAYLOAD" | openssl dgst -sha256 -sign certs/revolut/private.key | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+echo "$HEADER.$PAYLOAD.$SIGNATURE" > certs/revolut/client_assertion.txt
+```
+
+**2. Authorization Code holen (im Browser):**
+```
+https://business.revolut.com/app-confirm?client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8&redirect_uri=https://taskilo.de/api/revolut/oauth/callback&response_type=code&state=admin
+```
+- User muss eingeloggt sein und Zugriff bestätigen
+- Code aus URL kopieren (nur 2 Minuten gültig!)
+
+**3. Token Exchange (VIA HETZNER!):**
+```bash
+ssh root@mail.taskilo.de 'curl -s -X POST "https://b2b.revolut.com/api/1.0/auth/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code" \
+  -d "code=AUTHORIZATION_CODE_HIER" \
+  -d "client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8" \
+  -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
+  -d "client_assertion=JWT_HIER"'
+```
+
+**4. Token mit Refresh Token erneuern (VIA HETZNER!):**
+```bash
+ssh root@mail.taskilo.de 'curl -s -X POST "https://b2b.revolut.com/api/1.0/auth/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=REFRESH_TOKEN_HIER" \
+  -d "client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8" \
+  -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
+  -d "client_assertion=JWT_HIER"'
+```
+
+**5. Neue Tokens in .env.local, Vercel und Hetzner speichern:**
+```bash
+# Vercel
+npx vercel env add REVOLUT_ACCESS_TOKEN production
+npx vercel env add REVOLUT_REFRESH_TOKEN production
+
+# Hetzner
+ssh root@mail.taskilo.de "vim /opt/taskilo/webmail-proxy/.env"
+ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d --build"
+```
+
+### Webhook registrieren (VIA HETZNER!)
+```bash
+ssh root@mail.taskilo.de 'curl -s -X POST "https://b2b.revolut.com/api/2.0/webhooks" \
+  -H "Authorization: Bearer ACCESS_TOKEN_HIER" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\":\"https://taskilo.de/api/payment/revolut-business-webhook\",\"events\":[\"TransactionStateChanged\",\"TransactionCreated\"]}"'
+```
+Antwort enthält `signing_secret` - in `REVOLUT_BUSINESS_WEBHOOK_SECRET` speichern!
+
+### API testen (VIA HETZNER!)
+```bash
+ssh root@mail.taskilo.de 'curl -s -H "Authorization: Bearer ACCESS_TOKEN_HIER" "https://b2b.revolut.com/api/1.0/accounts"'
+```
+
+### Dateien
+- Webhook Handler: `/src/app/api/payment/revolut-business-webhook/route.ts`
+- OAuth Callback: `/src/app/api/revolut/oauth/callback/route.ts`
+- Refresh Token API: `/src/app/api/revolut/refresh-token/route.ts`
+- Webhook Management: `/src/app/api/revolut/business-webhooks/route.ts`
+- Private Key: `/certs/revolut/private.key`
+- JWT Assertion: `/certs/revolut/client_assertion.txt`
+
+---
+
 ## CHATBOT KNOWLEDGE BASE
 Bei neuen Website-Seiten IMMER die URL in `WEBSITE_URLS` Array hinzufügen:
 - Datei: `/src/app/api/cron/refresh-knowledge-base/route.ts`
