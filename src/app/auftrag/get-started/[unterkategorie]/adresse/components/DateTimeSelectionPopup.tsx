@@ -206,7 +206,7 @@ export function DateTimeSelectionPopup({
   const isConfirmButtonDisabled = durationError !== null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-md">
+    <div className="fixed inset-0 bg-white/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div
         className={`bg-white rounded-xl shadow-2xl w-full p-6 md:p-8 relative ${showTwoColumnLayout ? 'max-w-4xl' : 'max-w-md'}`}
       >
