@@ -51,7 +51,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
 
   useEffect(() => {
     setIsHydrated(true);
-    // Prüfe, ob bereits eine Einwilligung gespeichert ist
     const savedConsent = localStorage.getItem('taskilo-cookie-consent');
     if (!savedConsent) {
       setBannerVisible(true);
@@ -59,9 +58,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
       const parsedConsent = JSON.parse(savedConsent);
       setConsent(parsedConsent);
 
-      // GTM sollte bereits initialisiert sein, aber sicherheitshalber nochmal senden
       setTimeout(() => {
-        // Only send to GTM in production
         if (process.env.NODE_ENV === 'production') {
           sendConsentToGTM(parsedConsent);
         }
@@ -77,7 +74,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     }
     setBannerVisible(false);
 
-    // Neue Einwilligung sofort an GTM senden
     if (process.env.NODE_ENV === 'production') {
       sendConsentToGTM(updatedConsent);
     }
@@ -96,7 +92,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
 
   const rejectAll = () => {
     const allRejected = {
-      necessary: true, // Necessary cookies always enabled
+      necessary: true,
       analytics: false,
       marketing: false,
       functional: false,
@@ -108,7 +104,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
   const resetConsent = () => {
     if (isHydrated) {
       localStorage.removeItem('taskilo-cookie-consent');
-      localStorage.removeItem('cookieConsent'); // Remove old key as well
+      localStorage.removeItem('cookieConsent');
     }
     setConsent({
       necessary: true,
