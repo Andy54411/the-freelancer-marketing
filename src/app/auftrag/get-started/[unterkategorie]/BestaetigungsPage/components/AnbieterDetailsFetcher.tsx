@@ -7,7 +7,7 @@ import { OrderSummary } from './OrderSummary';
 import { DateTimeSelectionPopup } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
+import { FIREBASE_FUNCTIONS_BASE_URL, TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 import { calculateDaysBetween } from '@/utils/orderCalculations';
 
 import type {
@@ -194,9 +194,9 @@ export default function AnbieterDetailsFetcher({
 
       const anbieterStundensatz = parseFloat(String(fetchedAnbieterData.hourlyRate));
       const servicePrice = anbieterStundensatz * totalCalculatedHours;
-      // KORREKTUR: Die Servicegebühr wird jetzt serverseitig berechnet und vom Anbieterguthaben abgezogen.
-      // Der Kunde zahlt nur den reinen Dienstleistungspreis.
-      const finalPriceInCents = Math.round(servicePrice * 100);
+      // Gesamtpreis = Dienstleistungspreis + Vertrauens- & Hilfsgebühr
+      const totalPriceWithFee = servicePrice + TRUST_AND_SUPPORT_FEE_EUR;
+      const finalPriceInCents = Math.round(totalPriceWithFee * 100);
 
       const anbieterDataForDisplay: AnbieterDetailsType = {
         ...fetchedAnbieterData,
@@ -204,7 +204,7 @@ export default function AnbieterDetailsFetcher({
         hourlyRate: anbieterStundensatz,
         location: `${postalCodeJob}${fetchedAnbieterData.city ? ' ' + fetchedAnbieterData.city : ''}`,
         estimatedDuration: displayDuration,
-        totalCalculatedPrice: servicePrice, // Zeige den reinen Dienstleistungspreis an
+        totalCalculatedPrice: totalPriceWithFee, // Gesamtpreis inkl. Gebühr
         description: taskDescVal,
       };
 
