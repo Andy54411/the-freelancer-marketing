@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
         
         jobCalculatedPriceInCents: tempDraftData?.jobCalculatedPriceInCents || 0,
         totalPriceInCents: tempDraftData?.jobCalculatedPriceInCents || tempDraftData?.totalPriceInCents || 0,
+        totalAmountPaidByBuyer: tempDraftData?.jobCalculatedPriceInCents || tempDraftData?.totalPriceInCents || 0,
         price: tempDraftData?.jobCalculatedPriceInCents ? tempDraftData.jobCalculatedPriceInCents / 100 : (tempDraftData?.price || tempDraftData?.preis || 0),
         totalAmount: tempDraftData?.jobCalculatedPriceInCents ? tempDraftData.jobCalculatedPriceInCents / 100 : (tempDraftData?.totalAmount || tempDraftData?.price || 0),
         currency: 'EUR',

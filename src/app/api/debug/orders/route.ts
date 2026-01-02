@@ -16,16 +16,26 @@ export async function GET(request: NextRequest) {
 
     // Get all recent auftraege
     const allOrdersSnap = await db.collection('auftraege').limit(10).get();
-    const allOrders = allOrdersSnap.docs.map(doc => ({
-      id: doc.id,
-      kundeId: doc.data().kundeId,
-      customerFirebaseUid: doc.data().customerFirebaseUid,
-      status: doc.data().status,
-      unterkategorie: doc.data().unterkategorie,
-      selectedSubcategory: doc.data().selectedSubcategory,
-      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
-      paidAt: doc.data().paidAt?.toDate?.() || doc.data().paidAt,
-    }));
+    const allOrders = allOrdersSnap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        kundeId: data.kundeId,
+        customerFirebaseUid: data.customerFirebaseUid,
+        status: data.status,
+        unterkategorie: data.unterkategorie,
+        selectedSubcategory: data.selectedSubcategory,
+        // Preis-Felder
+        totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
+        totalPriceInCents: data.totalPriceInCents,
+        jobCalculatedPriceInCents: data.jobCalculatedPriceInCents,
+        price: data.price,
+        totalAmount: data.totalAmount,
+        preis: data.preis,
+        createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        paidAt: data.paidAt?.toDate?.() || data.paidAt,
+      };
+    });
 
     // Get orders for specific user
     const userOrders1Snap = await db.collection('auftraege')

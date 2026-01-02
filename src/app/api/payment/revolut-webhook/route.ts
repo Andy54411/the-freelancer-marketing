@@ -110,6 +110,7 @@ async function createOrderFromTempDraft(tempDraftId: string, revolutOrderId: str
         
         jobCalculatedPriceInCents: tempDraftData?.jobCalculatedPriceInCents || 0,
         totalPriceInCents: tempDraftData?.jobCalculatedPriceInCents || 0,
+        totalAmountPaidByBuyer: tempDraftData?.jobCalculatedPriceInCents || 0,
         price: tempDraftData?.jobCalculatedPriceInCents ? tempDraftData.jobCalculatedPriceInCents / 100 : 0,
         totalAmount: tempDraftData?.jobCalculatedPriceInCents ? tempDraftData.jobCalculatedPriceInCents / 100 : 0,
         currency: 'EUR',

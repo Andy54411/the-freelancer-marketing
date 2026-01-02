@@ -176,10 +176,11 @@ export const getProviderOrders = onRequest(
                 // SMART CALCULATION: Base amount + ALL billable timeTracking amounts
                 let totalRevenue = 0;
 
-                // 1. Add base order amount
-                if (data.totalAmountPaidByBuyer && typeof data.totalAmountPaidByBuyer === 'number' && data.totalAmountPaidByBuyer > 0) {
-                    totalRevenue += data.totalAmountPaidByBuyer;
-                    logger.error(`[getProviderOrders] Order ${data.id}: Added base amount ${data.totalAmountPaidByBuyer} cents`);
+                // 1. Add base order amount - check multiple field names for compatibility
+                const baseAmount = data.totalAmountPaidByBuyer || data.totalPriceInCents || data.jobCalculatedPriceInCents || 0;
+                if (baseAmount && typeof baseAmount === 'number' && baseAmount > 0) {
+                    totalRevenue += baseAmount;
+                    logger.error(`[getProviderOrders] Order ${data.id}: Added base amount ${baseAmount} cents`);
                 }
 
                 // 2. Add ALL billable amounts from timeTracking.timeEntries
@@ -212,7 +213,7 @@ export const getProviderOrders = onRequest(
 
                 return {
                     id: data.id,
-                    selectedSubcategory: data.selectedSubcategory || 'Dienstleistung',
+                    selectedSubcategory: data.selectedSubcategory || data.unterkategorie,
                     customerName: customerDetails.name,
                     customerAvatarUrl: customerDetails.avatarUrl,
                     status: data.status,

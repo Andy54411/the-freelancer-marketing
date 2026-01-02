@@ -282,6 +282,7 @@ async function createOrderFromEscrow(
         
         jobCalculatedPriceInCents: tempDraftData?.jobCalculatedPriceInCents || 0,
         totalPriceInCents: tempDraftData?.jobCalculatedPriceInCents || 0,
+        totalAmountPaidByBuyer: tempDraftData?.jobCalculatedPriceInCents || 0,
         currency: 'EUR',
         
         postalCode: tempDraftData?.postalCode || '',
