@@ -59,6 +59,7 @@ export interface EscrowRecord {
   // Metadaten
   description?: string;
   metadata?: Record<string, unknown>;
+  paymentReference?: string; // z.B. ESC-12345678 für Verwendungszweck bei SEPA
   
   // Timestamps
   createdAt: Timestamp;
@@ -120,6 +121,9 @@ export class EscrowService {
 
     const escrowId = `escrow_${orderId}_${Date.now()}`;
     const now = Timestamp.now();
+    
+    // Generiere Payment Reference für SEPA-Überweisungen (ESC-XXXXXXXX)
+    const paymentReference = `ESC-${escrowId.slice(-8).toUpperCase()}`;
 
     const escrow: EscrowRecord = {
       id: escrowId,
@@ -134,6 +138,7 @@ export class EscrowService {
       clearingDays,
       clearingEndsAt: null,
       paymentMethod: 'revolut',
+      paymentReference,
       createdAt: now,
       updatedAt: now,
     };

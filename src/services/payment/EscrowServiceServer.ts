@@ -82,6 +82,9 @@ export class EscrowServiceServer {
 
     const escrowId = `escrow_${orderId}_${Date.now()}`;
     const now = Timestamp.now();
+    
+    // Generiere Payment Reference für SEPA-Überweisungen (ESC-XXXXXXXX)
+    const paymentReference = `ESC-${escrowId.slice(-8).toUpperCase()}`;
 
     const escrowData: Record<string, unknown> = {
       id: escrowId,
@@ -96,6 +99,7 @@ export class EscrowServiceServer {
       clearingDays,
       clearingEndsAt: null,
       paymentMethod: 'revolut',
+      paymentReference,
       createdAt: now,
       updatedAt: now,
     };

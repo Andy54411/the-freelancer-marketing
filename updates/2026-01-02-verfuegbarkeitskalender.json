@@ -1,0 +1,17 @@
+{
+  "id": "b924f110-2ece-4221-9b6f-5fad04acbd3c",
+  "title": "Verfügbarkeitskalender - Tage blockieren",
+  "description": "Unternehmen können jetzt im Kalender Tage blockieren (z.B. Urlaub, Krankheit, Betriebsferien). Kunden sehen diese Tage als nicht buchbar und können sie nicht auswählen.",
+  "features": [
+    "Tage im Kalender blockieren und freigeben",
+    "Mehrere Tage auf einmal blockieren (Datumsbereich)",
+    "Grund für Blockierung auswählen (Urlaub, Krankheit, etc.)",
+    "Blockierte Tage werden im Buchungskalender der Kunden automatisch deaktiviert",
+    "Visuelle Hervorhebung blockierter Tage im Firmenkalender"
+  ],
+  "category": "feature",
+  "date": "2026-01-02",
+  "version": "2.15.0",
+  "affectedAreas": ["Kalender", "Buchungssystem"],
+  "breakingChanges": false
+}

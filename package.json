@@ -14,7 +14,8 @@
     }
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "build:fast": "NODE_OPTIONS=\"--max-old-space-size=8192\" SKIP_TYPE_CHECK=true next build",
     "build:analyze": "ANALYZE=true next build",

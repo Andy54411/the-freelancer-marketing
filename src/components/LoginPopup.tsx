@@ -15,8 +15,9 @@ import { LoginForm } from './login-form';
 interface LoginPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: User, redirectTo?: string | null) => void;
   initialEmail?: string; // Optional, um E-Mail vorzubelegen
+  redirectTo?: string | null; // URL für Weiterleitung nach Login
 }
 
 export default function LoginPopup({
@@ -24,6 +25,7 @@ export default function LoginPopup({
   onClose,
   onLoginSuccess,
   initialEmail = '',
+  redirectTo = null,
 }: LoginPopupProps) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -61,11 +63,11 @@ export default function LoginPopup({
       if (authMode === 'signup') {
         // Registrierung
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        onLoginSuccess(userCredential.user);
+        onLoginSuccess(userCredential.user, redirectTo);
       } else {
         // Anmeldung
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        onLoginSuccess(userCredential.user);
+        onLoginSuccess(userCredential.user, redirectTo);
       }
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
@@ -110,7 +112,7 @@ export default function LoginPopup({
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      onLoginSuccess(result.user);
+      onLoginSuccess(result.user, redirectTo);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -140,7 +142,7 @@ export default function LoginPopup({
       provider.addScope('email');
       provider.addScope('name');
       const appleResult = await signInWithPopup(auth, provider);
-      onLoginSuccess(appleResult.user);
+      onLoginSuccess(appleResult.user, redirectTo);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
         const firebaseErr = err as { code: string; message: string };

@@ -64,19 +64,22 @@ export class RevolutOpenBankingService {
       this.privateKey = process.env.REVOLUT_PRIVATE_KEY;
     } else {
       // Fallback to file system (local development)
+      const basePath = process.cwd();
       const transportCertPath =
-        process.env.REVOLUT_TRANSPORT_CERT_PATH || './certs/revolut/transport.pem';
-      const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
+        process.env.REVOLUT_TRANSPORT_CERT_PATH || `${basePath}/certs/revolut/transport.pem`;
+      const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || `${basePath}/certs/revolut/private.key`;
 
       try {
         if (fs.existsSync(transportCertPath) && fs.existsSync(privateKeyPath)) {
           this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
           this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
         } else {
+          console.error('[Revolut] Certificate files not found:', { transportCertPath, privateKeyPath });
           this.transportCert = 'placeholder-cert';
           this.privateKey = 'placeholder-key';
         }
-      } catch {
+      } catch (err) {
+        console.error('[Revolut] Error loading certificates:', err);
         this.transportCert = 'placeholder-cert';
         this.privateKey = 'placeholder-key';
       }
@@ -326,3 +329,13 @@ export class RevolutOpenBankingService {
 }
 
 export const revolutOpenBankingService = new RevolutOpenBankingService();
+
+/**
+ * Helper function to get access token for Business API
+ * Used by webhook management and other Business API calls
+ */
+export async function getRevolutBusinessAccessToken(): Promise<string | null> {
+  const service = new RevolutOpenBankingService();
+  const token = await service.getAccessToken('READ');
+  return token;
+}

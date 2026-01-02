@@ -49,9 +49,9 @@ interface EscrowPaymentProps {
 }
 
 const TASKILO_BANK = {
-  iban: 'DE89 3704 0044 0532 0130 00',
-  bic: 'COBADEFFXXX',
-  name: 'Taskilo GmbH - Treuhand',
+  iban: 'LT70 3250 0247 2086 9498',
+  bic: 'REVOLT21',
+  name: 'The Freelancer Marketing LTD',
 };
 
 export function EscrowPaymentComponent({

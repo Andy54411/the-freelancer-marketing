@@ -866,6 +866,7 @@ export default function CompanyProviderDetailPage() {
           onClose={() => setDatePickerOpen(false)}
           onConfirm={handleDateTimeConfirm}
           bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
+          providerId={provider.id}
           contextCompany={{
             id: provider.id,
             companyName: provider.companyName || provider.userName || 'Unbekannter Anbieter',

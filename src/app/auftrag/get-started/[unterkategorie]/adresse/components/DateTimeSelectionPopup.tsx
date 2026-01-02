@@ -3,17 +3,16 @@
 
 import Image from 'next/image';
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { X as FiX, MessageSquare as FiMessageCircle } from 'lucide-react';
-import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler } from 'react-day-picker';
-import { format, isValid, parseISO } from 'date-fns';
+import { X as FiX, MessageSquare as FiMessageCircle, AlertCircle } from 'lucide-react';
+import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler, Matcher } from 'react-day-picker';
+import { format, isValid, parseISO, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 import type { Company as AnbieterDetails } from '@/types/types';
-import { PAGE_LOG } from '../../../../../../lib/constants';
 
 // Ersetzt den lokalen Import durch die zentrale, geteilte Logik
 import { getBookingCharacteristics } from '@/shared/booking-characteristics';
@@ -38,6 +37,7 @@ export interface DateTimeSelectionPopupProps {
   initialDuration?: string;
   contextCompany?: AnbieterDetails | null;
   bookingSubcategory?: string | null;
+  providerId?: string; // UID des Anbieters für Verfügbarkeitsprüfung
 }
 
 export function DateTimeSelectionPopup({
@@ -49,6 +49,7 @@ export function DateTimeSelectionPopup({
   initialDuration,
   contextCompany,
   bookingSubcategory,
+  providerId,
 }: DateTimeSelectionPopupProps) {
   const characteristics = useMemo(
     () => getBookingCharacteristics(bookingSubcategory ?? null),
@@ -63,6 +64,50 @@ export function DateTimeSelectionPopup({
   const [selectedTimeInPopup, setSelectedTimeInPopup] = useState<string>('');
   const [durationInput, setDurationInput] = useState<string>('');
   const [durationError, setDurationError] = useState<string | null>(null);
+  
+  // State für blockierte Tage
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+
+  // Lade blockierte Tage des Anbieters
+  const fetchBlockedDates = useCallback(async () => {
+    // Nutze providerId oder contextCompany?.id
+    const companyId = providerId || contextCompany?.id;
+    if (!companyId) return;
+    
+    try {
+      const response = await fetch(`/api/companies/${companyId}/availability`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.blockedDates)) {
+          // blockedDates ist bereits ein Array von Datum-Strings (z.B. ['2026-01-05', '2026-01-06'])
+          const dateStrings = data.blockedDates.filter((d: unknown): d is string => typeof d === 'string');
+          setBlockedDates(dateStrings);
+        }
+      }
+    } catch {
+      // Fehler stillschweigend ignorieren - Termine können trotzdem gebucht werden
+    }
+  }, [providerId, contextCompany?.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchBlockedDates();
+    }
+  }, [isOpen, fetchBlockedDates]);
+
+  // Matcher für den Kalender - deaktiviert blockierte Tage
+  const disabledMatcher: Matcher = useMemo(() => {
+    const blockedDatesAsDates = blockedDates.map(dateStr => parseISO(dateStr));
+    return (date: Date) => {
+      // Vergangene Tage deaktivieren
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (date < today) return true;
+      
+      // Blockierte Tage deaktivieren
+      return blockedDatesAsDates.some(blockedDate => isSameDay(date, blockedDate));
+    };
+  }, [blockedDates]);
 
   useEffect(() => {
     if (isOpen) {
@@ -247,7 +292,17 @@ export function DateTimeSelectionPopup({
                   numberOfMonths={showTwoColumnLayout ? 2 : 1}
                   defaultMonth={calendarDefaultMonth}
                   className="rounded-md p-0"
-                  disabled={{ before: new Date() }}
+                  disabled={disabledMatcher}
+                  modifiers={{
+                    blocked: blockedDates.map(dateStr => parseISO(dateStr))
+                  }}
+                  modifiersStyles={{
+                    blocked: {
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      textDecoration: 'line-through'
+                    }
+                  }}
                 />
               )}
               {currentCalendarMode === 'range' && (
@@ -260,11 +315,27 @@ export function DateTimeSelectionPopup({
                   numberOfMonths={showTwoColumnLayout ? 2 : 1}
                   defaultMonth={calendarDefaultMonth}
                   className="rounded-md p-0"
-                  disabled={{ before: new Date() }}
+                  disabled={disabledMatcher}
+                  modifiers={{
+                    blocked: blockedDates.map(dateStr => parseISO(dateStr))
+                  }}
+                  modifiersStyles={{
+                    blocked: {
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      textDecoration: 'line-through'
+                    }
+                  }}
                 />
               )}
             </div>
             <div className="text-xs text-center text-gray-500 h-4">{footerSummaryText}</div>
+            {blockedDates.length > 0 && (
+              <div className="flex items-center justify-center gap-2 text-xs text-amber-600 bg-amber-50 rounded-lg p-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>Durchgestrichene Tage sind nicht verfügbar</span>
+              </div>
+            )}
             <div className="pt-2">
               <Label htmlFor="time-select-popup" className="text-sm font-medium text-gray-700">
                 Startzeit (am ersten Tag)

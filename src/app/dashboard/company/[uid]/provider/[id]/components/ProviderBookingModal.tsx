@@ -557,6 +557,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
           }}
           onConfirm={handleDateTimeConfirm} // WICHTIG: Verwendet handleDateTimeConfirm, NICHT die originale onConfirm!
           bookingSubcategory={provider.selectedSubcategory || provider.selectedCategory || null}
+          providerId={provider.id}
           contextCompany={{
             id: provider.id,
             companyName: getProviderName(),

@@ -649,6 +649,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         onClose={() => setIsDatePickerOpen(false)}
         onConfirm={handleDateTimeConfirm}
         bookingSubcategory={selectedSubcategory}
+        providerId={selectedProvider?.id}
         contextCompany={selectedProvider}
       />
     </>

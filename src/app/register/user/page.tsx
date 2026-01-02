@@ -664,6 +664,7 @@ function UserRegisterFormContent() {
         onClose={() => setIsLoginPopupOpen(false)}
         onLoginSuccess={handleLoginSuccessFromPopup}
         initialEmail={email}
+        redirectTo={redirectToFromParams}
       />
     </>
   );

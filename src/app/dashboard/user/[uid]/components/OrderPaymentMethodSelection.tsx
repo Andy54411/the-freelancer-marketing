@@ -13,12 +13,12 @@ import { Building2, Shield, CreditCard, CheckCircle, Copy, Check } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { UserProfileData } from '@/types/types';
 
-// Bank Details für Treuhand-Überweisungen
+// Bank Details für Treuhand-Überweisungen (Revolut Business)
 const TASKILO_BANK_DETAILS = {
-  iban: 'DE89 3704 0044 0532 0130 00',
-  bic: 'COBADEFFXXX',
-  bankName: 'Commerzbank',
-  accountHolder: 'Taskilo GmbH - Treuhand',
+  iban: 'LT70 3250 0247 2086 9498',
+  bic: 'REVOLT21',
+  bankName: 'Revolut',
+  accountHolder: 'The Freelancer Marketing LTD',
 };
 
 interface FullOrderDetails {

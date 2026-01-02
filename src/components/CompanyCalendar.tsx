@@ -11,10 +11,12 @@ import { type DateClickArg } from '@fullcalendar/interaction';
 import deLocale from '@fullcalendar/core/locales/de';
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { BlockedDateModal } from '@/components/calendar/BlockedDateModal';
+import { type BlockedDate } from '@/types/availability';
 
 // Wiederverwendbarer OrderData-Typ
 type OrderData = {
@@ -67,8 +69,9 @@ type CalendarEventData = {
 interface CompanyCalendarProps {
   companyUid: string;
   selectedOrderId?: string | null; // Die ID des Auftrags, der hervorgehoben werden soll
-  onDateClick?: (dateInfo: { date: Date, dateStr: string }) => void; // NEU: Callback für Datum-Klicks
-  onEventClick?: (eventInfo: EventClickArg) => void; // NEU: Callback für Event-Klicks
+  onDateClick?: (dateInfo: { date: Date, dateStr: string }) => void; // Callback für Datum-Klicks
+  onEventClick?: (eventInfo: EventClickArg) => void; // Callback für Event-Klicks
+  enableBlockedDates?: boolean; // Blockierte Tage anzeigen und verwalten
 }
 
 export interface CompanyCalendarRef {
@@ -127,17 +130,68 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ companyUid, selectedOrderId, onDateClick, onEventClick }, ref) => {
+const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ companyUid, selectedOrderId, onDateClick, onEventClick, enableBlockedDates = false }, ref) => {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, firebaseUser } = useAuth();
 
   const [allOrders, setAllOrders] = useState<OrderData[]>([]); // Speichert die Rohdaten der Aufträge
   const [allProjects, setAllProjects] = useState<ProjectData[]>([]); // Speichert die Rohdaten der Projekte
   const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]); // Speichert die Rohdaten der Rechnungen
   const [allCalendarEvents, setAllCalendarEvents] = useState<CalendarEventData[]>([]); // Speichert die Rohdaten der Kalenderereignisse
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]); // Blockierte Tage
   const [events, setEvents] = useState<EventInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal-State für blockierte Tage
+  const [blockedDateModal, setBlockedDateModal] = useState<{
+    isOpen: boolean;
+    date: Date;
+    isBlocked: boolean;
+    blockedReason?: string;
+    blockedDateId?: string;
+  }>({
+    isOpen: false,
+    date: new Date(),
+    isBlocked: false
+  });
+
+  // Funktion zum Laden der blockierten Tage
+  const fetchBlockedDates = async () => {
+    if (!enableBlockedDates) return;
+    
+    try {
+      const blockedDatesQuery = query(
+        collection(db, 'companies', companyUid, 'blockedDates'),
+        where('isActive', '==', true)
+      );
+      
+      const snapshot = await getDocs(blockedDatesQuery);
+      const loadedBlockedDates: BlockedDate[] = [];
+      
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        loadedBlockedDates.push({
+          id: doc.id,
+          date: data.date,
+          reason: data.reason,
+          blockType: data.blockType || 'full_day',
+          startTime: data.startTime,
+          endTime: data.endTime,
+          recurring: data.recurring || false,
+          recurringPattern: data.recurringPattern,
+          isActive: data.isActive,
+          createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt),
+          createdBy: data.createdBy,
+          updatedAt: data.updatedAt?.toDate?.() || new Date(data.updatedAt)
+        });
+      });
+      
+      setBlockedDates(loadedBlockedDates);
+    } catch (err) {
+      // Fehler stillschweigend ignorieren - blockierte Tage sind optional
+    }
+  };
 
   // Funktion zum Laden aller Daten
   const fetchAllData = async () => {
@@ -303,6 +357,9 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
       setAllProjects(loadedProjects);
       setAllInvoices(loadedInvoices);
       setAllCalendarEvents([...loadedCalendarEvents, ...loadedInterviews]);
+      
+      // Blockierte Tage laden
+      await fetchBlockedDates();
     } catch (err: any) {
       setError(err.message || 'Fehler beim Laden der Aufträge, Projekte und Rechnungen.');
     } finally {
@@ -314,6 +371,7 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
   useImperativeHandle(ref, () => ({
     refreshEvents: () => {
       fetchAllData();
+      fetchBlockedDates();
     }
   }));
 
@@ -451,11 +509,31 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
       return eventObject;
     });
 
+    // Events für blockierte Tage erstellen
+    const blockedDateEvents = enableBlockedDates ? blockedDates.map(blockedDate => {
+      return {
+        id: `blocked-${blockedDate.id}`,
+        title: blockedDate.reason || 'Blockiert',
+        start: new Date(blockedDate.date),
+        allDay: blockedDate.blockType === 'full_day',
+        display: 'background' as const,
+        extendedProps: {
+          type: 'blocked',
+          blockType: blockedDate.blockType,
+          reason: blockedDate.reason,
+          blockedDateId: blockedDate.id
+        },
+        backgroundColor: '#fee2e2',
+        borderColor: '#fca5a5',
+        classNames: ['blocked-date-event']
+      };
+    }) : [];
+
     // Alle Events kombinieren
-    const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents, ...calendarEventEvents];
+    const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents, ...calendarEventEvents, ...blockedDateEvents];
 
     setEvents(calendarEvents);
-  }, [allOrders, allProjects, allInvoices, allCalendarEvents, selectedOrderId, companyUid]);
+  }, [allOrders, allProjects, allInvoices, allCalendarEvents, blockedDates, selectedOrderId, companyUid, enableBlockedDates]);
 
   // NEU: Funktion zum Rendern des Event-Inhalts mit Tooltip
   const renderEventContent = (eventInfo: EventContentArg) => {
@@ -494,6 +572,8 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
           return 'Rechnung';
         case 'calendar_event':
           return 'Termin';
+        case 'blocked':
+          return 'Blockiert';
         default:
           return 'Auftrag';
       }
@@ -612,6 +692,21 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
               }
             }}
             dateClick={info => {
+              // Wenn enableBlockedDates aktiv, öffne Modal zum Blockieren/Freigeben
+              if (enableBlockedDates) {
+                const dateStr = info.dateStr;
+                const blockedDate = blockedDates.find(bd => bd.date === dateStr);
+                
+                setBlockedDateModal({
+                  isOpen: true,
+                  date: info.date,
+                  isBlocked: !!blockedDate,
+                  blockedReason: blockedDate?.reason,
+                  blockedDateId: blockedDate?.id
+                });
+                return;
+              }
+              
               // Wenn onDateClick Callback vorhanden, verwende ihn
               if (onDateClick) {
                 onDateClick({
@@ -723,7 +818,33 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
             opacity: 0.7;
           }
         }
+
+        /* Blockierte Tage - Hintergrundfarbe */
+        .blocked-date-event {
+          opacity: 0.7 !important;
+        }
+        
+        .fc-day-today.fc-day-blocked {
+          background-color: #fee2e2 !important;
+        }
       `}</style>
+
+      {/* Modal für blockierte Tage */}
+      {enableBlockedDates && (
+        <BlockedDateModal
+          isOpen={blockedDateModal.isOpen}
+          onClose={() => setBlockedDateModal(prev => ({ ...prev, isOpen: false }))}
+          date={blockedDateModal.date}
+          companyId={companyUid}
+          isBlocked={blockedDateModal.isBlocked}
+          blockedReason={blockedDateModal.blockedReason}
+          blockedDateId={blockedDateModal.blockedDateId}
+          onSuccess={() => {
+            fetchBlockedDates();
+            fetchAllData();
+          }}
+        />
+      )}
     </Suspense>
   );
 });
