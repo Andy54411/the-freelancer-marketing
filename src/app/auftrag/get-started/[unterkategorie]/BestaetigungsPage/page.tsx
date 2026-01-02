@@ -6,7 +6,8 @@ import { Loader2, AlertCircle, CreditCard, Shield, CheckCircle, ArrowLeft, Clock
 import { useAuth } from '@/contexts/AuthContext';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase/clients';
+import { functions, db } from '@/firebase/clients';
+import { doc, getDoc } from 'firebase/firestore';
 import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 import BestaetigungsContent from './components/BestaetigungsContent';
 import { motion } from 'framer-motion';
@@ -55,6 +56,44 @@ export default function BestaetigungsPage() {
   // States für BestaetigungsContent
   const [jobPriceInCents, setJobPriceInCents] = useState<number | null>(null);
   const [_totalAmountPayableInCents, setTotalAmountPayableInCents] = useState<number | null>(null);
+  
+  // State für Kundendaten (Rechnungsadresse)
+  const [customerData, setCustomerData] = useState<{
+    firstName?: string;
+    lastName?: string;
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    companyName?: string;
+  } | null>(null);
+
+  // Kundendaten aus Firestore laden
+  useEffect(() => {
+    const loadCustomerData = async () => {
+      if (!firebaseUser?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setCustomerData({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            street: data.street,
+            postalCode: data.postalCode,
+            city: data.city,
+            country: data.country,
+            companyName: data.companyName,
+          });
+        }
+      } catch (err) {
+        // Fehler beim Laden der Kundendaten - UI zeigt Fallback
+      }
+    };
+    
+    loadCustomerData();
+  }, [firebaseUser?.uid]);
 
   // Callback für Preisberechnung von BestaetigungsContent
   const handlePriceCalculatedFromChild = useCallback(
@@ -498,9 +537,30 @@ export default function BestaetigungsPage() {
                   {/* Customer Info */}
                   <div className="bg-gray-50 rounded-xl p-5">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3">Rechnungsadresse</h3>
-                    <div className="text-sm text-gray-600">
-                      <p className="font-medium text-gray-900">{firebaseUser?.displayName || 'Kunde'}</p>
-                      <p className="text-xs text-gray-500 mt-1">Adresse wird beim Bezahlen erfasst</p>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      {customerData?.companyName && (
+                        <p className="font-medium text-gray-900">{customerData.companyName}</p>
+                      )}
+                      <p className="font-medium text-gray-900">
+                        {customerData?.firstName || customerData?.lastName 
+                          ? `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
+                          : firebaseUser?.displayName || 'Kunde'}
+                      </p>
+                      {customerData?.street && (
+                        <p>{customerData.street}</p>
+                      )}
+                      {(customerData?.postalCode || customerData?.city) && (
+                        <p>
+                          {customerData.postalCode && `${customerData.postalCode} `}
+                          {customerData.city}
+                        </p>
+                      )}
+                      {customerData?.country && (
+                        <p>{customerData.country}</p>
+                      )}
+                      {!customerData?.street && !customerData?.postalCode && !customerData?.city && (
+                        <p className="text-xs text-gray-500 mt-1">Adresse wird beim Bezahlen erfasst</p>
+                      )}
                     </div>
                   </div>
 
