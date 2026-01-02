@@ -244,7 +244,7 @@ export default function WebmailMeetPage() {
 
       {/* Create Meeting Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Neues Meeting erstellen</DialogTitle>
             <DialogDescription>
@@ -314,7 +314,7 @@ export default function WebmailMeetPage() {
 
       {/* Join Meeting Modal */}
       <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Meeting beitreten</DialogTitle>
             <DialogDescription>
