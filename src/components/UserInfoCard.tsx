@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { User as FiUser, ArrowRight, Star, Circle } from 'lucide-react';
+import { User as FiUser, ArrowRight, Star, Circle, MapPin, Globe, ShoppingCart, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { userPresence } from '@/lib/userPresence';
 import { db } from '@/firebase/clients';
@@ -34,6 +34,14 @@ interface UserData {
   [key: string]: any; // Für weitere dynamische Felder
 }
 
+interface CustomerStats {
+  totalOrders: number;
+  completedOrders: number;
+  averageOrderValue: number;
+  region: string;
+  languages: string[];
+}
+
 interface UserInfoCardProps {
   userId: string;
   userName: string; // Fallback nur
@@ -42,6 +50,7 @@ interface UserInfoCardProps {
   showReviews?: boolean;
   showSkills?: boolean;
   showLanguages?: boolean;
+  showCustomerStats?: boolean;
   showLinkButton?: boolean;
   linkText?: string;
   linkHref?: string;
@@ -61,6 +70,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   showReviews = false,
   showSkills = false,
   showLanguages = false,
+  showCustomerStats = false,
   showLinkButton = false,
   linkText = 'Profil ansehen',
   linkHref,
@@ -80,6 +90,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   const [profileUrl, setProfileUrl] = useState<string>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [languages, setLanguages] = useState<Array<{ language: string; proficiency: string }>>([]);
+  const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
 
   // Lade Benutzerdaten mit Collection-Fallback
   useEffect(() => {
@@ -173,8 +184,86 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
           }
         }
 
-        // 3. Bestimme Profil-URL
-        setProfileUrl(`/profile/${userId}`);
+        // 3. Bestimme Profil-URL basierend auf Rolle
+        if (userRole === 'provider') {
+          setProfileUrl(`/profile/${userId}`);
+        } else {
+          // Kunden zur User-Profil-Seite verlinken
+          setProfileUrl(`/user-profile/${userId}`);
+        }
+
+        // 4. Lade Kundenstatistiken wenn gewünscht
+        if (userRole === 'customer' && showCustomerStats) {
+          // Region und Sprachen aus userData
+          const city = userData?.city || userData?.location?.city || userData?.step1?.city || '';
+          const country = userData?.country || userData?.location?.country || '';
+          const regionStr = [city, country].filter(Boolean).join(', ') || 'Nicht angegeben';
+          
+          let customerLanguages: string[] = [];
+          if (userData?.languages && Array.isArray(userData.languages)) {
+            customerLanguages = userData.languages.map((lang: { language?: string; name?: string } | string) =>
+              typeof lang === 'string' ? lang : lang.language || lang.name || ''
+            ).filter(Boolean);
+          }
+          if (customerLanguages.length === 0) {
+            customerLanguages = ['Deutsch'];
+          }
+
+          // Aufträge laden
+          const ordersQuery = query(
+            collection(db, 'auftraege'),
+            where('customerFirebaseUid', '==', userId)
+          );
+          const ordersSnapshot = await getDocs(ordersQuery);
+
+          let totalOrders = 0;
+          let completedOrders = 0;
+          let totalValue = 0;
+
+          ordersSnapshot.docs.forEach(orderDoc => {
+            const order = orderDoc.data();
+            totalOrders++;
+            
+            if (order.status === 'ABGESCHLOSSEN' || order.status === 'abgeschlossen' || order.status === 'completed') {
+              completedOrders++;
+            }
+
+            const orderValue = order.totalAmountPaidByBuyer || order.totalPriceInCents || order.jobCalculatedPriceInCents || 0;
+            totalValue += orderValue;
+          });
+
+          // Auch mit kundeId suchen (Legacy-Feld)
+          const ordersQuery2 = query(
+            collection(db, 'auftraege'),
+            where('kundeId', '==', userId)
+          );
+          const ordersSnapshot2 = await getDocs(ordersQuery2);
+
+          const existingIds = new Set(ordersSnapshot.docs.map(d => d.id));
+          ordersSnapshot2.docs.forEach(orderDoc => {
+            if (!existingIds.has(orderDoc.id)) {
+              const order = orderDoc.data();
+              totalOrders++;
+              
+              if (order.status === 'ABGESCHLOSSEN' || order.status === 'abgeschlossen' || order.status === 'completed') {
+                completedOrders++;
+              }
+
+              const orderValue = order.totalAmountPaidByBuyer || order.totalPriceInCents || order.jobCalculatedPriceInCents || 0;
+              totalValue += orderValue;
+            }
+          });
+
+          const averageOrderValue = totalOrders > 0 ? totalValue / totalOrders / 100 : 0;
+
+          setCustomerStats({
+            totalOrders,
+            completedOrders,
+            averageOrderValue,
+            region: regionStr,
+            languages: customerLanguages,
+          });
+        }
       } catch (error) {
       } finally {
         setLoading(false);
@@ -182,7 +271,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
     };
 
     loadUserData();
-  }, [userId, userRole, fallbackUserName, fallbackAvatarUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userRole, showCustomerStats]);
 
   // 4. Lade Online-Status (deaktiviert wegen fehlender API)
   useEffect(() => {
@@ -368,6 +458,49 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
                 {languages.length > 2 && (
                   <span className="text-xs text-gray-500">+{languages.length - 2} weitere</span>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Kundenstatistiken anzeigen */}
+          {showCustomerStats && userRole === 'customer' && customerStats && (
+            <div className="mt-3 space-y-2">
+              {/* Region */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin size={14} className="text-gray-400" />
+                <span>{customerStats.region}</span>
+              </div>
+              
+              {/* Sprachen */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Globe size={14} className="text-gray-400" />
+                <span>{customerStats.languages.join(', ')}</span>
+              </div>
+
+              {/* Statistiken Grid */}
+              <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <ShoppingCart size={12} className="text-teal-500" />
+                    <span className="font-semibold text-gray-900">{customerStats.totalOrders}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">Aufträge</span>
+                </div>
+                
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <CheckCircle size={12} className="text-green-500" />
+                    <span className="font-semibold text-gray-900">{customerStats.completedOrders}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">Abgeschl.</span>
+                </div>
+                
+                <div className="text-center">
+                  <span className="font-semibold text-gray-900 text-sm">
+                    {customerStats.averageOrderValue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-xs text-gray-500 block">Ø Wert</span>
+                </div>
               </div>
             </div>
           )}

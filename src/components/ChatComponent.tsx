@@ -407,12 +407,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
     try {
       // Send video call request
-      await videoService.sendCallRequest(
-        orderId,
-        currentUser.uid,
-        loggedInUserProfile?.firstName || loggedInUserProfile?.companyName || 'User',
-        currentUser.email
-      );
+      await videoService.sendCallRequest({
+        chatId: orderId,
+        companyId: participants.providerId,
+        requesterId: currentUser.uid,
+        requesterName: loggedInUserProfile?.firstName || loggedInUserProfile?.companyName || 'User',
+        message: 'Video-Call Anfrage',
+      });
 
       // Send a chat message about the video call request
       const videoRequestMessage = '🎥 Einladung zum Taskilo Video-Call';

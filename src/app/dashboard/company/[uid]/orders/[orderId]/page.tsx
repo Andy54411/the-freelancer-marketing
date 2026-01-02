@@ -5,8 +5,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { db, functions, auth } from '@/firebase/clients';
-import { httpsCallable } from 'firebase/functions';
+import { db, auth } from '@/firebase/clients';
 
 // Icons für UI
 import {
@@ -164,14 +163,22 @@ export default function CompanyOrderDetailPage() {
           // Setze die Rolle für die UI
           setUserRole(isProvider ? 'provider' : 'customer');
 
-          // Fetch participant details
-          const getOrderParticipantDetails = httpsCallable<
-            { orderId: string },
-            { provider: ParticipantDetails; customer: ParticipantDetails }
-          >(functions, 'getOrderParticipantDetails');
+          // Fetch participant details via API (ersetzt gelöschte Cloud Function)
+          const token = await auth.currentUser?.getIdToken();
+          const participantsResponse = await fetch('/api/getorderparticipantdetails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ orderId }),
+          });
 
-          const result = await getOrderParticipantDetails({ orderId });
-          const { provider: providerDetails, customer: customerDetails } = result.data;
+          if (!participantsResponse.ok) {
+            throw new Error(`Teilnehmer-API Fehler: ${participantsResponse.status}`);
+          }
+
+          const { provider: providerDetails, customer: customerDetails } = await participantsResponse.json();
 
           const orderData: OrderData = {
             id: orderId,
@@ -222,8 +229,8 @@ export default function CompanyOrderDetailPage() {
                 const standardHourlyRate = 42;
                 return Math.round(priceInEur / standardHourlyRate);
               })(),
-            jobDurationString: orderDataFromDb.jobDurationString,
-            beschreibung: orderDataFromDb.description,
+            jobDurationString: orderDataFromDb.jobDurationString || orderDataFromDb.auftragsDauer,
+            beschreibung: orderDataFromDb.beschreibung || orderDataFromDb.description || orderDataFromDb.jobDescription,
             jobDateFrom: orderDataFromDb.jobDateFrom,
             jobDateTo: orderDataFromDb.jobDateTo,
             jobTimePreference: orderDataFromDb.jobTimePreference,
@@ -993,9 +1000,10 @@ export default function CompanyOrderDetailPage() {
                   userName={cardUser.name}
                   userAvatarUrl={cardUser.avatarUrl || undefined}
                   userRole={cardUser.role}
-                  showReviews={true}
-                  showSkills={true}
-                  showLanguages={true}
+                  showReviews={cardUser.role === 'provider'}
+                  showSkills={cardUser.role === 'provider'}
+                  showLanguages={cardUser.role === 'provider'}
+                  showCustomerStats={cardUser.role === 'customer'}
                   showLinkButton={true}
                   linkText="Profil ansehen"
                   layout="vertical"

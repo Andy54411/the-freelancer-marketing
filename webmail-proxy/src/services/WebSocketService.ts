@@ -47,26 +47,12 @@ class WebSocketService {
     notificationsSent: 0,
   };
 
-  initialize(server: Server): void {
+  initialize(_server: Server): void {
     this.wss = new WebSocketServer({ 
-      server,
-      path: '/ws',
-      verifyClient: (info: { origin?: string; req: IncomingMessage }, callback: (result: boolean, code?: number, message?: string) => void) => {
-        // Origin-Check
-        const origin = info.origin || info.req.headers.origin as string | undefined;
-        const allowedOrigins = [
-          'https://taskilo.de',
-          'https://www.taskilo.de',
-          'http://localhost:3000',
-        ];
-        
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(true);
-        } else {
-          console.warn(`[WS] Rejected connection from origin: ${origin}`);
-          callback(false, 403, 'Forbidden');
-        }
-      },
+      // WICHTIG: noServer für manuelles Upgrade-Routing bei mehreren WS-Servern
+      noServer: true,
+      // WICHTIG: Compression deaktivieren um RSV1 Fehler zu vermeiden
+      perMessageDeflate: false,
     });
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
@@ -83,7 +69,31 @@ class WebSocketService {
       this.removeIdleClients();
     }, 60000);
 
-    console.log('[WS] WebSocket server initialized on /ws');
+    console.log('[WS] WebSocket server initialized (noServer mode) for /ws');
+  }
+
+  // Manuelles Upgrade-Handling für korrektes Routing
+  handleUpgrade(request: IncomingMessage, socket: import('stream').Duplex, head: Buffer): void {
+    const origin = request.headers.origin as string | undefined;
+    console.log('[WS] handleUpgrade called with origin:', origin);
+    
+    const allowedOrigins = [
+      'https://taskilo.de',
+      'https://www.taskilo.de',
+      'http://localhost:3000',
+    ];
+
+    if (origin && !allowedOrigins.includes(origin)) {
+      console.warn(`[WS] Rejected upgrade from origin: ${origin}`);
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    console.log('[WS] Upgrade accepted');
+    this.wss?.handleUpgrade(request, socket, head, (ws) => {
+      this.wss?.emit('connection', ws, request);
+    });
   }
 
   private handleConnection(ws: WebSocket, req: IncomingMessage): void {

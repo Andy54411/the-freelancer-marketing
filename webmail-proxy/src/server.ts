@@ -13,6 +13,7 @@ import { attachmentsRouter } from './routes/attachments';
 import { calendarRouter } from './routes/calendar';
 import { turnRouter } from './routes/turn';
 import { recordingRouter } from './routes/recording';
+import { meetingRouter } from './routes/meeting';
 import contactsRouter from './routes/contacts';
 import { driveRouter } from './routes/drive';
 import { paymentRouter } from './routes/payment';
@@ -30,6 +31,7 @@ import {
   secureCompare,
 } from './security/SecurityMiddleware';
 import { wsService } from './services/WebSocketService';
+import { meetingWsService } from './services/MeetingWebSocketService';
 import { cacheService } from './services/CacheService';
 import { imapPool } from './services/ConnectionPool';
 
@@ -152,6 +154,7 @@ app.get('/health', (req, res) => {
       pool: imapPool.getStats(),
       cache: cacheService.getStats(),
       websocket: wsService.getStats(),
+      meetingWebsocket: meetingWsService.getStats(),
     },
   });
 });
@@ -170,6 +173,7 @@ app.use('/api/attachments', attachmentsRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/turn', turnRouter);
 app.use('/api/recording', recordingRouter);
+app.use('/api/meeting', meetingRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 
@@ -190,16 +194,44 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
   });
 });
 
-// 404 Handler
-app.use((req, res) => {
+// 404 Handler - ABER WebSocket-Pfade ignorieren
+app.use((req, res, next) => {
+  // WebSocket-Pfade werden vom WebSocket-Server behandelt
+  if (req.path.startsWith('/ws/')) {
+    console.log('[DEBUG] WebSocket path detected, headers:', JSON.stringify({
+      upgrade: req.headers.upgrade,
+      connection: req.headers.connection,
+      path: req.path,
+    }));
+    // Nicht als 404 behandeln - WebSocket-Server übernimmt
+    return next();
+  }
   res.status(404).json({ 
     success: false, 
     error: 'Not Found',
   });
 });
 
-// WebSocket initialisieren
+// WebSocket initialisieren mit noServer: true für korrektes Routing
+meetingWsService.initialize(httpServer);
 wsService.initialize(httpServer);
+
+// Manuelles Routing für WebSocket Upgrade-Requests
+httpServer.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+  console.log(`[WS UPGRADE] Path: ${pathname}`);
+  
+  if (pathname === '/ws/meeting') {
+    console.log('[WS UPGRADE] Routing to Meeting WebSocket');
+    meetingWsService.handleUpgrade(request, socket, head);
+  } else if (pathname === '/ws') {
+    console.log('[WS UPGRADE] Routing to General WebSocket');
+    wsService.handleUpgrade(request, socket, head);
+  } else {
+    console.log('[WS UPGRADE] Unknown path, destroying socket');
+    socket.destroy();
+  }
+});
 
 // Server starten
 httpServer.listen(PORT, () => {
@@ -237,6 +269,7 @@ httpServer.listen(PORT, () => {
 |   - POST /api/payment/webhook/*      Webhooks             |
 |                                                           |
 |   WebSocket: /ws                                          |
+|   Meeting WebSocket: /ws/meeting                          |
 |                                                           |
 |   Security: Rate Limiting, IP-Blocking, Audit-Logging     |
 |                                                           |
@@ -249,6 +282,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`\n[${signal}] Shutting down gracefully...`);
   
   wsService.shutdown();
+  meetingWsService.shutdown();
   await imapPool.destroy();
   await cacheService.disconnect();
   

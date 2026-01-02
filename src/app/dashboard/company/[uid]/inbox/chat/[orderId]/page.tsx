@@ -4,8 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Timestamp } from 'firebase/firestore'; // Import Timestamp for type checking
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '@/firebase/clients';
+import { db, auth } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Icons
@@ -115,15 +114,23 @@ export default function CompanyChatPage() {
         return;
       }
 
-      // Step 2: Fetch customer details using a secure Cloud Function to bypass client-side security rule limitations.
+      // Step 2: Fetch customer details using API route
       try {
-        const getOrderParticipantDetails = httpsCallable<
-          { orderId: string },
-          { provider: ParticipantDetails; customer: ParticipantDetails }
-        >(functions, 'getOrderParticipantDetails');
+        const token = await auth.currentUser?.getIdToken();
+        const participantsResponse = await fetch('/api/getorderparticipantdetails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderId }),
+        });
 
-        const result = await getOrderParticipantDetails({ orderId });
-        const { customer: customerDetails } = result.data;
+        if (!participantsResponse.ok) {
+          throw new Error(`Teilnehmer-API Fehler: ${participantsResponse.status}`);
+        }
+
+        const { customer: customerDetails } = await participantsResponse.json();
 
         const customerId = orderDataFromDb.customerFirebaseUid || orderDataFromDb.kundeId;
         if (!customerId) {
@@ -305,6 +312,9 @@ export default function CompanyChatPage() {
               userName={order.customerName}
               userAvatarUrl={order.customerAvatarUrl}
               userRole="customer"
+              showCustomerStats={true}
+              showLinkButton={true}
+              linkText="Profil ansehen"
             />
           </div>
         </aside>

@@ -68,13 +68,10 @@ export async function GET(request: NextRequest) {
           // CRITICAL: Calculate TOTAL revenue including timeTracking
           let totalRevenue = 0;
 
-          // 1. Add base order amount
-          if (
-            orderData.totalAmountPaidByBuyer &&
-            typeof orderData.totalAmountPaidByBuyer === 'number' &&
-            orderData.totalAmountPaidByBuyer > 0
-          ) {
-            totalRevenue += orderData.totalAmountPaidByBuyer;
+          // 1. Add base order amount - check multiple field names for compatibility
+          const baseAmount = orderData.totalAmountPaidByBuyer || orderData.totalPriceInCents || orderData.jobCalculatedPriceInCents || 0;
+          if (baseAmount && typeof baseAmount === 'number' && baseAmount > 0) {
+            totalRevenue += baseAmount;
           }
 
           // 2. Add ALL billable amounts from timeTracking.timeEntries
