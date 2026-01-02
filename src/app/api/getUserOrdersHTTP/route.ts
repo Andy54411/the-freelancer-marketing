@@ -64,20 +64,16 @@ export async function POST(request: Request) {
       // Sammle Orders aus beiden Queries (vermeide Duplikate)
       kundeIdSnapshot.forEach(doc => {
         if (!seenOrderIds.has(doc.id)) {
-          orders.push({
-            id: doc.id,
-            ...doc.data(),
-          });
+          const data = doc.data();
+          orders.push(mapOrderData(doc.id, data));
           seenOrderIds.add(doc.id);
         }
       });
 
       customerUidSnapshot.forEach(doc => {
         if (!seenOrderIds.has(doc.id)) {
-          orders.push({
-            id: doc.id,
-            ...doc.data(),
-          });
+          const data = doc.data();
+          orders.push(mapOrderData(doc.id, data));
           seenOrderIds.add(doc.id);
         }
       });
@@ -100,27 +96,7 @@ export async function POST(request: Request) {
 
     const orders: any[] = [];
     ordersSnapshot.forEach(doc => {
-      const data = doc.data();
-
-      // Mappe Order-Daten auf das erwartete Format
-      const mappedOrder = {
-        id: doc.id,
-        selectedSubcategory: data.selectedSubcategory || '',
-        providerName: data.providerName || '',
-        totalAmountPaidByBuyer: data.jobCalculatedPriceInCents || 0,
-        status: mapStatus(data.status),
-        selectedAnbieterId: data.selectedAnbieterId || '',
-        currency: 'EUR',
-        paidAt: data.createdAt || null,
-        projectName: data.description || '',
-        // Zusätzliche Felder für Debug
-        originalStatus: data.status,
-        paymentStatus: data.paymentStatus,
-        orderId: data.orderId,
-        paymentIntentId: data.paymentIntentId,
-      };
-
-      orders.push(mappedOrder);
+      orders.push(mapOrderData(doc.id, doc.data()));
     });
 
     return NextResponse.json({
@@ -152,4 +128,44 @@ function mapStatus(dbStatus: string): string {
     default:
       return 'IN BEARBEITUNG';
   }
+}
+
+// Gemeinsame Mapping-Funktion für Order-Daten
+function mapOrderData(docId: string, data: FirebaseFirestore.DocumentData) {
+  // Preis-Logik: Zuerst jobCalculatedPriceInCents, dann totalPriceInCents, dann price * 100
+  let priceInCents = 0;
+  if (data.jobCalculatedPriceInCents && typeof data.jobCalculatedPriceInCents === 'number') {
+    priceInCents = data.jobCalculatedPriceInCents;
+  } else if (data.totalPriceInCents && typeof data.totalPriceInCents === 'number') {
+    priceInCents = data.totalPriceInCents;
+  } else if (data.totalAmountPaidByBuyer && typeof data.totalAmountPaidByBuyer === 'number') {
+    priceInCents = data.totalAmountPaidByBuyer;
+  } else if (data.price && typeof data.price === 'number') {
+    // price ist in Euro, also * 100 für Cents
+    priceInCents = Math.round(data.price * 100);
+  } else if (data.totalAmount && typeof data.totalAmount === 'number') {
+    priceInCents = Math.round(data.totalAmount * 100);
+  }
+
+  // Datum-Logik: paidAt > createdAt > orderCreatedAt
+  const dateField = data.paidAt || data.createdAt || data.orderCreatedAt || null;
+
+  // Kategorie-Logik: selectedSubcategory > unterkategorie
+  const category = data.selectedSubcategory || data.unterkategorie || '';
+
+  return {
+    id: docId,
+    selectedSubcategory: category,
+    providerName: data.providerName || data.selectedAnbieterName || '',
+    totalAmountPaidByBuyer: priceInCents,
+    status: mapStatus(data.status),
+    selectedAnbieterId: data.selectedAnbieterId || '',
+    currency: 'EUR',
+    paidAt: dateField,
+    projectName: data.description || data.projectName || '',
+    // Zusätzliche Felder
+    originalStatus: data.status,
+    paymentStatus: data.paymentStatus,
+    orderId: data.orderId,
+  };
 }
