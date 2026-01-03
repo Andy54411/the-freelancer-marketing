@@ -378,46 +378,50 @@ export default function WebmailMeetPage() {
 
   // Lobby-Ansicht - Google Meet Style
   return (
-    <div className={`min-h-screen flex flex-col md:flex-row ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* Linke Sidebar - Desktop */}
-      <div className={`hidden md:block w-64 flex-shrink-0 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
-        {/* Logo */}
-        <div className="p-4 flex items-center gap-2">
-          <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-            <Video className="w-6 h-6 text-white" />
+    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* MailHeader oben */}
+      <MailHeader userEmail={session?.email || ''} />
+      
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Linke Sidebar - Desktop */}
+        <div className={`hidden md:block w-64 flex-shrink-0 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
+          {/* Logo */}
+          <div className="p-4 flex items-center gap-2">
+            <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+              <Video className="w-6 h-6 text-white" />
+            </div>
+            <span className={`text-xl font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+              Taskilo Meet
+            </span>
           </div>
-          <span className={`text-xl font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-            Taskilo Meet
-          </span>
-        </div>
 
-        {/* Navigation */}
-        <nav className="mt-4 px-2">
-          <button
-            onClick={() => {}}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-left transition-colors ${
-              theme === 'dark' 
-                ? 'bg-teal-900/30 text-teal-400' 
-                : 'bg-teal-50 text-teal-700'
-            }`}
-          >
-            <Video className="w-5 h-5" />
-            <span className="font-medium">Besprechungen</span>
-          </button>
-          
-          <button
-            onClick={() => router.push('/webmail')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-left transition-colors mt-1 ${
-              theme === 'dark' 
-                ? 'text-gray-400 hover:bg-gray-800' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <ArrowRight className="w-5 h-5" />
-            <span>Zurück zu E-Mail</span>
-          </button>
-        </nav>
-      </div>
+          {/* Navigation */}
+          <nav className="mt-4 px-2">
+            <button
+              onClick={() => {}}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-left transition-colors ${
+                theme === 'dark' 
+                  ? 'bg-teal-900/30 text-teal-400' 
+                  : 'bg-teal-50 text-teal-700'
+              }`}
+            >
+              <Video className="w-5 h-5" />
+              <span className="font-medium">Besprechungen</span>
+            </button>
+            
+            <button
+              onClick={() => router.push('/webmail')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-left transition-colors mt-1 ${
+                theme === 'dark' 
+                  ? 'text-gray-400 hover:bg-gray-800' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <ArrowRight className="w-5 h-5" />
+              <span>Zurück zu E-Mail</span>
+            </button>
+          </nav>
+        </div>
 
       {/* Mobile Header */}
       <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -549,6 +553,7 @@ export default function WebmailMeetPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Create Meeting Modal */}
