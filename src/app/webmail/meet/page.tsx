@@ -55,6 +55,9 @@ export default function WebmailMeetPage() {
   const [isHost, setIsHost] = useState(false);
   const createdRoomCodeRef = useRef<string | null>(null);
   
+  // Session Storage Key für Host-Status
+  const HOST_SESSION_KEY = 'taskilo_meeting_host';
+  
   // Lobby/Wartezimmer state
   const [lobbyStatus, setLobbyStatus] = useState<LobbyStatus>('idle');
   const [showPreJoinModal, setShowPreJoinModal] = useState(false);
@@ -67,12 +70,19 @@ export default function WebmailMeetPage() {
   // Pre-Join Modal wenn room code in URL (nicht-Host)
   useEffect(() => {
     if (roomCodeParam) {
-      // Prüfe ob der User der Host ist (hat diesen Raum gerade erstellt)
-      if (createdRoomCodeRef.current === roomCodeParam) {
+      // Prüfe ob der User der Host ist:
+      // 1. Hat diesen Raum gerade erstellt (createdRoomCodeRef)
+      // 2. Oder war vorher Host dieses Raums (Session Storage)
+      const savedHostRoom = sessionStorage.getItem(HOST_SESSION_KEY);
+      const isHostOfThisRoom = createdRoomCodeRef.current === roomCodeParam || savedHostRoom === roomCodeParam;
+      
+      if (isHostOfThisRoom) {
         // Host - direkt beitreten ohne Lobby
         setIsHost(true);
         setCurrentRoomCode(roomCodeParam);
         setIsInMeeting(true);
+        // Host-Status speichern für Page Refresh
+        sessionStorage.setItem(HOST_SESSION_KEY, roomCodeParam);
       } else if (session?.isAuthenticated) {
         // Authentifizierter User (nicht Host) - Pre-Join Modal zeigen
         setShowPreJoinModal(true);
@@ -282,6 +292,9 @@ export default function WebmailMeetPage() {
     setCurrentRoomCode(null);
     setIsGuest(false);
     setGuestName('');
+    setIsHost(false);
+    // Host-Status aus Session Storage löschen
+    sessionStorage.removeItem(HOST_SESSION_KEY);
     router.push('/webmail/meet');
     toast.info('Meeting beendet');
   };
