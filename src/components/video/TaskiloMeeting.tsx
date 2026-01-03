@@ -1133,6 +1133,26 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
   // Bei Page Load: Prüfe ob aktives Meeting wiederhergestellt werden soll
   useEffect(() => {
+    // Wenn ein roomCode als Prop übergeben wird, hat dieser Vorrang!
+    // Session Storage nur nutzen wenn kein roomCode in Props
+    if (roomCode) {
+      // roomCode aus Props - Session Storage ignorieren wenn anderer Code
+      const savedMeeting = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedMeeting) {
+        try {
+          const meetingData = JSON.parse(savedMeeting);
+          if (meetingData.roomCode !== roomCode) {
+            // Anderer Raum in Props als in Session Storage - alten löschen
+            sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          }
+        } catch {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      }
+      return; // Auto-join effect kümmert sich um den roomCode aus Props
+    }
+
+    // Kein roomCode in Props - versuche aus Session Storage wiederherzustellen
     const savedMeeting = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (savedMeeting && meetingState === 'idle' && !hasJoinedRef.current) {
       try {
@@ -1149,7 +1169,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
       }
     }
-  }, [meetingState, joinMeeting]);
+  }, [meetingState, joinMeeting, roomCode]);
 
   // Bei Meeting-Ende: Session Storage löschen
   useEffect(() => {
