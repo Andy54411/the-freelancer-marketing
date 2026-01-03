@@ -290,8 +290,20 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           });
         }
         break;
+
+      case 'meeting-ended':
+        // Host hat das Meeting beendet - Gäste zur Startseite weiterleiten
+        setMeetingState('ended');
+        setRoom(null);
+        setParticipants([]);
+        onMeetingEnded?.();
+        // Gäste werden zur Taskilo Startseite weitergeleitet
+        if (typeof window !== 'undefined') {
+          window.location.href = 'https://taskilo.de';
+        }
+        break;
     }
-  }, [onJoinRequest]);
+  }, [onJoinRequest, onMeetingEnded]);
 
   // ============== INTERNAL JOIN (uses handleSignalingMessage) ==============
 
@@ -532,6 +544,14 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   }, [userId, userName, userEmail, userAvatarUrl, API_BASE, API_KEY, joinMeetingInternal, onMeetingJoined, onError]);
 
   const endMeeting = useCallback(() => {
+    // Sende end-meeting an Server (nur Host kann Meeting beenden)
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'end-meeting',
+        payload: {},
+      }));
+    }
+
     // Cleanup WebSocket
     if (wsRef.current) {
       wsRef.current.close();

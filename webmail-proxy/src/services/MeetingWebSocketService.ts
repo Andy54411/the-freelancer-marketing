@@ -39,7 +39,9 @@ interface MeetingWSMessage {
     // Lobby/Wartezimmer Messages
     | 'request-join'
     | 'approve-join'
-    | 'deny-join';
+    | 'deny-join'
+    // Meeting-Ende
+    | 'end-meeting';
   payload?: {
     roomCode?: string;
     userId?: string;
@@ -249,6 +251,9 @@ class MeetingWebSocketService {
           break;
         case 'deny-join':
           await this.handleDenyJoin(participantId, message.payload);
+          break;
+        case 'end-meeting':
+          await this.handleEndMeeting(participantId);
           break;
         default:
           console.warn(`[Meeting WS] Unknown message type: ${message.type}`);
@@ -650,6 +655,66 @@ class MeetingWebSocketService {
     });
 
     console.log(`[Meeting WS] Host ${participantId} denied join request from ${payload.requestingParticipantId}`);
+  }
+
+  /**
+   * Host beendet das Meeting - alle Teilnehmer werden benachrichtigt
+   */
+  private async handleEndMeeting(participantId: string): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode) {
+      console.log(`[Meeting WS] handleEndMeeting: No room for ${participantId}`);
+      return;
+    }
+
+    const roomCode = client.roomCode;
+    
+    // Prüfe ob der Sender der Host ist
+    const roomInfo = meetingRoomService.getRoomByCode(roomCode);
+    if (!roomInfo) {
+      console.log(`[Meeting WS] handleEndMeeting: Room ${roomCode} not found`);
+      return;
+    }
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    if (senderParticipant?.role !== 'host') {
+      console.log(`[Meeting WS] handleEndMeeting: ${participantId} is not the host`);
+      this.sendToClient(participantId, {
+        type: 'error',
+        payload: { message: 'Nur der Host kann das Meeting beenden' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Benachrichtige alle Teilnehmer dass das Meeting beendet wurde
+    const clientsInRoom = this.roomClients.get(roomCode);
+    if (clientsInRoom) {
+      clientsInRoom.forEach((clientId) => {
+        if (clientId !== participantId) {
+          // Alle außer dem Host bekommen meeting-ended
+          this.sendToClient(clientId, {
+            type: 'meeting-ended',
+            payload: { 
+              roomCode,
+              endedBy: client.userName,
+              message: 'Der Host hat das Meeting beendet',
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      });
+    }
+
+    // Raum beenden
+    meetingRoomService.endRoom(roomInfo.id, participantId);
+
+    // Alle Clients aus dem Raum entfernen
+    this.roomClients.delete(roomCode);
+
+    console.log(`[Meeting WS] Meeting ${roomCode} ended by host ${participantId} (${client.userName})`);
   }
 
   /**
