@@ -114,6 +114,10 @@ class MeetingRoomService {
   private roomsByCode: Map<string, string> = new Map(); // code -> roomId
   private participantRooms: Map<string, string> = new Map(); // oderId -> roomId
   
+  // Verzögerte Raum-Beendigung (für Page Refresh Schutz)
+  private pendingRoomEnds: Map<string, NodeJS.Timeout> = new Map();
+  private static readonly ROOM_END_DELAY_MS = 60000; // 60 Sekunden Wartezeit
+  
   private stats = {
     totalRoomsCreated: 0,
     activeRooms: 0,
@@ -197,6 +201,13 @@ class MeetingRoomService {
     const room = this.rooms.get(roomId);
     if (!room) return false;
 
+    // Ausstehende Timer abbrechen
+    const pendingEnd = this.pendingRoomEnds.get(roomId);
+    if (pendingEnd) {
+      clearTimeout(pendingEnd);
+      this.pendingRoomEnds.delete(roomId);
+    }
+
     // Alle Teilnehmer benachrichtigen
     room.participants.forEach((participant) => {
       if (participant.ws && participant.ws.readyState === WebSocket.OPEN) {
@@ -274,6 +285,14 @@ class MeetingRoomService {
     room.participants.set(participantId, participant);
     this.participantRooms.set(participantId, roomId);
 
+    // Ausstehende Raum-Beendigung abbrechen (jemand ist wieder da)
+    const pendingEnd = this.pendingRoomEnds.get(roomId);
+    if (pendingEnd) {
+      clearTimeout(pendingEnd);
+      this.pendingRoomEnds.delete(roomId);
+      console.log(`[MEETING] Cancelled pending room end for ${room.code} - participant rejoined`);
+    }
+
     // Raum aktivieren wenn erster Teilnehmer
     if (room.status === 'waiting') {
       room.status = 'active';
@@ -309,9 +328,30 @@ class MeetingRoomService {
 
     console.log(`[MEETING] ${participant.name} left room ${room.code}`);
 
-    // Raum beenden wenn leer
+    // Raum VERZÖGERT beenden wenn leer (Page Refresh Schutz)
     if (room.participants.size === 0 && room.type === 'instant') {
-      this.endRoom(roomId, 'system');
+      // Abbrechen falls bereits ein Timer läuft
+      const existingTimer = this.pendingRoomEnds.get(roomId);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+      
+      console.log(`[MEETING] Room ${room.code} is empty, will end in ${MeetingRoomService.ROOM_END_DELAY_MS / 1000}s if no one rejoins`);
+      
+      // Verzögerte Beendigung starten
+      const timer = setTimeout(() => {
+        const currentRoom = this.rooms.get(roomId);
+        // Nur beenden wenn immer noch leer
+        if (currentRoom && currentRoom.participants.size === 0) {
+          console.log(`[MEETING] Room ${room.code} still empty after delay, ending now`);
+          this.endRoom(roomId, 'system');
+        } else {
+          console.log(`[MEETING] Room ${room.code} has participants again, not ending`);
+        }
+        this.pendingRoomEnds.delete(roomId);
+      }, MeetingRoomService.ROOM_END_DELAY_MS);
+      
+      this.pendingRoomEnds.set(roomId, timer);
     }
 
     return true;
