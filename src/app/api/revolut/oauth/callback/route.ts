@@ -85,11 +85,13 @@ export async function GET(request: NextRequest) {
     }
 
     const now = Math.floor(Date.now() / 1000);
+    // WICHTIG: iss muss 'taskilo.de' sein (wie in Revolut Dashboard konfiguriert)
+    // aud muss 'https://revolut.com' sein
     const clientAssertion = jwt.default.sign(
       {
-        iss: clientId,
+        iss: 'taskilo.de',
         sub: clientId,
-        aud: tokenUrl,
+        aud: 'https://revolut.com',
         iat: now,
         exp: now + 300,
       },
@@ -98,7 +100,7 @@ export async function GET(request: NextRequest) {
         algorithm: 'RS256',
         header: {
           alg: 'RS256',
-          kid: clientId,
+          typ: 'JWT',
         },
       }
     );

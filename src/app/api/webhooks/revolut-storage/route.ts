@@ -14,23 +14,60 @@ import { admin } from '@/firebase/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 
-const REVOLUT_WEBHOOK_SECRET = process.env.REVOLUT_WEBHOOK_SECRET;
+const REVOLUT_WEBHOOK_SECRET = process.env.REVOLUT_BUSINESS_WEBHOOK_SECRET;
 
-// Verify Revolut webhook signature
-function verifyWebhookSignature(payload: string, signature: string | null): boolean {
-  if (!REVOLUT_WEBHOOK_SECRET || !signature) {
-    return false;
+/**
+ * Verifiziert die Webhook-Signatur von Revolut
+ * 
+ * Signatur-Format laut Revolut Docs (v2):
+ * - Header: Revolut-Signature mit Format "v1=<hex_signature>"
+ * - Timestamp: Revolut-Request-Timestamp (UNIX timestamp in ms)
+ * - Payload to sign: "v1.{timestamp}.{raw_payload}"
+ * - HMAC-SHA256 mit dem Signing Secret
+ */
+function verifyWebhookSignature(
+  payload: string, 
+  signatureHeader: string | null,
+  timestampHeader: string | null
+): boolean {
+  if (!REVOLUT_WEBHOOK_SECRET || !signatureHeader) {
+    return process.env.NODE_ENV !== 'production';
   }
 
-  const expectedSignature = crypto
-    .createHmac('sha256', REVOLUT_WEBHOOK_SECRET)
-    .update(payload)
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  try {
+    // Extrahiere alle Signaturen (können mehrere sein, komma-getrennt)
+    const signatures = signatureHeader.split(',').map(s => s.trim());
+    
+    // Timestamp für die Signatur-Berechnung
+    const timestamp = timestampHeader || '';
+    
+    // Payload to sign: "v1.{timestamp}.{raw_payload}"
+    const payloadToSign = `v1.${timestamp}.${payload}`;
+    
+    // Berechne erwartete Signatur
+    const expectedSignature = 'v1=' + crypto
+      .createHmac('sha256', REVOLUT_WEBHOOK_SECRET)
+      .update(payloadToSign)
+      .digest('hex');
+    
+    // Prüfe ob eine der Signaturen übereinstimmt
+    for (const sig of signatures) {
+      try {
+        if (crypto.timingSafeEqual(
+          Buffer.from(sig),
+          Buffer.from(expectedSignature)
+        )) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+    
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 const RevolutWebhookSchema = z.object({
@@ -45,10 +82,11 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
     const signature = request.headers.get('revolut-signature');
+    const timestamp = request.headers.get('revolut-request-timestamp');
 
     // Verify signature in production
     if (process.env.REVOLUT_ENVIRONMENT === 'production') {
-      if (!verifyWebhookSignature(payload, signature)) {
+      if (!verifyWebhookSignature(payload, signature, timestamp)) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     }

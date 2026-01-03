@@ -117,7 +117,7 @@ ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d 
 # Payload (certs/revolut/payload.json) - Zeiten anpassen!
 {
   "iss": "taskilo.de",
-  "sub": "37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8",
+  "sub": "tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU",
   "aud": "https://revolut.com",
   "iat": $(date +%s),
   "exp": $(date -v+1y +%s)
@@ -132,7 +132,7 @@ echo "$HEADER.$PAYLOAD.$SIGNATURE" > certs/revolut/client_assertion.txt
 
 **2. Authorization Code holen (im Browser):**
 ```
-https://business.revolut.com/app-confirm?client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8&redirect_uri=https://taskilo.de/api/revolut/oauth/callback&response_type=code&state=admin
+https://business.revolut.com/app-confirm?client_id=tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU&redirect_uri=https://taskilo.de/api/revolut/oauth/callback&response_type=code&state=admin
 ```
 - User muss eingeloggt sein und Zugriff bestätigen
 - Code aus URL kopieren (nur 2 Minuten gültig!)
@@ -143,7 +143,7 @@ ssh root@mail.taskilo.de 'curl -s -X POST "https://b2b.revolut.com/api/1.0/auth/
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=authorization_code" \
   -d "code=AUTHORIZATION_CODE_HIER" \
-  -d "client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8" \
+  -d "client_id=tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU" \
   -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
   -d "client_assertion=JWT_HIER"'
 ```
@@ -154,7 +154,7 @@ ssh root@mail.taskilo.de 'curl -s -X POST "https://b2b.revolut.com/api/1.0/auth/
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=refresh_token" \
   -d "refresh_token=REFRESH_TOKEN_HIER" \
-  -d "client_id=37c5ecdd-68fe-4cce-b89a-6e3e4d0f09c8" \
+  -d "client_id=tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU" \
   -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
   -d "client_assertion=JWT_HIER"'
 ```

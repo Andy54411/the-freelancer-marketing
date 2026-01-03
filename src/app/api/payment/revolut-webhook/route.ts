@@ -17,7 +17,7 @@ import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
-const WEBHOOK_SECRET = process.env.REVOLUT_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = process.env.REVOLUT_BUSINESS_WEBHOOK_SECRET;
 
 interface RevolutWebhookPayload {
   event: string;
@@ -29,23 +29,55 @@ interface RevolutWebhookPayload {
 
 /**
  * Verifiziert die Webhook-Signatur von Revolut
+ * 
+ * Signatur-Format laut Revolut Docs (v2):
+ * - Header: Revolut-Signature mit Format "v1=<hex_signature>"
+ * - Timestamp: Revolut-Request-Timestamp (UNIX timestamp in ms)
+ * - Payload to sign: "v1.{timestamp}.{raw_payload}"
+ * - HMAC-SHA256 mit dem Signing Secret
  */
-function verifyWebhookSignature(payload: string, signature: string | null): boolean {
-  if (!WEBHOOK_SECRET || !signature) {
+function verifyWebhookSignature(
+  payload: string, 
+  signatureHeader: string | null,
+  timestampHeader: string | null
+): boolean {
+  if (!WEBHOOK_SECRET || !signatureHeader) {
     console.log('[Revolut Webhook] No secret or signature - skipping verification');
-    return true; // In Entwicklung ohne Signatur akzeptieren
+    return process.env.NODE_ENV !== 'production';
   }
 
   try {
-    const expectedSignature = crypto
+    // Extrahiere alle Signaturen (können mehrere sein, komma-getrennt)
+    const signatures = signatureHeader.split(',').map(s => s.trim());
+    
+    // Timestamp für die Signatur-Berechnung
+    const timestamp = timestampHeader || '';
+    
+    // Payload to sign: "v1.{timestamp}.{raw_payload}"
+    const payloadToSign = `v1.${timestamp}.${payload}`;
+    
+    // Berechne erwartete Signatur
+    const expectedSignature = 'v1=' + crypto
       .createHmac('sha256', WEBHOOK_SECRET)
-      .update(payload)
+      .update(payloadToSign)
       .digest('hex');
     
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    // Prüfe ob eine der Signaturen übereinstimmt
+    for (const sig of signatures) {
+      try {
+        if (crypto.timingSafeEqual(
+          Buffer.from(sig),
+          Buffer.from(expectedSignature)
+        )) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+    
+    console.log('[Revolut Webhook] Signature mismatch');
+    return false;
   } catch (error) {
     console.error('[Revolut Webhook] Signature verification error:', error);
     return false;
@@ -167,10 +199,11 @@ export async function POST(request: NextRequest) {
     // Hole Raw Body für Signatur-Verifizierung
     const rawBody = await request.text();
     const signature = request.headers.get('Revolut-Signature');
+    const timestamp = request.headers.get('Revolut-Request-Timestamp');
 
     // Verifiziere Signatur (in Produktion)
     if (process.env.NODE_ENV === 'production' && WEBHOOK_SECRET) {
-      if (!verifyWebhookSignature(rawBody, signature)) {
+      if (!verifyWebhookSignature(rawBody, signature, timestamp)) {
         console.error('[Revolut Webhook] Invalid signature');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       algorithm: 'RS256',
       header: {
         alg: 'RS256',
-        kid: clientId,
+        typ: 'JWT',
       },
     });
 

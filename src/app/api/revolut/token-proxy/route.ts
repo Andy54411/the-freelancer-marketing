@@ -37,9 +37,10 @@ async function getAccessTokenFromRevolut(scope: string): Promise<{ access_token:
     }
 
     const isProduction = REVOLUT_ENVIRONMENT === 'production';
+    // WICHTIG: b2b.revolut.com/api/1.0/auth/token ist der korrekte Endpunkt!
     const authUrl = isProduction
-      ? 'https://business.revolut.com'
-      : 'https://sandbox-business.revolut.com';
+      ? 'https://b2b.revolut.com'
+      : 'https://sandbox-b2b.revolut.com';
 
     const now = Math.floor(Date.now() / 1000);
     const payload = {
@@ -71,7 +72,7 @@ async function getAccessTokenFromRevolut(scope: string): Promise<{ access_token:
       scope: scope,
     }).toString();
 
-    const url = new URL(`${authUrl}/oauth/token`);
+    const url = new URL(`${authUrl}/api/1.0/auth/token`);
 
     const options = {
       hostname: url.hostname,

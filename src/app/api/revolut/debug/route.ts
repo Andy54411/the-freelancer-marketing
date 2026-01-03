@@ -28,21 +28,18 @@ export async function GET(request: NextRequest) {
     const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 
     // Generate JWT token
+    // WICHTIG: iss muss 'taskilo.de' sein (wie in Revolut Dashboard konfiguriert)
+    // aud muss 'https://revolut.com' sein
     const payload = {
-      iss: clientId, // Issuer (Client ID)
+      iss: 'taskilo.de', // Issuer (wie in Revolut Dashboard)
       sub: clientId, // Subject (Client ID)
-      aud:
-        environment === 'production'
-          ? 'https://b2b.revolut.com'
-          : 'https://sandbox-b2b.revolut.com',
+      aud: 'https://revolut.com',
       iat: Math.floor(Date.now() / 1000), // Issued at
       exp: Math.floor(Date.now() / 1000) + 300, // Expires in 5 minutes
-      jti: Math.random().toString(36), // Unique token ID
     };
 
     const token = jwt.sign(payload, privateKey, {
       algorithm: 'RS256',
-      keyid: clientId,
     });
 
     // Test API call to business profile endpoint

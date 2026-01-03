@@ -93,9 +93,10 @@ export class RevolutOpenBankingService {
   async getAccessToken(scope: string = 'READ'): Promise<string> {
     return new Promise((resolve, reject) => {
       // Create JWT for authentication
+      // WICHTIG: iss muss 'taskilo.de' sein (wie in Revolut Dashboard konfiguriert)
       const now = Math.floor(Date.now() / 1000);
       const payload = {
-        iss: this.clientId, // Client ID als Issuer
+        iss: 'taskilo.de', // Issuer wie in Revolut Dashboard
         sub: this.clientId, // Client ID als Subject
         aud: 'https://revolut.com', // Standard Audience
         iat: now,
@@ -109,7 +110,7 @@ export class RevolutOpenBankingService {
           algorithm: 'RS256',
           header: {
             alg: 'RS256',
-            kid: this.clientId, // Use client ID as key ID
+            typ: 'JWT',
           },
         });
       } catch (err) {
@@ -389,7 +390,7 @@ export async function getRevolutBusinessAccessToken(): Promise<string | null> {
             algorithm: 'RS256',
             header: {
               alg: 'RS256',
-              kid: clientId,
+              typ: 'JWT',
             },
           }
         );

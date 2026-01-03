@@ -16,7 +16,7 @@ import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
-const WEBHOOK_SECRET = process.env.REVOLUT_BUSINESS_WEBHOOK_SECRET || process.env.REVOLUT_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = process.env.REVOLUT_BUSINESS_WEBHOOK_SECRET;
 
 interface RevolutTransactionEvent {
   event: 'TransactionCreated' | 'TransactionStateChanged';

@@ -62,7 +62,7 @@ export async function POST() {
       algorithm: 'RS256',
       header: {
         alg: 'RS256',
-        kid: clientId,
+        typ: 'JWT',
       },
     });
 
