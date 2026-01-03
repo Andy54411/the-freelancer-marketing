@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Video, Plus, Users, ArrowRight, Copy, Check, User, Loader2, Clock, CheckCircle, XCircle, UserPlus } from 'lucide-react';
+import { Video, Plus, Users, ArrowRight, Copy, Check, User, Loader2, Clock, CheckCircle, XCircle, UserPlus, ChevronLeft, ChevronRight, Link2, Calendar, Shield, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,46 @@ export default function WebmailMeetPage() {
   const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [createdMeetingUrl, setCreatedMeetingUrl] = useState<string | null>(null);
+  
+  // Carousel State
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselFeatures = [
+    {
+      icon: Link2,
+      iconBg: 'bg-teal-100',
+      iconColor: 'text-teal-600',
+      title: 'Link zum Teilen abrufen',
+      description: 'Klicke auf Neue Videokonferenz, um einen Link zu erhalten, den du an die gewünschten Teilnehmer senden kannst',
+    },
+    {
+      icon: Calendar,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      title: 'Meetings vorausplanen',
+      description: 'Erstelle Meetings und lade Teilnehmer per E-Mail ein - direkt aus deinem Webmail',
+    },
+    {
+      icon: Shield,
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      title: 'Dein Meeting ist sicher',
+      description: 'Nur Personen, die eingeladen oder vom Host genehmigt wurden, können teilnehmen',
+    },
+    {
+      icon: Monitor,
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      title: 'Bildschirm teilen',
+      description: 'Teile deinen Bildschirm mit allen Teilnehmern - perfekt für Präsentationen und Demos',
+    },
+    {
+      icon: Users,
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      title: 'Bis zu 10 Teilnehmer',
+      description: 'HD Video und Audio für produktive Team-Meetings und Kundengespräche',
+    },
+  ];
   
   // Guest state für nicht-authentifizierte User
   const [guestName, setGuestName] = useState('');
@@ -522,34 +562,62 @@ export default function WebmailMeetPage() {
             {/* Trennlinie */}
             <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} mb-6 md:mb-8`} />
 
-            {/* Features Carousel Placeholder - kleiner auf Mobile */}
-            <div className="flex items-center justify-center">
-              <div className={`w-48 h-48 md:w-80 md:h-80 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'} flex items-center justify-center`}>
-                <div className="grid grid-cols-2 gap-2 md:gap-4 p-4 md:p-8">
-                  <div className="w-16 h-16 md:w-24 md:h-24 bg-pink-200 rounded-lg flex items-center justify-center">
-                    <User className="w-8 h-8 md:w-12 md:h-12 text-pink-600" />
+            {/* Feature Carousel */}
+            <div className="flex items-center justify-center gap-2 md:gap-4">
+              {/* Zurück Button */}
+              <button
+                onClick={() => setCarouselIndex((prev) => (prev === 0 ? carouselFeatures.length - 1 : prev - 1))}
+                className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                aria-label="Zurück"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              {/* Feature Card */}
+              <div className={`flex-1 max-w-md rounded-2xl p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'}`}>
+                <div className="flex flex-col items-center text-center">
+                  {/* Icon */}
+                  <div className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl ${carouselFeatures[carouselIndex].iconBg} flex items-center justify-center mb-4`}>
+                    {(() => {
+                      const IconComponent = carouselFeatures[carouselIndex].icon;
+                      return <IconComponent className={`w-10 h-10 md:w-12 md:h-12 ${carouselFeatures[carouselIndex].iconColor}`} />;
+                    })()}
                   </div>
-                  <div className="w-16 h-16 md:w-24 md:h-24 bg-yellow-200 rounded-lg flex items-center justify-center">
-                    <User className="w-8 h-8 md:w-12 md:h-12 text-yellow-600" />
-                  </div>
-                  <div className="w-16 h-16 md:w-24 md:h-24 bg-teal-200 rounded-lg flex items-center justify-center">
-                    <User className="w-8 h-8 md:w-12 md:h-12 text-teal-600" />
-                  </div>
-                  <div className="w-16 h-16 md:w-24 md:h-24 bg-orange-200 rounded-lg flex items-center justify-center">
-                    <User className="w-8 h-8 md:w-12 md:h-12 text-orange-600" />
-                  </div>
+                  {/* Title */}
+                  <h3 className={`text-lg md:text-xl font-medium mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                    {carouselFeatures[carouselIndex].title}
+                  </h3>
+                  {/* Description */}
+                  <p className={`text-sm md:text-base ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {carouselFeatures[carouselIndex].description}
+                  </p>
                 </div>
               </div>
+
+              {/* Weiter Button */}
+              <button
+                onClick={() => setCarouselIndex((prev) => (prev === carouselFeatures.length - 1 ? 0 : prev + 1))}
+                className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                aria-label="Weiter"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
             </div>
 
-            {/* Feature Text */}
-            <div className="text-center mt-6 md:mt-8">
-              <p className={`text-base md:text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-                Sichere Video-Meetings
-              </p>
-              <p className={`text-xs md:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                HD Video, Bildschirmfreigabe, bis zu 10 Teilnehmer
-              </p>
+            {/* Carousel Dots */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {carouselFeatures.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCarouselIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === carouselIndex
+                      ? 'bg-teal-500'
+                      : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'
+                  }`}
+                  aria-label={`Feature ${index + 1}`}
+                />
+              ))}
             </div>
           </div>
         </div>
