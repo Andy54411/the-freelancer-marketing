@@ -335,23 +335,108 @@ export const revolutOpenBankingService = new RevolutOpenBankingService();
  * Used by webhook management and other Business API calls
  * 
  * Priority:
- * 1. Use stored REVOLUT_ACCESS_TOKEN from environment (obtained via OAuth consent)
- * 2. Fall back to JWT-based authentication (may be blocked by Cloudflare)
+ * 1. Use cached token if still valid
+ * 2. Refresh using refresh_token (automatic, no user interaction needed)
+ * 3. Fall back to stored REVOLUT_ACCESS_TOKEN from environment
  */
+
+// Token Cache für automatisches Refresh
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
 export async function getRevolutBusinessAccessToken(): Promise<string | null> {
-  // First, try to use the stored access token from environment
+  // Check if we have a valid cached token
+  const now = Date.now();
+  if (cachedAccessToken && tokenExpiresAt > now) {
+    return cachedAccessToken;
+  }
+
+  // Try to refresh the token using refresh_token
+  const refreshToken = process.env.REVOLUT_REFRESH_TOKEN;
+  const clientId = process.env.REVOLUT_CLIENT_ID;
+  
+  if (refreshToken && clientId) {
+    try {
+      // Load private key
+      let privateKey: string | null = null;
+      if (process.env.REVOLUT_PRIVATE_KEY) {
+        privateKey = process.env.REVOLUT_PRIVATE_KEY;
+      } else {
+        try {
+          const fs = await import('fs');
+          const path = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
+          privateKey = fs.readFileSync(path, 'utf8');
+        } catch {
+          // File not found, continue without
+        }
+      }
+
+      if (privateKey) {
+        const jwt = await import('jsonwebtoken');
+        const nowSec = Math.floor(now / 1000);
+        
+        // Create JWT client assertion
+        const clientAssertion = jwt.default.sign(
+          {
+            iss: 'taskilo.de',
+            sub: clientId,
+            aud: 'https://revolut.com',
+            iat: nowSec,
+            exp: nowSec + 300,
+          },
+          privateKey,
+          {
+            algorithm: 'RS256',
+            header: {
+              alg: 'RS256',
+              kid: clientId,
+            },
+          }
+        );
+
+        // Request new token - use correct endpoint!
+        const isProduction = process.env.REVOLUT_ENVIRONMENT === 'production';
+        const authUrl = isProduction
+          ? 'https://b2b.revolut.com/api/1.0/auth/token'
+          : 'https://sandbox-b2b.revolut.com/api/1.0/auth/token';
+
+        const formData = new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+          client_assertion: clientAssertion,
+        });
+
+        const response = await fetch(authUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+          },
+          body: formData.toString(),
+        });
+
+        if (response.ok) {
+          const tokenData = await response.json();
+          cachedAccessToken = tokenData.access_token;
+          // Token expires in 40 minutes, refresh 5 minutes early
+          tokenExpiresAt = now + ((tokenData.expires_in || 2399) - 300) * 1000;
+          return cachedAccessToken;
+        }
+      }
+    } catch (error) {
+      console.error('[Revolut] Token refresh failed:', error);
+    }
+  }
+
+  // Fallback: Use stored access token from environment (may be expired)
   const storedToken = process.env.REVOLUT_ACCESS_TOKEN;
   if (storedToken) {
-    return storedToken;
+    cachedAccessToken = storedToken;
+    // Assume it might expire in 35 minutes
+    tokenExpiresAt = now + 35 * 60 * 1000;
+    return cachedAccessToken;
   }
   
-  // Fall back to OAuth/JWT authentication (may be blocked by Cloudflare)
-  try {
-    const service = new RevolutOpenBankingService();
-    const token = await service.getAccessToken('READ');
-    return token;
-  } catch (error) {
-    console.error('[Revolut] Failed to get access token via OAuth:', error);
-    return null;
-  }
+  return null;
 }

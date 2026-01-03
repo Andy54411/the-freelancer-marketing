@@ -13,9 +13,10 @@ const REVOLUT_API_VERSION = '2024-09-01';
 
 function getBaseUrl(): string {
   const isProduction = process.env.REVOLUT_ENVIRONMENT === 'production';
+  // WICHTIG: Webhooks API v2.0 verwenden!
   return isProduction 
-    ? 'https://b2b.revolut.com/api/1.0'
-    : 'https://sandbox-b2b.revolut.com/api/1.0';
+    ? 'https://b2b.revolut.com/api/2.0'
+    : 'https://sandbox-b2b.revolut.com/api/2.0';
 }
 
 // GET - Liste alle registrierten Webhooks

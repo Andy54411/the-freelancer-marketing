@@ -80,9 +80,10 @@ export async function POST(request: NextRequest) {
 
     // Request access token
     const isProduction = process.env.REVOLUT_ENVIRONMENT === 'production';
+    // WICHTIG: b2b.revolut.com/api/1.0/auth/token ist der korrekte Endpunkt!
     const authUrl = isProduction
-      ? 'https://business.revolut.com/oauth/token'
-      : 'https://sandbox-business.revolut.com/oauth/token';
+      ? 'https://b2b.revolut.com/api/1.0/auth/token'
+      : 'https://sandbox-b2b.revolut.com/api/1.0/auth/token';
 
     const formData = new URLSearchParams({
       grant_type: 'client_credentials',

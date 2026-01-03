@@ -61,10 +61,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Exchange code for access token
+    // WICHTIG: b2b.revolut.com/api/1.0/auth/token ist der korrekte Endpunkt!
     const tokenUrl =
       process.env.REVOLUT_ENVIRONMENT === 'production'
-        ? 'https://business.revolut.com/oauth/token'
-        : 'https://sandbox-business.revolut.com/oauth/token';
+        ? 'https://b2b.revolut.com/api/1.0/auth/token'
+        : 'https://sandbox-b2b.revolut.com/api/1.0/auth/token';
 
     const clientId = process.env.REVOLUT_CLIENT_ID;
     const redirectUri = 'https://taskilo.de/api/revolut/oauth/callback';
