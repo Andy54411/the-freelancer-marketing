@@ -44,6 +44,12 @@ interface MeetingWSMessage {
     | 'screen-share-request'
     | 'approve-screen-share'
     | 'deny-screen-share'
+    // Host Control Messages
+    | 'host-mute-participant'
+    | 'host-unmute-participant'
+    | 'host-remove-participant'
+    | 'host-spotlight-participant'
+    | 'host-clear-spotlight'
     // Meeting-Ende
     | 'end-meeting';
   payload?: {
@@ -265,6 +271,22 @@ class MeetingWebSocketService {
           break;
         case 'deny-screen-share':
           await this.handleDenyScreenShare(participantId, message.payload);
+          break;
+        // Host Control Messages
+        case 'host-mute-participant':
+          await this.handleHostMuteParticipant(participantId, message.payload);
+          break;
+        case 'host-unmute-participant':
+          await this.handleHostUnmuteParticipant(participantId, message.payload);
+          break;
+        case 'host-remove-participant':
+          await this.handleHostRemoveParticipant(participantId, message.payload);
+          break;
+        case 'host-spotlight-participant':
+          await this.handleHostSpotlight(participantId, message.payload);
+          break;
+        case 'host-clear-spotlight':
+          await this.handleHostClearSpotlight(participantId);
           break;
         case 'end-meeting':
           await this.handleEndMeeting(participantId);
@@ -844,6 +866,202 @@ class MeetingWebSocketService {
 
     console.log(`[Meeting WS] Host ${participantId} denied screen share from ${payload.requestingParticipantId}`);
   }
+
+  // ==================== Host Control Handlers ====================
+
+  /**
+   * Hilfsfunktion: Prüft ob der Sender der Host ist
+   */
+  private isHostParticipant(participantId: string): boolean {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode) return false;
+    
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) return false;
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    return senderParticipant?.role === 'host';
+  }
+
+  /**
+   * Host schaltet einen Teilnehmer stumm
+   */
+  private async handleHostMuteParticipant(
+    participantId: string,
+    payload?: { targetParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.targetParticipantId) {
+      return;
+    }
+
+    if (!this.isHostParticipant(participantId)) {
+      console.log(`[Meeting WS] handleHostMuteParticipant: ${participantId} is not the host`);
+      return;
+    }
+
+    // Benachrichtige den Ziel-Teilnehmer
+    this.sendToClient(payload.targetParticipantId, {
+      type: 'host-muted-you',
+      payload: { message: 'Der Host hat dich stummgeschaltet.' },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Benachrichtige alle im Raum über die Statusänderung
+    this.broadcastToRoom(client.roomCode, {
+      type: 'participant-media-update',
+      payload: {
+        participantId: payload.targetParticipantId,
+        isMuted: true,
+        mutedByHost: true,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} muted ${payload.targetParticipantId}`);
+  }
+
+  /**
+   * Host hebt Stummschaltung eines Teilnehmers auf
+   */
+  private async handleHostUnmuteParticipant(
+    participantId: string,
+    payload?: { targetParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.targetParticipantId) {
+      return;
+    }
+
+    if (!this.isHostParticipant(participantId)) {
+      console.log(`[Meeting WS] handleHostUnmuteParticipant: ${participantId} is not the host`);
+      return;
+    }
+
+    // Benachrichtige den Ziel-Teilnehmer (er muss selbst unmuten)
+    this.sendToClient(payload.targetParticipantId, {
+      type: 'host-unmute-request',
+      payload: { message: 'Der Host hat deine Stummschaltung aufgehoben. Du kannst jetzt sprechen.' },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} requested unmute for ${payload.targetParticipantId}`);
+  }
+
+  /**
+   * Host entfernt einen Teilnehmer aus dem Meeting
+   */
+  private async handleHostRemoveParticipant(
+    participantId: string,
+    payload?: { targetParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.targetParticipantId) {
+      return;
+    }
+
+    if (!this.isHostParticipant(participantId)) {
+      console.log(`[Meeting WS] handleHostRemoveParticipant: ${participantId} is not the host`);
+      return;
+    }
+
+    const roomCode = client.roomCode;
+
+    // Benachrichtige den zu entfernenden Teilnehmer
+    this.sendToClient(payload.targetParticipantId, {
+      type: 'removed-by-host',
+      payload: { 
+        message: 'Du wurdest vom Host aus dem Meeting entfernt.',
+        redirectUrl: 'https://taskilo.de',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Schließe die WebSocket-Verbindung des Teilnehmers
+    const targetClient = this.clients.get(payload.targetParticipantId);
+    if (targetClient) {
+      // Entferne aus Room
+      this.roomClients.get(roomCode)?.delete(payload.targetParticipantId);
+      
+      // Schließe WebSocket nach kurzer Verzögerung (damit die Nachricht noch ankommt)
+      setTimeout(() => {
+        targetClient.ws.close();
+      }, 500);
+    }
+
+    // Benachrichtige alle anderen im Raum
+    this.broadcastToRoom(roomCode, {
+      type: 'participant-left',
+      payload: {
+        participantId: payload.targetParticipantId,
+        removedByHost: true,
+      },
+      timestamp: new Date().toISOString(),
+    }, payload.targetParticipantId);
+
+    console.log(`[Meeting WS] Host ${participantId} removed ${payload.targetParticipantId} from room ${roomCode}`);
+  }
+
+  /**
+   * Host setzt Spotlight auf einen Teilnehmer (nur dieser wird gehört)
+   */
+  private async handleHostSpotlight(
+    participantId: string,
+    payload?: { targetParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.targetParticipantId) {
+      return;
+    }
+
+    if (!this.isHostParticipant(participantId)) {
+      console.log(`[Meeting WS] handleHostSpotlight: ${participantId} is not the host`);
+      return;
+    }
+
+    // Benachrichtige alle im Raum über Spotlight
+    this.broadcastToRoom(client.roomCode, {
+      type: 'spotlight-changed',
+      payload: {
+        spotlightParticipantId: payload.targetParticipantId,
+        message: 'Nur dieser Teilnehmer wird jetzt gehört.',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} set spotlight on ${payload.targetParticipantId}`);
+  }
+
+  /**
+   * Host entfernt Spotlight (alle können wieder gehört werden)
+   */
+  private async handleHostClearSpotlight(participantId: string): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode) {
+      return;
+    }
+
+    if (!this.isHostParticipant(participantId)) {
+      console.log(`[Meeting WS] handleHostClearSpotlight: ${participantId} is not the host`);
+      return;
+    }
+
+    // Benachrichtige alle im Raum
+    this.broadcastToRoom(client.roomCode, {
+      type: 'spotlight-changed',
+      payload: {
+        spotlightParticipantId: null,
+        message: 'Spotlight wurde entfernt. Alle können wieder gehört werden.',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} cleared spotlight`);
+  }
+
+  // ==================== End Host Control Handlers ====================
 
   /**
    * Hilfsfunktion um Client anhand participantId zu finden

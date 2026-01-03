@@ -21,6 +21,11 @@ import {
   Mail,
   CheckCircle,
   XCircle,
+  UserX,
+  Volume2,
+  VolumeX,
+  Star,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -172,6 +177,10 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const [screenShareRequests, setScreenShareRequests] = useState<ScreenShareRequest[]>([]);
   const [isScreenShareApproved, setIsScreenShareApproved] = useState(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
+  
+  // Host Control State
+  const [spotlightParticipantId, setSpotlightParticipantId] = useState<string | null>(null);
+  const [mutedByHost, setMutedByHost] = useState(false);
   
   // Mail Invite State
   const [inviteEmail, setInviteEmail] = useState('');
@@ -366,6 +375,40 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         // Teilnehmer bekommt Ablehnung
         setIsScreenShareApproved(false);
         setError('Der Host hat deine Bildschirmfreigabe-Anfrage abgelehnt.');
+        break;
+
+      // ============== HOST CONTROL HANDLING ==============
+      case 'host-muted-you':
+        // Host hat mich stummgeschaltet
+        setMutedByHost(true);
+        setAudioEnabled(false);
+        if (localStreamRef.current) {
+          const audioTrack = localStreamRef.current.getAudioTracks()[0];
+          if (audioTrack) {
+            audioTrack.enabled = false;
+          }
+        }
+        break;
+
+      case 'host-unmute-request':
+        // Host erlaubt mir wieder zu sprechen
+        setMutedByHost(false);
+        break;
+
+      case 'removed-by-host':
+        // Ich wurde vom Host entfernt
+        setMeetingState('ended');
+        setRoom(null);
+        setParticipants([]);
+        onMeetingEnded?.();
+        if (typeof window !== 'undefined') {
+          window.location.href = message.payload.redirectUrl as string || 'https://taskilo.de';
+        }
+        break;
+
+      case 'spotlight-changed':
+        // Spotlight wurde geändert
+        setSpotlightParticipantId(message.payload.spotlightParticipantId as string | null);
         break;
 
       // ============== LOBBY/JOIN REQUEST HANDLING ==============
@@ -941,6 +984,80 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     setScreenShareRequests(prev => prev.filter(r => r.participantId !== participantId));
   }, []);
 
+  // ============== HOST CONTROL FUNCTIONS ==============
+
+  // Host schaltet einen Teilnehmer stumm
+  const hostMuteParticipant = useCallback((targetParticipantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isHost) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'host-mute-participant',
+      payload: { targetParticipantId },
+    }));
+    
+    // Lokalen State aktualisieren
+    setParticipants(prev => prev.map(p => 
+      p.id === targetParticipantId ? { ...p, audioEnabled: false } : p
+    ));
+  }, [isHost]);
+
+  // Host hebt Stummschaltung auf
+  const hostUnmuteParticipant = useCallback((targetParticipantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isHost) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'host-unmute-participant',
+      payload: { targetParticipantId },
+    }));
+  }, [isHost]);
+
+  // Host entfernt einen Teilnehmer
+  const hostRemoveParticipant = useCallback((targetParticipantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isHost) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'host-remove-participant',
+      payload: { targetParticipantId },
+    }));
+    
+    // Lokalen State aktualisieren
+    setParticipants(prev => prev.filter(p => p.id !== targetParticipantId));
+  }, [isHost]);
+
+  // Host setzt Spotlight auf einen Teilnehmer
+  const hostSetSpotlight = useCallback((targetParticipantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isHost) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'host-spotlight-participant',
+      payload: { targetParticipantId },
+    }));
+    
+    setSpotlightParticipantId(targetParticipantId);
+  }, [isHost]);
+
+  // Host entfernt Spotlight
+  const hostClearSpotlight = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isHost) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'host-clear-spotlight',
+      payload: {},
+    }));
+    
+    setSpotlightParticipantId(null);
+  }, [isHost]);
+
   // ============== MAIL INVITE FUNCTIONS ==============
 
   const sendMailInvite = useCallback(async () => {
@@ -1374,6 +1491,142 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Participant Panel (rechts, vor Chat) */}
+      {showParticipantPanel && (
+        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+          <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+            <h3 className="text-white font-medium">Teilnehmer ({participants.length + 1})</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowParticipantPanel(false)}
+              className="text-gray-400 hover:text-white p-1"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Spotlight Banner */}
+          {spotlightParticipantId && (
+            <div className="px-4 py-2 bg-yellow-500/20 border-b border-yellow-500/30 flex items-center justify-between">
+              <span className="text-yellow-200 text-sm flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Spotlight aktiv
+              </span>
+              {isHost && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={hostClearSpotlight}
+                  className="text-yellow-200 hover:text-white h-6 px-2 text-xs"
+                >
+                  Aufheben
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Participant List */}
+          <div className="flex-1 overflow-y-auto p-2">
+            {/* Ich selbst */}
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-700/50 mb-2">
+              <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-medium truncate flex items-center gap-2">
+                  {userName} (Du)
+                  {isHost && <span className="text-xs bg-teal-600 px-1.5 py-0.5 rounded">Host</span>}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  {audioEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3 text-red-400" />}
+                  {videoEnabled ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3 text-red-400" />}
+                  {mutedByHost && <span className="text-red-400">(vom Host stummgeschaltet)</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Andere Teilnehmer */}
+            {participants.map((participant) => (
+              <div 
+                key={participant.id}
+                className={cn(
+                  'flex items-center gap-3 p-2 rounded-lg mb-1 group',
+                  spotlightParticipantId === participant.id ? 'bg-yellow-500/20 border border-yellow-500/30' : 'hover:bg-gray-700/50'
+                )}
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold">
+                  {participant.avatarUrl ? (
+                    <Image src={participant.avatarUrl} alt={participant.name} width={40} height={40} className="rounded-full" />
+                  ) : (
+                    participant.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white text-sm font-medium truncate flex items-center gap-2">
+                    {participant.name}
+                    {participant.role === 'host' && <span className="text-xs bg-teal-600 px-1.5 py-0.5 rounded">Host</span>}
+                    {spotlightParticipantId === participant.id && <Star className="w-3 h-3 text-yellow-400" />}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    {participant.audioEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3 text-red-400" />}
+                    {participant.videoEnabled ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3 text-red-400" />}
+                    {participant.screenSharing && <Monitor className="w-3 h-3 text-teal-400" />}
+                  </div>
+                </div>
+                
+                {/* Host Controls für diesen Teilnehmer */}
+                {isHost && participant.role !== 'host' && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Mute/Unmute */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => participant.audioEnabled ? hostMuteParticipant(participant.id) : hostUnmuteParticipant(participant.id)}
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-600"
+                      title={participant.audioEnabled ? 'Stummschalten' : 'Stummschaltung aufheben'}
+                    >
+                      {participant.audioEnabled ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </Button>
+                    
+                    {/* Spotlight */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => spotlightParticipantId === participant.id ? hostClearSpotlight() : hostSetSpotlight(participant.id)}
+                      className={cn(
+                        'h-8 w-8 p-0 hover:bg-gray-600',
+                        spotlightParticipantId === participant.id ? 'text-yellow-400' : 'text-gray-400 hover:text-white'
+                      )}
+                      title={spotlightParticipantId === participant.id ? 'Spotlight entfernen' : 'Nur diesen hören'}
+                    >
+                      <Star className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Entfernen */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => hostRemoveParticipant(participant.id)}
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-red-400 hover:bg-red-500/20"
+                      title="Aus Meeting entfernen"
+                    >
+                      <UserX className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {participants.length === 0 && (
+              <div className="text-center text-gray-500 text-sm py-8">
+                Noch keine weiteren Teilnehmer
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Chat Panel (rechts) */}
       {showChatPanel && (
