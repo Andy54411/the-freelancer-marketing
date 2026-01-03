@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue } from
 '@/components/ui/select';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Plus,
@@ -319,6 +319,7 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
 
 export default function ContactsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const companyId = params?.uid as string;
   
   // Fixed values for page mode
@@ -330,6 +331,24 @@ export default function ContactsPage() {
   const onSave = undefined;
   const persistDirectly = true;
   const onSaved = undefined;
+
+  // Prüfe ob Prefill-Parameter vorhanden sind (von Auftragsseite)
+  const prefillData = {
+    type: searchParams?.get('type') as 'person' | 'organisation' | null,
+    name: searchParams?.get('name'),
+    firstName: searchParams?.get('firstName'),
+    lastName: searchParams?.get('lastName'),
+    companyName: searchParams?.get('companyName'),
+    email: searchParams?.get('email'),
+    phone: searchParams?.get('phone'),
+    street: searchParams?.get('street'),
+    postalCode: searchParams?.get('postalCode'),
+    city: searchParams?.get('city'),
+    country: searchParams?.get('country'),
+    vatId: searchParams?.get('vatId'),
+    taxNumber: searchParams?.get('taxNumber'),
+    orderId: searchParams?.get('orderId'), // Referenz zum Ursprungsauftrag
+  };
 
   // State Management - MUSS vor jedem bedingten Return stehen
   const [loading, setLoading] = useState(false);
@@ -416,6 +435,43 @@ export default function ContactsPage() {
       generateNextCustomerNumber();
     }
   }, [open]);
+
+  // Prefill-Daten aus Query-Parametern anwenden (z.B. von Auftragsseite)
+  useEffect(() => {
+    if (prefillData.name || prefillData.companyName || prefillData.email) {
+      // Setze Kundentyp basierend auf prefill type
+      if (prefillData.type === 'person') {
+        setCustomerType('person');
+      } else if (prefillData.type === 'organisation' || prefillData.companyName) {
+        setCustomerType('organisation');
+      }
+
+      // Wende Prefill-Daten an
+      setFormData(prev => ({
+        ...prev,
+        // Name - bei Person aufteilen, bei Organisation als companyName
+        name: prefillData.name || '',
+        firstName: prefillData.firstName || (prefillData.name?.split(' ')[0] || ''),
+        lastName: prefillData.lastName || (prefillData.name?.split(' ').slice(1).join(' ') || ''),
+        companyName: prefillData.companyName || '',
+        // Kontakt
+        email: prefillData.email || prev.email,
+        phone: prefillData.phone || prev.phone,
+        // Adresse
+        street: prefillData.street || prev.street,
+        postalCode: prefillData.postalCode || prev.postalCode,
+        city: prefillData.city || prev.city,
+        country: prefillData.country || prev.country,
+        // Steuerdaten
+        vatId: prefillData.vatId || prev.vatId,
+        taxNumber: prefillData.taxNumber || prev.taxNumber,
+        // Notiz mit Auftragsreferenz
+        notes: prefillData.orderId 
+          ? `Erstellt aus Auftrag: ${prefillData.orderId}` 
+          : prev.notes,
+      }));
+    }
+  }, [prefillData.name, prefillData.companyName, prefillData.email]);
 
   // DefaultValues werden in einer Page nicht benötigt
   // useEffect für defaultValues entfernt
@@ -1851,15 +1907,20 @@ export default function ContactsPage() {
                       const { createCustomer } = await import('@/utils/api/companyApi');
                       const response = await createCustomer(companyId, customerData);
 
+                      // Prüfe ob Kunde bereits existiert
+                      if (response.exists) {
+                        toast.error(`Kunde bereits vorhanden: ${response.existingCustomerName}`, {
+                          description: response.error,
+                          duration: 5000,
+                        });
+                        return;
+                      }
+
                       if (response.success && response.customerId) {
-
                         toast.success(`${displayName} wurde erfolgreich erstellt`);
-
-                        // Kunde erfolgreich erstellt
-                        toast.success('Kunde erfolgreich erstellt!');
                         return;
                       } else {
-                        throw new Error('Kunde konnte nicht erstellt werden');
+                        throw new Error(response.error || 'Kunde konnte nicht erstellt werden');
                       }
                     } catch (error) {
                       console.error('Fehler beim Speichern des Kunden:', error);

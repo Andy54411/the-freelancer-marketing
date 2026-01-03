@@ -67,6 +67,10 @@ import InventorySelector from '@/components/quotes/InventorySelector';
 import { QuoteItem } from '@/services/quoteService';
 
 type PreviewTemplateData = {
+  // Required by DocumentWithGoBD
+  id: string;
+  number: string;
+  status: string;
   invoiceNumber: string;
   documentNumber: string;
   documentType?: string;
@@ -123,10 +127,10 @@ type PreviewTemplateData = {
   showNet?: boolean;
   priceInput?: string;
   bankDetails?: {
-    iban?: string;
+    iban: string;
     bic?: string;
     bankName?: string;
-    accountHolder?: string;
+    accountHolder: string;
   };
   notes?: string;
   headTextHtml?: string;
@@ -973,6 +977,11 @@ export default function CreateReminderPage() {
             status: 'draft',
             createdAt: serverTimestamp(),
             companyId: uid,
+            // KRITISCH: Steuerregeln aus Rechnung uebernehmen
+            vatRate: selectedInvoice.vatRate,
+            taxRule: selectedInvoice.taxRule,
+            taxRuleType: selectedInvoice.taxRuleType,
+            isSmallBusiness: selectedInvoice.isSmallBusiness,
           }
         : {
             // Individuelle Mahnung
@@ -1000,6 +1009,11 @@ export default function CreateReminderPage() {
             status: 'draft',
             createdAt: serverTimestamp(),
             companyId: uid,
+            // KRITISCH: Steuerregeln aus Formular uebernehmen
+            vatRate: formData.vatRate,
+            taxRule: formData.taxRule,
+            taxRuleType: formData.taxRuleType,
+            isSmallBusiness: formData.isSmallBusiness,
           };
 
       const remindersRef = collection(db, 'companies', uid, 'reminders');
@@ -1044,6 +1058,11 @@ export default function CreateReminderPage() {
         sentAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         companyId: uid,
+        // KRITISCH: Steuerregeln aus Rechnung uebernehmen
+        vatRate: selectedInvoice.vatRate,
+        taxRule: selectedInvoice.taxRule,
+        taxRuleType: selectedInvoice.taxRuleType,
+        isSmallBusiness: selectedInvoice.isSmallBusiness,
       };
 
       const remindersRef = collection(db, 'companies', uid, 'reminders');
@@ -1087,6 +1106,10 @@ export default function CreateReminderPage() {
     const totalAmount = outstandingAmount + formData.reminderFee;
 
     const data: PreviewTemplateData = {
+      // Required by DocumentWithGoBD
+      id: 'preview',
+      number: reminderTitle,
+      status: 'draft',
       invoiceNumber: selectedInvoice?.invoiceNumber,
       documentNumber: reminderTitle,
       documentType: 'reminder',
@@ -1186,32 +1209,32 @@ export default function CreateReminderPage() {
       taxRuleType: selectedInvoice?.taxRuleType || formData.taxRuleType,
       priceInput: selectedInvoice?.priceInput || formData.priceInput,
       showNet: selectedInvoice?.showNet !== undefined ? selectedInvoice.showNet : formData.showNet,
-      bankDetails: company
-        ? {
-            iban:
-              (company as any)?.step4?.iban ||
-              (company?.iban as string) ||
-              ((settings as any)?.step4?.iban as string) ||
-              undefined,
-            bic:
-              (company as any)?.step4?.bic ||
-              (company?.bic as string) ||
-              ((settings as any)?.step4?.bic as string) ||
-              undefined,
-            bankName:
-              (company as any)?.step4?.bankName ||
-              (company?.bankName as string) ||
-              ((settings as any)?.step4?.bankName as string) ||
-              undefined,
-            accountHolder:
-              (company as any)?.step4?.accountHolder ||
-              (company?.accountHolder as string) ||
-              ((settings as any)?.step4?.accountHolder as string) ||
-              (settings as any)?.accountHolder ||
-              (companyName as string) ||
-              undefined,
-          }
-        : undefined,
+      bankDetails: (() => {
+        const iban =
+          (company as any)?.step4?.iban ||
+          (company?.iban as string) ||
+          ((settings as any)?.step4?.iban as string);
+        const accountHolder =
+          (company as any)?.step4?.accountHolder ||
+          (company?.accountHolder as string) ||
+          ((settings as any)?.step4?.accountHolder as string) ||
+          (settings as any)?.accountHolder ||
+          (companyName as string);
+        // Nur bankDetails setzen wenn iban und accountHolder vorhanden
+        if (!iban || !accountHolder) return undefined;
+        return {
+          iban,
+          bic:
+            (company as any)?.step4?.bic ||
+            (company?.bic as string) ||
+            ((settings as any)?.step4?.bic as string),
+          bankName:
+            (company as any)?.step4?.bankName ||
+            (company?.bankName as string) ||
+            ((settings as any)?.step4?.bankName as string),
+          accountHolder,
+        };
+      })(),
       notes: formData.notes || undefined,
       headTextHtml: formData.headText || undefined,
       headerText: formData.headText || undefined,
@@ -2791,7 +2814,7 @@ export default function CreateReminderPage() {
       <SendDocumentModal
         isOpen={sendModalOpen}
         onClose={() => setSendModalOpen(false)}
-        document={buildPreviewData()}
+        document={buildPreviewData() as any}
         documentType="reminder"
         companyId={uid}
         redirectAfterAction={`/dashboard/company/${uid}/finance/reminders`}

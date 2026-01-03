@@ -611,15 +611,18 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             }}
           />
 
-          <button
-            type="button"
-            onClick={sendVideoCallRequest}
-            disabled={isVideoRequestPending}
-            className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center mr-2"
-            title="Video-Call Anfrage senden"
-          >
-            {isVideoRequestPending ? <FiLoader className="animate-spin" /> : <Video size={20} />}
-          </button>
+          {/* Video-Call Button nur für Provider anzeigen */}
+          {currentUser?.uid === participants.providerId && (
+            <button
+              type="button"
+              onClick={sendVideoCallRequest}
+              disabled={isVideoRequestPending}
+              className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center mr-2"
+              title="Video-Call Anfrage senden"
+            >
+              {isVideoRequestPending ? <FiLoader className="animate-spin" /> : <Video size={20} />}
+            </button>
+          )}
 
           <button
             type="submit"

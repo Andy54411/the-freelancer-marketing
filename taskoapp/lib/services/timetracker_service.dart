@@ -10,7 +10,7 @@ import '../utils/api_config.dart';
 /// Verwendet die existierende Web-API anstatt duplicate APIs zu erstellen
 class TimeTrackerService {
   
-  /// Genehmigt Stunden für einen Auftrag mit automatischer Stripe-Zahlung
+  /// Genehmigt Stunden fuer einen Auftrag mit automatischer Zahlung
   /// 
   /// Diese Methode verwendet die existierende Web-API /api/bill-additional-hours
   /// die bereits alle Payment-Funktionen implementiert hat
@@ -49,7 +49,7 @@ class TimeTrackerService {
       final requestData = {
         'orderId': orderId,
         'approvedEntryIds': timeEntryIds, // Die Web-API erwartet "approvedEntryIds"
-        // customerStripeId und providerStripeAccountId werden automatisch aus der Order geladen
+        // customerId und providerId werden automatisch aus der Order geladen
       };
       
       debugPrint('📤 Request Body: ${jsonEncode(requestData)}');

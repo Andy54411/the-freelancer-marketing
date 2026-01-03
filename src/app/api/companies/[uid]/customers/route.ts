@@ -1,4 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+// Zod Schema für Kunden-Validierung
+const CustomerSchema = z.object({
+  name: z.string().min(1, 'Name ist erforderlich'),
+  email: z.string().email('Gültige E-Mail erforderlich').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  street: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  address: z.string().optional(),
+  taxNumber: z.string().optional(),
+  vatId: z.string().optional(),
+  contactPersons: z.array(z.any()).optional(),
+  notes: z.string().optional(),
+  customerNumber: z.string().optional(),
+  companyName: z.string().optional(),
+});
 
 // Runtime Firebase initialization to prevent build-time issues
 async function getFirebaseDb(companyId: string): Promise<any> {
@@ -104,8 +123,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
     const { uid } = await params;
@@ -115,38 +133,99 @@ export async function POST(
       return NextResponse.json({ error: 'UID ist erforderlich' }, { status: 400 });
     }
 
+    // Zod-Validierung
+    const validationResult = CustomerSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Validierungsfehler',
+        details: validationResult.error.errors.map(e => e.message).join(', '),
+      }, { status: 400 });
+    }
+
+    const validatedData = validationResult.data;
+
     // Get Firebase DB dynamically
     const db = await getFirebaseDb(uid);
 
-    // Erstelle neuen Kunden
-    const newCustomer = {
+    // Prüfe ob Kunde mit gleicher E-Mail bereits existiert (nur wenn E-Mail vorhanden)
+    if (validatedData.email && validatedData.email.trim() !== '') {
+      const existingCustomerQuery = await db
+        .collection('companies')
+        .doc(uid)
+        .collection('customers')
+        .where('email', '==', validatedData.email)
+        .limit(1)
+        .get();
+
+      if (!existingCustomerQuery.empty) {
+        const existingCustomer = existingCustomerQuery.docs[0];
+        const existingData = existingCustomer.data();
+        return NextResponse.json({
+          success: false,
+          exists: true,
+          existingCustomerId: existingCustomer.id,
+          existingCustomerName: existingData.name || existingData.companyName || 'Unbekannt',
+          error: `Ein Kunde mit der E-Mail "${validatedData.email}" existiert bereits`,
+        }, { status: 409 });
+      }
+    }
+
+    // Generiere fortlaufende Kundennummer mit Transaktion (atomar)
+    const companyRef = db.collection('companies').doc(uid);
+    const customerNumber = await db.runTransaction(async (transaction: FirebaseFirestore.Transaction) => {
+      const companyDoc = await transaction.get(companyRef);
+      
+      // Hole aktuelle Kundennummer-Sequenz oder starte bei 1000
+      const currentSequence = companyDoc.exists && companyDoc.data()?.customerNumberSequence
+        ? companyDoc.data().customerNumberSequence
+        : 1000;
+      
+      const nextSequence = currentSequence + 1;
+      
+      // Update die Sequenz in der Company
+      transaction.update(companyRef, { customerNumberSequence: nextSequence });
+      
+      return `KD-${nextSequence}`;
+    });
+
+    // Erstelle neuen Kunden (nur vorhandene Felder, keine leeren Strings)
+    const newCustomer: Record<string, unknown> = {
       companyId: uid,
-      name: body.name || '',
-      email: body.email || '',
-      phone: body.phone || '',
-      address: body.address || '',
-      street: body.street || '',
-      city: body.city || '',
-      postalCode: body.postalCode || '',
-      country: body.country || '',
-      taxNumber: body.taxNumber || '',
-      vatId: body.vatId || '',
+      customerNumber,
+      name: validatedData.name,
       vatValidated: false,
       totalInvoices: 0,
       totalAmount: 0,
-      contactPersons: body.contactPersons || [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const docRef = await db!
+    // Füge nur vorhandene optionale Felder hinzu (keine Fallbacks!)
+    if (validatedData.email && validatedData.email.trim() !== '') newCustomer.email = validatedData.email;
+    if (validatedData.phone) newCustomer.phone = validatedData.phone;
+    if (validatedData.street) newCustomer.street = validatedData.street;
+    if (validatedData.city) newCustomer.city = validatedData.city;
+    if (validatedData.postalCode) newCustomer.postalCode = validatedData.postalCode;
+    if (validatedData.country) newCustomer.country = validatedData.country;
+    if (validatedData.address) newCustomer.address = validatedData.address;
+    if (validatedData.taxNumber) newCustomer.taxNumber = validatedData.taxNumber;
+    if (validatedData.vatId) newCustomer.vatId = validatedData.vatId;
+    if (validatedData.contactPersons && validatedData.contactPersons.length > 0) {
+      newCustomer.contactPersons = validatedData.contactPersons;
+    }
+    if (validatedData.notes) newCustomer.notes = validatedData.notes;
+    if (validatedData.companyName) newCustomer.companyName = validatedData.companyName;
+
+    const docRef = await db
       .collection('companies')
-      .doc(companyId)
+      .doc(uid)
       .collection('customers')
       .add(newCustomer);
 
     return NextResponse.json({
       success: true,
+      customerId: docRef.id,
       customer: {
         id: docRef.id,
         ...newCustomer,
@@ -154,8 +233,9 @@ export async function POST(
       message: 'Kunde erfolgreich erstellt',
     });
   } catch (error) {
+    console.error('Fehler beim Erstellen des Kunden:', error);
     return NextResponse.json(
-      { error: 'Interner Serverfehler beim Erstellen des Kunden' },
+      { error: 'Interner Serverfehler beim Erstellen des Kunden', details: error instanceof Error ? error.message : 'Unbekannter Fehler' },
       { status: 500 }
     );
   }

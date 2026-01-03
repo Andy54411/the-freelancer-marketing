@@ -249,7 +249,7 @@ class TaskiloService {
 
   // ===== PROVIDER ONBOARDING =====
 
-  /// Erstellt Stripe Connected Account für Provider
+  /// Erstellt Connected Account fuer Provider (via Revolut/Bank)
   Future<Map<String, dynamic>> createProviderAccount({
     required String email,
     required String businessName,

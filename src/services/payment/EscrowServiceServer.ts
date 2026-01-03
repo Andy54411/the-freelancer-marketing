@@ -26,7 +26,7 @@ export interface EscrowRecord {
   status: EscrowStatus;
   clearingDays: number;
   clearingEndsAt: Timestamp | null;
-  paymentMethod: 'revolut' | 'stripe' | 'bank_transfer';
+  paymentMethod: 'revolut' | 'bank_transfer';
   paymentId?: string;
   payoutId?: string;
   description?: string;

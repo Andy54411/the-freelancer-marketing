@@ -63,6 +63,8 @@ interface MailHeaderProps {
   companyId?: string;
   // Im Dashboard: White Mode erzwingen, Icons ausblenden
   isDashboard?: boolean;
+  // Meet-Style: Minimalistischer Header wie Google Meet (kein Hamburger, keine Suche, nur Logo + Datum + Avatar)
+  isMeetStyle?: boolean;
 }
 
 export function MailHeader({
@@ -83,6 +85,7 @@ export function MailHeader({
   rightContent,
   companyId,
   isDashboard = false,
+  isMeetStyle = false,
 }: MailHeaderProps) {
   mailHeaderLog('RENDER_START', {
     userEmail,
@@ -209,6 +212,100 @@ export function MailHeader({
     console.info('Create filter:', filters);
     setShowAdvancedSearch(false);
   };
+
+  // Meet-Style Header - minimalistisch wie Google Meet
+  if (isMeetStyle) {
+    return (
+      <header className={cn(
+        "h-16 flex items-center justify-between px-4 md:px-6 border-b shrink-0",
+        isDark ? "border-gray-700 bg-[#202124]" : "border-gray-200 bg-white"
+      )}>
+        {/* Links: Hamburger + Logo */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Hamburger Menu */}
+          <button
+            onClick={onMenuToggle}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              isDark ? "hover:bg-white/20" : "hover:bg-gray-100"
+            )}
+            aria-label="Hauptmenue"
+          >
+            <Menu className={cn("w-5 h-5 md:w-6 md:h-6", isDark ? "text-gray-300" : "text-gray-700")} />
+          </button>
+          
+          <a href={getAppUrl(appHomeUrl || '/webmail')} className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className={cn("text-xl font-normal hidden md:inline", isDark ? "text-white" : "text-gray-700")}>
+              Taskilo <span className={isDark ? "text-gray-400" : "text-gray-500"}>{appName || 'Meet'}</span>
+            </span>
+          </a>
+        </div>
+        
+        {/* Rechts: Datum, Icons, Avatar */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Datum */}
+          <span className={cn("text-sm hidden md:block", isDark ? "text-gray-400" : "text-gray-600")}>
+            {new Date().toLocaleDateString('de-DE', { 
+              hour: '2-digit',
+              minute: '2-digit',
+              weekday: 'short', 
+              day: 'numeric', 
+              month: 'short' 
+            })}
+          </span>
+          
+          {/* Hilfe */}
+          <button className={cn("p-2 rounded-full", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
+            <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
+          
+          {/* Feedback - nur Desktop */}
+          <button className={cn("p-2 rounded-full hidden md:flex", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
+            <Mail className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
+          
+          {/* Einstellungen */}
+          <button 
+            onClick={onSettingsClick}
+            className={cn("p-2 rounded-full", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}
+          >
+            <Settings className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
+          
+          {/* Apps Grid */}
+          <AppLauncher isDark={isDark} companyId={companyId} />
+          
+          {/* Avatar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-8 h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none">
+                {userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium">{userEmail}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleTheme}>
+                {isDark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                {isDark ? 'Light Mode' : 'Dark Mode'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Abmelden
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className={cn(

@@ -797,4 +797,4 @@ router.post('/set-tokens', async (req: Request, res: Response) => {
   }
 });
 
-export { router as revolutProxyRouter };
+export { router as revolutProxyRouter, getAccessToken };

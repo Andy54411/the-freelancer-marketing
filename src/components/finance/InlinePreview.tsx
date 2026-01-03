@@ -202,10 +202,15 @@ export function InlinePreview({
       // Übernehme spezifische Settings aus der Invoice
       ...docData?.documentSettings
     },
-    // Steuer-Einstellungen aus Company
-    priceInput: company?.priceInput || 'netto',
-    kleinunternehmer: company?.kleinunternehmer || 'nein',
-    taxRate: company?.defaultTaxRate || '19'
+    // KRITISCH: Steuer-Einstellungen aus dem gespeicherten Dokument (nicht Company!)
+    taxRule: docData?.taxRule || docData?.taxRuleType,
+    taxRuleType: docData?.taxRuleType || docData?.taxRule,
+    isSmallBusiness: docData?.isSmallBusiness || false,
+    vatRate: docData?.vatRate || docData?.taxRate || 0,
+    taxRate: docData?.taxRate || docData?.vatRate || 0,
+    // Fallback auf Company-Einstellungen nur wenn keine Dokument-spezifischen vorhanden
+    priceInput: docData?.priceInput || company?.priceInput || 'netto',
+    kleinunternehmer: docData?.kleinunternehmer || company?.kleinunternehmer || 'nein'
   };
 
   const templateProps = {

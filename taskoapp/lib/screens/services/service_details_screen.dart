@@ -1524,7 +1524,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       },
       {
         'question': 'Welche Zahlungsmethoden werden akzeptiert?',
-        'answer': 'Wir akzeptieren alle gängigen Zahlungsmethoden über Stripe, einschließlich Kreditkarten und SEPA-Lastschrift.',
+        'answer': 'Wir akzeptieren alle gaengigen Zahlungsmethoden ueber Revolut, einschliesslich Kreditkarten und Bankueberweisung.',
       },
     ];
   }

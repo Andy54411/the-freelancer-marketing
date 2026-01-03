@@ -152,7 +152,7 @@ export const LEVEL_BENEFITS: Record<TaskiloLevel, {
     canAdvertise: true,
     canOfferSubscriptions: true,
     prioritySupport: false,
-    fasterPayouts: false,
+    fasterPayouts: true, // Sofortige Auszahlung
     featuredClients: true,
     paidConsultations: true,
     searchBoost: 1.25,
@@ -166,6 +166,46 @@ export const LEVEL_BENEFITS: Record<TaskiloLevel, {
     featuredClients: true,
     paidConsultations: true,
     searchBoost: 1.5,
+  },
+};
+
+// Payout-Konfiguration pro Level
+export interface PayoutConfig {
+  clearingDays: number;        // Standard-Wartezeit in Tagen
+  expressAvailable: boolean;   // Kann Express-Auszahlung nutzen
+  expressDays: number;         // Express-Wartezeit in Tagen
+  expressFeePercent: number;   // Express-Gebühr in Prozent (z.B. 4.5 = 4,5%)
+  standardFeePercent: number;  // Standard-Gebühr in Prozent (0 = kostenlos)
+}
+
+export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
+  new: {
+    clearingDays: 7,
+    expressAvailable: true,
+    expressDays: 2,
+    expressFeePercent: 4.5,
+    standardFeePercent: 0,
+  },
+  level1: {
+    clearingDays: 7,
+    expressAvailable: true,
+    expressDays: 2,
+    expressFeePercent: 4.5,
+    standardFeePercent: 0,
+  },
+  level2: {
+    clearingDays: 0, // Sofortige Auszahlung
+    expressAvailable: false,
+    expressDays: 0,
+    expressFeePercent: 0,
+    standardFeePercent: 0,
+  },
+  top_rated: {
+    clearingDays: 0, // Sofortige Auszahlung
+    expressAvailable: false,
+    expressDays: 0,
+    expressFeePercent: 0,
+    standardFeePercent: 0,
   },
 };
 

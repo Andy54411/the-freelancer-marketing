@@ -34,6 +34,8 @@ interface Order {
   status:
     | 'AKTIV'
     | 'ABGESCHLOSSEN'
+    | 'Completed'
+    | 'completed'
     | 'STORNIERT'
     | 'FEHLENDE DETAILS'
     | 'IN BEARBEITUNG'
@@ -170,6 +172,14 @@ const CompanyOrdersOverviewPage = () => {
           order.status === 'zahlung_erhalten_clearing'
         );
 
+      // ABGESCHLOSSEN: Auch englische Varianten beruecksichtigen
+      if (activeTab === 'ABGESCHLOSSEN')
+        return (
+          order.status === 'ABGESCHLOSSEN' ||
+          order.status === 'Completed' ||
+          order.status === 'completed'
+        );
+
       return order.status === activeTab;
     });
   }, [orders, createdOrders, quoteRequests, activeTab, orderType]);
@@ -177,6 +187,8 @@ const CompanyOrdersOverviewPage = () => {
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'ABGESCHLOSSEN':
+      case 'Completed':
+      case 'completed':
         return 'text-green-600 bg-green-100';
       case 'AKTIV':
       case 'IN BEARBEITUNG':
@@ -330,6 +342,14 @@ const CompanyOrdersOverviewPage = () => {
                         o.status === 'BEZAHLT' ||
                         o.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
                         o.status === 'zahlung_erhalten_clearing'
+                      );
+
+                    // ABGESCHLOSSEN: Auch englische Varianten beruecksichtigen
+                    if (tab === 'ABGESCHLOSSEN')
+                      return (
+                        o.status === 'ABGESCHLOSSEN' ||
+                        o.status === 'Completed' ||
+                        o.status === 'completed'
                       );
 
                     return o.status === tab;

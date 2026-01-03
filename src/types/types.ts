@@ -14,7 +14,6 @@ export interface UserProfileData {
   firstname: string;
   lastname?: string; // Hinzufügen
   user_type?: 'kunde' | 'firma'; // Hinzufügen
-  stripeCustomerId?: string;
   savedPaymentMethods?: SavedPaymentMethod[];
   savedAddresses?: SavedAddress[];
   [key: string]: unknown;
@@ -91,7 +90,6 @@ export interface AnbieterDetails {
   country?: string;
   state?: string;
   totalCalculatedPrice?: number;
-  stripeAccountId?: string;
 }
 
 // ====================================================================
@@ -115,7 +113,6 @@ export interface ApiAnbieter {
   profilePictureURL?: string;
   hourlyRate?: number | string;
   description?: string;
-  stripeAccountId?: string;
   // Hier können bei Bedarf weitere API-Felder hinzugefügt werden
 }
 

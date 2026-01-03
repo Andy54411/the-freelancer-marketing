@@ -52,8 +52,8 @@ export interface EscrowRecord {
   clearingEndsAt: Timestamp | null;
   
   // Payment Details
-  paymentMethod: 'revolut' | 'stripe' | 'bank_transfer';
-  paymentId?: string; // Revolut/Stripe Payment ID
+  paymentMethod: 'revolut' | 'bank_transfer';
+  paymentId?: string; // Revolut Payment ID
   payoutId?: string; // Payout Transaction ID
   
   // Metadaten

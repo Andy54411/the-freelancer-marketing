@@ -57,12 +57,12 @@ void main() async {
     // Falls bereits initialisiert, weitermachen
   }
 
-  // Initialisiere Stripe Payment Service
+  // Initialisiere Payment Service (Revolut via API)
   try {
-    await TaskiloPaymentService.initializeStripe();
-    // debugPrint('✅ Stripe successfully initialized');
+    await TaskiloPaymentService.initializePayments();
+    // debugPrint('Payment system ready');
   } catch (e) {
-    debugPrint('⚠️ Stripe initialization failed: $e');
+    debugPrint('Payment initialization failed: $e');
     debugPrint('App will continue without payment functionality');
   }
 

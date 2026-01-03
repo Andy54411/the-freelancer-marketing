@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_functions_service.dart';
 
 /// Taskilo Payment Service
-/// Implementiert alle 3 Payment-Systeme: B2C, B2B, Stunden-Abrechnung
+/// Implementiert Payments via Revolut API (ueber Web-Redirect)
+/// Hinweis: Stripe wurde entfernt - alle Zahlungen laufen jetzt ueber Revolut
 class TaskiloPaymentService {
   
   // ===== B2C FESTPREIS PAYMENTS =====
   
-  /// Erstellt und verarbeitet B2C Festpreis-Payment
-  /// Für: Handwerker, Reinigung, lokale Services
+  /// Erstellt B2C Festpreis-Payment
+  /// Fuer: Handwerker, Reinigung, lokale Services
+  /// Hinweis: Zahlung erfolgt via WebView/Browser Redirect zu Revolut
   static Future<PaymentResult> processB2CPayment({
     required String providerId,
     required String serviceTitle,
@@ -20,9 +21,9 @@ class TaskiloPaymentService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      debugPrint('🔄 Starting B2C Payment: €${amount.toStringAsFixed(2)}');
+      debugPrint('Starting B2C Payment: EUR ${amount.toStringAsFixed(2)}');
       
-      // 1. Erstelle Payment Intent via Firebase Function
+      // Erstelle Payment via Firebase Function (Revolut Order)
       final paymentData = await FirebaseFunctionsService.createB2CPayment(
         providerId: providerId,
         serviceTitle: serviceTitle,
@@ -36,34 +37,19 @@ class TaskiloPaymentService {
         return PaymentResult.failure('Payment creation failed: ${paymentData['error']}');
       }
 
-      // 2. Initialisiere Stripe Payment Sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentData['clientSecret'],
-          merchantDisplayName: 'Taskilo',
-          allowsDelayedPaymentMethods: false,
-          style: ThemeMode.system,
-        ),
-      );
-
-      // 3. Zeige Payment Sheet
-      await Stripe.instance.presentPaymentSheet();
-
-      // 4. Erfolg - Webhook erstellt automatisch die Order
-      debugPrint('✅ B2C Payment successful: ${paymentData['paymentIntentId']}');
+      // Bei Revolut erhalten wir eine checkoutUrl fuer WebView/Browser
+      debugPrint('B2C Payment created: ${paymentData['orderId']}');
       
       return PaymentResult.success(
-        paymentIntentId: paymentData['paymentIntentId'],
-        orderId: null, // Order wird durch Webhook erstellt
+        paymentIntentId: paymentData['orderId'],
+        orderId: null,
         amount: amount,
         type: PaymentType.b2c,
+        checkoutUrl: paymentData['checkoutUrl'],
       );
 
-    } on StripeException catch (e) {
-      debugPrint('❌ Stripe Error: ${e.error}');
-      return PaymentResult.failure('Payment cancelled or failed: ${e.error.localizedMessage}');
     } catch (e) {
-      debugPrint('❌ Payment Error: $e');
+      debugPrint('Payment Error: $e');
       return PaymentResult.failure('Payment failed: $e');
     }
   }
@@ -71,7 +57,7 @@ class TaskiloPaymentService {
   // ===== B2B PROJEKT PAYMENTS =====
   
   /// Erstellt B2B Projekt-Payment mit Meilenstein-System
-  /// Für: Consulting, Agenturen, größere Projekte
+  /// Fuer: Consulting, Agenturen, groessere Projekte
   static Future<PaymentResult> processB2BProjectPayment({
     required String providerId,
     required String projectTitle,
@@ -82,12 +68,12 @@ class TaskiloPaymentService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      debugPrint('🔄 Starting B2B Project Payment: €${totalAmount.toStringAsFixed(2)}');
+      debugPrint('Starting B2B Project Payment: EUR ${totalAmount.toStringAsFixed(2)}');
       
       // Konvertiere Milestones zu Map
       final milestonesData = milestones.map((m) => m.toMap()).toList();
 
-      // 1. Erstelle B2B Project Payment
+      // Erstelle B2B Project Payment
       final paymentData = await FirebaseFunctionsService.createB2BProjectPayment(
         providerId: providerId,
         projectTitle: projectTitle,
@@ -102,42 +88,26 @@ class TaskiloPaymentService {
         return PaymentResult.failure('B2B Payment creation failed: ${paymentData['error']}');
       }
 
-      // 2. Setup Payment für zukünftige Meilenstein-Zahlungen
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentData['clientSecret'],
-          merchantDisplayName: 'Taskilo Business',
-          allowsDelayedPaymentMethods: true,
-          style: ThemeMode.system,
-        ),
-      );
-
-      // 3. Zeige Payment Setup
-      await Stripe.instance.presentPaymentSheet();
-
-      debugPrint('✅ B2B Project Payment setup successful: ${paymentData['projectId']}');
+      debugPrint('B2B Project Payment created: ${paymentData['projectId']}');
       
       return PaymentResult.success(
-        paymentIntentId: paymentData['paymentIntentId'],
+        paymentIntentId: paymentData['orderId'],
         orderId: paymentData['projectId'],
         amount: totalAmount,
         type: PaymentType.b2b,
-        setupIntentId: paymentData['setupIntentId'],
+        checkoutUrl: paymentData['checkoutUrl'],
       );
 
-    } on StripeException catch (e) {
-      debugPrint('❌ B2B Stripe Error: ${e.error}');
-      return PaymentResult.failure('B2B Payment setup failed: ${e.error.localizedMessage}');
     } catch (e) {
-      debugPrint('❌ B2B Payment Error: $e');
+      debugPrint('B2B Payment Error: $e');
       return PaymentResult.failure('B2B Payment failed: $e');
     }
   }
 
   // ===== STUNDEN-ABRECHNUNG SYSTEM =====
   
-  /// Verarbeitet Stunden-Payment für zeitbasierte Abrechnung
-  /// Für: Langzeit-Projekte, flexible Arbeitszeiten
+  /// Verarbeitet Stunden-Payment fuer zeitbasierte Abrechnung
+  /// Fuer: Langzeit-Projekte, flexible Arbeitszeiten
   static Future<PaymentResult> processHourlyPayment({
     required String providerId,
     required String orderId,
@@ -148,9 +118,9 @@ class TaskiloPaymentService {
   }) async {
     try {
       final totalAmount = hoursWorked * hourlyRate;
-      debugPrint('🔄 Starting Hourly Payment: ${hoursWorked}h × €$hourlyRate/h = €${totalAmount.toStringAsFixed(2)}');
+      debugPrint('Starting Hourly Payment: ${hoursWorked}h x EUR $hourlyRate/h = EUR ${totalAmount.toStringAsFixed(2)}');
       
-      // 1. Erstelle Hourly Payment
+      // Erstelle Hourly Payment
       final paymentData = await FirebaseFunctionsService.createHourlyPayment(
         providerId: providerId,
         orderId: orderId,
@@ -164,65 +134,42 @@ class TaskiloPaymentService {
         return PaymentResult.failure('Hourly Payment creation failed: ${paymentData['error']}');
       }
 
-      // 2. Initialisiere Payment Sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentData['clientSecret'],
-          merchantDisplayName: 'Taskilo - Stundenabrechnung',
-          allowsDelayedPaymentMethods: false,
-          style: ThemeMode.system,
-        ),
-      );
-
-      // 3. Zeige Payment Sheet
-      await Stripe.instance.presentPaymentSheet();
-
-      debugPrint('✅ Hourly Payment successful: ${paymentData['paymentIntentId']}');
+      debugPrint('Hourly Payment created: ${paymentData['orderId']}');
       
       return PaymentResult.success(
-        paymentIntentId: paymentData['paymentIntentId'],
+        paymentIntentId: paymentData['orderId'],
         orderId: orderId,
         amount: totalAmount,
         type: PaymentType.hourly,
         billingAmount: paymentData['billingAmount'],
         hoursWorked: hoursWorked,
+        checkoutUrl: paymentData['checkoutUrl'],
       );
 
-    } on StripeException catch (e) {
-      debugPrint('❌ Hourly Stripe Error: ${e.error}');
-      return PaymentResult.failure('Hourly Payment failed: ${e.error.localizedMessage}');
     } catch (e) {
-      debugPrint('❌ Hourly Payment Error: $e');
+      debugPrint('Hourly Payment Error: $e');
       return PaymentResult.failure('Hourly Payment failed: $e');
     }
   }
 
   // ===== PAYMENT UTILITIES =====
   
-  /// Initialisiert Stripe mit Taskilo-Konfiguration
-  static Future<void> initializeStripe() async {
+  /// Initialisiert Payment System (Revolut - keine SDK-Initialisierung notwendig)
+  static Future<void> initializePayments() async {
     try {
-      // Stripe Publishable Key (korrekt von Web-Projekt)
-      const stripePublishableKey = 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsbKAHLFs5C17xubatZkLdMYRgBPRlWUMXMQZPrJK00N3Rtf7Dk';
-      
-      Stripe.publishableKey = stripePublishableKey;
-      await Stripe.instance.applySettings();
-      
-      debugPrint('✅ Stripe initialized with correct key for Taskilo');
-      debugPrint('🔑 Using key: ${stripePublishableKey.substring(0, 15)}...');
+      debugPrint('Payment system ready (Revolut via API)');
     } catch (e) {
-      debugPrint('❌ Stripe initialization failed: $e');
-      rethrow; // Re-throw so main.dart can handle it
+      debugPrint('Payment initialization failed: $e');
+      rethrow;
     }
   }
 
-  /// Prüft Payment Status
-  static Future<PaymentStatus> checkPaymentStatus(String paymentIntentId) async {
+  /// Prueft Payment Status
+  static Future<PaymentStatus> checkPaymentStatus(String paymentId) async {
     try {
-      // Implementierung über Firebase Function
       final functions = FirebaseFunctions.instance;
       final callable = functions.httpsCallable('checkPaymentStatus');
-      final result = await callable.call({'paymentIntentId': paymentIntentId});
+      final result = await callable.call({'paymentId': paymentId});
       
       final status = result.data['status'] as String;
       return PaymentStatus.values.firstWhere(
@@ -256,7 +203,7 @@ class PaymentResult {
   final double? amount;
   final PaymentType? type;
   final String? error;
-  final String? setupIntentId;
+  final String? checkoutUrl;
   final double? billingAmount;
   final double? hoursWorked;
 
@@ -265,7 +212,7 @@ class PaymentResult {
     required this.orderId,
     required this.amount,
     required this.type,
-    this.setupIntentId,
+    this.checkoutUrl,
     this.billingAmount,
     this.hoursWorked,
   }) : success = true, error = null;
@@ -276,7 +223,7 @@ class PaymentResult {
       orderId = null,
       amount = null,
       type = null,
-      setupIntentId = null,
+      checkoutUrl = null,
       billingAmount = null,
       hoursWorked = null;
 }

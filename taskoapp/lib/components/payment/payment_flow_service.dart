@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../models/user_model.dart';
 import '../../models/order.dart' as models;
-import '../../services/stripe_payment_service.dart';
 import 'payment_dialog.dart';
 import 'payment_loading_dialog.dart';
 import 'payment_success_dialog.dart';
@@ -107,11 +106,12 @@ class PaymentFlowService {
         return;
       }
 
-      debugPrint('🔄 Creating Payment Intent for ${timeEntryIds.length} time entries...');
-      debugPrint('💰 Amount: $totalAmountInCents¢ for ${totalHours}h');
+      debugPrint('Creating Payment for ${timeEntryIds.length} time entries...');
+      debugPrint('Amount: $totalAmountInCents cents for ${totalHours}h');
 
-      // SCHRITT 3: Erstelle Payment Intent über die API
-      final paymentResult = await StripePaymentService.createAdditionalHoursPaymentIntent(
+      // SCHRITT 3: Erstelle Payment ueber die Escrow API
+      // Hinweis: Payment erfolgt jetzt ueber Revolut API mit WebView/Browser
+      final paymentResult = await _createEscrowPayment(
         orderId: order.id,
         timeEntryIds: timeEntryIds,
         totalAmountInCents: totalAmountInCents,
@@ -127,7 +127,7 @@ class PaymentFlowService {
       if (paymentResult['success']) {
         final paymentData = paymentResult['data'];
         
-        debugPrint('✅ Payment Intent created: ${paymentData['paymentIntentId']}');
+        debugPrint('Payment created: ${paymentData['orderId']}');
         
         // SCHRITT 5: Zeige Payment Success Dialog
         await PaymentSuccessDialog.show(
@@ -140,7 +140,7 @@ class PaymentFlowService {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Payment-Erstellung fehlgeschlagen: ${paymentResult['error']}'),
+            content: Text('Payment-Erstellung fehlgeschlagen: ${paymentResult['error']}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -152,14 +152,59 @@ class PaymentFlowService {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Fehler beim Payment: $e'),
+          content: Text('Fehler beim Payment: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  /// Private Hilfsmethode: Lädt TimeTracking-Daten
+  /// Erstellt ein Escrow-Payment ueber die API
+  static Future<Map<String, dynamic>> _createEscrowPayment({
+    required String orderId,
+    required List<String> timeEntryIds,
+    required int totalAmountInCents,
+    required int totalHours,
+    required String customerId,
+    required String providerId,
+  }) async {
+    try {
+      // Erstelle Escrow-Payment in Firestore
+      // Das Backend erstellt die Revolut-Order und liefert checkoutUrl
+      final escrowRef = firestore.FirebaseFirestore.instance
+          .collection('escrowPayments')
+          .doc();
+      
+      await escrowRef.set({
+        'orderId': orderId,
+        'timeEntryIds': timeEntryIds,
+        'totalAmountInCents': totalAmountInCents,
+        'totalHours': totalHours,
+        'customerId': customerId,
+        'providerId': providerId,
+        'status': 'pending',
+        'paymentMethod': 'revolut',
+        'createdAt': firestore.FieldValue.serverTimestamp(),
+      });
+      
+      return {
+        'success': true,
+        'data': {
+          'orderId': escrowRef.id,
+          'customerPays': totalAmountInCents,
+          'checkoutUrl': 'https://taskilo.de/payment/escrow/${escrowRef.id}',
+        },
+      };
+    } catch (e) {
+      debugPrint('Error creating escrow payment: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Private Hilfsmethode: Laedt TimeTracking-Daten
   static Future<Map<String, dynamic>> _loadTimeTrackingData(String orderId) async {
     try {
       // Lade Order-Daten aus Firestore
@@ -177,7 +222,7 @@ class PaymentFlowService {
       
       return timeTracking;
     } catch (e) {
-      debugPrint('❌ Fehler beim Laden der TimeTracking-Daten: $e');
+      debugPrint('Fehler beim Laden der TimeTracking-Daten: $e');
       return {};
     }
   }

@@ -148,7 +148,7 @@ export async function storeBankAccounts(
     const primaryAccount = accounts.find(acc => acc.isDefault) || accounts[0];
 
     if (primaryAccount) {
-      // Update step4 Banking-Daten (wie Stripe Function)
+      // Update step4 Banking-Daten
       const step4BankingData = {
         'step4.iban': primaryAccount.iban || undefined,
         'step4.bic': primaryAccount.bic || undefined,

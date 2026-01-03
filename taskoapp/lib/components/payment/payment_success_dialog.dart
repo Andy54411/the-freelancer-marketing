@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../utils/colors.dart';
 
-/// Success Dialog mit Stripe PaymentSheet
+/// Success Dialog mit Payment Weiterleitung
+/// Hinweis: Stripe wurde entfernt - Zahlung erfolgt via Revolut WebView/Browser
 class PaymentSuccessDialog {
-  /// Zeigt Success Dialog nach Payment Intent Erstellung
+  /// Zeigt Success Dialog nach Payment Erstellung
   static Future<void> show(
     BuildContext context, {
     required Map<String, dynamic> paymentData,
@@ -19,7 +20,7 @@ class PaymentSuccessDialog {
           children: [
             Icon(Icons.payment, color: Colors.green),
             SizedBox(width: 8),
-            Text('💳 Payment bereit'),
+            Text('Payment bereit'),
           ],
         ),
         content: Column(
@@ -38,15 +39,15 @@ class PaymentSuccessDialog {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('✅ ${totalHours}h zusätzliche Stunden'),
-                  Text('✅ €${(paymentData['customerPays'] / 100).toStringAsFixed(2)} Zahlbetrag'),
-                  Text('✅ Payment ID: ${paymentData['paymentIntentId'].substring(0, 15)}...'),
+                  Text('${totalHours}h zusaetzliche Stunden'),
+                  Text('EUR ${(paymentData['customerPays'] / 100).toStringAsFixed(2)} Zahlbetrag'),
+                  Text('Payment ID: ${paymentData['orderId'].toString().substring(0, 15)}...'),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             const Text(
-              'Klicken Sie auf "Jetzt bezahlen", um das Stripe Payment Sheet zu öffnen.',
+              'Klicken Sie auf "Jetzt bezahlen", um zur Zahlungsseite weitergeleitet zu werden.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -59,7 +60,7 @@ class PaymentSuccessDialog {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _processStripePayment(context, paymentData);
+              await _processPayment(context, paymentData);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: TaskiloColors.primary,
@@ -71,51 +72,56 @@ class PaymentSuccessDialog {
     );
   }
 
-  /// Verarbeitet Stripe PaymentSheet
-  static Future<void> _processStripePayment(
+  /// Oeffnet die Zahlungsseite im Browser/WebView
+  static Future<void> _processPayment(
     BuildContext context,
     Map<String, dynamic> paymentData,
   ) async {
     try {
-      // 1. Initialize PaymentSheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentData['clientSecret'],
-          merchantDisplayName: 'Taskilo - Zusätzliche Stunden',
-          allowsDelayedPaymentMethods: false,
-          style: ThemeMode.system,
-        ),
-      );
-
-      // 2. Present PaymentSheet
-      await Stripe.instance.presentPaymentSheet();
-
-      // 3. Payment successful - show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Zahlung erfolgreich! Die Stunden werden automatisch freigegeben.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 5),
-          ),
-        );
-        // Note: Der weitere Prozess wird durch Webhooks automatisch abgewickelt
+      final checkoutUrl = paymentData['checkoutUrl'] as String?;
+      
+      if (checkoutUrl == null || checkoutUrl.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Keine Zahlungs-URL verfuegbar'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
       }
 
-    } on StripeException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Stripe Fehler: ${e.error.localizedMessage}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      // Oeffne Zahlungsseite im Browser
+      final uri = Uri.parse(checkoutUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Zahlungsseite geoeffnet. Bitte schliessen Sie die Zahlung ab.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Zahlungsseite konnte nicht geoeffnet werden'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
+
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Payment Fehler: $e'),
+            content: Text('Payment Fehler: $e'),
             backgroundColor: Colors.red,
           ),
         );

@@ -21,9 +21,10 @@ router.post('/create', async (req: Request, res: Response) => {
       userId: z.string().min(1),
       name: z.string().optional(),
       type: z.enum(['instant', 'scheduled', 'permanent']).optional(),
-      maxParticipants: z.number().min(2).max(50).optional(),
+      maxParticipants: z.number().min(2).max(200).optional(),
       expiresAt: z.string().datetime().optional(),
       settings: z.object({
+        // Basis-Einstellungen
         allowGuests: z.boolean().optional(),
         waitingRoom: z.boolean().optional(),
         muteOnEntry: z.boolean().optional(),
@@ -32,6 +33,11 @@ router.post('/create', async (req: Request, res: Response) => {
         allowRecording: z.boolean().optional(),
         allowChat: z.boolean().optional(),
         maxDurationMinutes: z.number().optional(),
+        // Erweiterte Einstellungen (aus MeetingSettingsModal)
+        hostMustJoinFirst: z.boolean().optional(),
+        allowReactions: z.boolean().optional(),
+        accessType: z.enum(['open', 'trusted', 'restricted']).optional(),
+        allowGuestsWithLink: z.boolean().optional(),
       }).optional(),
       metadata: z.object({
         orderId: z.string().optional(),
@@ -210,6 +216,85 @@ router.post('/:code/join', async (req: Request, res: Response) => {
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to join room';
     console.error('[MEETING API] Join error:', error);
+    return res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+/**
+ * POST /api/meeting/:code/settings - Meeting-Einstellungen aktualisieren
+ */
+router.post('/:code/settings', async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      userId: z.string().min(1),
+      settings: z.object({
+        // Basis-Einstellungen
+        allowGuests: z.boolean().optional(),
+        waitingRoom: z.boolean().optional(),
+        muteOnEntry: z.boolean().optional(),
+        videoOffOnEntry: z.boolean().optional(),
+        allowScreenShare: z.boolean().optional(),
+        allowRecording: z.boolean().optional(),
+        allowChat: z.boolean().optional(),
+        maxDurationMinutes: z.number().optional(),
+        // Erweiterte Einstellungen (aus MeetingSettingsModal)
+        hostMustJoinFirst: z.boolean().optional(),
+        allowReactions: z.boolean().optional(),
+        accessType: z.enum(['open', 'trusted', 'restricted']).optional(),
+        allowGuestsWithLink: z.boolean().optional(),
+      }).optional(),
+      coOrganizers: z.array(z.string().email()).optional(),
+    });
+
+    const { code } = req.params;
+    const validated = schema.parse(req.body);
+
+    const room = meetingRoomService.getRoomByCode(code);
+    
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        error: 'Meeting not found',
+      });
+    }
+
+    const updatedRoom = meetingRoomService.updateRoomSettings(
+      room.id,
+      validated.userId,
+      validated.settings || {},
+      validated.coOrganizers
+    );
+
+    if (!updatedRoom) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to update meeting settings',
+      });
+    }
+
+    return res.json({
+      success: true,
+      room: {
+        id: updatedRoom.id,
+        code: updatedRoom.code,
+        settings: updatedRoom.settings,
+        coOrganizers: updatedRoom.metadata?.coOrganizers || [],
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        details: error.errors,
+      });
+    }
+
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update settings';
+    console.error('[MEETING API] Settings update error:', error);
     return res.status(500).json({
       success: false,
       error: errorMessage,

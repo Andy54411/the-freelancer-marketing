@@ -523,7 +523,9 @@ export class FirestoreInvoiceService {
           amount: data.amount,
           tax: data.tax,
           year: data.year,
-          taxRuleType: data.taxRuleType,
+          taxRule: data.taxRule || data.taxRuleType, // Beide Felder speichern fuer Kompatibilitaet
+          taxRuleType: data.taxRuleType || data.taxRule,
+          taxRuleLabel: data.taxRuleLabel,
           // Das Template-Feld wird bewusst ignoriert, da es global aus dem User-Profil geladen wird
           isStorno: data.isStorno || false,
           originalInvoiceId: data.originalInvoiceId,

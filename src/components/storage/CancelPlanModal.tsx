@@ -109,7 +109,7 @@ export function CancelPlanModal({
         throw new Error(consentResult.error || 'Fehler beim Speichern der Einwilligung');
       }
 
-      // 2. Cancel Stripe subscription
+      // 2. Cancel subscription
       const cancelResponse = await fetch('/api/storage/cancel-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
-  InvoiceTemplateRenderer,
   DEFAULT_INVOICE_TEMPLATE,
   type InvoiceTemplate as ImportedInvoiceTemplate,
   AVAILABLE_TEMPLATES } from
@@ -49,16 +48,9 @@ import {
   X,
   Loader2,
   Info,
-  ChevronDown,
   Eye,
-  Mail,
-  Printer,
-  CheckCircle,
   AlertTriangle,
   MoreHorizontal,
-  Copy,
-  Download,
-  Settings,
   Send } from
 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -72,14 +64,10 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
-  deleteDoc,
-  FieldValue,
-  DocumentData,
-  QuerySnapshot,
   query,
   orderBy } from
 'firebase/firestore';
-import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { NumberSequenceService } from '@/services/numberSequenceService';
 import { InvoiceData as InvoiceType, InvoiceData } from '@/types/invoiceTypes';
@@ -113,22 +101,31 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
+
+// Helper-Typ für sicheren Zugriff auf verschachtelte Company-Daten
+type CompanyStepData = Record<string, unknown>;
+
+// Typsichere Helper-Funktion für Zugriff auf verschachtelte step-Properties
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStepValue(obj: any, step: string, key: string): string | undefined {
+  const stepData = obj?.[step] as CompanyStepData | undefined;
+  const value = stepData?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
 
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import InvoiceHeaderTextSection from '@/components/finance/InvoiceHeaderTextSection';
-import { SimpleTaxRuleSelector } from '@/components/finance/SimpleTaxRuleSelector';
 import { TaxRuleSelector } from '@/components/finance/TaxRuleSelector';
-import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 // Import der zentralen Platzhalter-Engine
 import {
   replacePlaceholders as centralReplacePlaceholders,
   PlaceholderContext } from
 '@/utils/placeholders';
+import { replacePlaceholders as systemReplacePlaceholders } from '@/utils/placeholderSystem';
 type PreviewTemplateData = {
   companyId?: string;
   invoiceNumber: string;
@@ -210,10 +207,10 @@ type PreviewTemplateData = {
   paymentTerms?: string;
   deliveryTerms?: string;
   // Zusätzliche Footer-Daten
-  step1?: any;
-  step2?: any;
-  step3?: any;
-  step4?: any;
+  step1?: Record<string, unknown>;
+  step2?: Record<string, unknown>;
+  step3?: Record<string, unknown>;
+  step4?: Record<string, unknown>;
   managingDirectors?: string;
   districtCourt?: string;
   companyRegister?: string;
@@ -253,19 +250,16 @@ import { Switch } from '@/components/ui/switch';
 import { InventoryService } from '@/services/inventoryService';
 import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
 import NewCustomerModal from '@/components/finance/NewCustomerModal';
-import { EInvoiceIntegration } from '@/components/finance/EInvoiceIntegration';
-import { EInvoiceComplianceDashboard } from '@/components/finance/EInvoiceComplianceDashboard';
 import { SendDocumentModal } from '@/components/finance/SendDocumentModal';
-
-// CustomerType wird aus @/components/finance/AddCustomerModal importiert
-type Customer = CustomerType;
 
 export default function CreateQuotePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  const { nextNumber: nextInvoiceNumber, isLoading: nextNumberLoading, error: nextNumberError, refresh: refreshNextNumber } = useNextInvoiceNumber(uid);
+  const prefillCustomerId = searchParams?.get('customerId');
+  const { nextNumber: nextInvoiceNumber, isLoading: nextNumberLoading, error: nextNumberError, refresh: _refreshNextNumber } = useNextInvoiceNumber(uid);
 
   // 🔍 DEBUG: Hook-Status loggen
   React.useEffect(() => {
@@ -281,9 +275,9 @@ export default function CreateQuotePage() {
   useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
   const [showLivePreview, setShowLivePreview] = useState(false);
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [_loadingTemplate, setLoadingTemplate] = useState(false);
 
-  const renderProductsCard = () =>
+  const _renderProductsCard = () =>
   <Card>
       <CardHeader>
         <CardTitle>
@@ -318,7 +312,7 @@ export default function CreateQuotePage() {
   }
 
   // Hilfsfunktion zur Preiskonvertierung
-  const parsePrice = (price: number | string): number => {
+  const _parsePrice = (price: number | string): number => {
     if (typeof price === 'number') return price;
     return parseFloat(price) || 0;
   };
@@ -373,7 +367,7 @@ export default function CreateQuotePage() {
     loadExistingServices();
   }, [uid]);
   // ComboBox für Dienstleistungsauswahl
-  const ServiceSelector = () =>
+  const _ServiceSelector = () =>
   <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
       <Popover>
         <PopoverTrigger asChild>
@@ -496,7 +490,7 @@ export default function CreateQuotePage() {
 
       const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
 
-      const result = await addDoc(ref, serviceData);
+      await addDoc(ref, serviceData);
 
       toast.success('Dienstleistung gespeichert');
       setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
@@ -511,10 +505,10 @@ export default function CreateQuotePage() {
   // States für Quick-Add Service Funktion
   const [quickServiceName, setQuickServiceName] = useState('');
   const [quickServicePrice, setQuickServicePrice] = useState('');
-  const [savingQuickService, setSavingQuickService] = useState(false);
+  const [_savingQuickService, setSavingQuickService] = useState(false);
 
   // Quick-Add Service Handler
-  const handleQuickAddService = async () => {
+  const _handleQuickAddService = async () => {
     if (!uid || !quickServiceName.trim()) {
       toast.error('Bitte geben Sie einen Namen für die Dienstleistung ein');
       return;
@@ -568,25 +562,18 @@ export default function CreateQuotePage() {
   // UI state
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<CustomerType[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [_loadingCustomers, setLoadingCustomers] = useState(false);
   const [showNet, setShowNet] = useState(true);
   const [taxRate, setTaxRate] = useState(19);
   const [showDetailedOptions, setShowDetailedOptions] = useState(false);
-  const [taxDEOpen, setTaxDEOpen] = useState(true);
-  const [taxEUOpen, setTaxEUOpen] = useState(false);
-  const [taxNonEUOpen, setTaxNonEUOpen] = useState(false);
   const [paymentDays, setPaymentDays] = useState(14); // Standard 14 Tage
-  const [company, setCompany] = useState<any | null>(null);
-  // E-Mail Versand UI
-  const [emailCardOpen, setEmailCardOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [company, setCompany] = useState<any>(null);
+  // E-Mail Versand UI (für zukünftige Verwendung)
+  const [emailCardOpen, _setEmailCardOpen] = useState(false);
   const [emailTo, setEmailTo] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailAttachmentB64, setEmailAttachmentB64] = useState<string | null>(null);
-  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Angebot.docx');
-  const [emailAttachmentReady, setEmailAttachmentReady] = useState<boolean>(false);
-  const [emailAttachmentError, setEmailAttachmentError] = useState<string | null>(null);
 
   // Produkt-anlegen Prompt/Modal State
   const [dismissedCreatePromptIds, setDismissedCreatePromptIds] = useState<Set<string>>(new Set());
@@ -611,7 +598,7 @@ export default function CreateQuotePage() {
 
   // Kunden-anlegen Modal State
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [creatingCustomer, _setCreatingCustomer] = useState(false);
   const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
 
   // Kontakttyp State (neu für SevDesk-Style Interface)
@@ -626,11 +613,12 @@ export default function CreateQuotePage() {
   const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
 
   // Textvorlagen State
-  const [textTemplates, setTextTemplates] = useState<any[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [_textTemplates, setTextTemplates] = useState<any[]>([]);
+  const [_loadingTemplates, setLoadingTemplates] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
-  const [selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
+  const [_selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
+  const [_selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
 
   // Nummernkreis Modal State
   const [showNumberingModal, setShowNumberingModal] = useState(false);
@@ -641,7 +629,7 @@ export default function CreateQuotePage() {
   const [eInvoiceEnabled, setEInvoiceEnabled] = useState(false);
   const [showCompliancePanel, setShowCompliancePanel] = useState(false);
   const [complianceErrors, setComplianceErrors] = useState<string[]>([]);
-  const [eInvoiceSettings, setEInvoiceSettings] = useState<any>(null);
+  const [eInvoiceSettings, setEInvoiceSettings] = useState<Record<string, unknown> | null>(null);
   const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
 
   // Company Settings Banner State
@@ -683,7 +671,7 @@ export default function CreateQuotePage() {
   };
 
   // Handle preview settings update
-  const handlePreviewSettingsUpdate = (settings: any) => {};
+  const _handlePreviewSettingsUpdate = (_settings: Record<string, unknown>) => {};
 
   // Nummernkreis Vorschau generieren
   const generateNumberPreview = (format: string, number: number): string => {
@@ -701,7 +689,7 @@ export default function CreateQuotePage() {
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
   Number.isFinite(net) ? net * (1 + Math.max(0, rate) / 100) : 0;
-  const syncNetFromGross = (gross: number, rate: number) =>
+  const _syncNetFromGross = (gross: number, rate: number) =>
   Number.isFinite(gross) ? gross / (1 + Math.max(0, rate) / 100) : 0;
 
   // Popover-Open-Status pro Zeile und Debounce-Timer pro Item
@@ -766,7 +754,7 @@ export default function CreateQuotePage() {
             next.delete(id);
             return next;
           });
-        } catch (_) {
+        } catch {
 
 
           // ignoriere Fehler in der Auto-Suche
@@ -796,9 +784,10 @@ export default function CreateQuotePage() {
 
   // Cleanup: ausstehende Timer beim Unmount löschen
   useEffect(() => {
+    const timers = popoverTimersRef.current;
     return () => {
-      for (const t of popoverTimersRef.current.values()) clearTimeout(t);
-      popoverTimersRef.current.clear();
+      for (const t of timers.values()) clearTimeout(t);
+      timers.clear();
     };
   }, []);
 
@@ -877,7 +866,7 @@ export default function CreateQuotePage() {
     total: 0
   }]
   );
-  const [showDetailsForItem, setShowDetailsForItem] = useState<Set<string>>(new Set());
+  const [_showDetailsForItem, _setShowDetailsForItem] = useState<Set<string>>(new Set());
 
   // Halte itemsRef synchron, damit Debounce/Popover-Logik nicht vor Deklaration auf items zugreift
   useEffect(() => {
@@ -960,6 +949,45 @@ export default function CreateQuotePage() {
     loadCustomers();
   }, [uid, user]);
 
+  // Prefill Customer aus Query-Parameter (z.B. von Kontakte-Seite)
+  useEffect(() => {
+    const loadPrefillCustomer = async () => {
+      if (!prefillCustomerId || !uid) return;
+      
+      try {
+        const customerDoc = await getDoc(doc(db, 'companies', uid, 'customers', prefillCustomerId));
+        
+        if (customerDoc.exists()) {
+          const data = customerDoc.data();
+          
+          // Baue Adresse zusammen
+          const addressParts: string[] = [];
+          if (data.street) addressParts.push(data.street);
+          if (data.postalCode || data.city) {
+            addressParts.push(`${data.postalCode || ''} ${data.city || ''}`.trim());
+          }
+          if (data.country && data.country !== 'Deutschland') {
+            addressParts.push(data.country);
+          }
+          
+          setFormData((prev) => ({
+            ...prev,
+            customerName: data.name || data.companyName || '',
+            customerEmail: data.email || '',
+            customerNumber: data.customerNumber || '',
+            customerAddress: addressParts.join('\n'),
+          }));
+          
+          toast.success(`Kunde "${data.name || data.companyName}" wurde geladen`);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des Kunden aus Query-Parameter:', error);
+      }
+    };
+    
+    loadPrefillCustomer();
+  }, [prefillCustomerId, uid]);
+
   // Popup schließen beim Klicken außerhalb
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1027,7 +1055,7 @@ export default function CreateQuotePage() {
             });
           }
         }
-      } catch (e) {
+      } catch {
 
 
         // still render, but without company info
@@ -1126,6 +1154,7 @@ export default function CreateQuotePage() {
         setPaymentDays(diffDays);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.invoiceDate, formData.validUntil]);
 
   // Template Auswahl & User Preferences laden
@@ -1192,8 +1221,8 @@ export default function CreateQuotePage() {
     loadTextTemplates();
   }, [uid, formData.headTextHtml, formData.footerText]);
 
-  // Template-Komponente dynamisch rendern
-  const renderTemplateComponent = (templateId: ImportedInvoiceTemplate) => {
+  // Template-Komponente dynamisch rendern (für zukünftige Verwendung)
+  const _renderTemplateComponent = (templateId: ImportedInvoiceTemplate) => {
     const template = AVAILABLE_TEMPLATES.find((t) => t.id === templateId);
     if (template) {
       return template.component;
@@ -1278,7 +1307,7 @@ export default function CreateQuotePage() {
         } else {
           setEInvoiceEnabled(false);
         }
-      } catch (error) {
+      } catch {
         setEInvoiceEnabled(false);
       }
     };
@@ -1301,8 +1330,8 @@ export default function CreateQuotePage() {
     </div>;
 
 
-  // CardContent rendern
-  const renderCardContent = () =>
+  // CardContent rendern (für zukünftige Verwendung)
+  const _renderCardContent = () =>
   <div data-slot="card-content" className="px-6">
       <QuickAddServiceSection />
       {/* Rest des Card Contents */}
@@ -1362,8 +1391,8 @@ export default function CreateQuotePage() {
     }
   };
 
-  // ✨ DATUM-HILFSFUNKTIONEN für erweiterte Platzhalter
-  const getISOWeek = (date: Date): number => {
+  // Datum-Hilfsfunktionen für erweiterte Platzhalter (für zukünftige Verwendung)
+  const _getISOWeek = (date: Date): number => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -1371,46 +1400,46 @@ export default function CreateQuotePage() {
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
-  const getMonthName = (monthIndex: number): string => {
+  const _getMonthName = (monthIndex: number): string => {
     const adjustedMonth = (monthIndex % 12 + 12) % 12; // Handle negative values
     const date = new Date(2000, adjustedMonth, 1);
     return date.toLocaleDateString('de-DE', { month: 'long' });
   };
 
-  const getMonthNameShort = (monthIndex: number): string => {
+  const _getMonthNameShort = (monthIndex: number): string => {
     const adjustedMonth = (monthIndex % 12 + 12) % 12;
     const date = new Date(2000, adjustedMonth, 1);
     return date.toLocaleDateString('de-DE', { month: 'short' });
   };
 
-  const getMonthNumber = (monthIndex: number): string => {
+  const _getMonthNumber = (monthIndex: number): string => {
     const adjustedMonth = (monthIndex % 12 + 12) % 12;
     return (adjustedMonth + 1).toString().padStart(2, '0');
   };
 
-  const getNextQuarter = (): number => {
+  const _getNextQuarter = (): number => {
     const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
     return currentQuarter === 4 ? 1 : currentQuarter + 1;
   };
 
-  const getPreviousQuarter = (): number => {
+  const _getPreviousQuarter = (): number => {
     const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
     return currentQuarter === 1 ? 4 : currentQuarter - 1;
   };
 
-  const getYesterday = (): Date => {
+  const _getYesterday = (): Date => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     return yesterday;
   };
 
-  const getDaysInCurrentMonth = (): number => {
+  const _getDaysInCurrentMonth = (): number => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   };
 
   // Platzhalter-Ersetzung für Textvorlagen - NEUE ZENTRALE ENGINE
-  const replacePlaceholders = (text: string, data: PreviewTemplateData): string => {
+  const _replacePlaceholders = (text: string, data: PreviewTemplateData): string => {
     if (!text) return '';
 
     // Erstelle Kontext für die zentrale Engine
@@ -1496,11 +1525,13 @@ export default function CreateQuotePage() {
     const today = new Date();
 
     // Firmenname und -adresse aus companies-Collection, mit Fallbacks
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRecord = user as any;
     const companyName =
     company?.companyName as string ||
     settings?.companyName as string ||
-    (user as any)?.companyName as string ||
-    (user as any)?.displayName as string ||
+    (userRecord?.companyName as string) ||
+    (userRecord?.displayName as string) ||
     'Ihr Unternehmen';
     // Kontaktperson: interne Eingabe > Customer-Kontakt > Company-Kontakt > Vor-/Nachname
     const contactPersonNameForFooter = (() => {
@@ -1544,7 +1575,7 @@ export default function CreateQuotePage() {
     join('\n');
 
     // Kopf-Text (HTML) rudimentär in Text wandeln + weitere Metadaten als Bemerkungen bündeln
-    const htmlToText = (html: string) =>
+    const _htmlToText = (html: string) =>
     (html || '').
     replace(/<br\s*\/?>(\s*)/gi, '\n').
     replace(/<[^>]+>/g, '').
@@ -1609,6 +1640,7 @@ export default function CreateQuotePage() {
       currency:
       formData.currency ||
       company?.defaultCurrency as string ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (settings as any)?.defaultCurrency as string ||
       'EUR',
       taxRule: formData.taxRule,
@@ -1625,29 +1657,29 @@ export default function CreateQuotePage() {
       company?.website as string ||
       company?.companyWebsite as string ||
       company?.companyWebsiteForBackend as string ||
-      (company as any)?.step1?.website as string ||
-      (company as any)?.step2?.website as string ||
+      getStepValue(company, 'step1', 'website') ||
+      getStepValue(company, 'step2', 'website') ||
       undefined,
       companyLogo: company?.companyLogo as string || undefined,
       profilePictureURL: company?.profilePictureURL as string || undefined,
       companyVatId:
       company?.vatId as string ||
-      (company as any)?.vatIdForBackend ||
-      (company as any)?.step3?.vatId ||
-      (settings as any)?.vatId as string ||
+      (company?.vatIdForBackend as string) ||
+      getStepValue(company, 'step3', 'vatId') ||
+      (settings?.vatId as string) ||
       undefined,
       companyTaxNumber:
       company?.taxNumber as string ||
-      (company as any)?.taxNumberForBackend ||
-      (company as any)?.step3?.taxNumber ||
-      (settings as any)?.taxNumber as string ||
+      (company?.taxNumberForBackend as string) ||
+      getStepValue(company, 'step3', 'taxNumber') ||
+      (settings?.taxNumber as string) ||
       undefined,
       companyRegister:
       company?.companyRegisterPublic as string ||
       company?.companyRegister as string ||
-      (company as any)?.step3?.companyRegister ||
-      (settings as any)?.districtCourt as string ||
-      (settings as any)?.companyRegister as string ||
+      getStepValue(company, 'step3', 'companyRegister') ||
+      (settings?.districtCourt as string) ||
+      (settings?.companyRegister as string) ||
       undefined,
       items: items.map((it) => {
         const qty = Number.isFinite(it.quantity) ? it.quantity : 0;
@@ -1666,7 +1698,7 @@ export default function CreateQuotePage() {
           unitPrice: unit,
           total: lineTotalNet,
           taxRate: undefined,
-          category: it.category as any,
+          category: it.category,
           discountPercent: it.discountPercent || 0,
           unit: it.unit
         };
@@ -1720,25 +1752,25 @@ export default function CreateQuotePage() {
       bankDetails: company ?
       {
         iban:
-        (company as any)?.step4?.iban ||
+        getStepValue(company, 'step4', 'iban') ||
         company?.iban as string ||
-        (settings as any)?.step4?.iban as string ||
+        getStepValue(settings, 'step4', 'iban') ||
         undefined,
         bic:
-        (company as any)?.step4?.bic ||
+        getStepValue(company, 'step4', 'bic') ||
         company?.bic as string ||
-        (settings as any)?.step4?.bic as string ||
+        getStepValue(settings, 'step4', 'bic') ||
         undefined,
         bankName:
-        (company as any)?.step4?.bankName ||
+        getStepValue(company, 'step4', 'bankName') ||
         company?.bankName as string ||
-        (settings as any)?.step4?.bankName as string ||
+        getStepValue(settings, 'step4', 'bankName') ||
         undefined,
         accountHolder:
-        (company as any)?.step4?.accountHolder ||
+        getStepValue(company, 'step4', 'accountHolder') ||
         company?.accountHolder as string ||
-        (settings as any)?.step4?.accountHolder as string ||
-        (settings as any)?.accountHolder ||
+        getStepValue(settings, 'step4', 'accountHolder') ||
+        (settings?.accountHolder as string) ||
         companyName as string ||
         undefined
       } :
@@ -1802,54 +1834,62 @@ export default function CreateQuotePage() {
         })(),
         taxNumber:
         company?.taxNumber as string ||
-        (company as any)?.taxNumberForBackend ||
-        (company as any)?.step3?.taxNumber ||
-        (settings as any)?.taxNumber as string ||
+        (company?.taxNumberForBackend as string) ||
+        getStepValue(company, 'step3', 'taxNumber') ||
+        (settings?.taxNumber as string) ||
         '',
         vatId:
         company?.vatId as string ||
-        (company as any)?.vatIdForBackend ||
-        (company as any)?.step3?.vatId ||
-        (settings as any)?.vatId as string ||
+        (company?.vatIdForBackend as string) ||
+        getStepValue(company, 'step3', 'vatId') ||
+        (settings?.vatId as string) ||
         '',
         website:
         company?.website as string ||
         company?.companyWebsite as string ||
         company?.companyWebsiteForBackend as string ||
-        (company as any)?.step1?.website as string ||
-        (company as any)?.step2?.website as string ||
+        getStepValue(company, 'step1', 'website') ||
+        getStepValue(company, 'step2', 'website') ||
         '',
         bankDetails: {
           iban:
-          (company as any)?.step4?.iban ||
+          getStepValue(company, 'step4', 'iban') ||
           company?.iban as string ||
-          (settings as any)?.step4?.iban as string ||
+          getStepValue(settings, 'step4', 'iban') ||
           '',
           bic:
-          (company as any)?.step4?.bic ||
+          getStepValue(company, 'step4', 'bic') ||
           company?.bic as string ||
-          (settings as any)?.step4?.bic as string ||
+          getStepValue(settings, 'step4', 'bic') ||
           '',
           accountHolder:
-          (company as any)?.step4?.accountHolder ||
+          getStepValue(company, 'step4', 'accountHolder') ||
           company?.accountHolder as string ||
-          (settings as any)?.step4?.accountHolder as string ||
-          (settings as any)?.accountHolder ||
+          getStepValue(settings, 'step4', 'accountHolder') ||
+          (settings?.accountHolder as string) ||
           companyName ||
           ''
         }
       },
       // Footer-Daten aus Company-Objekt
-      step1: company?.step1 || (company as any)?.step1,
-      step2: company?.step2 || (company as any)?.step2,
-      step3: company?.step3 || (company as any)?.step3,
-      step4: company?.step4 || (company as any)?.step4,
+      step1: company?.step1 as Record<string, unknown>,
+      step2: company?.step2 as Record<string, unknown>,
+      step3: company?.step3 as Record<string, unknown>,
+      step4: company?.step4 as Record<string, unknown>,
       managingDirectors:
-      (company as any)?.managingDirectors || (company as any)?.step1?.managingDirectors,
-      districtCourt: (company as any)?.districtCourt || (company as any)?.step3?.districtCourt,
-      legalForm: (company as any)?.step2?.legalForm || (company as any)?.legalForm,
-      firstName: (company as any)?.firstName || (company as any)?.step1?.personalData?.firstName,
-      lastName: (company as any)?.lastName || (company as any)?.step1?.personalData?.lastName,
+      (company?.managingDirectors as string) || getStepValue(company, 'step1', 'managingDirectors'),
+      districtCourt: (company?.districtCourt as string) || getStepValue(company, 'step3', 'districtCourt'),
+      legalForm: getStepValue(company, 'step2', 'legalForm') || (company?.legalForm as string),
+      firstName: (company?.firstName as string) || (() => {
+        const step1 = company?.step1 as CompanyStepData | undefined;
+        const personalData = step1?.personalData as CompanyStepData | undefined;
+        return typeof personalData?.firstName === 'string' ? personalData.firstName : undefined;
+      })(),
+      lastName: (company?.lastName as string) || (() => {
+        const step1 = company?.step1 as CompanyStepData | undefined;
+        const personalData = step1?.personalData as CompanyStepData | undefined;
+        return typeof personalData?.lastName === 'string' ? personalData.lastName : undefined;
+      })(),
       // Skonto-Felder für Template
       skontoEnabled: skontoEnabled || false,
       skontoDays: skontoEnabled ? skontoDays || 0 : 0,
@@ -1886,12 +1926,9 @@ export default function CreateQuotePage() {
     } as unknown as InvoiceData;
   };
 
-  // Platzhalter in Textvorlagen ersetzen
-  const getProcessedPreviewData = (): PreviewTemplateData => {
+  // Platzhalter in Textvorlagen ersetzen (für zukünftige Verwendung)
+  const _getProcessedPreviewData = (): PreviewTemplateData => {
     const data = buildPreviewData();
-
-    // Import der richtigen replacePlaceholders Funktion mit Sprach-Support aus placeholderSystem
-    const { replacePlaceholders: systemReplacePlaceholders } = require('@/utils/placeholderSystem');
 
     // Platzhalter in Kopf- und Fußtext ersetzen mit Sprach-Unterstützung
     // Deutsch als Standard, da das ein deutsches System ist
@@ -1928,7 +1965,8 @@ export default function CreateQuotePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailCardOpen]);
 
-  const printInBrowser = () => {
+  // Browser-Druck (deaktiviert)
+  const _printInBrowser = () => {
     toast.message('Browser-Druck wurde deaktiviert.');
   };
 
@@ -1996,7 +2034,7 @@ export default function CreateQuotePage() {
   sort((a, b) => b.rate - a.rate); // Sort descending (19%, 7%, 0%)
 
   // Handlers
-  const handleCustomerSelect = (customerName: string) => {
+  const _handleCustomerSelect = (customerName: string) => {
     const customer = customers.find((c) => c.name === customerName);
     if (!customer) return;
     setFormData((prev) => ({
@@ -2011,7 +2049,7 @@ export default function CreateQuotePage() {
     }));
   };
 
-  const addItem = () => {
+  const _addItem = () => {
     const newItem: QuoteItem = {
       id:
       typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
@@ -2031,7 +2069,7 @@ export default function CreateQuotePage() {
     setItems((prev) => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
   };
 
-  const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof QuoteItem, value: string | number | boolean) => {
     setItems((prev) =>
     prev.map((item, i) => {
       if (i !== index) return item;
@@ -2083,7 +2121,7 @@ export default function CreateQuotePage() {
     }, 0);
     const vat = subtotal * (taxRate / 100);
     const grandTotal = subtotal + vat;
-    const totalNet = subtotal;
+    const _totalNet = subtotal;
 
     // Create temporary invoice data for modal preview
     const tempInvoiceData: InvoiceType = {
@@ -2160,20 +2198,20 @@ export default function CreateQuotePage() {
       profilePictureURL: company?.profilePictureURL as string || undefined,
       companyVatId:
       company?.vatId as string ||
-      (company as any)?.vatIdForBackend ||
-      (company as any)?.step3?.vatId ||
-      undefined,
+      (company?.vatIdForBackend as string) ||
+      getStepValue(company, 'step3', 'vatId') ||
+      '',
       companyTaxNumber:
       company?.taxNumber as string ||
-      (company as any)?.taxNumberForBackend ||
-      (company as any)?.step3?.taxNumber ||
-      undefined,
+      (company?.taxNumberForBackend as string) ||
+      getStepValue(company, 'step3', 'taxNumber') ||
+      '',
       companyRegister:
       company?.companyRegisterPublic as string ||
       company?.companyRegister as string ||
-      (company as any)?.step3?.companyRegister ||
-      (settings as any)?.districtCourt as string ||
-      (settings as any)?.companyRegister as string ||
+      getStepValue(company, 'step3', 'companyRegister') ||
+      (settings?.districtCourt as string) ||
+      (settings?.companyRegister as string) ||
       undefined,
 
       // Items and totals
@@ -2188,6 +2226,7 @@ export default function CreateQuotePage() {
         unit: item.unit || 'Stk',
         category: item.category || 'Artikel',
         inventoryItemId: item.inventoryItemId || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         extendedDescription: (item as any).extendedDescription || '' // Erweiterte Beschreibung
       })),
 
@@ -2217,7 +2256,7 @@ export default function CreateQuotePage() {
       // E-Invoice Daten (falls aktiviert)
       eInvoice: eInvoiceEnabled ?
       {
-        format: eInvoiceSettings?.defaultFormat || 'zugferd',
+        format: (eInvoiceSettings?.defaultFormat as string) || 'zugferd',
         version: '1.0',
         guid: crypto.randomUUID()
       } :
@@ -2225,7 +2264,7 @@ export default function CreateQuotePage() {
       eInvoiceData:
       eInvoiceEnabled && eInvoiceSettings ?
       {
-        format: eInvoiceSettings.defaultFormat || 'zugferd',
+        format: (eInvoiceSettings.defaultFormat as string) || 'zugferd',
         version: '1.0',
         guid: crypto.randomUUID(),
         validationStatus: 'pending' as const,
@@ -2245,6 +2284,9 @@ export default function CreateQuotePage() {
   const handleSubmit = async (asDraft = true) => {
     if (loading) return;
     setLoading(true);
+    // Cast user für sichere Property-Zugriffe
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRecord = user as any;
     try {
       // Validation
       if (!formData.customerName || !formData.validUntil) {
@@ -2353,7 +2395,7 @@ export default function CreateQuotePage() {
         companyName:
         company?.companyName ||
         settings?.companyName ||
-        (user as any)?.displayName ||
+        userRecord?.displayName ||
         'Ihr Unternehmen',
         companyAddress: [
         [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber].
@@ -2368,9 +2410,9 @@ export default function CreateQuotePage() {
         companyPhone:
         company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
         companyWebsite: company?.website as string || company?.companyWebsite as string || '',
-        companyVatId: company?.vatId as string || (company as any)?.vatIdForBackend || '',
+        companyVatId: company?.vatId as string || (company?.vatIdForBackend as string) || '',
         companyTaxNumber:
-        company?.taxNumber as string || (company as any)?.taxNumberForBackend || '',
+        company?.taxNumber as string || (company?.taxNumberForBackend as string) || '',
         companyRegister:
         company?.companyRegisterPublic as string || company?.companyRegister as string || '',
         companyLogo: company?.companyLogo as string || '',
@@ -2443,11 +2485,11 @@ export default function CreateQuotePage() {
         // Bank Details - ALLE Bankdaten
         bankDetails: company ?
         {
-          iban: (company as any)?.step4?.iban || company?.iban as string || '',
-          bic: (company as any)?.step4?.bic || company?.bic as string || '',
-          bankName: (company as any)?.step4?.bankName || company?.bankName as string || '',
+          iban: getStepValue(company, 'step4', 'iban') || company?.iban as string || '',
+          bic: getStepValue(company, 'step4', 'bic') || company?.bic as string || '',
+          bankName: getStepValue(company, 'step4', 'bankName') || company?.bankName as string || '',
           accountHolder:
-          (company as any)?.step4?.accountHolder ||
+          getStepValue(company, 'step4', 'accountHolder') ||
           company?.accountHolder as string ||
           company?.companyName ||
           ''
@@ -2496,9 +2538,10 @@ export default function CreateQuotePage() {
           deliveryDateType,
           deliveryDateRange
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
 
-      // 🚨 CRITICAL: Remove all undefined values (Firestore doesn't accept undefined)
+      // CRITICAL: Remove all undefined values (Firestore doesn't accept undefined)
       // But preserve Date objects for Firestore Timestamps
       const cleanInvoiceData = JSON.parse(
         JSON.stringify(invoiceData, (key, value) => {
@@ -2534,8 +2577,8 @@ export default function CreateQuotePage() {
 
         if (inventoryItems.length > 0) {
         }
-      } catch (reserveErr: any) {
-        console.error('❌ Inventory reservation failed:', reserveErr);
+      } catch (reserveErr: unknown) {
+        console.error('Inventory reservation failed:', reserveErr);
         // Continue anyway - inventory reservation is not critical for invoice creation
       }
 
@@ -2617,6 +2660,7 @@ export default function CreateQuotePage() {
       const invalidFieldsSet = new Set<string>();
 
       // 1. Lade Company-Daten für vollständige Prüfung
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let companyData: any = null;
       try {
         const { doc, getDoc } = await import('firebase/firestore');
@@ -2628,7 +2672,7 @@ export default function CreateQuotePage() {
         } else {
           complianceErrors.push('Unternehmensdaten nicht gefunden');
         }
-      } catch (error) {
+      } catch {
         complianceErrors.push('Fehler beim Laden der Unternehmensdaten');
       }
 
@@ -4454,6 +4498,7 @@ export default function CreateQuotePage() {
                     <div className="px-4 pb-4">
                       <textarea
                         placeholder="Erweiterte Beschreibung (optional) - wird auf der Rechnung unter der Position angezeigt"
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         value={(item as any).extendedDescription || ''}
                         onChange={(e) => {
                           setItems((prev) =>
@@ -4951,7 +4996,7 @@ export default function CreateQuotePage() {
           saving={creatingCustomer}
           persistDirectly={true}
           companyId={uid}
-          onSaved={async (customerId) => {
+          onSaved={async (_customerId) => {
             try {
               // Lade Kunden neu direkt aus Firebase Subcollection
               const customersQuery = query(
@@ -5256,14 +5301,14 @@ export default function CreateQuotePage() {
             setShowSendDocumentModal(false);
             setCreatedDocument(null);
           }}
-          document={createdDocument || {} as any}
+          document={createdDocument || {} as InvoiceData}
           documentType="invoice"
           companyId={uid}
           redirectAfterAction={`/dashboard/company/${uid}/finance/invoices`}
           onSend={async (method, options) => {
             try {
               // Get the invoice ID from the created document or options
-              const invoiceId = options?.invoiceId || createdDocument?.id;
+              const _invoiceId = options?.invoiceId || createdDocument?.id;
 
               // Then handle the sending logic
               if (method === 'email') {

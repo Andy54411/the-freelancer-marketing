@@ -273,36 +273,36 @@ export const allFeatureDetails = {
     },
   },
 
-  // 💳 Moderne Zahlungssysteme
-  'stripe-integration': {
-    title: 'Stripe-Integration',
+  // Sichere Zahlungssysteme
+  'revolut-integration': {
+    title: 'Sichere Zahlungen',
     subtitle: 'Sichere Zahlungsabwicklung mit allen gängigen Zahlungsmethoden',
     description:
-      'Powered by Stripe Connect - eine der sichersten Zahlungsplattformen weltweit. Unterstützt alle gängigen Zahlungsmethoden von Kreditkarte bis SEPA.',
+      'Powered by Revolut - eine der sichersten Zahlungsplattformen Europas. Unterstützt alle gängigen Zahlungsmethoden von Kreditkarte bis SEPA.',
     category: 'Moderne Zahlungssysteme',
     benefits: [
-      'PCI-DSS Level 1 Sicherheitsstandard',
-      'Alle gängigen Zahlungsmethoden (Kreditkarte, SEPA, PayPal)',
+      'EU-lizenzierte Bank mit höchsten Sicherheitsstandards',
+      'Alle gängigen Zahlungsmethoden (Kreditkarte, SEPA, Banküberweisung)',
       'Sofortige Zahlungsbestätigung',
-      'Internationale Zahlungen möglich',
-      'Automatische Währungsumrechnung',
+      'Europäische Datenverarbeitung',
+      'DSGVO-konforme Zahlungsabwicklung',
     ],
     useCases: [
       'Sichere Online-Zahlung vor Projektbeginn',
-      'Internationale Projekte mit Währungsumrechnung',
+      'Escrow-System für sichere Auftragsabwicklung',
       'Flexible Zahlungsmethoden je nach Kundenvorliebe',
-      'B2B Zahlungen mit SEPA-Lastschrift',
+      'B2B Zahlungen mit SEPA-Überweisung',
     ],
     howItWorks: [
       'Wählen Sie Ihre bevorzugte Zahlungsmethode',
-      'Sichere Dateneingabe über Stripe-Interface',
+      'Sichere Dateneingabe über verschlüsselte Verbindung',
       'Sofortige Zahlungsverarbeitung und Bestätigung',
       'Automatische Rechnungserstellung',
-      'Funds werden sicher bis Projektabschluss gehalten',
+      'Funds werden sicher im Escrow bis Projektabschluss gehalten',
     ],
     stats: [
       { value: '99.99%', label: 'Verfügbarkeit' },
-      { value: '150+', label: 'Währungen' },
+      { value: 'EU', label: 'Datenstandort' },
       { value: '< 2 Sek', label: 'Zahlungszeit' },
     ],
     callToAction: {

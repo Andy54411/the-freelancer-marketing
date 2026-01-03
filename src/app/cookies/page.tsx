@@ -186,68 +186,33 @@ export default function CookiesPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white drop-shadow-lg mb-2">
-                      3. Zahlungsdienstleister Cookies (Stripe)
+                      3. Zahlungsdienstleister Cookies (Revolut)
                     </h3>
                     <p className="text-white/90 drop-shadow-lg mb-3">
-                      Diese Cookies werden von Stripe für sichere Zahlungsabwicklung und
+                      Diese Cookies werden von Revolut für sichere Zahlungsabwicklung und
                       Betrugsschutz verwendet.
                     </p>
                     <div className="bg-white/10 backdrop-blur-sm rounded p-4 text-sm space-y-3">
                       <div>
                         <p className="text-white/90 drop-shadow-lg">
-                          <strong>__stripe_mid</strong>: Stripe Merchant ID Cookie
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>Zweck:</strong> Identifizierung von Händlern für
-                          Zahlungsabwicklung
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>Laufzeit:</strong> 1 Jahr
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>__stripe_sid</strong>: Stripe Session ID Cookie
+                          <strong>revolut_session</strong>: Revolut Session Cookie
                         </p>
                         <p className="text-white/90 drop-shadow-lg">
                           <strong>Zweck:</strong> Sitzungsverfolgung für Zahlungsprozesse
                         </p>
                         <p className="text-white/90 drop-shadow-lg">
-                          <strong>Laufzeit:</strong> 30 Minuten
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>stripe_js</strong>: Stripe JavaScript Cookie
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>Zweck:</strong> Sicherheitsprüfungen und Fraud Detection
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
                           <strong>Laufzeit:</strong> Session
                         </p>
                       </div>
                       <div>
                         <p className="text-white/90 drop-shadow-lg">
-                          <strong>machine_identifier</strong>: Stripe Device Fingerprint
+                          <strong>revolut_device_id</strong>: Revolut Device ID
                         </p>
                         <p className="text-white/90 drop-shadow-lg">
-                          <strong>Zweck:</strong> Geräteerkennung für Betrugsschutz
+                          <strong>Zweck:</strong> Geräteerkennung für Sicherheit und Betrugsschutz
                         </p>
                         <p className="text-white/90 drop-shadow-lg">
-                          <strong>Laufzeit:</strong> 2 Jahre
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>stripe_orig_props</strong>: Stripe Original Properties
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>Zweck:</strong> Verfolgung von Zahlungsversuchen und
-                          -eigenschaften
-                        </p>
-                        <p className="text-white/90 drop-shadow-lg">
-                          <strong>Laufzeit:</strong> Session
+                          <strong>Laufzeit:</strong> 1 Jahr
                         </p>
                       </div>
                     </div>

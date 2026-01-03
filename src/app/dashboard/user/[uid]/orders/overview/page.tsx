@@ -1,21 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   FiFilter,
-  FiMoreVertical,
   FiPackage,
   FiClock,
   FiSearch,
   FiChevronDown,
   FiInbox,
-  FiLoader,
   FiFolder,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button'; // Importiere die Button-Komponente
-import { useAuth, AuthContextType } from '@/contexts/AuthContext'; // AuthContextType importiert für bessere Typisierung
+import { useAuth } from '@/contexts/AuthContext';
 import { getUserOrders } from '@/app/api/getUserOrders'; // Import für die HTTP API
 
 // Dieses Interface sollte exakt dem Rückgabetyp der `getUserOrders`-Funktion entsprechen.
@@ -105,14 +103,15 @@ const OrdersOverviewPage = () => {
         } else {
           setOrders([]);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         let detailedMessage = 'Ein unbekannter Fehler ist aufgetreten.';
-        if (err.message?.includes('Token expired')) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('Token expired')) {
           detailedMessage = 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
-        } else if (err.message?.includes('Unauthorized')) {
+        } else if (errorMessage.includes('Unauthorized')) {
           detailedMessage = 'Sie sind nicht berechtigt, diese Aufträge zu sehen.';
-        } else if (err.message) {
-          detailedMessage = err.message;
+        } else if (errorMessage) {
+          detailedMessage = errorMessage;
         }
         setError(`Aufträge konnten nicht geladen werden: ${detailedMessage}`);
       } finally {
@@ -197,150 +196,183 @@ const OrdersOverviewPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <FiLoader className="animate-spin text-3xl text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
+        <div className="text-center">
+          {/* Animated Logo */}
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            {/* Outer rotating ring */}
+            <svg className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeDasharray="70 200"
+                strokeLinecap="round"
+              />
+            </svg>
+            {/* Inner pulsing circle */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="30"
+                fill="rgba(255,255,255,0.1)"
+                className="animate-pulse"
+              />
+            </svg>
+            {/* Taskilo T Logo */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-bold text-white">T</span>
+            </div>
+          </div>
+          <p className="text-white text-lg font-medium">Lade Aufträge...</p>
+          <div className="mt-3 flex justify-center gap-1">
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center py-10 text-white bg-white/10 rounded-lg p-6 border border-white/20">
-          {error}
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiInbox className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Fehler aufgetreten</h2>
+          <p className="text-gray-600">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
-      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-      <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-semibold text-white mb-6">Meine Aufträge</h1>
+    <main className="min-h-screen bg-gray-50">
+      {/* Header mit Taskilo Gradient */}
+      <div className="bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-2xl font-semibold text-white">Meine Aufträge</h1>
+          <p className="text-white/70 mt-1">Übersicht aller Ihrer gebuchten Dienstleistungen</p>
+        </div>
+      </div>
 
-          {/* Tabs */}
-          <div className="mb-6 border-b border-white/30">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                ${
-                  activeTab === tab
-                    ? 'border-white text-white'
-                    : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
-                }`}
-                >
-                  {tab.charAt(0) + tab.slice(1).toLowerCase()}
-                  <span
-                    className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80'}`}
-                  >
-                    {orderCounts[tab]}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {TABS.map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`p-4 rounded-xl border transition-all ${
+                activeTab === tab
+                  ? 'bg-white border-teal-500 shadow-md ring-2 ring-teal-500/20'
+                  : 'bg-white border-gray-200 hover:border-teal-300 hover:shadow-sm'
+              }`}
+            >
+              <p className={`text-2xl font-bold ${activeTab === tab ? 'text-teal-600' : 'text-gray-900'}`}>
+                {orderCounts[tab]}
+              </p>
+              <p className={`text-sm ${activeTab === tab ? 'text-teal-600' : 'text-gray-500'}`}>
+                {tab.charAt(0) + tab.slice(1).toLowerCase()}
+              </p>
+            </button>
+          ))}
+        </div>
 
-          {/* Filterleiste (vereinfacht) */}
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Search and Filter */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="relative w-full sm:max-w-xs">
               <input
                 type="search"
                 placeholder="Aufträge durchsuchen..."
-                className="w-full p-2 pl-10 bg-white/95 border border-white/20 rounded-md focus:ring-2 focus:ring-white focus:border-white text-gray-900 placeholder-gray-500"
+                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder-gray-400 transition-colors"
               />
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
             <Button
               variant="outline"
-              className="flex items-center gap-2 bg-white/90 border-white/30 text-gray-700 hover:bg-white"
+              className="flex items-center gap-2 border-gray-200 text-gray-700 hover:bg-gray-50"
             >
               <FiFilter size={16} /> Filter
               <FiChevronDown size={16} />
             </Button>
           </div>
+        </div>
 
-          {/* Auftragsliste */}
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-10 text-white/80">
-              <FiInbox size={48} className="mx-auto mb-4 text-white/60" />
-              Keine Aufträge in dieser Ansicht gefunden.
+        {/* Order List */}
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiInbox className="h-8 w-8 text-gray-400" />
             </div>
-          ) : (
-            <div className="bg-white/95 shadow-2xl overflow-hidden sm:rounded-lg border border-white/20">
-              <ul role="list" className="divide-y divide-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Keine Aufträge gefunden</h3>
+            <p className="text-gray-500">In dieser Ansicht wurden keine Aufträge gefunden.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">
+                {activeTab === 'ALLE' ? 'Alle Aufträge' : `${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}e Aufträge`}
+              </h2>
+            </div>
+            <ul role="list" className="divide-y divide-gray-100">
                 {filteredOrders.map(order => (
                   <li key={order.id}>
                     <Link
                       href={`/dashboard/user/${uidFromParams}/orders/${order.id}`}
-                      className="block hover:bg-gray-50/80 transition-colors"
+                      className="block hover:bg-gray-50 transition-colors"
                     >
-                      {' '}
-                      {/* Geändert von userIdFromParams zu uidFromParams */}
-                      <div className="px-4 py-4 sm:px-6">
+                      <div className="px-6 py-5">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-teal-600 truncate w-2/3">
-                            {order.selectedSubcategory}
-                          </p>
-                          <div className="ml-2 shrink-0 flex">
-                            <p
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-base font-medium text-gray-900 truncate">
+                              {order.selectedSubcategory}
+                            </p>
+                            <div className="flex items-center gap-4 mt-1">
+                              <p className="flex items-center text-sm text-gray-500">
+                                <FiPackage className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                {order.providerName}
+                              </p>
+                              {order.projectName && (
+                                <p className="flex items-center text-sm text-gray-500">
+                                  <FiFolder className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                  {order.projectName}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-4 flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-gray-900">
+                                {formatPrice(order.totalAmountPaidByBuyer, order.currency)}
+                              </p>
+                              <p className="flex items-center justify-end text-xs text-gray-500 mt-0.5">
+                                <FiClock className="shrink-0 mr-1 h-3 w-3" />
+                                {formatOrderDate(order.paidAt)}
+                              </p>
+                            </div>
+                            <span
+                              className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}
                             >
                               {order.status}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              <FiPackage className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                              {order.providerName}
-                            </p>
-                            {order.projectName && (
-                              <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                <FiFolder className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                Projekt: {order.projectName}
-                              </p>
-                            )}
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <FiClock className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                            <p>
-                              Bestellt am{' '}
-                              <time
-                                dateTime={
-                                  order.paidAt
-                                    ? typeof order.paidAt === 'string'
-                                      ? order.paidAt
-                                      : new Date(order.paidAt._seconds * 1000).toISOString()
-                                    : undefined
-                                }
-                              >
-                                {formatOrderDate(order.paidAt)}
-                              </time>
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <p className="text-sm text-gray-900 font-semibold">
-                            {formatPrice(order.totalAmountPaidByBuyer, order.currency)}
-                          </p>
-                          <div className="relative">
-                            {/* Aktionen-Button (optional) */}
-                            <button
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                alert(`Aktionen für Auftrag ${order.id}`);
-                              }}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              <FiMoreVertical size={20} />
-                            </button>
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -351,51 +383,34 @@ const OrdersOverviewPage = () => {
             </div>
           )}
 
-          {/* Paginierung (vereinfacht) */}
+          {/* Pagination */}
           {filteredOrders.length > 0 && (
-            <div className="mt-6 flex items-center justify-between border-t border-white/30 bg-white/90 px-4 py-3 sm:px-6 rounded-lg">
-              <div className="flex flex-1 justify-between sm:hidden">
-                <Button variant="outline" className="bg-white/90 border-white/30">
-                  Vorherige
-                </Button>
-                <Button variant="outline" className="ml-3 bg-white/90 border-white/30">
-                  Nächste
-                </Button>
-              </div>
-              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Zeige <span className="font-medium">1</span> bis{' '}
-                    <span className="font-medium">{Math.min(10, filteredOrders.length)}</span> von{' '}
-                    <span className="font-medium">{filteredOrders.length}</span> Ergebnissen
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-                    aria-label="Pagination"
+            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <p className="text-sm text-gray-600">
+                  Zeige <span className="font-medium text-gray-900">1</span> bis{' '}
+                  <span className="font-medium text-gray-900">{Math.min(10, filteredOrders.length)}</span> von{' '}
+                  <span className="font-medium text-gray-900">{filteredOrders.length}</span> Ergebnissen
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-gray-200 text-gray-700 hover:bg-gray-50"
                   >
-                    <Button
-                      variant="outline"
-                      className="rounded-r-none bg-white/90 border-white/30"
-                    >
-                      Vorherige
-                    </Button>
-                    {/* Hier könnten Seitenzahlen generiert werden */}
-                    <Button
-                      variant="outline"
-                      className="rounded-l-none bg-white/90 border-white/30"
-                    >
-                      Nächste
-                    </Button>
-                  </nav>
+                    Vorherige
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                  >
+                    Nächste
+                  </Button>
                 </div>
               </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </main>
   );
 };
 

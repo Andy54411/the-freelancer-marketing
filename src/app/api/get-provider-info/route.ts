@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
 
     let providerInfo: {
       providerId: string;
-      stripeAccountId: any;
       companyName: any;
       ownerUserId: any;
       email: any;
@@ -37,7 +36,6 @@ export async function POST(request: NextRequest) {
             const providerData = providerDoc.data();
             providerInfo = {
               providerId,
-              stripeAccountId: providerData?.stripeAccountId,
               companyName: providerData?.companyName || providerData?.name,
               ownerUserId: providerData?.ownerUserId,
               email: providerData?.email,
@@ -56,7 +54,6 @@ export async function POST(request: NextRequest) {
         const companyData = companyDoc.data();
         providerInfo = {
           providerId: companyDoc.id,
-          stripeAccountId: companyData?.stripeAccountId,
           companyName: companyData?.companyName || companyData?.name,
           ownerUserId: companyData?.owner_uid || companyData?.uid,
           email: companyData?.ownerEmail || companyData?.email,

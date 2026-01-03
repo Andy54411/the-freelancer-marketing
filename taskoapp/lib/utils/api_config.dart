@@ -9,7 +9,7 @@ class ApiConfig {
   static const String approveHoursEndpoint = '$baseUrl/api/timetracker/approve-hours';
   
   // Webhook-URLs (für interne Verwendung)
-  static const String stripeWebhookUrl = '$baseUrl/api/stripe-webhooks';
+  static const String paymentWebhookUrl = '$baseUrl/api/payment/webhook';
   
   // Firebase Functions URLs
   static const String firebaseFunctionsBaseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';

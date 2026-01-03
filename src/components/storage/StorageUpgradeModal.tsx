@@ -122,9 +122,9 @@ export function StorageUpgradeModal({
             companyName: data.companyName || data.name || data.businessName || '',
           });
 
-          // Check if there's an active subscription (Revolut or Stripe)
+          // Check if there's an active subscription (Revolut)
           const hasSubscription = !!(
-            (data.revolutStorageSubscriptionId || data.revolutStorageOrderId || data.stripeSubscriptionId) &&
+            (data.revolutStorageSubscriptionId || data.revolutStorageOrderId) &&
             (data.storageSubscriptionStatus === 'active' || data.subscriptionStatus === 'active' || data.subscriptionStatus === 'trialing')
           );
           setHasActiveSubscription(hasSubscription);
@@ -255,7 +255,7 @@ export function StorageUpgradeModal({
             Monatlich kuendbar | Sichere Zahlung via Revolut | Sofortige Aktivierung
           </div>
 
-          {/* Cancel Button - Only show if user has active paid plan with Stripe subscription */}
+          {/* Cancel Button - Only show if user has active paid plan */}
           {currentPlanId !== 'free' && hasActiveSubscription && (
             <Button
               variant="outline"

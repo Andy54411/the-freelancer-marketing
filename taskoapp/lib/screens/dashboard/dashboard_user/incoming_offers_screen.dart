@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import 'package:flutter_stripe/flutter_stripe.dart' as stripe_lib;
 import '../dashboard_layout.dart';
 import 'offer_detail_screen.dart';
 import '../../../services/offer_notification_service.dart';
@@ -343,27 +342,27 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
         companyName: offer.providerName,
       );
       
-      // Schließe Loading-Dialog
+      // Schliesse Loading-Dialog
       if (mounted) {
         Navigator.of(context).pop();
       }
       
       if (paymentResult['success']) {
-        debugPrint('✅ Payment Intent created: ${paymentResult['paymentIntentId']}');
+        debugPrint('Payment created: ${paymentResult['orderId']}');
         
-        // Zeige Stripe Payment Sheet
-        await _showStripePaymentSheet(
-          paymentResult['clientSecret'],
-          paymentResult['paymentDetails'],
+        // Zeige Payment Checkout
+        await _showPaymentCheckout(
+          paymentResult['checkoutUrl'] ?? '',
+          paymentResult['paymentDetails'] ?? {},
           offer,
         );
       } else {
         throw Exception(paymentResult['error'] ?? 'Fehler beim Erstellen der Zahlung');
       }
     } catch (e) {
-      debugPrint('❌ Payment error: $e');
+      debugPrint('Payment error: $e');
       
-      // Schließe Loading-Dialog falls noch offen
+      // Schliesse Loading-Dialog falls noch offen
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
@@ -380,33 +379,24 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
     }
   }
 
-  Future<void> _showStripePaymentSheet(
-    String clientSecret,
+  Future<void> _showPaymentCheckout(
+    String checkoutUrl,
     Map<String, dynamic> paymentDetails,
     OfferItem offer,
   ) async {
     try {
-      debugPrint('💳 Showing Stripe Payment Sheet...');
+      debugPrint('Opening Payment Checkout...');
       
-      // Initialisiere Payment Sheet
-      await stripe_lib.Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: stripe_lib.SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Taskilo',
-          style: ThemeMode.light,
-        ),
-      );
+      // Oeffne Zahlungsseite im Browser
+      // TODO: Implementiere WebView oder Browser-Redirect fuer Revolut Checkout
       
-      // Zeige Payment Sheet
-      await stripe_lib.Stripe.instance.presentPaymentSheet();
+      debugPrint('Payment checkout opened');
       
-      debugPrint('✅ Payment completed successfully!');
-      
-      // Zeige Erfolg und navigiere zurück
+      // Zeige Info
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Zahlung erfolgreich! Auftrag wird erstellt...'),
+            content: Text('Bitte schliessen Sie die Zahlung im Browser ab.'),
             backgroundColor: Color(0xFF14ad9f),
           ),
         );
@@ -416,7 +406,7 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
       }
       
     } catch (e) {
-      debugPrint('❌ Stripe payment error: $e');
+      debugPrint('Payment checkout error: $e');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

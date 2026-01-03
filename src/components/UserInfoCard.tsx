@@ -511,6 +511,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
           <div className={cn(layout === 'vertical' ? 'w-full' : '')}>
             <Link
               href={finalLinkHref}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#14ad9f] bg-[#14ad9f]/10 hover:bg-[#14ad9f]/20 rounded-md transition-colors"
             >
               {linkText}

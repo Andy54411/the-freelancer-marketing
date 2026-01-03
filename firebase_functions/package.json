@@ -39,7 +39,6 @@
     "googleapis": "162.0.0",
     "nanoid": "^3.3.7",
     "pdf-parse": "^2.2.1",
-    "stripe": "^16.12.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {

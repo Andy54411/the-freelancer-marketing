@@ -2,8 +2,7 @@
 /**
  * B2B Payment Hook - Escrow/Revolut Integration
  * 
- * Ersetzt die alte Stripe-basierte Implementierung.
- * Verwendet jetzt das Escrow-System für sichere B2B-Zahlungen.
+ * Verwendet das Escrow-System für sichere B2B-Zahlungen.
  */
 import { useState, useCallback } from 'react';
 import { db } from '@/firebase/clients';
@@ -37,7 +36,6 @@ interface B2BPaymentProject {
   // Parties
   customerId: string;
   providerId: string;
-  // Escrow-basiert statt Stripe
   escrowId?: string;
 
   // Payment Terms
@@ -86,7 +84,6 @@ export function useB2BPayment() {
       totalBudget: number;
       customerId: string;
       providerId: string;
-      // Kein Stripe Account mehr benötigt
       paymentTermsDays?: number;
       currency?: string;
       taxRate?: number;

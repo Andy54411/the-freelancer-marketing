@@ -78,11 +78,17 @@ export async function createCustomer(uid: string, customerData: any) {
       body: JSON.stringify(customerData),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    
+    // Bei Duplikat (409) geben wir die Response zurück statt Fehler zu werfen
+    if (response.status === 409) {
+      return data;
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    }
+
     return data;
   } catch (error) {
     throw error;

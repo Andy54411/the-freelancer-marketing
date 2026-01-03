@@ -19,6 +19,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { ExtendedEventModal } from './ExtendedEventModal';
 
 type EventType = 'event' | 'task' | 'schedule';
 
@@ -31,6 +32,17 @@ interface CreateEventModalProps {
   editEvent?: EventFormData | null;
   userEmail: string;
   isLoading?: boolean;
+}
+
+export interface MeetingSettings {
+  coOrganizers: string[];
+  hostMustJoinFirst: boolean;
+  allowScreenShare: boolean;
+  allowReactions: boolean;
+  allowChat: boolean;
+  waitingRoom: boolean;
+  accessType: 'open' | 'trusted' | 'restricted';
+  allowGuestsWithLink: boolean;
 }
 
 export interface EventFormData {
@@ -46,6 +58,8 @@ export interface EventFormData {
   attendees: string[];
   isVideoMeeting: boolean;
   videoMeetingUrl?: string;
+  meetingCode?: string;
+  meetingSettings?: MeetingSettings;
   location: string;
   description: string;
   calendarId: string;
@@ -106,6 +120,7 @@ export function CreateEventModal({
   const [formData, setFormData] = useState<EventFormData>(getDefaultFormData());
   const [attendeeInput, setAttendeeInput] = useState('');
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showExtendedModal, setShowExtendedModal] = useState(false);
 
   useEffect(() => {
     if (editEvent) {
@@ -559,12 +574,12 @@ export function CreateEventModal({
           {formData.eventType !== 'schedule' ? (
             <>
               <button
-                onClick={() => setShowMoreOptions(!showMoreOptions)}
+                onClick={() => setShowExtendedModal(true)}
                 className={`text-sm font-medium ${
                   isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
                 }`}
               >
-                {showMoreOptions ? 'Weniger Optionen' : 'Weitere Optionen'}
+                Weitere Optionen
               </button>
               <button
                 onClick={handleSubmit}
@@ -609,6 +624,20 @@ export function CreateEventModal({
           )}
         </div>
       </div>
+
+      {/* Extended Event Modal */}
+      <ExtendedEventModal
+        isOpen={showExtendedModal}
+        onClose={() => setShowExtendedModal(false)}
+        onSave={(data) => {
+          onSave(data);
+          setShowExtendedModal(false);
+        }}
+        formData={formData}
+        setFormData={setFormData}
+        userEmail={userEmail}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

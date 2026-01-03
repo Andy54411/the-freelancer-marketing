@@ -3,7 +3,6 @@
  * TimeTracker - Stundenerfassung und Abrechnung
  * 
  * Alle Zahlungen laufen über das Escrow/Revolut-System.
- * Stripe wird NICHT mehr verwendet.
  */
 
 import {

@@ -3,11 +3,29 @@
 import { useMemo, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { InvoiceData } from '@/types/invoiceTypes';
+import { InvoiceData, TaxRuleType } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
 import { replacePlaceholders, type PlaceholderData } from '@/utils/placeholderSystem';
 import { translateStandardFooterText } from '@/hooks/pdf/useDocumentTranslation';
+
+// Hilfsfunktion zur Pruefung ob eine Steuerregel keine Steuer berechnet
+function isTaxExemptRule(taxRule: string | undefined): boolean {
+  if (!taxRule) return false;
+  
+  // Reverse Charge Regeln
+  if (taxRule.includes('REVERSE')) return true;
+  if (taxRule === TaxRuleType.DE_REVERSE_13B) return true;
+  if (taxRule === TaxRuleType.EU_REVERSE_18B) return true;
+  
+  // Steuerfreie Regeln
+  if (taxRule === TaxRuleType.DE_EXEMPT_4_USTG) return true;
+  if (taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY) return true;
+  if (taxRule === TaxRuleType.NON_EU_EXPORT) return true;
+  if (taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE) return true;
+  
+  return false;
+}
 
 // Hook zum Laden der Kundennummer basierend auf Kundenname
 export function useCustomerNumber(companyId: string, customerName: string): string {
@@ -243,16 +261,21 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
     const detectedType = props.documentType || detectDocumentType(documentData);
     const documentTypeConfig = getDocumentTypeConfig(detectedType);
 
+    // Steuerregel aus Dokument extrahieren
+    const taxRule = (documentData as any).taxRule || (documentData as any).taxRuleType;
+    const isTaxExempt = isTaxExemptRule(taxRule);
+
     // Items verarbeiten
     const realItems = documentData.items || [];
-    const vatRate = documentData.vatRate || (documentData as any).taxRate || 19;
+    // Bei steuerfreien Regeln (Reverse Charge, etc.) ist der Steuersatz effektiv 0
+    const vatRate = isTaxExempt ? 0 : (documentData.vatRate || (documentData as any).taxRate || 19);
 
     // Beträge berechnen
     let subtotal = 0;
     let taxAmount = 0;
 
     realItems.forEach((item: any) => {
-      // 🔥 CRITICAL FIX: Verwende unitPrice (nicht price) und berücksichtige discountPercent
+      // Verwende unitPrice (nicht price) und berücksichtige discountPercent
       const unitPrice = item.unitPrice || item.price || 0;
       const quantity = item.quantity || 0;
       const discountPercent = item.discountPercent || 0;
@@ -262,7 +285,8 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       subtotal += itemTotal;
     });
 
-    if (!documentData.isSmallBusiness) {
+    // Steuer nur berechnen wenn NICHT Kleinunternehmer UND NICHT steuerbefreit (Reverse Charge, etc.)
+    if (!documentData.isSmallBusiness && !isTaxExempt) {
       taxAmount = subtotal * (vatRate / 100);
     }
 

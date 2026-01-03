@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Video, Plus, Users, ArrowRight, Copy, Check, User, Loader2, Clock, CheckCircle, XCircle, UserPlus, ChevronLeft, ChevronRight, Link2, Calendar, Shield, Monitor } from 'lucide-react';
+import { Video, Plus, Users, ArrowRight, Copy, Check, User, Loader2, Clock, CheckCircle, XCircle, UserPlus, ChevronLeft, ChevronRight, Link2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,10 +15,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
-import { MailHeader } from '@/components/webmail/MailHeader';
 import { TaskiloMeeting, MeetingRoom, TaskiloMeetingHandle } from '@/components/video/TaskiloMeeting';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { 
+  LinkShareIllustration, 
+  ScheduleIllustration, 
+  SecurityIllustration, 
+  ScreenShareIllustration, 
+  ParticipantsIllustration 
+} from '@/components/meet/MeetIllustrations';
 
 // Lobby/Wartezimmer-Status
 type LobbyStatus = 'idle' | 'waiting' | 'approved' | 'denied';
@@ -46,43 +59,36 @@ export default function WebmailMeetPage() {
   const [copied, setCopied] = useState(false);
   const [createdMeetingUrl, setCreatedMeetingUrl] = useState<string | null>(null);
   
+  // Sidebar State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
   // Carousel State
   const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselFeatures = [
     {
-      icon: Link2,
-      iconBg: 'bg-teal-100',
-      iconColor: 'text-teal-600',
+      illustration: LinkShareIllustration,
       title: 'Link zum Teilen abrufen',
       description: 'Klicke auf Neue Videokonferenz, um einen Link zu erhalten, den du an die gewünschten Teilnehmer senden kannst',
     },
     {
-      icon: Calendar,
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600',
+      illustration: ScheduleIllustration,
       title: 'Meetings vorausplanen',
       description: 'Erstelle Meetings und lade Teilnehmer per E-Mail ein - direkt aus deinem Webmail',
     },
     {
-      icon: Shield,
-      iconBg: 'bg-green-100',
-      iconColor: 'text-green-600',
+      illustration: SecurityIllustration,
       title: 'Dein Meeting ist sicher',
       description: 'Nur Personen, die eingeladen oder vom Host genehmigt wurden, können teilnehmen',
     },
     {
-      icon: Monitor,
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600',
+      illustration: ScreenShareIllustration,
       title: 'Bildschirm teilen',
       description: 'Teile deinen Bildschirm mit allen Teilnehmern - perfekt für Präsentationen und Demos',
     },
     {
-      icon: Users,
-      iconBg: 'bg-orange-100',
-      iconColor: 'text-orange-600',
-      title: 'Bis zu 10 Teilnehmer',
-      description: 'HD Video und Audio für produktive Team-Meetings und Kundengespräche',
+      illustration: ParticipantsIllustration,
+      title: 'Bis zu 200 Teilnehmer',
+      description: 'HD Video und Audio für produktive Team-Meetings, Webinare und große Events',
     },
   ];
   
@@ -136,6 +142,98 @@ export default function WebmailMeetPage() {
   const handleGuestJoin = () => {
     // Wird nicht mehr direkt aufgerufen - stattdessen handleGuestPreJoin
     handleGuestPreJoin();
+  };
+
+  // Meeting-Link für später erstellen (ohne sofort beizutreten)
+  const handleCreateMeetingLink = async () => {
+    if (!session?.email) {
+      toast.error('Bitte melde dich an');
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_MEETING_API_URL || 'https://mail.taskilo.de/api/meeting';
+      const API_KEY = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
+
+      const response = await fetch(`${API_BASE}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+        },
+        body: JSON.stringify({
+          userId: session.email,
+          name: `Meeting von ${session.email.split('@')[0]}`,
+          type: 'scheduled',
+          metadata: { source: 'webmail' },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Erstellen');
+      }
+
+      const meetingUrl = `${window.location.origin}/webmail/meet?room=${data.room.code}`;
+      setCreatedMeetingUrl(meetingUrl);
+      setShowCreateModal(true);
+      toast.success('Besprechungslink erstellt!');
+      
+    } catch (error) {
+      toast.error('Link konnte nicht erstellt werden');
+    }
+  };
+
+  // Sofort-Meeting starten
+  const handleStartInstantMeeting = async () => {
+    if (!session?.email) {
+      toast.error('Bitte melde dich an');
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_MEETING_API_URL || 'https://mail.taskilo.de/api/meeting';
+      const API_KEY = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
+
+      const response = await fetch(`${API_BASE}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+        },
+        body: JSON.stringify({
+          userId: session.email,
+          name: `Meeting von ${session.email.split('@')[0]}`,
+          type: 'instant',
+          metadata: { source: 'webmail' },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Erstellen');
+      }
+
+      const code = data.room.code;
+      createdRoomCodeRef.current = code;
+      setIsHost(true);
+      setCurrentRoomCode(code);
+      setIsInMeeting(true);
+      sessionStorage.setItem(HOST_SESSION_KEY, code);
+      router.push(`/webmail/meet?room=${code}`);
+      
+    } catch (error) {
+      toast.error('Meeting konnte nicht gestartet werden');
+    }
+  };
+
+  // Im Kalender planen (öffnet Kalender-Seite)
+  const handleScheduleInCalendar = () => {
+    // TODO: Kalender-Integration - vorerst Info-Toast
+    toast.info('Kalender-Integration kommt bald! Erstelle vorerst einen Link.');
+    handleCreateMeetingLink();
   };
 
   const handleCreateMeeting = async () => {
@@ -419,24 +517,21 @@ export default function WebmailMeetPage() {
   // Lobby-Ansicht - Google Meet Style
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* MailHeader oben */}
-      <MailHeader userEmail={session?.email || ''} />
+      {/* Dynamischer MailHeader im Meet-Style */}
+      <MailHeader
+        isMeetStyle
+        appName="Meet"
+        hideSearch
+        userEmail={session?.email || ''}
+        onLogout={() => router.push('/webmail/login')}
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
       
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Linke Sidebar - Desktop */}
-        <div className={`hidden md:block w-64 flex-shrink-0 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
-          {/* Logo */}
-          <div className="p-4 flex items-center gap-2">
-            <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-              <Video className="w-6 h-6 text-white" />
-            </div>
-            <span className={`text-xl font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-              Taskilo Meet
-            </span>
-          </div>
-
+        <div className={`hidden md:block flex-shrink-0 border-r pt-4 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden border-r-0'} ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
           {/* Navigation */}
-          <nav className="mt-4 px-2">
+          <nav className="px-2">
             <button
               onClick={() => {}}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-left transition-colors ${
@@ -463,109 +558,127 @@ export default function WebmailMeetPage() {
           </nav>
         </div>
 
-      {/* Mobile Header */}
-      <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-            <Video className="w-4 h-4 text-white" />
-          </div>
-          <span className={`text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-            Taskilo Meet
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/webmail')}
-            className={`p-2 rounded-full ${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          {session?.email && (
-            <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              {session.email.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Hauptbereich */}
-      <div className="flex-1 flex flex-col">
-        {/* Header - Desktop */}
-        <div className={`hidden md:flex h-16 items-center justify-end px-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-4">
-            <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              {new Date().toLocaleDateString('de-DE', { 
-                weekday: 'short', 
-                day: 'numeric', 
-                month: 'short' 
-              })}
-            </span>
-            {session?.email && (
-              <div className="w-9 h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium">
-                {session.email.charAt(0).toUpperCase()}
+        {/* Hauptbereich */}
+        <div className="flex-1 flex flex-col">
+          {/* Content */}
+          <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+            <div className="max-w-3xl w-full">
+              {/* Titel */}
+              <div className="text-center mb-8 md:mb-12">
+                <h1 className={`text-2xl md:text-4xl font-normal mb-3 md:mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                  Videoanrufe und
+                  <br className="hidden md:block" />
+                  <span className="md:hidden"> </span>-konferenzen für alle
+                </h1>
+                <p className={`text-sm md:text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Mit Taskilo Meet kommunizieren, zusammenarbeiten und
+                  <br className="hidden md:block" />
+                  <span className="md:hidden"> </span>Kunden treffen - egal, wo Sie gerade sind
+                </p>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-          <div className="max-w-3xl w-full">
-            {/* Titel */}
-            <div className="text-center mb-8 md:mb-12">
-              <h1 className={`text-2xl md:text-4xl font-normal mb-3 md:mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-                Videoanrufe und
-                <br className="hidden md:block" />
-                <span className="md:hidden"> </span>-konferenzen für alle
-              </h1>
-              <p className={`text-sm md:text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Mit Taskilo Meet kommunizieren, zusammenarbeiten und
-                <br className="hidden md:block" />
-                <span className="md:hidden"> </span>Kunden treffen - egal, wo Sie gerade sind
-              </p>
-            </div>
+              {/* Action Buttons - Mobile: Stack, Desktop: Row */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 md:mb-16">
+                {/* Neue Videokonferenz - Dropdown wie Google Meet */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      className="w-full md:w-auto bg-teal-500 hover:bg-teal-600 text-white px-6 py-5 md:py-6 text-base rounded-md flex items-center justify-center gap-2"
+                    >
+                      <Video className="w-5 h-5" />
+                      Neue Videokonferenz
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="start" 
+                    className={`w-80 p-2 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                  >
+                    {/* Link für später erstellen */}
+                    <DropdownMenuItem 
+                      onClick={handleCreateMeetingLink}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-700 focus:bg-gray-700' : 'hover:bg-gray-100 focus:bg-gray-100'}`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <Link2 className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          Besprechungslink erstellen
+                        </div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Zum späteren Teilen
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
 
-            {/* Action Buttons - Mobile: Stack, Desktop: Row */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 md:mb-16">
-              {/* Neue Videokonferenz */}
-              <Button 
-                onClick={() => setShowCreateModal(true)}
-                className="w-full md:w-auto bg-teal-500 hover:bg-teal-600 text-white px-6 py-5 md:py-6 text-base rounded-md flex items-center justify-center gap-2"
-              >
-                <Video className="w-5 h-5" />
-                Neue Videokonferenz
-              </Button>
+                    {/* Sofort starten */}
+                    <DropdownMenuItem 
+                      onClick={handleStartInstantMeeting}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-700 focus:bg-gray-700' : 'hover:bg-gray-100 focus:bg-gray-100'}`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <Plus className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          Sofortbesprechung starten
+                        </div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Jetzt sofort starten
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
 
-              {/* Code eingeben - Mobile: Full width */}
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <div className="relative flex-1 md:flex-none">
-                  <Input
-                    placeholder="Code oder Link eingeben"
-                    value={joinRoomCode}
-                    onChange={(e) => setJoinRoomCode(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && joinRoomCode.trim() && handleJoinMeeting()}
-                    className={`w-full md:w-64 pl-10 py-5 md:py-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
-                  />
-                  <Users className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
+                    {/* Im Kalender planen */}
+                    <DropdownMenuItem 
+                      onClick={handleScheduleInCalendar}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-700 focus:bg-gray-700' : 'hover:bg-gray-100 focus:bg-gray-100'}`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <Calendar className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          Im Kalender planen
+                        </div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Termin mit Einladungen erstellen
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Code eingeben - Mobile: Full width */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative flex-1 md:flex-none">
+                    <Input
+                      placeholder="Code oder Link eingeben"
+                      value={joinRoomCode}
+                      onChange={(e) => setJoinRoomCode(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && joinRoomCode.trim() && handleJoinMeeting()}
+                      className={`w-full md:w-64 pl-10 py-5 md:py-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
+                    />
+                    <Users className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
+                  </div>
+                  <Button 
+                    variant="ghost"
+                    onClick={handleJoinMeeting}
+                    disabled={!joinRoomCode.trim()}
+                    className={`py-5 md:py-6 ${joinRoomCode.trim() ? 'text-teal-600 hover:text-teal-700' : 'text-gray-400'}`}
+                  >
+                    Teilnehmen
+                  </Button>
                 </div>
-                <Button 
-                  variant="ghost"
-                  onClick={handleJoinMeeting}
-                  disabled={!joinRoomCode.trim()}
-                  className={`py-5 md:py-6 ${joinRoomCode.trim() ? 'text-teal-600 hover:text-teal-700' : 'text-gray-400'}`}
-                >
-                  Teilnehmen
-                </Button>
               </div>
-            </div>
 
-            {/* Trennlinie */}
-            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} mb-6 md:mb-8`} />
+              {/* Trennlinie */}
+              <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} mb-6 md:mb-8`} />
 
-            {/* Feature Carousel */}
-            <div className="flex items-center justify-center gap-2 md:gap-4">
-              {/* Zurück Button */}
-              <button
+              {/* Feature Carousel */}
+              <div className="flex items-center justify-center gap-2 md:gap-4">
+                {/* Zurück Button */}
+                <button
                 onClick={() => setCarouselIndex((prev) => (prev === 0 ? carouselFeatures.length - 1 : prev - 1))}
                 className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
                 aria-label="Zurück"
@@ -574,23 +687,26 @@ export default function WebmailMeetPage() {
               </button>
 
               {/* Feature Card */}
-              <div className={`flex-1 max-w-md rounded-2xl p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'}`}>
+              <div className={`flex-1 max-w-lg rounded-2xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'}`}>
                 <div className="flex flex-col items-center text-center">
-                  {/* Icon */}
-                  <div className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl ${carouselFeatures[carouselIndex].iconBg} flex items-center justify-center mb-4`}>
+                  {/* Animierte Illustration */}
+                  <div className={`w-full h-48 md:h-64 flex items-center justify-center ${theme === 'dark' ? 'bg-gradient-to-b from-gray-700 to-gray-800' : 'bg-gradient-to-b from-blue-100 to-blue-50'}`}>
                     {(() => {
-                      const IconComponent = carouselFeatures[carouselIndex].icon;
-                      return <IconComponent className={`w-10 h-10 md:w-12 md:h-12 ${carouselFeatures[carouselIndex].iconColor}`} />;
+                      const IllustrationComponent = carouselFeatures[carouselIndex].illustration;
+                      return <IllustrationComponent className="w-full h-full max-w-[280px] max-h-[200px]" />;
                     })()}
                   </div>
-                  {/* Title */}
-                  <h3 className={`text-lg md:text-xl font-medium mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-                    {carouselFeatures[carouselIndex].title}
-                  </h3>
-                  {/* Description */}
-                  <p className={`text-sm md:text-base ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {carouselFeatures[carouselIndex].description}
-                  </p>
+                  {/* Text Content */}
+                  <div className="p-6">
+                    {/* Title */}
+                    <h3 className={`text-lg md:text-xl font-medium mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                      {carouselFeatures[carouselIndex].title}
+                    </h3>
+                    {/* Description */}
+                    <p className={`text-sm md:text-base ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {carouselFeatures[carouselIndex].description}
+                    </p>
+                  </div>
                 </div>
               </div>
 

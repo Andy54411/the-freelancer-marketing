@@ -13,6 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import jwt from 'jsonwebtoken';
+import { getAccessToken as getRevolutToken } from './revolut-proxy';
 
 const router = express.Router();
 
@@ -209,10 +210,12 @@ async function makeRevolutRequest<T>(
 ): Promise<T> {
   return new Promise(async (resolve, reject) => {
     try {
-      const scope = method === 'GET' ? 'READ' : 'PAY';
-      const accessToken = await getAccessToken(scope);
+      // Token vom zentralen revolut-proxy holen (nicht lokaler Cache)
+      const accessToken = await getRevolutToken();
+      console.log(`[Payment] Using token from revolut-proxy: ${accessToken?.substring(0, 20)}...`);
 
       const url = new URL(`${revolutConfig.baseUrl}${endpoint}`);
+      console.log(`[Payment] Making request to: ${method} ${url.pathname}`);
 
       const options: https.RequestOptions = {
         hostname: url.hostname,

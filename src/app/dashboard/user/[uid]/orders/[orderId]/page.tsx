@@ -25,6 +25,8 @@ import UserInfoCard from '@/components/UserInfoCard';
 
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
+// Rechnungsbereich
+import OrderInvoiceSection from '@/components/orders/OrderInvoiceSection';
 // Escrow Payment-Komponente
 import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 // Stunden-Übersicht Komponente
@@ -240,9 +242,11 @@ export default function OrderDetailPage() {
   };
 
   const handleOrderCompleted = () => {
-    // Order data wird automatisch über Realtime Listener aktualisiert
+    // Lokaler Status-Update - kein Reload nötig
+    setOrder(prev => prev ? { ...prev, status: 'completed' } : null);
+    setShowCompletionModal(false);
     setSuccessMessage(
-      'Auftrag erfolgreich abgeschlossen! Das Geld wurde an den Anbieter ausgezahlt.'
+      'Auftrag erfolgreich abgeschlossen! Sie erhalten in Kürze eine E-Mail zur Bewertung.'
     );
   };
 
@@ -377,19 +381,15 @@ export default function OrderDetailPage() {
         }
       }
 
-      setSuccessMessage('Zahlung erfolgreich abgeschlossen! ✅');
+      setSuccessMessage('Zahlung erfolgreich abgeschlossen!');
 
       // Success-Nachricht nach 5 Sekunden ausblenden
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
-      setSuccessMessage(
-        'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
-      );
-
-      // Fallback: Seite nach 3 Sekunden neu laden
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+      // Fehler loggen aber Erfolg anzeigen - Zahlung war erfolgreich
+      console.error('[Payment] Daten-Update Fehler:', error);
+      setSuccessMessage('Zahlung erfolgreich! Status wird automatisch aktualisiert.');
+      setTimeout(() => setSuccessMessage(null), 5000);
     }
   };
 
@@ -401,24 +401,69 @@ export default function OrderDetailPage() {
 
   if (overallLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
-        <FiLoader className="animate-spin text-4xl text-white mr-3" />
-        {authLoading ? 'Authentifizierung wird geprüft...' : 'Lade Auftragsdetails...'}
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
+        <div className="text-center">
+          {/* Animated Logo */}
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            {/* Outer rotating ring */}
+            <svg className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeDasharray="70 200"
+                strokeLinecap="round"
+              />
+            </svg>
+            {/* Inner pulsing circle */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="30"
+                fill="rgba(255,255,255,0.1)"
+                className="animate-pulse"
+              />
+            </svg>
+            {/* Taskilo T Logo */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-bold text-white">T</span>
+            </div>
+          </div>
+          <p className="text-white text-lg font-medium">
+            {authLoading ? 'Authentifizierung wird geprüft...' : 'Lade Auftragsdetails...'}
+          </p>
+          <div className="mt-3 flex justify-center gap-1">
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex flex-col justify-center items-center p-4 text-center">
-        <div
-          className="bg-white/90 border border-white/20 text-red-700 px-4 py-3 rounded relative max-w-md"
-          role="alert"
-        >
-          <FiAlertCircle size={24} className="inline mr-2" />
-          <strong className="font-bold">Fehler:</strong>
-          <span className="block sm:inline ml-1">{error}</span>
-          <p className="mt-2 text-sm">
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiAlertCircle className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Fehler aufgetreten</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">
             Bitte überprüfen Sie die URL oder kontaktieren Sie den Support.
           </p>
         </div>
@@ -428,9 +473,16 @@ export default function OrderDetailPage() {
 
   if (!order || !currentUser) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
-        <FiAlertCircle className="text-4xl text-white mr-3" />
-        Fehler: Auftrag konnte nicht angezeigt werden oder Sie sind nicht angemeldet.
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiAlertCircle className="h-8 w-8 text-amber-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Auftrag nicht gefunden</h2>
+          <p className="text-gray-600">
+            Der Auftrag konnte nicht angezeigt werden oder Sie sind nicht angemeldet.
+          </p>
+        </div>
       </div>
     );
   }
@@ -455,349 +507,393 @@ export default function OrderDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
-          <FiLoader className="animate-spin text-4xl text-white mr-3" /> Lade Benutzeroberfläche...
+        <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
+          <div className="text-center">
+            {/* Animated Logo */}
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              {/* Outer rotating ring */}
+              <svg className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeDasharray="70 200"
+                  strokeLinecap="round"
+                />
+              </svg>
+              {/* Inner pulsing circle */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="30"
+                  fill="rgba(255,255,255,0.1)"
+                  className="animate-pulse"
+                />
+              </svg>
+              {/* Taskilo T Logo */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-3xl font-bold text-white">T</span>
+              </div>
+            </div>
+            <p className="text-white text-lg font-medium">Lade Benutzeroberfläche...</p>
+            <div className="mt-3 flex justify-center gap-1">
+              <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+          </div>
         </div>
       }
     >
-      <main className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
-        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-        <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => router.back()}
-              className="text-white hover:text-white/80 flex items-center gap-2 mb-4 transition-colors"
-            >
-              <FiArrowLeft /> Zurück zur Übersicht
-            </button>
-
-            <h1 className="text-3xl font-semibold text-white mb-6">Auftrag #{orderId}</h1>
-
-            {/* Success Message */}
-            {successMessage && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-                <div className="flex items-center">
-                  <FiCheckCircle className="mr-2" />
-                  {successMessage}
+      <main className="min-h-screen bg-gray-50">
+        {/* Header mit Taskilo Gradient */}
+        <div className="bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => router.back()}
+                  className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <FiArrowLeft className="h-5 w-5" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-semibold text-white">{order.serviceTitle}</h1>
+                  <p className="text-sm text-white/70">Auftrag #{orderId.slice(-8).toUpperCase()}</p>
                 </div>
               </div>
-            )}
+              
+              {/* Status Badge */}
+              <div className={`px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm ${
+                order.status === 'completed' || order.status === 'abgeschlossen'
+                  ? 'bg-green-500/20 text-white border border-green-300/30'
+                  : order.status === 'accepted' || order.status === 'aktiv'
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : order.status === 'PROVIDER_COMPLETED'
+                  ? 'bg-amber-500/20 text-white border border-amber-300/30'
+                  : order.status === 'STORNIERT' || order.status === 'abgebrochen'
+                  ? 'bg-red-500/20 text-white border border-red-300/30'
+                  : 'bg-white/20 text-white border border-white/30'
+              }`}>
+                {(() => {
+                  const status = order.status?.toLowerCase();
+                  switch (status) {
+                    case 'aktiv':
+                    case 'accepted':
+                      return 'In Bearbeitung';
+                    case 'bezahlt':
+                    case 'zahlung_erhalten_clearing':
+                      return 'Bezahlt';
+                    case 'completed':
+                    case 'abgeschlossen':
+                      return 'Abgeschlossen';
+                    case 'provider_completed':
+                      return 'Wartet auf Bestätigung';
+                    case 'storniert':
+                    case 'abgebrochen':
+                      return 'Storniert';
+                    default:
+                      return order.status?.replace(/_/g, ' ');
+                  }
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Layout mit Sidebar */}
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Hauptinhalt - Links */}
-              <div className="flex-1 space-y-6">
-                {/* Auftragsdetails anzeigen */}
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                    <p>
-                      <strong>Status:</strong>{' '}
-                      <span
-                        className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
-                      >
-                        {(() => {
-                          const status = order.status?.toLowerCase();
-                          switch (status) {
-                            case 'aktiv':
-                              return '🔄 AKTIV';
-                            case 'offen':
-                              return '📝 OFFEN';
-                            case 'bezahlt':
-                            case 'zahlung_erhalten_clearing':
-                              return '✅ BEZAHLT';
-                            case 'abgebrochen':
-                              return '❌ ABGEBROCHEN';
-                            case 'abgeschlossen':
-                              return '🎯 ABGESCHLOSSEN';
-                            default:
-                              return (
-                                order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                                order.status?.replace(/_/g, ' ').slice(1)
-                              );
-                          }
-                        })()}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
-                      {order.selectedSubcategory || 'N/A'}
-                    </p>
-                    <p>
-                      <strong>Dauer:</strong>{' '}
-                      {(() => {
-                        // Prioritätsbasierte Dauer-Berechnung
-                        // 1. Wenn mehrere Tage: Berechne Gesamtstunden
-                        if (
-                          order.jobDateFrom &&
-                          order.jobDateTo &&
-                          order.jobDateFrom !== order.jobDateTo
-                        ) {
-                          const startDate = new Date(order.jobDateFrom);
-                          const endDate = new Date(order.jobDateTo);
-                          const totalDays =
-                            Math.ceil(
-                              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-                            ) + 1;
-                          const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                          const totalHours = totalDays * hoursPerDay;
-                          return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                        }
+        {/* Success Message */}
+        {successMessage && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <FiCheckCircle className="h-5 w-5 flex-shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          </div>
+        )}
 
-                        // 2. jobTotalCalculatedHours verwenden (höchste Priorität)
-                        if (order.jobTotalCalculatedHours && order.jobTotalCalculatedHours > 0) {
-                          return `${order.jobTotalCalculatedHours} Stunden`;
-                        }
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left Column - Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Order Details Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                  <h2 className="text-lg font-semibold text-white">Auftragsdetails</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Kategorie</p>
+                      <p className="text-gray-900 font-medium">
+                        {order.selectedCategory || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Unterkategorie</p>
+                      <p className="text-gray-900 font-medium">
+                        {order.selectedSubcategory || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Dauer</p>
+                      <p className="text-gray-900 font-medium">
+                        {order.jobTotalCalculatedHours 
+                          ? `${order.jobTotalCalculatedHours} Stunden`
+                          : order.jobDurationString 
+                          ? `${order.jobDurationString} Stunden`
+                          : 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Gesamtpreis</p>
+                      <p className="text-gray-900 font-medium text-lg">
+                        {(order.priceInCents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Ausführungsdatum</p>
+                      <p className="text-gray-900 font-medium">
+                        {order.jobDateFrom && order.jobDateTo && order.jobDateFrom !== order.jobDateTo
+                          ? `${order.jobDateFrom} - ${order.jobDateTo}`
+                          : order.jobDateFrom || 'Nach Absprache'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Uhrzeit</p>
+                      <p className="text-gray-900 font-medium">
+                        {order.jobTimePreference || 'Flexibel'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {order.beschreibung && (
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                      <p className="text-sm text-gray-500 mb-2">Beschreibung</p>
+                      <p className="text-gray-700">{order.beschreibung}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                        // 3. jobDurationString verwenden
-                        if (order.jobDurationString && order.jobDurationString !== '0') {
-                          return `${order.jobDurationString} Stunden`;
-                        }
-
-                        // 4. Fallback: Aus Preis schätzen (bei 50€/Stunde)
-                        if (order.priceInCents && order.priceInCents > 0) {
-                          const estimatedHours = Math.round(order.priceInCents / 100 / 50);
-                          if (estimatedHours > 0) {
-                            return `${estimatedHours} Stunden `;
-                          }
-                        }
-
-                        // 5. Letzter Fallback
-                        return 'Nicht angegeben';
-                      })()}
-                    </p>
-                    <p>
-                      <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
-                    </p>
-                    <p>
-                      <strong>Erstellt am:</strong>{' '}
-                      {(() => {
-                        if (!order.orderDate) return 'Unbekannt';
-
-                        let date: Date;
-                        if (typeof order.orderDate === 'string') {
-                          date = new Date(order.orderDate);
-                        } else if (order.orderDate._seconds) {
-                          // Firestore Timestamp
-                          date = new Date(order.orderDate._seconds * 1000);
-                        } else {
-                          return 'Unbekannt';
-                        }
-
-                        return date.toLocaleDateString('de-DE', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        });
-                      })()}
-                    </p>
-                    <p>
-                      <strong>Ausführungsdatum:</strong>{' '}
-                      {(() => {
-                        if (order.jobDateFrom && order.jobDateTo) {
-                          return order.jobDateFrom !== order.jobDateTo
-                            ? `${order.jobDateFrom} - ${order.jobDateTo}`
-                            : order.jobDateFrom;
-                        } else if (order.jobDateFrom) {
-                          return order.jobDateFrom;
-                        } else if (order.jobTimePreference === 'Flexible Terminabsprache') {
-                          return 'Nach Absprache (flexibel)';
-                        } else {
-                          return 'Nach Absprache';
-                        }
-                      })()}
-                    </p>
-                    <p>
-                      <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
-                    </p>
-                    <p className="col-span-full">
-                      <strong>Beschreibung:</strong>{' '}
-                      {order.beschreibung || 'Keine Beschreibung vorhanden.'}
-                    </p>
-
-                    {/* NEU: Beispiel für den "Annehmen"-Button (anzuwenden auf der Company-Seite) */}
-                    {currentUser.uid === order.providerId &&
-                      order.status === 'zahlung_erhalten_clearing' && (
-                        <div className="md:col-span-2 mt-4">
-                          <button
-                            onClick={handleAcceptOrder}
-                            disabled={isUpdating}
-                            className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400"
-                          >
-                            {isUpdating ? 'Wird angenommen...' : 'Auftrag annehmen'}
-                          </button>
-                        </div>
-                      )}
-
-                    {/* Order Completion Button für Kunden bei accepted */}
-                    {currentUser.uid === order.customerId && order.status === 'accepted' && (
-                      <div className="md:col-span-2 mt-4">
-                        <button
-                          onClick={handleCompleteOrder}
-                          className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
-                        >
-                          <FiCheckCircle className="h-5 w-5" />
-                          Auftrag als erledigt markieren
-                        </button>
-                        <p className="text-sm text-gray-600 mt-2 text-center">
-                          Durch das Abschließen wird das Geld automatisch an den Anbieter
-                          ausgezahlt.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* STORNO BUTTONS - Implementiert nach Admin-Only System */}
-                    {currentUser.uid === order.customerId && (
-                      <StornoButtonSection
-                        order={order}
-                        currentUser={currentUser}
-                        onStornoSuccess={() => {
-                          setSuccessMessage(
-                            'Storno-Anfrage wurde eingereicht und wird von einem Admin geprüft.'
-                          );
-                          // Realtime-Listener aktualisiert automatisch den Status
-                        }}
-                      />
-                    )}
-
-                    {/* Order Review/Confirm Button für Kunden bei PROVIDER_COMPLETED */}
-                    {currentUser.uid === order.customerId &&
-                      order.status === 'PROVIDER_COMPLETED' && (
-                        <div className="md:col-span-2 mt-4">
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                            <h3 className="text-lg font-semibold text-green-800 mb-2 flex items-center gap-2">
-                              <FiCheckCircle className="h-5 w-5" />
-                              Auftrag wurde vom Anbieter abgeschlossen
-                            </h3>
-                            <p className="text-green-700 text-sm mb-3">
-                              Der Anbieter hat den Auftrag als erledigt markiert. Bitte prüfen Sie
-                              die Arbeit und bestätigen Sie den Abschluss.
+              {/* Action Buttons */}
+              {currentUser.uid === order.customerId && (order.status === 'accepted' || order.status === 'PROVIDER_COMPLETED') && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="p-6">
+                    {order.status === 'PROVIDER_COMPLETED' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-start gap-3">
+                          <FiCheckCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                          <div>
+                            <h3 className="font-medium text-amber-800">Anbieter hat den Auftrag abgeschlossen</h3>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Bitte prüfen Sie die Arbeit und bestätigen Sie den Abschluss.
                             </p>
                           </div>
-                          <button
-                            onClick={handleCompleteOrder}
-                            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
-                          >
-                            <FiCheckCircle className="h-5 w-5" />
-                            Auftrag bestätigen & bewerten
-                          </button>
-                          <p className="text-sm text-gray-600 mt-2 text-center">
-                            Nach der Bestätigung wird das Geld an den Anbieter ausgezahlt und Sie
-                            können eine Bewertung abgeben.
-                          </p>
                         </div>
-                      )}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleCompleteOrder}
+                      className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FiCheckCircle className="h-5 w-5" />
+                      {order.status === 'PROVIDER_COMPLETED' ? 'Arbeit bestätigen' : 'Auftrag abschließen'}
+                    </button>
+                    <p className="text-sm text-gray-500 mt-3 text-center">
+                      Nach Bestätigung wird das Geld an den Anbieter ausgezahlt.
+                    </p>
                   </div>
                 </div>
+              )}
 
-                {/* Stunden-Abrechnungsübersicht für Kunden */}
-                {currentUser.uid === order.customerId && (
-                  <HoursBillingOverview
-                    orderId={orderId}
-                    className=""
-                    onPaymentRequest={handleOpenPayment}
-                    isCustomerView={true} // EXPLIZIT ALS KUNDE MARKIEREN
-                  />
-                )}
+              {/* Storno Section */}
+              {currentUser.uid === order.customerId && (
+                <StornoButtonSection
+                  order={order}
+                  currentUser={currentUser}
+                  onStornoSuccess={() => {
+                    setSuccessMessage('Storno-Anfrage wurde eingereicht und wird von einem Admin geprüft.');
+                  }}
+                />
+              )}
 
-                {/* Chat-Bereich */}
-                <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
-                  <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                    <FiMessageSquare className="mr-2" /> Chat zum Auftrag
+              {/* Hours Billing Overview */}
+              {currentUser.uid === order.customerId && (
+                <HoursBillingOverview
+                  orderId={orderId}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200"
+                  onPaymentRequest={handleOpenPayment}
+                  isCustomerView={true}
+                />
+              )}
+
+              {/* Chat Section */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <FiMessageSquare className="h-5 w-5 text-white/80" />
+                    Nachrichten
                   </h2>
-                  {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
-                    order.status
-                  ) ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
-                      <FiSlash className="text-4xl text-gray-400 mb-3" />
-                      <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
-                      <p className="text-gray-500 text-sm">
+                </div>
+                <div className="h-[500px]">
+                  {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(order.status) ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                      <FiSlash className="h-12 w-12 text-gray-300 mb-3" />
+                      <h3 className="font-medium text-gray-700">Chat nicht verfügbar</h3>
+                      <p className="text-sm text-gray-500 mt-1">
                         {order.status === 'zahlung_erhalten_clearing'
                           ? 'Der Chat wird aktiviert, sobald der Anbieter den Auftrag angenommen hat.'
                           : 'Für diesen Auftrag ist der Chat nicht mehr verfügbar.'}
                       </p>
                     </div>
                   ) : (
-                    <div
-                      className="flex-1 min-h-0 max-h-96 overflow-y-auto"
-                      style={{ scrollBehavior: 'auto' }}
-                    >
-                      <div className="h-full" onScroll={e => e.stopPropagation()}>
-                        <ChatComponent
-                          orderId={orderId}
-                          participants={{
-                            customerId: order.customerId,
-                            providerId: order.providerId,
-                          }}
-                        />
-                      </div>
-                    </div>
+                    <ChatComponent
+                      orderId={orderId}
+                      participants={{
+                        customerId: order.customerId,
+                        providerId: order.providerId,
+                      }}
+                    />
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Rechte Sidebar - UserInfoCard */}
-              <div className="w-full lg:w-80 lg:shrink-0">
-                <div className="lg:sticky lg:top-6">
-                  <UserInfoCard
-                    userId={cardUser.id}
-                    userName={cardUser.name}
-                    userAvatarUrl={cardUser.avatarUrl || undefined}
-                    userRole={cardUser.role}
-                  />
+            {/* Right Column - Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-6 space-y-6">
+                {/* Provider/Customer Card - Taskilo Design */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                    <p className="text-white/80 text-sm font-medium">
+                      {cardUser.role === 'provider' ? 'Ihr Dienstleister' : 'Auftraggeber'}
+                    </p>
+                  </div>
+                  <div className="p-6">
+                    <UserInfoCard
+                      userId={cardUser.id}
+                      userName={cardUser.name}
+                      userAvatarUrl={cardUser.avatarUrl || undefined}
+                      userRole={cardUser.role}
+                      showReviews={cardUser.role === 'provider'}
+                      showSkills={cardUser.role === 'provider'}
+                      showLanguages={true}
+                      showCustomerStats={cardUser.role === 'customer'}
+                      showLinkButton={true}
+                      linkText="Profil ansehen"
+                      size="lg"
+                      layout="vertical"
+                      className="border-0 shadow-none p-0"
+                    />
+                  </div>
                 </div>
+
+                {/* Order Timeline */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3">
+                    <h3 className="font-semibold text-white">Bestellübersicht</h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Auftragsnummer</span>
+                      <span className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                        #{orderId.slice(-8).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Erstellt am</span>
+                      <span className="text-gray-900 text-sm">
+                        {order.orderDate 
+                          ? new Date(typeof order.orderDate === 'string' ? order.orderDate : order.orderDate._seconds * 1000).toLocaleDateString('de-DE')
+                          : 'Unbekannt'}
+                      </span>
+                    </div>
+                    <div className="border-t border-gray-100 pt-4 mt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700 font-medium">Gesamtbetrag</span>
+                        <span className="text-lg font-bold text-teal-600">
+                          {(order.priceInCents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rechnungsbereich - Kunde kann Rechnung anfordern und herunterladen */}
+                {(order.status === 'completed' || order.status === 'abgeschlossen' || order.status === 'PROVIDER_COMPLETED') && (
+                  <OrderInvoiceSection
+                    orderId={orderId}
+                    userRole="customer"
+                    orderStatus={order.status}
+                    providerId={order.providerId}
+                    customerId={order.customerId}
+                  />
+                )}
               </div>
             </div>
           </div>
-
-          {/* Payment Modal (Escrow-System) */}
-          {showInlinePayment && order && (
-            <EscrowPaymentComponent
-              projectData={{
-                projectId: orderId,
-                projectTitle: order.serviceTitle || `Auftrag ${orderId.slice(-6).toUpperCase()}`,
-                amount: paymentAmount,
-                paymentType: 'order_payment',
-                providerId: order.providerId,
-              }}
-              customerData={{
-                customerId: order.customerId || '',
-                name: order.customerName,
-              }}
-              isOpen={showInlinePayment}
-              onClose={handlePaymentCancel}
-              onSuccess={(escrowId: string) => {
-                handlePaymentSuccess();
-              }}
-              onError={(error: string) => {
-                handlePaymentCancel();
-              }}
-            />
-          )}
-
-          {/* Order Completion Modal */}
-          {order && (
-            <OrderCompletionModal
-              isOpen={showCompletionModal}
-              onClose={() => setShowCompletionModal(false)}
-              order={{
-                id: order.id,
-                title: order.serviceTitle,
-                description: order.beschreibung || '',
-                selectedAnbieterId: order.providerId,
-                companyName: order.providerName,
-                totalAmountPaidByBuyer: order.priceInCents,
-                companyNetAmount: Math.round(order.priceInCents * 0.955), // 95.5% nach 4.5% Platform Fee (wie in der Dokumentation)
-                platformFeeAmount: Math.round(order.priceInCents * 0.045), // 4.5% Platform Fee (Standard)
-                status: order.status,
-              }}
-              userId={currentUser?.uid || ''}
-              onOrderCompleted={handleOrderCompleted}
-            />
-          )}
         </div>
+
+        {/* Payment Modal (Escrow-System) */}
+        {showInlinePayment && order && (
+          <EscrowPaymentComponent
+            projectData={{
+              projectId: orderId,
+              projectTitle: order.serviceTitle || `Auftrag ${orderId.slice(-6).toUpperCase()}`,
+              amount: paymentAmount,
+              paymentType: 'order_payment',
+              providerId: order.providerId,
+            }}
+            customerData={{
+              customerId: order.customerId || '',
+              name: order.customerName,
+            }}
+            isOpen={showInlinePayment}
+            onClose={handlePaymentCancel}
+            onSuccess={(escrowId: string) => {
+              handlePaymentSuccess();
+            }}
+            onError={(error: string) => {
+              handlePaymentCancel();
+            }}
+          />
+        )}
+
+        {/* Order Completion Modal */}
+        {order && (
+          <OrderCompletionModal
+            isOpen={showCompletionModal}
+            onClose={() => setShowCompletionModal(false)}
+            order={{
+              id: order.id,
+              title: order.serviceTitle,
+              description: order.beschreibung || '',
+              selectedAnbieterId: order.providerId,
+              companyName: order.providerName,
+              totalAmountPaidByBuyer: order.priceInCents,
+              companyNetAmount: Math.round(order.priceInCents * 0.955),
+              platformFeeAmount: Math.round(order.priceInCents * 0.045),
+              status: order.status,
+            }}
+            userId={currentUser?.uid || ''}
+            onOrderCompleted={handleOrderCompleted}
+          />
+        )}
       </main>
     </Suspense>
   );

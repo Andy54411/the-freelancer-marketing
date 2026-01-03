@@ -1468,7 +1468,8 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
             </Button>
           )}
 
-          {showParticipants && (
+          {/* Teilnehmer-Button nur für Host anzeigen */}
+          {showParticipants && isHost && (
             <Button
               variant="ghost"
               size="lg"
@@ -1512,9 +1513,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         </div>
       </div>
 
-      {/* Participant Panel (rechts, vor Chat) */}
-      {showParticipantPanel && (
-        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+      {/* Participant Panel (rechts, vor Chat) - Mobile: Fullscreen Overlay - Nur für Host */}
+      {showParticipantPanel && isHost && (
+        <div className="fixed inset-0 md:relative md:inset-auto w-full md:w-80 bg-gray-800 md:border-l border-gray-700 flex flex-col z-50">
           <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
             <h3 className="text-white font-medium">Teilnehmer ({participants.length + 1})</h3>
             <Button
@@ -1648,9 +1649,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         </div>
       )}
 
-      {/* Chat Panel (rechts) */}
+      {/* Chat Panel (rechts) - Mobile: Fullscreen Overlay */}
       {showChatPanel && (
-        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div className="fixed inset-0 md:relative md:inset-auto w-full md:w-80 bg-gray-800 md:border-l border-gray-700 flex flex-col z-50">
           <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
             <h3 className="text-white font-medium">Chat</h3>
             <Button

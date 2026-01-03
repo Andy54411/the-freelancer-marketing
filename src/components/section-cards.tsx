@@ -134,7 +134,7 @@ export function SectionCards() {
           }
         });
 
-        // Stripe-Guthaben abrufen (ohne Ausgaben hier)
+        // Guthaben abrufen (ohne Ausgaben hier)
         let availableBalance = 0;
         let pendingBalance = 0;
         let hasActiveOrders = false;
@@ -159,20 +159,23 @@ export function SectionCards() {
         });
 
         try {
-          const balanceResponse = await fetch(
-            `/api/get-stripe-balance?firebaseUserId=${encodeURIComponent(uid)}`,
+          // Escrow-Guthaben abrufen (auszahlbares Geld aus abgeschlossenen Auftraegen)
+          const escrowResponse = await fetch(
+            `/api/escrow/balance?providerId=${encodeURIComponent(uid)}`,
             {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             }
           );
 
-          if (balanceResponse.ok) {
-            const balanceData = await balanceResponse.json();
-            availableBalance = (balanceData.available || 0) / 100;
-            pendingBalance = (balanceData.pending || 0) / 100;
-          } else {
-            const errorData = await balanceResponse.json().catch(() => ({}));
+          if (escrowResponse.ok) {
+            const escrowData = await escrowResponse.json();
+            if (escrowData.success) {
+              // available = totalHeld (noch nicht ausgezahlt, aber auszahlbar)
+              availableBalance = escrowData.available || 0;
+              // pending = Anzahl ausstehender Auszahlungen
+              pendingBalance = escrowData.pendingPayouts || 0;
+            }
           }
         } catch (balanceError) {}
 

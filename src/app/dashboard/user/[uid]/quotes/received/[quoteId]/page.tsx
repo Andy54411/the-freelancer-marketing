@@ -19,7 +19,6 @@ import {
   FiPhone,
   FiCreditCard,
 } from 'react-icons/fi';
-import QuotePaymentModal from '@/components/quotes/QuotePaymentModal';
 import QuoteChat from '@/components/chat/QuoteChat';
 
 interface Proposal {
@@ -28,7 +27,6 @@ interface Proposal {
   companyEmail?: string;
   companyPhone?: string;
   companyLogo?: string;
-  companyStripeAccountId?: string;
   message: string;
   serviceItems: Array<{
     title: string;
@@ -217,6 +215,56 @@ export default function CustomerQuoteDetailsPage({
       }
     } catch (error) {
       handlePaymentError(error instanceof Error ? error.message : 'Unbekannter Fehler');
+    }
+  };
+
+  const handleEscrowPayment = async (paymentMethod: 'card' | 'bank_transfer') => {
+    if (!firebaseUser || !paymentProposal || !quote) return;
+    
+    setProcessing(true);
+    
+    try {
+      const token = await firebaseUser.getIdToken();
+      
+      // Create Escrow via API
+      const response = await fetch('/api/payment/escrow', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create',
+          orderId: quoteId,
+          buyerId: uid,
+          providerId: paymentProposal.companyUid,
+          amount: paymentProposal.totalAmount,
+          currency: paymentProposal.currency,
+          description: quote.title,
+          paymentMethod: paymentMethod === 'card' ? 'card' : 'bank_transfer',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Erstellen der Zahlung');
+      }
+
+      if (paymentMethod === 'card' && data.checkoutUrl) {
+        // Redirect to Revolut Checkout
+        window.location.href = data.checkoutUrl;
+      } else if (paymentMethod === 'bank_transfer') {
+        // Show bank transfer instructions
+        alert(`Bitte überweisen Sie ${paymentProposal.totalAmount.toFixed(2)} ${paymentProposal.currency} an unser Treuhandkonto. Verwendungszweck: ${data.escrow?.id || quoteId}`);
+        setShowPaymentModal(false);
+        setPaymentProposal(null);
+        await fetchQuoteDetails();
+      }
+    } catch (error) {
+      handlePaymentError(error instanceof Error ? error.message : 'Zahlungsfehler');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -602,24 +650,59 @@ export default function CustomerQuoteDetailsPage({
           </div>
         </div>
 
-        {/* Quote Payment Modal */}
+        {/* Escrow Payment Info Modal */}
         {showPaymentModal && paymentProposal && quote && (
-          <QuotePaymentModal
-            isOpen={showPaymentModal}
-            onClose={handlePaymentModalClose}
-            onSuccess={handlePaymentSuccess}
-            onError={handlePaymentError}
-            quoteId={quoteId}
-            proposalId={paymentProposal.companyUid}
-            quoteTitle={quote.title}
-            quoteDescription={quote.description}
-            proposalAmount={paymentProposal.totalAmount}
-            proposalCurrency={paymentProposal.currency}
-            companyName={paymentProposal.companyName || 'Unbekanntes Unternehmen'}
-            customerFirebaseId={uid}
-            customerStripeId={undefined} // Will be created if needed
-            userType="user" // B2C: Customer is paying for a service
-          />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Zahlung bestätigen</h2>
+                <button onClick={handlePaymentModalClose} className="text-gray-500 hover:text-gray-700">
+                  <FiX className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-teal-50 p-4 rounded-lg">
+                  <p className="text-sm text-teal-800">
+                    <strong>Escrow-Zahlung:</strong> Ihr Geld wird sicher verwahrt bis der Auftrag abgeschlossen ist.
+                  </p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Angebot von:</span>
+                    <span className="font-medium">{paymentProposal.companyName}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Betrag:</span>
+                    <span className="font-bold text-lg">{paymentProposal.totalAmount.toFixed(2)} {paymentProposal.currency}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleEscrowPayment('card')}
+                    disabled={processing}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg flex items-center justify-center disabled:opacity-50"
+                  >
+                    {processing ? <FiLoader className="animate-spin mr-2" /> : <FiCreditCard className="mr-2" />}
+                    Mit Kreditkarte zahlen
+                  </button>
+                  <button
+                    onClick={() => handleEscrowPayment('bank_transfer')}
+                    disabled={processing}
+                    className="w-full border border-teal-600 text-teal-600 hover:bg-teal-50 py-3 rounded-lg flex items-center justify-center disabled:opacity-50"
+                  >
+                    Per SEPA-Überweisung zahlen
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center mt-4">
+                  Sichere Zahlung über Revolut. Ihre Daten sind geschützt.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

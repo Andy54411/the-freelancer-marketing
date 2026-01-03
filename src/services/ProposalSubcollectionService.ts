@@ -34,7 +34,7 @@ export interface ProposalData {
   submittedAt: string;
   acceptedAt?: string; // For when proposal is accepted
   paidAt?: string; // For when payment is completed
-  paymentIntentId?: string; // Stripe payment intent ID
+  paymentIntentId?: string; // Revolut payment ID
   orderId?: string; // Related order ID
   createdAt?: Timestamp;
   updatedAt?: Timestamp;

@@ -3,12 +3,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, onSnapshot, orderBy, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/firebase/clients';
 import {
-  Download,
-  Calendar,
-  CreditCard,
   Clock,
   CheckCircle,
   XCircle,
@@ -19,17 +16,25 @@ import {
   Banknote,
   RefreshCw,
   Zap,
+  Award,
+  Star,
+  Crown,
+  User,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { TaskiloLevel, PayoutConfig } from '@/services/TaskiloLevelService';
 
 interface AvailableOrder {
   id: string;
+  orderId?: string; // Die echte Auftrags-ID (kann sich von id unterscheiden wenn id = escrowId)
   amount: number;
-  completedAt: any;
+  completedAt: unknown;
   projectTitle: string;
+  invoiceStatus?: 'pending' | 'requested' | 'uploaded' | 'downloaded';
 }
 
 interface PayoutOption {
@@ -42,34 +47,7 @@ interface PayoutOption {
   available?: boolean;
 }
 
-interface AvailablePayoutData {
-  availableAmount: number;
-  currency: string;
-  orderCount: number;
-  orders: AvailableOrder[];
-  payoutOptions: {
-    standard: PayoutOption;
-    express: PayoutOption;
-  };
-}
-
-interface StripeBalanceData {
-  available: number;
-  pending: number;
-  currency: string;
-  source: string;
-  lastUpdated?: string;
-}
-
-interface PayoutRequest {
-  id: string;
-  amount: number;
-  currency: string;
-  orderCount: number;
-  estimatedArrival: string;
-  status: string;
-  method: string;
-}
+// EscrowBalanceData und PayoutRequest werden inline typisiert via escrowData state
 
 interface PayoutHistoryItem {
   id: string;
@@ -98,27 +76,30 @@ export default function PayoutOverviewPage() {
   const { user } = useAuth();
   const uid = (params?.uid as string) || '';
 
-  const [availableData, setAvailableData] = useState<AvailablePayoutData | null>(null);
+  // Escrow-basierte States (ersetzen Stripe)
+  const [escrowData, setEscrowData] = useState<{
+    taskerLevel: TaskiloLevel;
+    payoutConfig: PayoutConfig & { isInstantPayout: boolean };
+    balance: { inClearing: number; available: number; released: number; currency: string };
+    counts: { inClearing: number; available: number; released: number };
+    payoutOptions: { standard: PayoutOption; express: PayoutOption | null };
+    orders: AvailableOrder[];
+    canPayout: boolean;
+  } | null>(null);
   const [historyData, setHistoryData] = useState<PayoutHistoryData | null>(null);
-  const [stripeBalance, setStripeBalance] = useState<StripeBalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [payoutLoading, setPayoutLoading] = useState(false);
-  const [balanceLoading, setBalanceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'available' | 'history'>('available');
-  const [selectedPayoutOption, setSelectedPayoutOption] = useState<'standard' | 'express'>(
-    'standard'
-  );
-  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [selectedPayoutOption, setSelectedPayoutOption] = useState<'standard' | 'express'>('standard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [ordersWithMissingInvoices, setOrdersWithMissingInvoices] = useState<AvailableOrder[]>([]);
 
   // Refs für Realtime-Listener
   const ordersUnsubscribeRef = useRef<(() => void) | null>(null);
-  const quotesUnsubscribeRef = useRef<(() => void) | null>(null);
-  const webhookUnsubscribeRef = useRef<(() => void) | null>(null);
 
   // Helper functions
   const formatCurrency = (amount: number): string => {
@@ -136,6 +117,25 @@ export default function PayoutOverviewPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Level Icons
+  const getLevelIcon = (level: TaskiloLevel) => {
+    switch (level) {
+      case 'top_rated': return <Crown className="h-5 w-5 text-amber-500" />;
+      case 'level2': return <Star className="h-5 w-5 text-purple-500" />;
+      case 'level1': return <Award className="h-5 w-5 text-blue-500" />;
+      default: return <User className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getLevelName = (level: TaskiloLevel) => {
+    switch (level) {
+      case 'top_rated': return 'Top Rated';
+      case 'level2': return 'Level 2';
+      case 'level1': return 'Level 1';
+      default: return 'Neuer Tasker';
+    }
   };
 
   const getPayoutStatusBadge = (status: string) => {
@@ -172,117 +172,60 @@ export default function PayoutOverviewPage() {
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
-  const loadAvailablePayouts = useCallback(async () => {
+  // Lade Escrow-basierte Payout-Daten (mit Level-Info)
+  const loadEscrowData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // Auth Token holen
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error('Nicht authentifiziert');
+      }
+
       const response = await fetch(`/api/company/${uid}/payout`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Fehler beim Laden der verfügbaren Auszahlungen');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Laden der Auszahlungsdaten');
       }
 
       const data = await response.json();
-      setAvailableData(data);
+      
+      setEscrowData({
+        taskerLevel: data.taskerLevel,
+        payoutConfig: data.payoutConfig,
+        balance: data.balance,
+        counts: data.counts,
+        payoutOptions: data.payoutOptions,
+        orders: data.orders || [],
+        canPayout: data.canPayout,
+      });
+      
       setLastUpdated(new Date());
+      
+      // Prüfe welche Aufträge keine hochgeladene Rechnung haben
+      if (data.orders && Array.isArray(data.orders)) {
+        const missingInvoices = data.orders.filter(
+          (order: AvailableOrder) => !order.invoiceStatus || order.invoiceStatus === 'pending' || order.invoiceStatus === 'requested'
+        );
+        setOrdersWithMissingInvoices(missingInvoices);
+      } else {
+        setOrdersWithMissingInvoices([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
     }
   }, [uid]);
-
-  // Berechne payoutOptions basierend auf STRIPE Balance (nicht Payout API)
-  const calculatePayoutOptions = useCallback((stripeAvailable: number) => {
-    if (stripeAvailable > 0) {
-      const standardAmount = stripeAvailable;
-      const expressAmount = stripeAvailable * 0.97; // 3% Gebühr abziehen
-      const expressFee = stripeAvailable * 0.03;
-
-      return {
-        standard: {
-          name: 'Standard Auszahlung',
-          fee: 0,
-          feePercentage: 0,
-          estimatedTime: '1-2 Werktage',
-          description: 'Standard Banküberweisungen dauern normalerweise 1-2 Werktage.',
-          finalAmount: standardAmount,
-          available: true,
-        },
-        express: {
-          name: 'Express Auszahlung',
-          fee: expressFee,
-          feePercentage: 3,
-          estimatedTime: 'Sofort',
-          description: 'Express-Auszahlungen werden sofort bearbeitet, kosten aber 3% Gebühr.',
-          finalAmount: expressAmount,
-          available: true,
-        },
-      };
-    } else {
-      // Keine Auszahlung verfügbar
-      return {
-        standard: {
-          name: 'Standard Auszahlung',
-          fee: 0,
-          feePercentage: 0,
-          estimatedTime: '1-2 Werktage',
-          description: 'Standard Banküberweisungen dauern normalerweise 1-2 Werktage.',
-          finalAmount: 0,
-          available: false,
-        },
-        express: {
-          name: 'Express Auszahlung',
-          fee: 0,
-          feePercentage: 3,
-          estimatedTime: 'Sofort',
-          description: 'Express-Auszahlungen werden sofort bearbeitet, kosten aber 3% Gebühr.',
-          finalAmount: 0,
-          available: false,
-        },
-      };
-    }
-  }, []);
-
-  // Stripe Balance laden mit Caching
-  const loadStripeBalance = useCallback(
-    async (forceRefresh = false) => {
-      try {
-        setBalanceLoading(true);
-        const url = `/api/company/${uid}/stripe-balance${forceRefresh ? '?force=true' : ''}`;
-        const response = await fetch(url);
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.balance) {
-            setStripeBalance({
-              available: result.balance.available?.[0]?.amountEuro || 0,
-              pending: result.balance.pending?.[0]?.amountEuro || 0,
-              currency: result.balance.available?.[0]?.currency || 'eur',
-              source: result.cached ? 'cache' : 'stripe_api',
-              lastUpdated: result.balance.timestamp,
-            });
-
-            // Show cache status in console
-            if (result.cached) {
-            } else {
-            }
-          }
-        } else {
-          setStripeBalance(null);
-        }
-      } catch (err) {
-        setStripeBalance(null);
-      } finally {
-        setBalanceLoading(false);
-      }
-    },
-    [uid]
-  );
 
   // Realtime Listener für Aufträge
   const setupOrdersListener = useCallback(() => {
@@ -299,80 +242,17 @@ export default function PayoutOverviewPage() {
 
     ordersUnsubscribeRef.current = onSnapshot(
       ordersQuery,
-      snapshot => {
-        // Nach Änderungen in Aufträgen → Payout-Daten neu laden
-        loadAvailablePayouts();
-        loadStripeBalance();
+      _snapshot => {
+        // Nach Änderungen in Aufträgen, Escrow-Daten neu laden
+        loadEscrowData();
       },
-      error => {}
+      _error => {
+        // Fehler beim Listener - ignorieren
+      }
     );
-  }, [uid, loadAvailablePayouts, loadStripeBalance]);
+  }, [uid, loadEscrowData]);
 
-  // Realtime Listener für Quote Payments
-  const setupQuotesListener = useCallback(() => {
-    if (quotesUnsubscribeRef.current) {
-      quotesUnsubscribeRef.current();
-    }
-
-    const quotesQuery = query(
-      collection(db, 'quotes'),
-      where('providerId', '==', uid),
-      orderBy('updatedAt', 'desc')
-    );
-
-    quotesUnsubscribeRef.current = onSnapshot(
-      quotesQuery,
-      snapshot => {
-        // Nach Änderungen in Quotes → Payout-Daten neu laden
-        loadAvailablePayouts();
-        loadStripeBalance();
-      },
-      error => {}
-    );
-  }, [uid, loadAvailablePayouts, loadStripeBalance]);
-
-  // Webhook Event Listener für Stripe Updates (mit Fehlerbehandlung)
-  const setupWebhookListener = useCallback(() => {
-    try {
-      const webhookQuery = query(
-        collection(db, 'realtime_events'),
-        where('processed', '==', false),
-        orderBy('timestamp', 'desc')
-      );
-
-      return onSnapshot(
-        webhookQuery,
-        snapshot => {
-          snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-              const eventData = change.doc.data();
-
-              // Handle different event types
-              if (
-                eventData.event_type === 'payout_updated' ||
-                eventData.event_type === 'balance_updated'
-              ) {
-                // Force refresh balance data
-                loadStripeBalance(true);
-                loadAvailablePayouts();
-
-                // Mark as processed (mit try-catch)
-                try {
-                  updateDoc(change.doc.ref, { processed: true });
-                } catch (updateError) {}
-              }
-            }
-          });
-        },
-        error => {}
-      );
-    } catch (error) {
-      // Return empty function if setup fails
-      return () => {};
-    }
-  }, [loadAvailablePayouts, loadStripeBalance]);
-
-  // Manual Refresh Funktion (mit Force-Refresh für Stripe Balance)
+  // Manual Refresh Funktion
   const handleManualRefresh = useCallback(async () => {
     if (isRefreshing) return;
 
@@ -380,60 +260,34 @@ export default function PayoutOverviewPage() {
       setIsRefreshing(true);
       setError(null);
 
-      await Promise.all([
-        loadAvailablePayouts(),
-        loadStripeBalance(true), // Force refresh from Stripe API
-      ]);
+      await loadEscrowData();
 
       setSuccess('Daten erfolgreich aktualisiert');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
+    } catch {
       setError('Fehler beim Aktualisieren der Daten');
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadAvailablePayouts, loadStripeBalance, isRefreshing]);
+  }, [loadEscrowData, isRefreshing]);
 
   // Initial Load useEffect
   useEffect(() => {
     if (!user || !uid) return;
 
     // Lade initiale Daten
-    loadAvailablePayouts();
-    loadStripeBalance();
+    loadEscrowData();
 
-    // Setup Realtime Listeners
+    // Setup Realtime Listener
     setupOrdersListener();
-    setupQuotesListener();
-
-    // Setup Webhook-Listener (kann fehlschlagen wegen Berechtigungen)
-    try {
-      webhookUnsubscribeRef.current = setupWebhookListener();
-    } catch (error) {
-      webhookUnsubscribeRef.current = null;
-    }
 
     // Cleanup bei Component unmount
     return () => {
       if (ordersUnsubscribeRef.current) {
         ordersUnsubscribeRef.current();
       }
-      if (quotesUnsubscribeRef.current) {
-        quotesUnsubscribeRef.current();
-      }
-      if (webhookUnsubscribeRef.current) {
-        webhookUnsubscribeRef.current();
-      }
     };
-  }, [
-    user,
-    uid,
-    loadAvailablePayouts,
-    loadStripeBalance,
-    setupOrdersListener,
-    setupQuotesListener,
-    setupWebhookListener,
-  ]);
+  }, [user, uid, loadEscrowData, setupOrdersListener]);
 
   const loadPayoutHistory = async () => {
     try {
@@ -452,32 +306,49 @@ export default function PayoutOverviewPage() {
 
       const data = await response.json();
       setHistoryData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
+    } catch {
+      setError('Fehler beim Laden der Auszahlungshistorie');
     } finally {
       setHistoryLoading(false);
     }
   };
 
   const handleRequestPayout = async (isExpressPayout: boolean = false) => {
-    if (!availableData || availableData.availableAmount <= 0 || payoutLoading) return;
+    if (!escrowData || escrowData.balance.available <= 0 || payoutLoading) return;
 
-    const option = isExpressPayout
-      ? availableData.payoutOptions.express
-      : availableData.payoutOptions.standard;
+    // Prüfe ob alle Aufträge eine hochgeladene Rechnung haben
+    if (ordersWithMissingInvoices.length > 0) {
+      const orderTitles = ordersWithMissingInvoices
+        .map(o => o.projectTitle || `Auftrag ${o.id.slice(-6)}`)
+        .join(', ');
+      
+      alert(
+        `Auszahlung nicht möglich!\n\n` +
+        `Für folgende Aufträge wurde noch keine Rechnung hochgeladen:\n` +
+        `${orderTitles}\n\n` +
+        `Bitte laden Sie zuerst für alle abgeschlossenen Aufträge eine Rechnung hoch, ` +
+        `bevor Sie eine Auszahlung beantragen können.`
+      );
+      return;
+    }
 
-    if (isExpressPayout && !option.available) {
-      alert('Express Payout ist für diesen Betrag nicht verfügbar. Mindestbetrag: €5');
+    // Hole die richtige Option basierend auf Express-Wahl
+    const option = isExpressPayout && escrowData.payoutOptions.express
+      ? escrowData.payoutOptions.express
+      : escrowData.payoutOptions.standard;
+
+    if (isExpressPayout && !escrowData.payoutOptions.express) {
+      alert('Express-Auszahlung ist für Ihr Level nicht verfügbar.');
       return;
     }
 
     const confirmMessage =
       `Auszahlung bestätigen\n\n` +
       `${option.name}\n` +
-      `Verfügbarer Betrag: ${formatCurrency(availableData.availableAmount)}\n` +
+      `Verfügbarer Betrag: ${formatCurrency(escrowData.balance.available)}\n` +
       `Gebühr: ${formatCurrency(option.fee)} (${option.feePercentage}%)\n` +
       `Auszahlungsbetrag: ${formatCurrency(option.finalAmount)}\n` +
-      `Anzahl Aufträge: ${availableData.orderCount}\n` +
+      `Anzahl Aufträge: ${escrowData.orders.length}\n` +
       `Dauer: ${option.estimatedTime}\n\n` +
       `${option.description}\n\n` +
       `Möchten Sie die Auszahlung beantragen?`;
@@ -491,35 +362,37 @@ export default function PayoutOverviewPage() {
       setError(null);
       setSuccess(null);
 
+      // Auth Token holen
+      const token = await auth.currentUser?.getIdToken();
+
       const response = await fetch(`/api/company/${uid}/payout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          description: `${isExpressPayout ? 'Express ' : ''}Auszahlung für ${availableData.orderCount} abgeschlossene Aufträge`,
+          description: `${isExpressPayout ? 'Express ' : ''}Auszahlung für ${escrowData.orders.length} abgeschlossene Aufträge`,
           isExpressPayout: isExpressPayout,
+          escrowIds: escrowData.orders.map(o => o.id),
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Auszahlung fehlgeschlagen');
+        throw new Error(errorData.message || errorData.error || 'Auszahlung fehlgeschlagen');
       }
 
       const result = await response.json();
 
       setSuccess(
         `${isExpressPayout ? 'Express ' : ''}Auszahlung erfolgreich beantragt!\n` +
-          `Ursprungsbetrag: ${formatCurrency(result.payout.amount)}\n` +
-          (result.payout.expressFee > 0
-            ? `Gebühr: ${formatCurrency(result.payout.expressFee)} (${result.payout.expressFeePercentage}%)\n`
-            : '') +
-          `Auszahlungsbetrag: ${formatCurrency(result.payout.finalAmount)}\n` +
-          `Voraussichtliche Ankunft: ${result.payout.estimatedArrival}`
+        `Betrag: ${formatCurrency(result.amount || escrowData.balance.available)}\n` +
+        `Anzahl Escrows: ${result.escrowsReleased || escrowData.orders.length}`
       );
 
       // Reload data immediately to show updated state
-      loadAvailablePayouts();
-      loadStripeBalance();
+      loadEscrowData();
       if (activeTab === 'history') {
         loadPayoutHistory();
       }
@@ -584,7 +457,7 @@ export default function PayoutOverviewPage() {
               <span>{isRefreshing ? 'Aktualisiert...' : 'Aktualisieren'}</span>
             </Button>
 
-            {(balanceLoading || loading) && (
+            {loading && (
               <div className="flex items-center space-x-2 text-sm text-blue-600">
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
                 <span>Live-Update...</span>
@@ -640,9 +513,61 @@ export default function PayoutOverviewPage() {
           </Alert>
         )}
 
-        {/* Available Payout Card */}
-        {activeTab === 'available' && (
+        {/* Warnung: Fehlende Rechnungen */}
+        {ordersWithMissingInvoices.length > 0 && (
+          <Alert className="border-amber-200 bg-amber-50">
+            <FileText className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>Auszahlung blockiert:</strong> Für {ordersWithMissingInvoices.length} Auftrag/Aufträge wurde noch keine Rechnung hochgeladen. 
+              Bitte laden Sie alle Rechnungen hoch, bevor Sie eine Auszahlung beantragen können.
+              <ul className="mt-2 list-disc list-inside text-sm">
+                {ordersWithMissingInvoices.slice(0, 5).map((order) => (
+                  <li key={order.id}>
+                    {order.projectTitle || `Auftrag ${(order.orderId || order.id).slice(-6)}`}
+                    {' - '}
+                    <a 
+                      href={`/dashboard/company/${uid}/orders/${order.orderId || order.id}`}
+                      className="text-amber-700 underline hover:text-amber-900"
+                    >
+                      Rechnung hochladen
+                    </a>
+                  </li>
+                ))}
+                {ordersWithMissingInvoices.length > 5 && (
+                  <li>... und {ordersWithMissingInvoices.length - 5} weitere</li>
+                )}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Available Payout Card - Level-basiert */}
+        {activeTab === 'available' && escrowData && (
           <>
+            {/* Level Info Banner */}
+            <Card className="bg-gradient-to-r from-teal-50 to-emerald-50 border-teal-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {getLevelIcon(escrowData.taskerLevel)}
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {getLevelName(escrowData.taskerLevel)}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {escrowData.payoutConfig.isInstantPayout
+                          ? 'Sofortige kostenlose Auszahlungen freigeschaltet'
+                          : `Standard: ${escrowData.payoutConfig.clearingDays} Tage Wartezeit | Express: ${escrowData.payoutConfig.expressDays} Tage (${escrowData.payoutConfig.expressFeePercent}% Gebühr)`}
+                      </p>
+                    </div>
+                  </div>
+                  {escrowData.payoutConfig.isInstantPayout && (
+                    <Badge className="bg-teal-100 text-teal-800">Premium Benefit</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -655,26 +580,77 @@ export default function PayoutOverviewPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
+                  {/* Balance Uebersicht */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-green-600 font-medium">Verfügbar</div>
+                          <div className="text-2xl font-bold text-green-700">
+                            {formatCurrency(escrowData.balance.available)}
+                          </div>
+                        </div>
+                        <CheckCircle className="h-8 w-8 text-green-500" />
+                      </div>
+                      <p className="text-xs text-green-600 mt-2">
+                        {escrowData.counts.available} Aufträge bereit zur Auszahlung
+                      </p>
+                    </div>
+
+                    {escrowData.balance.inClearing > 0 && (
+                      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm text-yellow-600 font-medium">In Clearing</div>
+                            <div className="text-2xl font-bold text-yellow-700">
+                              {formatCurrency(escrowData.balance.inClearing)}
+                            </div>
+                          </div>
+                          <Clock className="h-8 w-8 text-yellow-500" />
+                        </div>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {escrowData.counts.inClearing} Aufträge warten auf Freigabe
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-blue-600 font-medium">Bereits ausgezahlt</div>
+                          <div className="text-2xl font-bold text-blue-700">
+                            {formatCurrency(escrowData.balance.released)}
+                          </div>
+                        </div>
+                        <CreditCard className="h-8 w-8 text-blue-500" />
+                      </div>
+                      <p className="text-xs text-blue-600 mt-2">
+                        {escrowData.counts.released} Aufträge abgeschlossen
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Payout Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${escrowData.payoutOptions.express ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
                     {/* Standard Payout */}
                     <Card
                       className={`border-2 transition-colors cursor-pointer ${
-                        stripeBalance && stripeBalance.available > 0
-                          ? 'border-gray-200 hover:border-[#14ad9f]'
+                        escrowData.balance.available > 0
+                          ? selectedPayoutOption === 'standard'
+                            ? 'border-[#14ad9f] bg-teal-50'
+                            : 'border-gray-200 hover:border-[#14ad9f]'
                           : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                       }`}
-                      onClick={() =>
-                        stripeBalance &&
-                        stripeBalance.available > 0 &&
-                        setSelectedPayoutOption('standard')
-                      }
+                      onClick={() => escrowData.balance.available > 0 && setSelectedPayoutOption('standard')}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-2">
                             <Banknote className="h-5 w-5 text-[#14ad9f]" />
-                            <h3 className="font-semibold">Standard Auszahlung</h3>
+                            <h3 className="font-semibold">{escrowData.payoutOptions.standard.name}</h3>
+                            {escrowData.payoutConfig.isInstantPayout && (
+                              <Badge className="bg-teal-100 text-teal-800 text-xs">Level 2+</Badge>
+                            )}
                           </div>
                           <input
                             type="radio"
@@ -688,7 +664,7 @@ export default function PayoutOverviewPage() {
                           <div className="flex justify-between">
                             <span>Verfügbar:</span>
                             <span className="font-medium">
-                              {formatCurrency(stripeBalance?.available || 0)}
+                              {formatCurrency(escrowData.balance.available)}
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -698,23 +674,23 @@ export default function PayoutOverviewPage() {
                           <div className="flex justify-between">
                             <span>Sie erhalten:</span>
                             <span className="font-bold text-lg">
-                              {formatCurrency(stripeBalance?.available || 0)}
+                              {formatCurrency(escrowData.payoutOptions.standard.finalAmount)}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Dauer:</span>
-                            <span className="font-medium">1-2 Werktage</span>
+                            <span className="font-medium">
+                              {escrowData.payoutOptions.standard.estimatedTime}
+                            </span>
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 mt-3">
-                          Standard Banküberweisungen dauern normalerweise 1-2 Werktage.
+                          {escrowData.payoutOptions.standard.description}
                         </p>
                         <div className="mt-3">
                           <Button
                             size="sm"
-                            disabled={
-                              payoutLoading || !stripeBalance || stripeBalance.available <= 0
-                            }
+                            disabled={payoutLoading || escrowData.balance.available <= 0 || !escrowData.canPayout}
                             onClick={() => handleRequestPayout(false)}
                             className="bg-[#14ad9f] hover:bg-taskilo-hover text-white w-full"
                           >
@@ -726,7 +702,7 @@ export default function PayoutOverviewPage() {
                             ) : (
                               <>
                                 <Banknote className="h-3 w-3 mr-2" />
-                                Standard Auszahlung beantragen
+                                {escrowData.payoutConfig.isInstantPayout ? 'Sofort auszahlen' : 'Standard Auszahlung'}
                               </>
                             )}
                           </Button>
@@ -734,197 +710,103 @@ export default function PayoutOverviewPage() {
                       </CardContent>
                     </Card>
 
-                    {/* Express Payout */}
-                    <Card
-                      className={`border-2 transition-colors cursor-pointer ${
-                        stripeBalance && stripeBalance.available > 0
-                          ? 'border-gray-200 hover:border-[#14ad9f]'
-                          : 'border-gray-100 bg-gray-50 cursor-not-allowed'
-                      }`}
-                      onClick={() =>
-                        stripeBalance &&
-                        stripeBalance.available > 0 &&
-                        setSelectedPayoutOption('express')
-                      }
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-5 w-5 text-orange-500" />
-                            <h3 className="font-semibold">Express Auszahlung</h3>
-                            <Badge className="bg-orange-100 text-orange-800 text-xs">
-                              ⚡ Schnell
-                            </Badge>
+                    {/* Express Payout - nur fuer new/level1 */}
+                    {escrowData.payoutOptions.express && (
+                      <Card
+                        className={`border-2 transition-colors cursor-pointer ${
+                          escrowData.balance.available > 0
+                            ? selectedPayoutOption === 'express'
+                              ? 'border-orange-400 bg-orange-50'
+                              : 'border-gray-200 hover:border-orange-400'
+                            : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        }`}
+                        onClick={() => escrowData.balance.available > 0 && setSelectedPayoutOption('express')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Zap className="h-5 w-5 text-orange-500" />
+                              <h3 className="font-semibold">{escrowData.payoutOptions.express.name}</h3>
+                              <Badge className="bg-orange-100 text-orange-800 text-xs">Schnell</Badge>
+                            </div>
+                            <input
+                              type="radio"
+                              name="payoutOption"
+                              checked={selectedPayoutOption === 'express'}
+                              readOnly
+                              className="h-4 w-4 text-orange-500"
+                            />
                           </div>
-                          <input
-                            type="radio"
-                            name="payoutOption"
-                            checked={selectedPayoutOption === 'express'}
-                            disabled={!stripeBalance || stripeBalance.available <= 0}
-                            readOnly
-                            className="h-4 w-4 text-[#14ad9f]"
-                          />
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Verfügbar:</span>
-                            <span className="font-medium">
-                              {formatCurrency(stripeBalance?.available || 0)}
-                            </span>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Verfügbar:</span>
+                              <span className="font-medium">
+                                {formatCurrency(escrowData.balance.available)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Gebühr ({escrowData.payoutOptions.express.feePercentage}%):</span>
+                              <span className="font-medium text-orange-600">
+                                -{formatCurrency(escrowData.payoutOptions.express.fee)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Sie erhalten:</span>
+                              <span className="font-bold text-lg">
+                                {formatCurrency(escrowData.payoutOptions.express.finalAmount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Dauer:</span>
+                              <span className="font-medium text-orange-600">
+                                {escrowData.payoutOptions.express.estimatedTime}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Gebühr (4,5%):</span>
-                            <span className="font-medium text-orange-600">
-                              -{formatCurrency((stripeBalance?.available || 0) * 0.045)}
-                            </span>
+                          <p className="text-xs text-gray-500 mt-3">
+                            {escrowData.payoutOptions.express.description}
+                          </p>
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              disabled={payoutLoading || escrowData.balance.available <= 0 || !escrowData.canPayout}
+                              onClick={() => handleRequestPayout(true)}
+                              className="bg-orange-500 hover:bg-orange-600 text-white w-full"
+                            >
+                              {payoutLoading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                  Wird bearbeitet...
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="h-3 w-3 mr-2" />
+                                  Express Auszahlung
+                                </>
+                              )}
+                            </Button>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Sie erhalten:</span>
-                            <span className="font-bold text-lg">
-                              {formatCurrency((stripeBalance?.available || 0) * 0.955)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Dauer:</span>
-                            <span className="font-medium text-orange-600">Sofort</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-3">
-                          Express-Auszahlungen werden sofort bearbeitet, kosten aber 4,5% Gebühr.
-                        </p>
-                        <div className="mt-3">
-                          <Button
-                            size="sm"
-                            disabled={
-                              payoutLoading || !stripeBalance || stripeBalance.available <= 0
-                            }
-                            onClick={() => handleRequestPayout(true)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white w-full"
-                          >
-                            {payoutLoading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
-                                Wird bearbeitet...
-                              </>
-                            ) : (
-                              <>
-                                <Zap className="h-3 w-3 mr-2" />
-                                Express Auszahlung beantragen
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 </div>
-
-                {/* Summary - nur wenn Stripe Balance verfügbar */}
-                {stripeBalance && stripeBalance.available > 0 && (
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {formatCurrency(availableData?.availableAmount || 0)}
-                      </div>
-                      <div className="text-sm text-gray-600">Verfügbar</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-lg font-bold text-green-600">
-                        {availableData?.orderCount || 0}
-                      </div>
-                      <div className="text-sm text-gray-600">Abgeschlossene Aufträge</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
-                        {selectedPayoutOption === 'express' ? '30 Min' : '1-3 Tage'}
-                      </div>
-                      <div className="text-sm text-gray-600">Auszahlungsdauer</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Stripe Balance Information */}
-                {stripeBalance && (stripeBalance.pending > 0 || stripeBalance.available > 0) && (
-                  <Card className="bg-gray-50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2 text-lg">
-                        <CreditCard className="h-5 w-5 text-[#14ad9f]" />
-                        <span>Stripe Kontoguthaben</span>
-                        {balanceLoading && (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
-                        )}
-                      </CardTitle>
-                      <CardDescription>
-                        Gesamtübersicht Ihres Stripe-Guthabens (verfügbar + ausstehend)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Available Stripe Balance */}
-                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-sm text-green-600 font-medium">
-                                Sofort verfügbar
-                              </div>
-                              <div className="text-2xl font-bold text-green-700">
-                                {formatCurrency(stripeBalance.available)}
-                              </div>
-                            </div>
-                            <CheckCircle className="h-8 w-8 text-green-500" />
-                          </div>
-                          <p className="text-xs text-green-600 mt-2">
-                            Direkt für Auszahlungen verfügbar
-                          </p>
-                        </div>
-
-                        {/* Pending Stripe Balance */}
-                        {stripeBalance.pending > 0 && (
-                          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm text-yellow-600 font-medium">
-                                  Ausstehend
-                                </div>
-                                <div className="text-2xl font-bold text-yellow-700">
-                                  {formatCurrency(stripeBalance.pending)}
-                                </div>
-                              </div>
-                              <Clock className="h-8 w-8 text-yellow-500" />
-                            </div>
-                            <p className="text-xs text-yellow-600 mt-2">
-                              Wird in 1-2 Werktagen verfügbar
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Total Balance */}
-                        {stripeBalance.pending > 0 && (
-                          <div className="md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm text-blue-600 font-medium">
-                                  Gesamtguthaben
-                                </div>
-                                <div className="text-2xl font-bold text-blue-700">
-                                  {formatCurrency(stripeBalance.available + stripeBalance.pending)}
-                                </div>
-                              </div>
-                              <Euro className="h-8 w-8 text-blue-500" />
-                            </div>
-                            <p className="text-xs text-blue-600 mt-2">
-                              Verfügbar ({formatCurrency(stripeBalance.available)}) + Ausstehend (
-                              {formatCurrency(stripeBalance.pending)})
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </CardContent>
             </Card>
           </>
+        )}
+
+        {/* Keine Daten */}
+        {activeTab === 'available' && !escrowData && !loading && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Euro className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900">Keine Auszahlungen verfügbar</h3>
+              <p className="text-gray-500 mt-2">
+                Sobald Sie Aufträge abschließen, werden die Einnahmen hier angezeigt.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Payout History */}

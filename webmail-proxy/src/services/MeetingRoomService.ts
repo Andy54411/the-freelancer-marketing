@@ -32,6 +32,7 @@ export interface MeetingRoom {
     orderId?: string;            // Verknüpfter Auftrag
     companyId?: string;          // Firma
     source?: 'dashboard' | 'webmail' | 'app';
+    coOrganizers?: string[];     // Co-Organisatoren E-Mails
   };
 }
 
@@ -63,6 +64,7 @@ export interface MeetingParticipant {
 }
 
 export interface MeetingSettings {
+  // Basis-Einstellungen
   allowGuests: boolean;
   waitingRoom: boolean;
   muteOnEntry: boolean;
@@ -71,6 +73,12 @@ export interface MeetingSettings {
   allowRecording: boolean;
   allowChat: boolean;
   maxDurationMinutes: number;
+  
+  // Erweiterte Einstellungen (aus MeetingSettingsModal)
+  hostMustJoinFirst: boolean;        // Organisator muss vor allen anderen beitreten
+  allowReactions: boolean;           // Reaktionen senden erlauben
+  accessType: 'open' | 'trusted' | 'restricted';  // Zugang zur Videokonferenz
+  allowGuestsWithLink: boolean;      // Mit Link kann Teilnahmeanfrage gestellt werden
 }
 
 export interface SignalingMessage {
@@ -97,6 +105,7 @@ export interface CreateRoomOptions {
 // ============== DEFAULT SETTINGS ==============
 
 const DEFAULT_SETTINGS: MeetingSettings = {
+  // Basis-Einstellungen
   allowGuests: false,
   waitingRoom: true,
   muteOnEntry: true,
@@ -105,6 +114,12 @@ const DEFAULT_SETTINGS: MeetingSettings = {
   allowRecording: true,
   allowChat: true,
   maxDurationMinutes: 180, // 3 Stunden
+  
+  // Erweiterte Einstellungen
+  hostMustJoinFirst: false,
+  allowReactions: true,
+  accessType: 'trusted',
+  allowGuestsWithLink: true,
 };
 
 // ============== MEETING ROOM SERVICE ==============
@@ -355,6 +370,58 @@ class MeetingRoomService {
     }
 
     return true;
+  }
+
+  /**
+   * Raum-Einstellungen aktualisieren
+   */
+  updateRoomSettings(
+    roomId: string, 
+    userId: string, 
+    settings: Partial<MeetingSettings>,
+    coOrganizers?: string[]
+  ): MeetingRoom | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+
+    // Nur Host oder Co-Host kann Einstellungen ändern
+    const isHost = room.createdBy === userId;
+    const isCoHost = room.metadata?.coOrganizers?.includes(userId);
+    
+    if (!isHost && !isCoHost) {
+      console.log(`[MEETING] User ${userId} not authorized to update settings for room ${room.code}`);
+      return null;
+    }
+
+    // Settings aktualisieren
+    room.settings = {
+      ...room.settings,
+      ...settings,
+    };
+
+    // Co-Organisatoren aktualisieren
+    if (coOrganizers !== undefined) {
+      room.metadata = {
+        ...room.metadata,
+        coOrganizers,
+      };
+    }
+
+    console.log(`[MEETING] Room ${room.code} settings updated by ${userId}`);
+
+    // Alle Teilnehmer über Änderung informieren
+    this.broadcastToRoom(room, {
+      type: 'room-update',
+      roomId: room.id,
+      senderId: userId,
+      timestamp: Date.now(),
+      payload: {
+        settings: room.settings,
+        coOrganizers: room.metadata?.coOrganizers,
+      },
+    });
+
+    return room;
   }
 
   /**

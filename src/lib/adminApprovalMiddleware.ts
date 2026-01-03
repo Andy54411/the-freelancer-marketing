@@ -141,7 +141,6 @@ export const BLOCKED_ACTIONS = {
   // Payment Operationen
   PAYOUT_REQUEST: 'Auszahlungen beantragen',
   PAYMENT_RECEIVE: 'Zahlungen empfangen',
-  STRIPE_OPERATIONS: 'Stripe-Operationen',
 
   // Public Visibility
   PUBLIC_PROFILE: 'Öffentliches Profil',

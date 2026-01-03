@@ -198,22 +198,27 @@ export default function ImpressumPage() {
                       <div>
                         <h3 className="font-semibold mb-2 flex items-center gap-2">
                           <Server className="w-4 h-4" />
-                          Hosting
+                          Hosting und Infrastruktur
                         </h3>
                         <p>Diese Website wird gehostet bei:</p>
                         <p className="mt-2">
-                          <strong>Siteground</strong>
+                          <strong>Vercel Inc.</strong> (Frontend)
                           <br />
-                          Siteground Spain S.L.
+                          340 S Lemon Ave #4133
                           <br />
-                          Calle Miquel Granell, 11
+                          Walnut, CA 91789, USA
+                        </p>
+                        <p className="mt-2">
+                          <strong>Hetzner Online GmbH</strong> (E-Mail, Cloud-Speicher)
                           <br />
-                          03203 Elche, Spanien
+                          Industriestr. 25
+                          <br />
+                          91710 Gunzenhausen, Deutschland
                         </p>
                         <p className="mt-2">
                           Domain: taskilo.de
                           <br />
-                          Registrar: Siteground
+                          Registrar: INWX GmbH & Co. KG
                         </p>
                       </div>
 

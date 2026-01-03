@@ -72,7 +72,7 @@ export default function ServicesPage() {
                   <Shield className="w-10 h-10 mx-auto mb-3 text-white" />
                   <h2 className="font-semibold text-white mb-2 text-lg">Geprüft & Sicher</h2>
                   <p className="text-white/80 text-sm">
-                    Verifizierte Anbieter mit Bewertungssystem und Stripe-Payment
+                    Verifizierte Anbieter mit Bewertungssystem und sicherer Zahlung
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">

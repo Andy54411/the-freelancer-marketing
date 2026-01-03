@@ -19,6 +19,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
 import Script from 'next/script';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -293,6 +294,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {/* GoogleAnalytics removed - GTM handles all analytics */}
                 <Analytics />
                 <SpeedInsights />
+                <Toaster position="top-right" richColors closeButton />
               </Providers>
             </AlertProvider>
           </AnalyticsProvider>

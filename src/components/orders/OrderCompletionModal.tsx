@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -23,8 +22,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CheckCircle, Star, CreditCard, AlertTriangle } from 'lucide-react';
+import { CheckCircle, CreditCard, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { auth } from '@/firebase/clients';
 
 interface OrderCompletionModalProps {
   isOpen: boolean;
@@ -52,8 +52,6 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
   onOrderCompleted,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [rating, setRating] = useState<number>(5);
-  const [review, setReview] = useState('');
   const [completionNotes, setCompletionNotes] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -62,14 +60,20 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
 
     setIsLoading(true);
     try {
+      // Hole Firebase ID Token für Authentifizierung
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error('Nicht angemeldet');
+      }
+      const idToken = await firebaseUser.getIdToken();
+
       const response = await fetch(`/api/user/${userId}/orders/${order.id}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          rating,
-          review,
           completionNotes,
         }),
       });
@@ -88,7 +92,7 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
       });
 
       onOrderCompleted();
-      onClose();
+      // onClose wird nicht mehr aufgerufen - die Parent-Komponente schließt das Modal über onOrderCompleted
     } catch (error: any) {
       toast.error('Fehler beim Abschließen des Auftrags', {
         description: error.message || 'Bitte versuchen Sie es später erneut.',
@@ -114,7 +118,7 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
               Auftrag abschließen
             </DialogTitle>
             <DialogDescription>
-              Markieren Sie den Auftrag als erledigt und bewerten Sie die Dienstleistung.
+              Markieren Sie den Auftrag als erledigt. Sie erhalten im Anschluss eine E-Mail zur Bewertung.
             </DialogDescription>
           </DialogHeader>
 
@@ -134,40 +138,6 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
               </CardContent>
             </Card>
 
-            {/* Rating */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bewertung</label>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setRating(star)}
-                    className={`p-1 rounded ${
-                      star <= rating ? 'text-yellow-400' : 'text-gray-300'
-                    } hover:text-yellow-400 transition-colors`}
-                  >
-                    <Star className="h-6 w-6 fill-current" />
-                  </button>
-                ))}
-                <span className="ml-2 text-sm text-gray-600">({rating} von 5 Sternen)</span>
-              </div>
-            </div>
-
-            {/* Review */}
-            <div className="space-y-2">
-              <label htmlFor="review" className="text-sm font-medium">
-                Bewertungstext (optional)
-              </label>
-              <Textarea
-                id="review"
-                placeholder="Teilen Sie Ihre Erfahrung mit anderen..."
-                value={review}
-                onChange={e => setReview(e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-
             {/* Completion Notes */}
             <div className="space-y-2">
               <label htmlFor="notes" className="text-sm font-medium">
@@ -180,6 +150,19 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
                 onChange={e => setCompletionNotes(e.target.value)}
                 className="min-h-[60px]"
               />
+            </div>
+
+            {/* Review Info */}
+            <div className="bg-amber-50 p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-amber-900">Bewertung per E-Mail</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Nach Abschluss erhalten Sie eine E-Mail mit einem Link zur Bewertung des Anbieters.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Payout Information */}

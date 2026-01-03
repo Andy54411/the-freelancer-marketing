@@ -123,23 +123,40 @@ export default function DatenschutzPage() {
                 </p>
               </CollapsibleSection>
 
-              <CollapsibleSection icon={Server} title="2. Hosting und Content Delivery Networks (CDN)" index={1}>
-                <h3 className="font-semibold">Externes Hosting</h3>
+              <CollapsibleSection icon={Server} title="2. Hosting und Infrastruktur" index={1}>
+                <h3 className="font-semibold">Vercel (Frontend-Hosting)</h3>
                 <p>
-                  Diese Website wird bei Siteground gehostet. Siteground ist ein
-                  Webhosting-Anbieter mit Servern in Europa. Die personenbezogenen Daten, die auf
-                  dieser Website erfasst werden, werden auf den Servern von Siteground
-                  gespeichert.
+                  Diese Website wird bei Vercel Inc. gehostet. Vercel ist ein Cloud-Hosting-Anbieter
+                  mit Servern weltweit, einschließlich der EU. Die personenbezogenen Daten, die auf
+                  dieser Website erfasst werden, werden auf den Servern von Vercel gespeichert.
                 </p>
                 <p>
-                  Siteground ist ein GDPR-konformer Hosting-Anbieter. Details zur
-                  Datenverarbeitung bei Siteground finden Sie in der Datenschutzerklärung von
-                  Siteground: https://www.siteground.com/privacy
+                  <strong>Anbieter:</strong> Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, USA
                 </p>
                 <p>
-                  Die Verwendung von Siteground erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f
-                  DSGVO. Wir haben ein berechtigtes Interesse an einer möglichst zuverlässigen
-                  Darstellung unserer Website.
+                  <strong>Datenschutzerklärung:</strong> https://vercel.com/legal/privacy-policy
+                </p>
+
+                <h3 className="font-semibold">Hetzner Online (E-Mail, Cloud-Speicher, Newsletter)</h3>
+                <p>
+                  Für unsere E-Mail-Dienste (Webmail), Cloud-Speicher (Taskilo Drive), Newsletter-Versand
+                  und WebRTC-Videoanrufe nutzen wir Server der Hetzner Online GmbH in Deutschland.
+                  Mit Hetzner besteht ein Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO.
+                </p>
+                <p>
+                  <strong>Anbieter:</strong> Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Deutschland
+                </p>
+                <p>
+                  <strong>Verarbeitete Daten:</strong> E-Mail-Inhalte und Metadaten, hochgeladene Dateien,
+                  Newsletter-Abonnentendaten, WebRTC-Signalisierungsdaten (temporär)
+                </p>
+                <p>
+                  <strong>Datenschutzerklärung:</strong> https://www.hetzner.com/legal/privacy-policy
+                </p>
+
+                <p>
+                  <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)
+                  und Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an zuverlässiger Infrastruktur)
                 </p>
               </CollapsibleSection>
 
@@ -227,41 +244,88 @@ export default function DatenschutzPage() {
                 </p>
               </CollapsibleSection>
 
-              <CollapsibleSection icon={CreditCard} title="5. Zahlungsdienstleister (Stripe)" index={4}>
-                <h3 className="font-semibold">Stripe Payment Processing & Platform Account Hold</h3>
+              <CollapsibleSection icon={CreditCard} title="5. Zahlungsdienstleister (Revolut)" index={4}>
+                <h3 className="font-semibold">Revolut Business</h3>
                 <p>
-                  Für die Abwicklung von Zahlungen auf unserer Website verwenden wir Stripe, einen
-                  sicheren und PCI-DSS-konformen Zahlungsdienstleister. Stripe verarbeitet
-                  Zahlungsdaten direkt und sicher.
+                  Für die Abwicklung von Zahlungen und Abonnements nutzen wir Revolut Business.
+                  Revolut ist ein in der EU lizenzierter Zahlungsdienstleister und verarbeitet
+                  Zahlungsdaten sicher und DSGVO-konform.
                 </p>
                 <p>
-                  <strong>Platform Account Hold System:</strong> Wir nutzen Stripe&apos;s Platform
-                  Account Hold System zur sicheren Zahlungsabwicklung. Dabei werden Zahlungen
-                  zunächst auf unserem Platform Account gehalten und erst nach erfolgreicher
-                  Projektabnahme durch beide Parteien an die Dienstleister übertragen.
+                  <strong>Anbieter:</strong> Revolut Ltd., 7 Westferry Circus, Canary Wharf, London E14 4HD, UK
+                  (EU-Lizenz über Revolut Bank UAB, Litauen)
                 </p>
 
                 <h3 className="font-semibold">Verarbeitete Daten</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Kreditkarten- und Zahlungsdaten (verschlüsselt)</li>
+                  <li>Zahlungsdaten (IBAN, Kontoinhaber)</li>
                   <li>Rechnungsadresse und Kontaktdaten</li>
-                  <li>Transaktionsdaten und Bestellinformationen</li>
-                  <li>IP-Adresse für Betrugsschutz</li>
-                  <li>Geräteinformationen für Sicherheitsprüfungen</li>
-                  <li>Platform Hold Informationen</li>
+                  <li>Transaktionsdaten und Abonnement-Informationen</li>
+                  <li>IP-Adresse für Sicherheitsprüfungen</li>
                 </ul>
 
                 <h3 className="font-semibold">Sicherheit und Compliance</h3>
                 <p>
-                  Stripe ist PCI-DSS Level 1 zertifiziert und erfüllt die höchsten
-                  Sicherheitsstandards für Zahlungsverarbeitung.
+                  Revolut ist von der Bank of Lithuania lizenziert und unterliegt den
+                  EU-Bankenregulierungen. Alle Transaktionen werden verschlüsselt übertragen.
                 </p>
 
                 <p>
                   <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)
                 </p>
                 <p>
-                  <strong>Datenschutzerklärung:</strong> https://stripe.com/privacy
+                  <strong>Datenschutzerklärung:</strong> https://www.revolut.com/legal/privacy
+                </p>
+              </CollapsibleSection>
+
+              <CollapsibleSection icon={Database} title="5a. Banking-Anbindung (finAPI)" index={10}>
+                <h3 className="font-semibold">finAPI Kontoinformationsdienst</h3>
+                <p>
+                  Für die optionale Anbindung Ihrer Bankkonten zur automatischen Transaktionsübersicht
+                  nutzen wir finAPI, einen BaFin-lizenzierten Kontoinformationsdienst.
+                </p>
+                <p>
+                  <strong>Anbieter:</strong> finAPI GmbH, Adams-Lehmann-Straße 44, 80797 München, Deutschland
+                </p>
+
+                <h3 className="font-semibold">Verarbeitete Daten</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Kontoinformationen (IBAN, Kontostand)</li>
+                  <li>Transaktionsdaten (Buchungen, Verwendungszweck)</li>
+                  <li>Bank-Zugangsdaten (verschlüsselt, nicht bei uns gespeichert)</li>
+                </ul>
+
+                <p>
+                  <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)
+                </p>
+                <p>
+                  <strong>Datenschutzerklärung:</strong> https://www.finapi.io/datenschutz
+                </p>
+              </CollapsibleSection>
+
+              <CollapsibleSection icon={Server} title="5b. Domain-Registrar (INWX)" index={11}>
+                <h3 className="font-semibold">INWX Domain-Registrierung</h3>
+                <p>
+                  Für die Registrierung von E-Mail-Domains im Rahmen unseres Webmail-Dienstes
+                  nutzen wir INWX als Domain-Registrar.
+                </p>
+                <p>
+                  <strong>Anbieter:</strong> INWX GmbH & Co. KG, Zweigniederlassung Berlin,
+                  Ritterstraße 2-3, 10969 Berlin, Deutschland
+                </p>
+
+                <h3 className="font-semibold">Verarbeitete Daten</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Domain-Inhaberdaten (Name, Adresse, E-Mail)</li>
+                  <li>Technische Kontaktdaten</li>
+                  <li>WHOIS-Informationen (falls nicht anonymisiert)</li>
+                </ul>
+
+                <p>
+                  <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)
+                </p>
+                <p>
+                  <strong>Datenschutzerklärung:</strong> https://www.inwx.de/de/datenschutz
                 </p>
               </CollapsibleSection>
 

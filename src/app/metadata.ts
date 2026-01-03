@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     'Service Marktplatz',
     'B2B Services Deutschland',
     'Freelancer Plattform',
-    'sichere Zahlung Stripe',
+    'sichere Zahlung',
     'verifizierte Dienstleister',
     'Projektmanagement Tool',
     'Taskrabbit Alternative',

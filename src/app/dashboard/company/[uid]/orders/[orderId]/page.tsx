@@ -3,9 +3,10 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '@/contexts/AuthContext';
-import { db, auth } from '@/firebase/clients';
+import { db, auth, functions } from '@/firebase/clients';
 
 // Icons für UI
 import {
@@ -24,18 +25,18 @@ import UserInfoCard from '@/components/UserInfoCard';
 import TimeTrackingManager from '@/components/TimeTrackingManager';
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
+// Rechnungsbereich
+import OrderInvoiceSection from '@/components/orders/OrderInvoiceSection';
+// Kunden-Rechnungsdaten
+import CustomerBillingInfo from '@/components/orders/CustomerBillingInfo';
 // Stunden-Übersicht Komponente
 import HoursBillingOverview from '@/components/HoursBillingOverview';
 // Escrow Payment-Komponente
 import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 // Provider Storno-Warnung
 import ProviderStornoWarning from '@/components/storno/ProviderStornoWarning';
-
-interface ParticipantDetails {
-  id: string;
-  name: string;
-  avatarUrl: string | null;
-}
+// Complete Order Modal
+import CompleteOrderModal from '@/components/modals/CompleteOrderModal';
 
 // Interface für ein Auftragsdokument
 interface OrderData {
@@ -88,7 +89,7 @@ export default function CompanyOrderDetailPage() {
   const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: 'user' aus dem AuthContext verwenden
 
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [timeTrackingData, setTimeTrackingData] = useState<any>(null);
+  const [_timeTrackingData, _setTimeTrackingData] = useState<unknown>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -98,8 +99,11 @@ export default function CompanyOrderDetailPage() {
   // Payment Modal States - für HoursBillingOverview (Escrow-System)
   const [showInlinePayment, setShowInlinePayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentHours, setPaymentHours] = useState(0);
+  const [_paymentHours, setPaymentHours] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Complete Order Modal State
+  const [showCompleteOrderModal, setShowCompleteOrderModal] = useState(false);
 
   useEffect(() => {
     // Wait until the authentication process is complete.
@@ -237,14 +241,15 @@ export default function CompanyOrderDetailPage() {
           };
 
           setOrder(orderData);
-        } catch (err: any) {
-          if (err.code === 'permission-denied') {
+        } catch (err: unknown) {
+          const error = err as { code?: string; message?: string };
+          if (error.code === 'permission-denied') {
             setError(
               'Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'
             );
           } else {
             setError(
-              `Fehler beim Laden der Teilnehmerdetails: ${err.message || 'Unbekannter Fehler'}`
+              `Fehler beim Laden der Teilnehmerdetails: ${error.message || 'Unbekannter Fehler'}`
             );
           }
         } finally {
@@ -311,21 +316,22 @@ export default function CompanyOrderDetailPage() {
         throw new Error(errorData.error || 'HTTP Error');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
 
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string };
       // Bessere Error-Messages für verschiedene Fehlertypen
       let errorMessage = 'Fehler beim Annehmen des Auftrags.';
-      if (err.message?.includes('Failed to fetch')) {
+      if (error.message?.includes('Failed to fetch')) {
         errorMessage =
           'Netzwerkfehler: Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
-      } else if (err.message?.includes('HTTP 401')) {
+      } else if (error.message?.includes('HTTP 401')) {
         errorMessage = 'Autorisierungsfehler: Bitte loggen Sie sich erneut ein.';
-      } else if (err.message?.includes('HTTP 404')) {
+      } else if (error.message?.includes('HTTP 404')) {
         errorMessage = 'Service nicht verfügbar: Bitte kontaktieren Sie den Support.';
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       setActionError(errorMessage);
@@ -337,28 +343,21 @@ export default function CompanyOrderDetailPage() {
   const handleCompleteOrder = async () => {
     if (!order) return;
 
-    const confirmation = window.confirm(
-      'Haben Sie den Auftrag erfolgreich abgeschlossen?\n\n' +
-        'Was passiert als nächstes:\n' +
-        '• Der Kunde wird über den Abschluss benachrichtigt\n' +
-        '• Der Kunde bestätigt die Arbeit und gibt eine Bewertung ab\n' +
-        '• Nach der Kundenbestätigung wird Ihnen das Geld ausgezahlt\n' +
-        '• Sie erhalten eine E-Mail sobald die Auszahlung erfolgt ist'
-    );
+    // Öffne das Modal statt window.confirm
+    setShowCompleteOrderModal(true);
+  };
 
-    if (!confirmation) return;
+  const confirmCompleteOrder = async () => {
+    if (!order) return;
 
     setIsActionLoading(true);
     setActionError(null);
 
     try {
-      // Debug: Prüfe Auth Status
-
       if (!currentUser) {
         throw new Error('Benutzer ist nicht angemeldet');
       }
 
-      // Debug: Hole ID Token für HTTP Request
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) {
         throw new Error('Firebase currentUser ist null');
@@ -366,7 +365,6 @@ export default function CompanyOrderDetailPage() {
 
       const idToken = await firebaseUser.getIdToken();
 
-      // HTTP Request zur completeOrder Function
       const response = await fetch(
         'https://europe-west1-tilvo-f142f.cloudfunctions.net/completeOrderHTTP',
         {
@@ -388,17 +386,20 @@ export default function CompanyOrderDetailPage() {
         throw new Error(errorData.error || 'HTTP Error beim Abschließen des Auftrags');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
 
       // Update local state
       setOrder(prev => (prev ? { ...prev, status: 'PROVIDER_COMPLETED' } : null));
+      setShowCompleteOrderModal(false);
 
       // Success message
       setSuccessMessage(
         'Auftrag als erledigt markiert! Der Kunde wurde benachrichtigt und muss jetzt den Abschluss bestätigen und bewerten. Das Geld wird nach der Kundenbestätigung freigegeben.'
       );
-    } catch (err: any) {
-      setActionError(err.message || 'Fehler beim Abschließen des Auftrags.');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setActionError(error.message || 'Fehler beim Abschließen des Auftrags.');
+      setShowCompleteOrderModal(false);
     } finally {
       setIsActionLoading(false);
     }
@@ -418,10 +419,11 @@ export default function CompanyOrderDetailPage() {
       const rejectOrderCallable = httpsCallable(functions, 'rejectOrder');
       await rejectOrderCallable({ orderId: order.id, reason: reason.trim() });
       setOrder(prev => (prev ? { ...prev, status: 'abgelehnt_vom_anbieter' } : null));
-    } catch (err: any) {
-      let message = err.message || 'Fehler beim Ablehnen des Auftrags.';
-      if (err.details) {
-        message += ` Details: ${JSON.stringify(err.details)}`;
+    } catch (err: unknown) {
+      const error = err as { message?: string; details?: unknown };
+      let message = error.message || 'Fehler beim Ablehnen des Auftrags.';
+      if (error.details) {
+        message += ` Details: ${JSON.stringify(error.details)}`;
       }
       setActionError(message);
     } finally {
@@ -443,14 +445,14 @@ export default function CompanyOrderDetailPage() {
       // Berechne echte Payment Hours aus OrderDetails
       const paymentHours =
         orderDetails?.timeTracking?.timeEntries
-          ?.filter((e: any) => {
+          ?.filter((e: { category?: string; status?: string }) => {
             // Alle Stunden die genehmigt sind aber noch bezahlt werden müssen
             return (
               e.category === 'additional' &&
               (e.status === 'customer_approved' || e.status === 'billing_pending')
             );
           })
-          ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
+          ?.reduce((sum: number, e: { hours?: number }) => sum + (e.hours || 0), 0) || 0;
 
       // Berechne den Betrag (Stunden * Stundensatz)
       const hourlyRate = order?.priceInCents ? Math.round(order.priceInCents / (order.jobTotalCalculatedHours || 1)) : 0;
@@ -478,7 +480,7 @@ export default function CompanyOrderDetailPage() {
     try {
       // Order data neu laden nach erfolgreichem Payment
       window.location.reload();
-    } catch (error) {
+    } catch {
       setSuccessMessage(
         'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
       );
@@ -944,10 +946,10 @@ export default function CompanyOrderDetailPage() {
                           Status-Informationen:
                         </h4>
                         <ul className="mt-1 text-sm text-green-700 list-disc list-inside">
-                          <li>✅ Auftrag erfolgreich abgeschlossen</li>
-                          <li>✅ Geld für Auszahlungen freigegeben</li>
-                          <li>✅ Kunde wurde benachrichtigt</li>
-                          <li>✅ Bewertungssystem ist aktiviert</li>
+                          <li>Auftrag erfolgreich abgeschlossen</li>
+                          <li>Geld für Auszahlungen freigegeben</li>
+                          <li>Kunde wurde benachrichtigt</li>
+                          <li>Bewertungssystem ist aktiviert</li>
                         </ul>
                       </div>
                       {isViewerProvider && (
@@ -992,9 +994,9 @@ export default function CompanyOrderDetailPage() {
               </div>
             </div>
 
-            {/* Rechte Sidebar - UserInfoCard */}
+            {/* Rechte Sidebar - UserInfoCard + Rechnungsdaten + Rechnung */}
             <div className="w-full lg:w-80 lg:shrink-0">
-              <div className="lg:sticky lg:top-6">
+              <div className="lg:sticky lg:top-6 space-y-4">
                 <UserInfoCard
                   userId={cardUser.id}
                   userName={cardUser.name}
@@ -1009,6 +1011,27 @@ export default function CompanyOrderDetailPage() {
                   layout="vertical"
                   size="lg"
                 />
+
+                {/* Kunden-Rechnungsdaten - für Anbieter bei angenommenen Aufträgen */}
+                {isViewerProvider && cardUser.role === 'customer' && (
+                  <CustomerBillingInfo
+                    customerId={order.customerId}
+                    orderId={orderId}
+                    orderStatus={order.status}
+                  />
+                )}
+
+                {/* Rechnungsbereich - Provider kann Rechnung hochladen */}
+                {(order.status === 'completed' || order.status === 'abgeschlossen' || order.status === 'ABGESCHLOSSEN' || order.status === 'PROVIDER_COMPLETED' || order.status === 'AKTIV') && isViewerProvider && (
+                  <OrderInvoiceSection
+                    orderId={orderId}
+                    userRole="provider"
+                    orderStatus={order.status}
+                    _providerId={order.providerId}
+                    _customerId={order.customerId}
+                    className="bg-white shadow rounded-lg"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -1030,14 +1053,22 @@ export default function CompanyOrderDetailPage() {
             }}
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
-            onSuccess={(escrowId: string) => {
+            onSuccess={(_escrowId: string) => {
               handlePaymentSuccess();
             }}
-            onError={(error: string) => {
+            onError={(_error: string) => {
               handlePaymentCancel();
             }}
           />
         )}
+
+        {/* Complete Order Modal */}
+        <CompleteOrderModal
+          isOpen={showCompleteOrderModal}
+          onClose={() => setShowCompleteOrderModal(false)}
+          onConfirm={confirmCompleteOrder}
+          isLoading={isActionLoading}
+        />
       </main>
     </Suspense>
   );

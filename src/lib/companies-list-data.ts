@@ -6,7 +6,6 @@ export interface CompanyListData {
   companyName: string;
   email: string;
   createdAt: string; // ISO-String-Datum
-  stripeAccountId: string | null;
 }
 
 /**
@@ -34,7 +33,6 @@ export async function getCompaniesData(): Promise<CompanyListData[]> {
         data.createdAt instanceof Timestamp
           ? data.createdAt.toDate().toISOString()
           : new Date().toISOString(),
-      stripeAccountId: data.stripeAccountId || null,
     };
   });
 }

@@ -38,6 +38,12 @@ export class GoBDService {
   userName: string)
   : Promise<boolean> {
     try {
+      // Validierung: Beide IDs muessen vorhanden sein
+      if (!companyId || !documentId) {
+        console.warn('GoBD Auto-Lock: companyId oder documentId fehlt - uebersprungen', { companyId, documentId });
+        return false;
+      }
+
       // Erst prüfen ob Dokument existiert
       const docRef = doc(db, 'companies', companyId, 'invoices', documentId);
       const docSnap = await getDoc(docRef);

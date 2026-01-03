@@ -94,7 +94,7 @@ class FirebaseFunctionsService {
     }
   }
 
-  // ===== STRIPE PAYMENT FUNCTIONS =====
+  // ===== PAYMENT FUNCTIONS =====
 
   /// Erstellt B2C Festpreis-Payment für sofortige Services
   static Future<Map<String, dynamic>> createB2CPayment({
@@ -389,7 +389,7 @@ class FirebaseFunctionsService {
 
   // ===== PROVIDER ONBOARDING FUNCTIONS =====
 
-  /// Erstellt Stripe Connected Account für Provider
+  /// Erstellt Connected Account fuer Provider (Revolut/Bank)
   static Future<Map<String, dynamic>> createProviderAccount({
     required String email,
     required String businessName,

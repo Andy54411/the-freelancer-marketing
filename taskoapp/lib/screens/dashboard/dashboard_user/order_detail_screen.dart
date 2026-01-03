@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../models/user_model.dart';
 import '../../../models/order.dart';
 import '../../../services/order_service.dart';
 import '../../../services/timetracker_service.dart';
-import '../../../services/stripe_payment_service.dart';
 import '../../../utils/colors.dart';
 import '../../../widgets/hours_billing_overview.dart';
 import '../../../widgets/time_tracking_widget.dart';
@@ -627,139 +626,115 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Startet Payment direkt nach Approval
   Future<void> _processPaymentFromApproval(Map<String, dynamic> data, List<String> timeEntryIds, int totalHours) async {
-    debugPrint('🔥 _processPaymentFromApproval CALLED!');
-    debugPrint('📊 Payment data: $data');
+    debugPrint('_processPaymentFromApproval CALLED!');
+    debugPrint('Payment data: $data');
     
-    final paymentIntentId = data['paymentIntentId'];
-    final clientSecret = data['clientSecret'];
+    final paymentId = data['paymentIntentId'] ?? data['orderId'];
+    final checkoutUrl = data['checkoutUrl'] as String?;
     final totalAmount = data['customerPays'] ?? 0;
     
-    debugPrint('💳 PaymentIntentId: $paymentIntentId');
-    debugPrint('🔐 ClientSecret: $clientSecret');
-    debugPrint('💰 TotalAmount: $totalAmount');
+    debugPrint('PaymentId: $paymentId');
+    debugPrint('CheckoutUrl: $checkoutUrl');
+    debugPrint('TotalAmount: $totalAmount');
     
-    if (paymentIntentId != null && clientSecret != null) {
-      debugPrint('✅ PAYMENT DATA OK - STARTING STRIPE PAYMENT SHEET');
+    if (paymentId != null && checkoutUrl != null) {
+      debugPrint('PAYMENT DATA OK - OPENING CHECKOUT');
       
-      try {
-        // Initialisiere Stripe Payment Sheet
-        await Stripe.instance.initPaymentSheet(
-          paymentSheetParameters: SetupPaymentSheetParameters(
-            paymentIntentClientSecret: clientSecret,
-            merchantDisplayName: 'Taskilo',
-            style: ThemeMode.system,
-          ),
-        );
-        
-        debugPrint('💳 SHOWING STRIPE PAYMENT SHEET...');
-        
-        // Zeige Stripe Payment Sheet
-        await Stripe.instance.presentPaymentSheet();
-        
-        debugPrint('✅ PAYMENT SHEET COMPLETED - CALLING WEBHOOK');
-        
-        // Payment erfolgreich - Webhook aufrufen für Status-Update
-        await _confirmPaymentWithWebhook(paymentIntentId, data, timeEntryIds);
-        
-      } catch (error) {
-        debugPrint('❌ STRIPE PAYMENT ERROR: $error');
-        if (error is StripeException) {
-          if (error.error.code == FailureCode.Canceled) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('💳 Zahlung abgebrochen'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          } else {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('❌ Payment-Fehler: ${error.error.localizedMessage}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        } else {
-            if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Unbekannter Payment-Fehler: $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+      // Oeffne Checkout-Seite im Browser
+      await _openPaymentCheckout(checkoutUrl, paymentId, data, timeEntryIds);
+      
+    } else if (paymentId != null) {
+      // Fallback: Erstelle Checkout-URL basierend auf paymentId
+      final fallbackUrl = 'https://taskilo.de/payment/escrow/$paymentId';
+      await _openPaymentCheckout(fallbackUrl, paymentId, data, timeEntryIds);
     } else {
-            if (!mounted) return;
-      debugPrint('❌ PAYMENT DATA MISSING!');
-    }
-  }
-
-  /// Bestätigt Payment über Webhook
-  Future<void> _confirmPaymentWithWebhook(String paymentIntentId, Map<String, dynamic> data, List<String> timeEntryIds) async {
-    debugPrint('🔗 PAYMENT CONFIRMED - WAITING FOR STRIPE WEBHOOK...');
-    
-    try {
-      // Zeige Loading - Stripe webhook wird automatisch aufgerufen
+      if (!mounted) return;
+      debugPrint('PAYMENT DATA MISSING!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 16),
-              Text('💳 Payment wird verarbeitet...'),
-            ],
-          ),
-          backgroundColor: TaskiloColors.primary,
-          duration: Duration(seconds: 5),
-        ),
-      );
-
-      // Warte kurz und lade dann die Daten neu
-      // Der Stripe Webhook unter /api/stripe-webhooks wird automatisch aufgerufen
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      // Lade Daten neu, um die Stripe Webhook-Updates zu sehen
-      await _loadOrderData();
-      
-      // Zeige Erfolgs-Nachricht
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ ${data['additionalHours']}h erfolgreich bezahlt! Status wird automatisch aktualisiert.'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-      
-    } catch (error) {
-      debugPrint('❌ WEBHOOK ERROR: $error');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Fehler: $error'),
+          content: Text('Payment-Daten nicht verfuegbar'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-
-
-
+  /// Oeffnet die Zahlungsseite im Browser
+  Future<void> _openPaymentCheckout(String checkoutUrl, String paymentId, Map<String, dynamic> data, List<String> timeEntryIds) async {
+    try {
+      final uri = Uri.parse(checkoutUrl);
+      
+      // Zeige Info-Dialog vor dem Oeffnen
+      if (!mounted) return;
+      final shouldOpen = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Zahlung durchfuehren'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Betrag: EUR ${((data['customerPays'] ?? 0) / 100).toStringAsFixed(2)}'),
+              const SizedBox(height: 8),
+              const Text(
+                'Sie werden zur sicheren Zahlungsseite weitergeleitet.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: TaskiloColors.primary,
+              ),
+              child: const Text('Zur Zahlung'),
+            ),
+          ],
+        ),
+      );
+      
+      if (shouldOpen == true) {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Zahlungsseite geoeffnet. Bitte schliessen Sie die Zahlung im Browser ab.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          
+          // Warte kurz und lade dann Daten neu
+          await Future.delayed(const Duration(seconds: 2));
+          _loadOrderData();
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Zahlungsseite konnte nicht geoeffnet werden'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      debugPrint('CHECKOUT ERROR: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fehler beim Oeffnen der Zahlungsseite: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   /// Zeigt Payment Dialog für zusätzliche Stunden (manueller Payment-Flow)
   /// WICHTIG: Diese Funktion wird für zukünftige Features benötigt und sollte nicht entfernt werden!
@@ -833,26 +808,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         return;
       }
 
-      debugPrint('🔄 Creating Payment Intent for ${timeEntryIds.length} time entries...');
-      debugPrint('💰 Amount: $totalAmountInCents¢ for ${totalHours}h');
+      debugPrint('Creating Payment for ${timeEntryIds.length} time entries...');
+      debugPrint('Amount: $totalAmountInCents cents for ${totalHours}h');
 
-      // Erstelle Payment Intent über die API
-      final paymentResult = await StripePaymentService.createAdditionalHoursPaymentIntent(
-        orderId: _order!.id,
-        timeEntryIds: timeEntryIds,
-        totalAmountInCents: totalAmountInCents,
-        totalHours: totalHours,
-        customerId: currentUser.uid,
-        providerId: _order!.selectedAnbieterId,
-      );
+      // Erstelle Escrow-Payment in Firestore
+      final escrowRef = firestore.FirebaseFirestore.instance
+          .collection('escrowPayments')
+          .doc();
+      
+      await escrowRef.set({
+        'orderId': _order!.id,
+        'timeEntryIds': timeEntryIds,
+        'totalAmountInCents': totalAmountInCents,
+        'totalHours': totalHours,
+        'customerId': currentUser.uid,
+        'providerId': _order!.selectedAnbieterId,
+        'status': 'pending',
+        'paymentMethod': 'revolut',
+        'createdAt': firestore.FieldValue.serverTimestamp(),
+      });
+      
+      final paymentResult = {
+        'success': true,
+        'data': {
+          'orderId': escrowRef.id,
+          'customerPays': totalAmountInCents,
+          'checkoutUrl': 'https://taskilo.de/payment/escrow/${escrowRef.id}',
+        },
+      };
 
       if (!mounted) return;
-      Navigator.pop(context); // Schließe Loading Dialog
+      Navigator.pop(context); // Schliesse Loading Dialog
 
-      if (paymentResult['success']) {
-        final paymentData = paymentResult['data'];
+      if (paymentResult['success'] == true) {
+        final paymentData = paymentResult['data'] as Map<String, dynamic>;
         
-        debugPrint('✅ Payment Intent created: ${paymentData['paymentIntentId']}');
+        debugPrint('Payment created: ${paymentData['orderId']}');
         
         // Zeige Payment Success Dialog
         _showPaymentSuccessDialog(
@@ -864,20 +855,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Payment-Erstellung fehlgeschlagen: ${paymentResult['error']}'),
+            content: Text('Payment-Erstellung fehlgeschlagen: ${paymentResult['error']}'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (error) {
       if (!mounted) return;
-      Navigator.pop(context); // Schließe Loading Dialog
+      Navigator.pop(context); // Schliesse Loading Dialog
       
-      debugPrint('❌ Payment Process Exception: $error');
+      debugPrint('Payment Process Exception: $error');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Unerwarteter Fehler: $error'),
+          content: Text('Unerwarteter Fehler: $error'),
           backgroundColor: Colors.red,
         ),
       );
@@ -966,7 +957,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
             SizedBox(width: 16),
-            Text('💳 Payment wird verarbeitet...'),
+            Text('Payment wird verarbeitet...'),
           ],
         ),
         backgroundColor: TaskiloColors.primary,
@@ -975,131 +966,56 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
 
     try {
-      debugPrint('🔄 Confirming payment: ${paymentData['paymentIntentId']}');
+      debugPrint('Confirming payment: ${paymentData['orderId']}');
       
-      // Bestätige Payment über die API
-      final confirmResult = await StripePaymentService.confirmAdditionalHoursPayment(
-        paymentIntentId: paymentData['paymentIntentId'],
-        orderId: paymentData['orderId'],
-        timeEntryIds: timeEntryIds,
-      );
+      // Bestaetigung: Oeffne Checkout-URL
+      final checkoutUrl = paymentData['checkoutUrl'] as String?;
+      if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
+        final uri = Uri.parse(checkoutUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-      if (confirmResult['success']) {
-        final data = confirmResult['data'];
-        
-        debugPrint('✅ Payment confirmed successfully');
-        debugPrint('💰 Provider receives: ${data['providerNetAmount']}¢');
-        debugPrint('🏦 Transfer ID: ${data['stripeTransferId']}');
-        
-        // Protokolliere die Transaktion für Auditing
-        await StripePaymentService.logPaymentTransaction(paymentData: {
-          'paymentIntentId': data['paymentIntentId'],
-          'orderId': data['orderId'],
-          'timeEntryIds': timeEntryIds,
-          'transferAmount': data['transferAmount'],
-          'platformFee': data['platformFee'],
-          'providerNetAmount': data['providerNetAmount'],
-          'stripeTransferId': data['stripeTransferId'],
-          'approvedHours': data['approvedHours'],
-          'paymentStatus': 'confirmed',
-          'customerId': paymentData['customerId'],
-          'providerId': paymentData['providerId'],
-        });
-        
-        // Zeige Success Message
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${data['message']}'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-        
-        // Lade Order-Daten neu
-        await _loadOrderData();
-        
-        // Zeige finalen Success Dialog
-        _showFinalSuccessDialog(data);
-      } else {
-            if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Payment-Bestätigung fehlgeschlagen: ${confirmResult['error']}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Protokolliere die Transaktion in Firestore
+      await firestore.FirebaseFirestore.instance
+          .collection('paymentLogs')
+          .add({
+        'orderId': paymentData['orderId'],
+        'timeEntryIds': timeEntryIds,
+        'paymentStatus': 'pending_checkout',
+        'customerId': paymentData['customerId'],
+        'providerId': paymentData['providerId'],
+        'createdAt': firestore.FieldValue.serverTimestamp(),
+      });
+      
+      // Zeige Success Message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Zahlungsseite geoeffnet. Bitte schliessen Sie die Zahlung ab.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 5),
+        ),
+      );
+      
+      // Lade Order-Daten neu
+      await _loadOrderData();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
-      debugPrint('❌ Payment Confirmation Exception: $error');
+      debugPrint('Payment Confirmation Exception: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Unerwarteter Fehler: $error'),
+          content: Text('Unerwarteter Fehler: $error'),
           backgroundColor: Colors.red,
         ),
       );
     }
-  }
-
-  /// Zeigt finalen Success Dialog nach erfolgreicher Zahlung und Auszahlung
-  void _showFinalSuccessDialog(Map<String, dynamic> paymentData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green.shade600),
-            const SizedBox(width: 8),
-            const Text('🎉 Erfolgreich!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Zahlung und Auszahlung erfolgreich abgeschlossen!'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('✅ ${paymentData['approvedHours']}h wurden freigegeben'),
-                  Text('✅ €${(paymentData['providerNetAmount'] / 100).toStringAsFixed(2)} an Anbieter ausgezahlt'),
-                  Text('✅ Transfer ID: ${paymentData['stripeTransferId'].substring(0, 15)}...'),
-                  Text('✅ Platform Fee: €${(paymentData['platformFee'] / 100).toStringAsFixed(2)}'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Die zusätzlichen Stunden wurden erfolgreich freigegeben und das Geld wurde direkt an das Verbundkonto des Anbieters ausgezahlt.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: TaskiloColors.primary,
-            ),
-            child: const Text('Verstanden'),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Lädt die Auftragsdaten neu

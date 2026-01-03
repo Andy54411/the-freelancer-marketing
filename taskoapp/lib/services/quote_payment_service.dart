@@ -50,7 +50,7 @@ class QuotePaymentService {
           'currency': 'eur',
           'companyName': companyName,
           'customerFirebaseId': uid,
-          // customerStripeId wird automatisch geholt oder erstellt
+          // customerId wird automatisch geholt oder erstellt
         }),
       );
       
@@ -81,7 +81,7 @@ class QuotePaymentService {
   }
   
   /// Bestätigt eine erfolgreiche Quote-Zahlung
-  /// Dies wird normalerweise automatisch durch den Stripe Webhook erledigt
+  /// Dies wird normalerweise automatisch durch den Webhook erledigt
   static Future<Map<String, dynamic>> confirmQuotePayment({
     required String quoteId,
     required String paymentIntentId,

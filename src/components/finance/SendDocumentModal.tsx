@@ -6,6 +6,7 @@ import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import { doc, updateDoc } from 'firebase/firestore';
+import { TaxRuleType } from '@/types/taxRules';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -120,6 +121,9 @@ interface DocumentWithGoBD extends BaseDocument {
   amount?: number;
   vatRate?: number;
   eInvoiceData?: EInvoiceData;
+  // Steuerregelfelder fuer korrekte Speicherung
+  taxRuleLabel?: string;
+  isSmallBusiness?: boolean;
 }
 
 // Send options for email/download/print actions
@@ -1434,7 +1438,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           if (documentType === 'quote') collectionName = 'quotes';
           if (documentType === 'reminder') collectionName = 'reminders';
 
-          const docRef = doc(db, collectionName, invoiceId);
+          // KORREKTUR: Verwende Subcollection-Struktur companies/{companyId}/{collection}/{docId}
+          const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
@@ -1526,7 +1531,13 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             ...(sourceData.amount && { amount: sourceData.amount }),
             ...(sourceData.vatRate !== undefined && { vatRate: sourceData.vatRate }),
             ...(sourceData.currency && { currency: sourceData.currency }),
-            ...(sourceData.eInvoiceData && { eInvoiceData: sourceData.eInvoiceData })
+            ...(sourceData.eInvoiceData && { eInvoiceData: sourceData.eInvoiceData }),
+            // KRITISCH: Steuerregel muss gespeichert werden fuer korrekte Anzeige!
+            ...(sourceData.taxRule && { taxRule: sourceData.taxRule as TaxRuleType }),
+            ...(sourceData.taxRuleType && { taxRuleType: sourceData.taxRuleType as TaxRuleType }),
+            ...((sourceData as DocumentWithGoBD).taxRuleLabel && { taxRuleLabel: (sourceData as DocumentWithGoBD).taxRuleLabel }),
+            // Kleinunternehmer-Status ebenfalls speichern
+            ...((sourceData as DocumentWithGoBD).isSmallBusiness !== undefined && { isSmallBusiness: (sourceData as DocumentWithGoBD).isSmallBusiness })
           };
 
           // Speichere direkt in Firestore über den Service
