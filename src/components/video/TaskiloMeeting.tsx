@@ -834,11 +834,38 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       
       // Wenn Screen-Share beendet wird (User klickt "Stop sharing")
       videoTrack.onended = () => {
-        stopScreenShare();
+        // Inline stop logic statt stopScreenShare aufrufen (Closure-Problem vermeiden)
+        if (screenStreamRef.current) {
+          screenStreamRef.current.getTracks().forEach(track => track.stop());
+          screenStreamRef.current = null;
+        }
+        
+        // Zurück zur Kamera
+        if (localStreamRef.current && peerConnectionRef.current) {
+          const cameraTrack = localStreamRef.current.getVideoTracks()[0];
+          if (cameraTrack) {
+            const senderToReplace = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+            if (senderToReplace) {
+              senderToReplace.replaceTrack(cameraTrack);
+            }
+          }
+        }
+        
+        setScreenSharing(false);
+        setIsScreenShareApproved(false);
+        
+        // Benachrichtige andere Teilnehmer
+        wsRef.current?.send(JSON.stringify({
+          type: 'screen-share-stop',
+          payload: {},
+        }));
       };
       
     } catch (err) {
-      setError('Bildschirmfreigabe konnte nicht gestartet werden.');
+      // User hat abgebrochen oder Fehler - KEIN Error-State setzen bei Abbruch
+      if (err instanceof Error && err.name !== 'NotAllowedError') {
+        setError('Bildschirmfreigabe konnte nicht gestartet werden.');
+      }
     }
   }, []);
 
@@ -969,6 +996,50 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   }, [inviteEmail, room, userName]);
 
   // ============== EFFECTS ==============
+
+  // Session Storage Key für Meeting-Persistenz
+  const SESSION_STORAGE_KEY = 'taskilo_active_meeting';
+
+  // Speichere aktives Meeting in Session Storage
+  useEffect(() => {
+    if (room && meetingState === 'in-meeting') {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        roomCode: room.code,
+        roomId: room.id,
+        roomName: room.name,
+        roomUrl: room.url,
+        isHost,
+        timestamp: Date.now(),
+      }));
+    }
+  }, [room, meetingState, isHost]);
+
+  // Bei Page Load: Prüfe ob aktives Meeting wiederhergestellt werden soll
+  useEffect(() => {
+    const savedMeeting = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (savedMeeting && meetingState === 'idle' && !hasJoinedRef.current) {
+      try {
+        const meetingData = JSON.parse(savedMeeting);
+        // Nur wiederherstellen wenn nicht älter als 2 Stunden
+        if (Date.now() - meetingData.timestamp < 2 * 60 * 60 * 1000) {
+          hasJoinedRef.current = true;
+          joinMeeting(meetingData.roomCode);
+        } else {
+          // Altes Meeting entfernen
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      } catch {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    }
+  }, [meetingState, joinMeeting]);
+
+  // Bei Meeting-Ende: Session Storage löschen
+  useEffect(() => {
+    if (meetingState === 'ended') {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [meetingState]);
 
   // Auto-join effect - nur einmal ausführen
   useEffect(() => {
