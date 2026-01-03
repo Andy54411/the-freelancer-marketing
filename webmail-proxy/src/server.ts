@@ -21,6 +21,7 @@ import registrationRouter from './routes/registration';
 import profileRouter from './routes/profile';
 import phoneVerificationRouter from './routes/phone-verification';
 import newsletterRouter from './routes/newsletter';
+import { revolutProxyRouter } from './routes/revolut-proxy';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -179,6 +180,9 @@ app.use('/api/drive', driveRouter);
 
 // API Routes - Payment (Revolut Escrow System)
 app.use('/api/payment', paymentRouter);
+
+// API Routes - Revolut Proxy (alle Revolut API-Aufrufe über Hetzner)
+app.use('/api/revolut-proxy', revolutProxyRouter);
 
 // Error Handler (ohne Stack Trace in Production)
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {

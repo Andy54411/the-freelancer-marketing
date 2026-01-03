@@ -90,24 +90,52 @@ ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d 
 
 ---
 
-## REVOLUT BUSINESS API (KRITISCH - IP-WHITELISTING!)
+## REVOLUT BUSINESS API (KOMPLETT AUF HETZNER!)
 
-### Grundlagen
+### Architektur
 | Was | Details |
 |-----|---------|
-| **API Endpunkt** | `https://b2b.revolut.com/api/1.0` (NICHT business.revolut.com!) |
-| **Webhooks API** | `https://b2b.revolut.com/api/2.0/webhooks` |
-| **OAuth Token** | `https://b2b.revolut.com/api/1.0/auth/token` |
+| **Hetzner API** | `https://mail.taskilo.de/webmail-api/api/revolut-proxy/*` |
 | **Whitelisted IP** | NUR `91.99.79.104` (Hetzner Server) |
-| **Webhook URL** | `https://taskilo.de/api/payment/revolut-business-webhook` |
-| **Private Key** | `/certs/revolut/private.key` |
+| **Private Key** | `/opt/taskilo/certs/revolut/private.key` (auf Hetzner) |
+| **Token Storage** | In-Memory + `.env` auf Hetzner |
+| **Auto-Refresh** | Tokens werden bei Bedarf automatisch erneuert |
 
-### WICHTIG: IP-Whitelisting
-- Revolut API erlaubt NUR Anfragen von whitelisted IPs
-- Lokaler Mac funktioniert NICHT (401 Unauthorized)
-- ALLE API-Aufrufe via Hetzner Server machen!
+### WICHTIG: ALLE Revolut-Aufrufe via Hetzner!
+- Vercel kann NICHT direkt mit Revolut kommunizieren (IP-Whitelist)
+- Alle APIs sind auf Hetzner implementiert
+- Vercel-Routen leiten an Hetzner weiter
 
-### Token erneuern (Access Token läuft nach 40 Min ab)
+### Hetzner Revolut API Endpunkte:
+```
+GET  /health           - Status Check
+POST /refresh-token    - Token erneuern
+POST /token-exchange   - Auth Code gegen Token tauschen
+GET  /accounts         - Alle Konten
+GET  /transactions     - Transaktionen
+GET  /webhooks         - Webhooks auflisten
+POST /webhooks         - Webhook registrieren
+DELETE /webhooks/:id   - Webhook loeschen
+GET  /counterparties   - Counterparties
+GET  /exchange-rate    - Wechselkurse
+GET  /team-members     - Team Mitglieder
+GET  /payout-links     - Payout Links
+POST /api              - Generischer API Proxy
+POST /set-tokens       - Tokens manuell setzen
+```
+
+### Vercel Client Service:
+```typescript
+import { revolutHetznerProxy } from '@/lib/revolut-hetzner-proxy';
+
+// Beispiele:
+const accounts = await revolutHetznerProxy.getAccounts();
+const webhooks = await revolutHetznerProxy.getWebhooks();
+const transactions = await revolutHetznerProxy.getTransactions({ count: 10 });
+await revolutHetznerProxy.refreshToken();
+```
+
+### Token manuell erneuern (Notfall)
 
 **1. JWT Client Assertion erstellen:**
 ```bash

@@ -458,13 +458,6 @@ const getCompanyApps = (companyId: string): AppItem[] => [
 ];
 
 export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode }: AppLauncherProps) {
-  appLauncherLog('RENDER_START', { 
-    hasTheme, 
-    hasCompanyId: !!companyId, 
-    isDarkMode,
-    isServer: typeof window === 'undefined'
-  });
-  
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -473,8 +466,6 @@ export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode
   
   // isDarkMode Prop hat Priorität, sonst Theme-Context
   const isDark = isDarkMode !== undefined ? isDarkMode : themeIsDark;
-  
-  appLauncherLog('STATE_INITIALIZED', { isOpen, isAdmin, isDark });
   
   // Wenn ein Hintergrundbild-Theme aktiv ist, verwende helle Farben
   const useWhiteIcons = hasTheme;
