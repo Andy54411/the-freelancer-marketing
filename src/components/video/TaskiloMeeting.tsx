@@ -11,15 +11,40 @@ import {
   Users,
   MessageSquare,
   Monitor,
+  MonitorOff,
   Settings,
   Copy,
   Check,
   Loader2,
   X,
+  Send,
+  Mail,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+
+// ============== CHAT INTERFACE ==============
+
+export interface ChatMessage {
+  id: string;
+  participantId: string;
+  userName: string;
+  message: string;
+  timestamp: string;
+  isOwn?: boolean;
+}
+
+// ============== SCREEN SHARE REQUEST ==============
+
+export interface ScreenShareRequest {
+  participantId: string;
+  userName: string;
+  timestamp: number;
+}
 
 // ============== INTERFACES ==============
 
@@ -134,7 +159,24 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   // UI State
   const [showParticipantPanel, setShowParticipantPanel] = useState(false);
   const [showChatPanel, setShowChatPanel] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Screen Share Request State (nur für Host)
+  const [screenShareRequests, setScreenShareRequests] = useState<ScreenShareRequest[]>([]);
+  const [isScreenShareApproved, setIsScreenShareApproved] = useState(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  
+  // Mail Invite State
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   
   // WebRTC State
   const [iceServers, setIceServers] = useState<RTCIceServer[]>([]);
@@ -276,6 +318,54 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
       case 'pong':
         // Server hat auf unseren Ping geantwortet (falls wir jemals client-seitig pingen)
+        break;
+
+      // ============== CHAT HANDLING ==============
+      case 'chat-message': {
+        const newMessage: ChatMessage = {
+          id: message.payload.messageId as string,
+          participantId: message.payload.participantId as string,
+          userName: message.payload.userName as string,
+          message: message.payload.message as string,
+          timestamp: message.timestamp as string || new Date().toISOString(),
+          isOwn: message.payload.participantId === myParticipantIdRef.current,
+        };
+        setChatMessages(prev => [...prev, newMessage]);
+        // Unread-Counter erhöhen wenn Chat nicht offen ist
+        if (!showChatPanel) {
+          setUnreadMessages(prev => prev + 1);
+        }
+        // Auto-scroll zum Ende
+        setTimeout(() => {
+          chatContainerRef.current?.scrollTo({
+            top: chatContainerRef.current.scrollHeight,
+            behavior: 'smooth',
+          });
+        }, 100);
+        break;
+      }
+
+      // ============== SCREEN SHARE PERMISSION HANDLING ==============
+      case 'screen-share-request':
+        // Host bekommt Anfrage zum Bildschirm-Teilen
+        if (isHost) {
+          setScreenShareRequests(prev => [...prev, {
+            participantId: message.payload.participantId as string,
+            userName: message.payload.userName as string,
+            timestamp: Date.now(),
+          }]);
+        }
+        break;
+
+      case 'screen-share-approved':
+        // Teilnehmer bekommt Genehmigung
+        setIsScreenShareApproved(true);
+        break;
+
+      case 'screen-share-denied':
+        // Teilnehmer bekommt Ablehnung
+        setIsScreenShareApproved(false);
+        setError('Der Host hat deine Bildschirmfreigabe-Anfrage abgelehnt.');
         break;
 
       // ============== LOBBY/JOIN REQUEST HANDLING ==============
@@ -663,6 +753,221 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     }
   }, [room]);
 
+  // ============== CHAT FUNCTIONS ==============
+
+  const sendChatMessage = useCallback(() => {
+    if (!chatInput.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'chat',
+      payload: {
+        message: chatInput.trim(),
+      },
+    }));
+    
+    setChatInput('');
+  }, [chatInput]);
+
+  const handleChatKeyPress = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
+  }, [sendChatMessage]);
+
+  // Reset unread counter when chat panel opens
+  useEffect(() => {
+    if (showChatPanel) {
+      setUnreadMessages(0);
+    }
+  }, [showChatPanel]);
+
+  // ============== SCREEN SHARE FUNCTIONS ==============
+
+  const requestScreenShare = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    // Host braucht keine Genehmigung
+    if (isHost) {
+      setIsScreenShareApproved(true);
+      startScreenShare();
+      return;
+    }
+    
+    // Teilnehmer fragen Host um Erlaubnis
+    wsRef.current.send(JSON.stringify({
+      type: 'screen-share-request',
+      payload: {},
+    }));
+  }, [isHost]);
+
+  const startScreenShare = useCallback(async () => {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+      
+      screenStreamRef.current = screenStream;
+      setScreenSharing(true);
+      
+      // Ersetze Video-Track in PeerConnection
+      const videoTrack = screenStream.getVideoTracks()[0];
+      const pc = peerConnectionRef.current;
+      
+      if (pc && videoTrack) {
+        const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+        }
+      }
+      
+      // Benachrichtige andere Teilnehmer
+      wsRef.current?.send(JSON.stringify({
+        type: 'screen-share-start',
+        payload: {},
+      }));
+      
+      // Wenn Screen-Share beendet wird (User klickt "Stop sharing")
+      videoTrack.onended = () => {
+        stopScreenShare();
+      };
+      
+    } catch (err) {
+      setError('Bildschirmfreigabe konnte nicht gestartet werden.');
+    }
+  }, []);
+
+  const stopScreenShare = useCallback(async () => {
+    // Screen-Stream stoppen
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+    }
+    
+    // Zurück zur Kamera
+    if (localStreamRef.current && peerConnectionRef.current) {
+      const cameraTrack = localStreamRef.current.getVideoTracks()[0];
+      if (cameraTrack) {
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(cameraTrack);
+        }
+      }
+    }
+    
+    setScreenSharing(false);
+    setIsScreenShareApproved(false);
+    
+    // Benachrichtige andere Teilnehmer
+    wsRef.current?.send(JSON.stringify({
+      type: 'screen-share-stop',
+      payload: {},
+    }));
+  }, []);
+
+  const toggleScreenShare = useCallback(() => {
+    if (screenSharing) {
+      stopScreenShare();
+    } else if (isHost || isScreenShareApproved) {
+      startScreenShare();
+    } else {
+      requestScreenShare();
+    }
+  }, [screenSharing, isHost, isScreenShareApproved, startScreenShare, stopScreenShare, requestScreenShare]);
+
+  // Host genehmigt Screen-Share-Anfrage
+  const approveScreenShare = useCallback((participantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'approve-screen-share',
+      payload: {
+        requestingParticipantId: participantId,
+      },
+    }));
+    
+    // Aus der Liste entfernen
+    setScreenShareRequests(prev => prev.filter(r => r.participantId !== participantId));
+  }, []);
+
+  // Host lehnt Screen-Share-Anfrage ab
+  const denyScreenShare = useCallback((participantId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'deny-screen-share',
+      payload: {
+        requestingParticipantId: participantId,
+      },
+    }));
+    
+    // Aus der Liste entfernen
+    setScreenShareRequests(prev => prev.filter(r => r.participantId !== participantId));
+  }, []);
+
+  // ============== MAIL INVITE FUNCTIONS ==============
+
+  const sendMailInvite = useCallback(async () => {
+    if (!inviteEmail.trim() || !room?.url) {
+      return;
+    }
+    
+    setInviteSending(true);
+    setInviteSuccess(null);
+    
+    try {
+      const response = await fetch('/api/webmail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: inviteEmail.trim(),
+          subject: `Einladung zum Taskilo Meeting: ${room.name || room.code}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #0d9488;">Einladung zum Taskilo Meeting</h2>
+              <p>Hallo,</p>
+              <p><strong>${userName}</strong> lädt Sie zu einem Video-Meeting ein.</p>
+              <div style="background: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>Meeting:</strong> ${room.name || `Meeting ${room.code}`}</p>
+                <p style="margin: 0;"><strong>Meeting-Code:</strong> ${room.code}</p>
+              </div>
+              <a href="${room.url}" style="display: inline-block; background: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Jetzt beitreten</a>
+              <p style="margin-top: 20px; color: #666; font-size: 14px;">Oder kopieren Sie diesen Link: <a href="${room.url}">${room.url}</a></p>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;" />
+              <p style="color: #999; font-size: 12px;">Diese Einladung wurde über Taskilo verschickt.</p>
+            </div>
+          `,
+          text: `${userName} lädt Sie zu einem Taskilo Meeting ein.\n\nMeeting: ${room.name || room.code}\nMeeting-Code: ${room.code}\n\nJetzt beitreten: ${room.url}`,
+          fromName: userName,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Einladung konnte nicht gesendet werden');
+      }
+      
+      setInviteSuccess(`Einladung an ${inviteEmail} gesendet`);
+      setInviteEmail('');
+      setTimeout(() => setInviteSuccess(null), 3000);
+      
+    } catch (err) {
+      setError('E-Mail-Einladung konnte nicht gesendet werden.');
+    } finally {
+      setInviteSending(false);
+    }
+  }, [inviteEmail, room, userName]);
+
   // ============== EFFECTS ==============
 
   // Auto-join effect - nur einmal ausführen
@@ -805,145 +1110,345 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
   // In Meeting State
   return (
-    <div className={cn('flex flex-col h-full min-h-[500px] bg-gray-900', className)}>
-      {/* Meeting Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-medium">{room?.name || `Meeting ${room?.code}`}</span>
+    <div className={cn('flex h-full min-h-[500px] bg-gray-900', className)}>
+      {/* Main Content */}
+      <div className="flex flex-col flex-1">
+        {/* Meeting Header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
+          <div className="flex items-center gap-3">
+            <span className="text-white font-medium">{room?.name || `Meeting ${room?.code}`}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={copyMeetingLink}
+              className="text-gray-300 hover:text-white"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowInviteModal(true)}
+              className="text-gray-300 hover:text-white"
+            >
+              <Mail className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2 text-gray-300">
+            <Users className="w-4 h-4" />
+            <span>{participants.length + 1}</span>
+          </div>
+        </div>
+
+        {/* Screen Share Requests Banner (nur für Host) */}
+        {isHost && screenShareRequests.length > 0 && (
+          <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2">
+            {screenShareRequests.map((request) => (
+              <div key={request.participantId} className="flex items-center justify-between text-sm">
+                <span className="text-yellow-200">
+                  <strong>{request.userName}</strong> möchte den Bildschirm teilen
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => approveScreenShare(request.participantId)}
+                    className="bg-green-600 hover:bg-green-700 text-white h-7 px-3"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Erlauben
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => denyScreenShare(request.participantId)}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/20 h-7 px-3"
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Ablehnen
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Video Grid */}
+        <div className="flex-1 relative p-4 min-h-0">
+          {/* Remote Video (Main) */}
+          <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden">
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            {participants.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90">
+                <Users className="w-16 h-16 text-gray-500 mb-4" />
+                <p className="text-gray-400 text-lg">Warte auf Teilnehmer...</p>
+                <p className="text-gray-500 text-sm mt-2">Teile den Meeting-Link um andere einzuladen</p>
+              </div>
+            )}
+          </div>
+
+          {/* Local Video (PiP) */}
+          <div className="absolute bottom-6 right-6 w-48 h-36 bg-gray-700 rounded-lg overflow-hidden shadow-lg">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover scale-x-[-1]"
+            />
+            {!videoEnabled && (
+              <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                {userAvatarUrl ? (
+                  <Image src={userAvatarUrl} alt={userName} width={48} height={48} className="rounded-full" />
+                ) : (
+                  <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            )}
+            {screenSharing && (
+              <div className="absolute top-2 left-2 bg-teal-500 text-white text-xs px-2 py-1 rounded">
+                Bildschirm wird geteilt
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-4 p-4 bg-gray-800">
           <Button
             variant="ghost"
-            size="sm"
-            onClick={copyMeetingLink}
-            className="text-gray-300 hover:text-white"
+            size="lg"
+            onClick={toggleAudio}
+            className={cn(
+              'rounded-full p-4',
+              audioEnabled ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500 text-white hover:bg-red-600'
+            )}
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {audioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
           </Button>
-        </div>
-        
-        <div className="flex items-center gap-2 text-gray-300">
-          <Users className="w-4 h-4" />
-          <span>{participants.length + 1}</span>
+
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={toggleVideo}
+            className={cn(
+              'rounded-full p-4',
+              videoEnabled ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500 text-white hover:bg-red-600'
+            )}
+          >
+            {videoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+          </Button>
+
+          {allowScreenShare && (
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={toggleScreenShare}
+              className={cn(
+                'rounded-full p-4',
+                screenSharing ? 'bg-teal-500 text-white hover:bg-teal-600' : 'bg-gray-700 text-white hover:bg-gray-600'
+              )}
+            >
+              {screenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
+            </Button>
+          )}
+
+          {showParticipants && (
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setShowParticipantPanel(!showParticipantPanel)}
+              className={cn(
+                'rounded-full p-4',
+                showParticipantPanel ? 'bg-teal-500 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
+              )}
+            >
+              <Users className="w-6 h-6" />
+            </Button>
+          )}
+
+          {showChat && (
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setShowChatPanel(!showChatPanel)}
+              className={cn(
+                'rounded-full p-4 relative',
+                showChatPanel ? 'bg-teal-500 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
+              )}
+            >
+              <MessageSquare className="w-6 h-6" />
+              {unreadMessages > 0 && !showChatPanel && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </Button>
+          )}
+
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={endMeeting}
+            className="rounded-full p-4 bg-red-500 text-white hover:bg-red-600"
+          >
+            <PhoneOff className="w-6 h-6" />
+          </Button>
         </div>
       </div>
 
-      {/* Video Grid */}
-      <div className="flex-1 relative p-4 min-h-0">
-        {/* Remote Video (Main) */}
-        <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          {participants.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90">
-              <Users className="w-16 h-16 text-gray-500 mb-4" />
-              <p className="text-gray-400 text-lg">Warte auf Teilnehmer...</p>
-              <p className="text-gray-500 text-sm mt-2">Teile den Meeting-Link um andere einzuladen</p>
+      {/* Chat Panel (rechts) */}
+      {showChatPanel && (
+        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+          <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+            <h3 className="text-white font-medium">Chat</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowChatPanel(false)}
+              className="text-gray-400 hover:text-white p-1"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Chat Messages */}
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+          >
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-gray-500 text-sm py-8">
+                Noch keine Nachrichten
+              </div>
+            ) : (
+              chatMessages.map((msg) => (
+                <div 
+                  key={msg.id}
+                  className={cn(
+                    'flex flex-col',
+                    msg.isOwn ? 'items-end' : 'items-start'
+                  )}
+                >
+                  <span className="text-xs text-gray-500 mb-1">
+                    {msg.isOwn ? 'Du' : msg.userName}
+                  </span>
+                  <div
+                    className={cn(
+                      'px-3 py-2 rounded-lg max-w-[85%] break-words',
+                      msg.isOwn 
+                        ? 'bg-teal-600 text-white' 
+                        : 'bg-gray-700 text-gray-100'
+                    )}
+                  >
+                    {msg.message}
+                  </div>
+                  <span className="text-xs text-gray-600 mt-1">
+                    {new Date(msg.timestamp).toLocaleTimeString('de-DE', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {/* Chat Input */}
+          <div className="p-3 border-t border-gray-700">
+            <div className="flex gap-2">
+              <Input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleChatKeyPress}
+                placeholder="Nachricht schreiben..."
+                className="flex-1 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+              />
+              <Button
+                onClick={sendChatMessage}
+                disabled={!chatInput.trim()}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-3"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
-          )}
+          </div>
         </div>
+      )}
 
-        {/* Local Video (PiP) */}
-        <div className="absolute bottom-6 right-6 w-48 h-36 bg-gray-700 rounded-lg overflow-hidden shadow-lg">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover scale-x-[-1]"
-          />
-          {!videoEnabled && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-              {userAvatarUrl ? (
-                <Image src={userAvatarUrl} alt={userName} width={48} height={48} className="rounded-full" />
-              ) : (
-                <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold">
-                  {userName.charAt(0).toUpperCase()}
+      {/* Mail Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Per E-Mail einladen</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-500 hover:text-gray-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Sende eine Einladung per E-Mail an einen Teilnehmer.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-Mail-Adresse
+                </label>
+                <Input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full"
+                />
+              </div>
+              
+              {inviteSuccess && (
+                <div className="flex items-center gap-2 text-green-600 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  {inviteSuccess}
                 </div>
               )}
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1"
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={sendMailInvite}
+                  disabled={!inviteEmail.trim() || inviteSending}
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  {inviteSending ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Mail className="w-4 h-4 mr-2" />
+                  )}
+                  Einladung senden
+                </Button>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4 p-4 bg-gray-800">
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={toggleAudio}
-          className={cn(
-            'rounded-full p-4',
-            audioEnabled ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500 text-white hover:bg-red-600'
-          )}
-        >
-          {audioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={toggleVideo}
-          className={cn(
-            'rounded-full p-4',
-            videoEnabled ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500 text-white hover:bg-red-600'
-          )}
-        >
-          {videoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-        </Button>
-
-        {allowScreenShare && (
-          <Button
-            variant="ghost"
-            size="lg"
-            className={cn(
-              'rounded-full p-4',
-              screenSharing ? 'bg-teal-500 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
-            )}
-          >
-            <Monitor className="w-6 h-6" />
-          </Button>
-        )}
-
-        {showParticipants && (
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setShowParticipantPanel(!showParticipantPanel)}
-            className={cn(
-              'rounded-full p-4',
-              showParticipantPanel ? 'bg-teal-500 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
-            )}
-          >
-            <Users className="w-6 h-6" />
-          </Button>
-        )}
-
-        {showChat && (
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setShowChatPanel(!showChatPanel)}
-            className={cn(
-              'rounded-full p-4',
-              showChatPanel ? 'bg-teal-500 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
-            )}
-          >
-            <MessageSquare className="w-6 h-6" />
-          </Button>
-        )}
-
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={endMeeting}
-          className="rounded-full p-4 bg-red-500 text-white hover:bg-red-600"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </Button>
-      </div>
+      )}
     </div>
   );
 };

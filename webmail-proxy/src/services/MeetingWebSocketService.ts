@@ -40,6 +40,10 @@ interface MeetingWSMessage {
     | 'request-join'
     | 'approve-join'
     | 'deny-join'
+    // Screen Share Permission Messages
+    | 'screen-share-request'
+    | 'approve-screen-share'
+    | 'deny-screen-share'
     // Meeting-Ende
     | 'end-meeting';
   payload?: {
@@ -251,6 +255,16 @@ class MeetingWebSocketService {
           break;
         case 'deny-join':
           await this.handleDenyJoin(participantId, message.payload);
+          break;
+        // Screen Share Permission Messages
+        case 'screen-share-request':
+          await this.handleScreenShareRequest(participantId);
+          break;
+        case 'approve-screen-share':
+          await this.handleApproveScreenShare(participantId, message.payload);
+          break;
+        case 'deny-screen-share':
+          await this.handleDenyScreenShare(participantId, message.payload);
           break;
         case 'end-meeting':
           await this.handleEndMeeting(participantId);
@@ -715,6 +729,120 @@ class MeetingWebSocketService {
     this.roomClients.delete(roomCode);
 
     console.log(`[Meeting WS] Meeting ${roomCode} ended by host ${participantId} (${client.userName})`);
+  }
+
+  // ==================== Screen Share Permission Handlers ====================
+
+  /**
+   * Teilnehmer möchte Bildschirm teilen - benachrichtigt den Host
+   */
+  private async handleScreenShareRequest(participantId: string): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode) {
+      console.log(`[Meeting WS] handleScreenShareRequest: No room for ${participantId}`);
+      return;
+    }
+
+    // Finde den Host des Raums
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) {
+      return;
+    }
+
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const hostParticipant = participants.find(p => p.role === 'host');
+    
+    if (!hostParticipant) {
+      // Kein Host - automatisch genehmigen
+      this.sendToClient(participantId, {
+        type: 'screen-share-approved',
+        payload: {},
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Benachrichtige den Host
+    this.sendToClient(hostParticipant.id, {
+      type: 'screen-share-request',
+      payload: {
+        participantId,
+        userName: client.userName,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Screen share request from ${client.userName} (${participantId}), notified host ${hostParticipant.id}`);
+  }
+
+  /**
+   * Host genehmigt Bildschirmfreigabe
+   */
+  private async handleApproveScreenShare(
+    participantId: string,
+    payload?: { requestingParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.requestingParticipantId) {
+      return;
+    }
+
+    // Prüfe ob der Sender der Host ist
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) return;
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    if (senderParticipant?.role !== 'host') {
+      console.log(`[Meeting WS] handleApproveScreenShare: ${participantId} is not the host`);
+      return;
+    }
+
+    // Sende Genehmigung
+    this.sendToClient(payload.requestingParticipantId, {
+      type: 'screen-share-approved',
+      payload: {},
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} approved screen share from ${payload.requestingParticipantId}`);
+  }
+
+  /**
+   * Host lehnt Bildschirmfreigabe ab
+   */
+  private async handleDenyScreenShare(
+    participantId: string,
+    payload?: { requestingParticipantId?: string }
+  ): Promise<void> {
+    const client = this.clients.get(participantId);
+    if (!client?.roomCode || !payload?.requestingParticipantId) {
+      return;
+    }
+
+    // Prüfe ob der Sender der Host ist
+    const roomInfo = meetingRoomService.getRoomByCode(client.roomCode);
+    if (!roomInfo) return;
+    
+    const participants = meetingRoomService.getRoomParticipants(roomInfo.id);
+    const senderParticipant = participants.find(p => p.id === participantId);
+    
+    if (senderParticipant?.role !== 'host') {
+      console.log(`[Meeting WS] handleDenyScreenShare: ${participantId} is not the host`);
+      return;
+    }
+
+    // Sende Ablehnung
+    this.sendToClient(payload.requestingParticipantId, {
+      type: 'screen-share-denied',
+      payload: {
+        message: 'Der Host hat deine Bildschirmfreigabe-Anfrage abgelehnt.',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Meeting WS] Host ${participantId} denied screen share from ${payload.requestingParticipantId}`);
   }
 
   /**
