@@ -378,9 +378,9 @@ export default function WebmailMeetPage() {
 
   // Lobby-Ansicht - Google Meet Style
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* Linke Sidebar */}
-      <div className={`w-64 flex-shrink-0 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
+    <div className={`min-h-screen flex flex-col md:flex-row ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* Linke Sidebar - Desktop */}
+      <div className={`hidden md:block w-64 flex-shrink-0 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
         {/* Logo */}
         <div className="p-4 flex items-center gap-2">
           <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
@@ -419,10 +419,35 @@ export default function WebmailMeetPage() {
         </nav>
       </div>
 
+      {/* Mobile Header */}
+      <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+            <Video className="w-4 h-4 text-white" />
+          </div>
+          <span className={`text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            Taskilo Meet
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/webmail')}
+            className={`p-2 rounded-full ${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
+          {session?.email && (
+            <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              {session.email.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Hauptbereich */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className={`h-16 flex items-center justify-end px-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+        {/* Header - Desktop */}
+        <div className={`hidden md:flex h-16 items-center justify-end px-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="flex items-center gap-4">
             <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               {new Date().toLocaleDateString('de-DE', { 
@@ -440,42 +465,42 @@ export default function WebmailMeetPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8">
           <div className="max-w-3xl w-full">
             {/* Titel */}
-            <div className="text-center mb-12">
-              <h1 className={`text-4xl font-normal mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            <div className="text-center mb-8 md:mb-12">
+              <h1 className={`text-2xl md:text-4xl font-normal mb-3 md:mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                 Videoanrufe und
-                <br />
-                -konferenzen für alle
+                <br className="hidden md:block" />
+                <span className="md:hidden"> </span>-konferenzen für alle
               </h1>
-              <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-sm md:text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 Mit Taskilo Meet kommunizieren, zusammenarbeiten und
-                <br />
-                Kunden treffen - egal, wo Sie gerade sind
+                <br className="hidden md:block" />
+                <span className="md:hidden"> </span>Kunden treffen - egal, wo Sie gerade sind
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-center gap-4 mb-16">
+            {/* Action Buttons - Mobile: Stack, Desktop: Row */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 md:mb-16">
               {/* Neue Videokonferenz */}
               <Button 
                 onClick={() => setShowCreateModal(true)}
-                className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-6 text-base rounded-md flex items-center gap-2"
+                className="w-full md:w-auto bg-teal-500 hover:bg-teal-600 text-white px-6 py-5 md:py-6 text-base rounded-md flex items-center justify-center gap-2"
               >
                 <Video className="w-5 h-5" />
                 Neue Videokonferenz
               </Button>
 
-              {/* Code eingeben */}
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              {/* Code eingeben - Mobile: Full width */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-none">
                   <Input
                     placeholder="Code oder Link eingeben"
                     value={joinRoomCode}
                     onChange={(e) => setJoinRoomCode(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && joinRoomCode.trim() && handleJoinMeeting()}
-                    className={`w-64 pl-10 py-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
+                    className={`w-full md:w-64 pl-10 py-5 md:py-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
                   />
                   <Users className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
                 </div>
@@ -483,7 +508,7 @@ export default function WebmailMeetPage() {
                   variant="ghost"
                   onClick={handleJoinMeeting}
                   disabled={!joinRoomCode.trim()}
-                  className={`py-6 ${joinRoomCode.trim() ? 'text-teal-600 hover:text-teal-700' : 'text-gray-400'}`}
+                  className={`py-5 md:py-6 ${joinRoomCode.trim() ? 'text-teal-600 hover:text-teal-700' : 'text-gray-400'}`}
                 >
                   Teilnehmen
                 </Button>
@@ -491,34 +516,34 @@ export default function WebmailMeetPage() {
             </div>
 
             {/* Trennlinie */}
-            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} mb-8`} />
+            <div className={`border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} mb-6 md:mb-8`} />
 
-            {/* Features Carousel Placeholder */}
+            {/* Features Carousel Placeholder - kleiner auf Mobile */}
             <div className="flex items-center justify-center">
-              <div className={`w-80 h-80 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'} flex items-center justify-center`}>
-                <div className="grid grid-cols-2 gap-4 p-8">
-                  <div className="w-24 h-24 bg-pink-200 rounded-lg flex items-center justify-center">
-                    <User className="w-12 h-12 text-pink-600" />
+              <div className={`w-48 h-48 md:w-80 md:h-80 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'} flex items-center justify-center`}>
+                <div className="grid grid-cols-2 gap-2 md:gap-4 p-4 md:p-8">
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-pink-200 rounded-lg flex items-center justify-center">
+                    <User className="w-8 h-8 md:w-12 md:h-12 text-pink-600" />
                   </div>
-                  <div className="w-24 h-24 bg-yellow-200 rounded-lg flex items-center justify-center">
-                    <User className="w-12 h-12 text-yellow-600" />
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-yellow-200 rounded-lg flex items-center justify-center">
+                    <User className="w-8 h-8 md:w-12 md:h-12 text-yellow-600" />
                   </div>
-                  <div className="w-24 h-24 bg-teal-200 rounded-lg flex items-center justify-center">
-                    <User className="w-12 h-12 text-teal-600" />
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-teal-200 rounded-lg flex items-center justify-center">
+                    <User className="w-8 h-8 md:w-12 md:h-12 text-teal-600" />
                   </div>
-                  <div className="w-24 h-24 bg-orange-200 rounded-lg flex items-center justify-center">
-                    <User className="w-12 h-12 text-orange-600" />
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-orange-200 rounded-lg flex items-center justify-center">
+                    <User className="w-8 h-8 md:w-12 md:h-12 text-orange-600" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Feature Text */}
-            <div className="text-center mt-8">
-              <p className={`text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            <div className="text-center mt-6 md:mt-8">
+              <p className={`text-base md:text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                 Sichere Video-Meetings
               </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-xs md:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 HD Video, Bildschirmfreigabe, bis zu 10 Teilnehmer
               </p>
             </div>
