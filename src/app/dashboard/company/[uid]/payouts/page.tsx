@@ -559,6 +559,9 @@ export default function PayoutOverviewPage() {
                           ? 'Sofortige kostenlose Auszahlungen freigeschaltet'
                           : `Standard: ${escrowData.payoutConfig.clearingDays} Tage Wartezeit | Express: ${escrowData.payoutConfig.expressDays} Tage (${escrowData.payoutConfig.expressFeePercent}% Gebühr)`}
                       </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Taskilo Platform-Gebühr: {escrowData.payoutConfig.platformFeePercent}% (wird bei Auftragszahlung abgezogen)
+                      </p>
                     </div>
                   </div>
                   {escrowData.payoutConfig.isInstantPayout && (

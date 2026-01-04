@@ -176,6 +176,7 @@ export interface PayoutConfig {
   expressDays: number;         // Express-Wartezeit in Tagen
   expressFeePercent: number;   // Express-Gebühr in Prozent (z.B. 4.5 = 4,5%)
   standardFeePercent: number;  // Standard-Gebühr in Prozent (0 = kostenlos)
+  platformFeePercent: number;  // Taskilo Platform-Gebühr in Prozent
 }
 
 export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
@@ -185,6 +186,7 @@ export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
     expressDays: 2,
     expressFeePercent: 4.5,
     standardFeePercent: 0,
+    platformFeePercent: 15,    // 15% Platform-Gebühr für neue Unternehmen
   },
   level1: {
     clearingDays: 7,
@@ -192,6 +194,7 @@ export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
     expressDays: 2,
     expressFeePercent: 4.5,
     standardFeePercent: 0,
+    platformFeePercent: 15,    // 15% Platform-Gebühr für Level 1
   },
   level2: {
     clearingDays: 0, // Sofortige Auszahlung
@@ -199,6 +202,7 @@ export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
     expressDays: 0,
     expressFeePercent: 0,
     standardFeePercent: 0,
+    platformFeePercent: 10,    // 10% Platform-Gebühr für Level 2
   },
   top_rated: {
     clearingDays: 0, // Sofortige Auszahlung
@@ -206,6 +210,7 @@ export const PAYOUT_CONFIG: Record<TaskiloLevel, PayoutConfig> = {
     expressDays: 0,
     expressFeePercent: 0,
     standardFeePercent: 0,
+    platformFeePercent: 10,    // 10% Platform-Gebühr für Top Rated
   },
 };
 

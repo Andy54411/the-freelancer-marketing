@@ -57,4 +57,35 @@ router.post('/master', async (req, res) => {
   }
 });
 
+/**
+ * Send with Attachment Route - für E-Mails mit PDF-Anhängen
+ * Unterstützt größere Payloads (bis 25MB)
+ */
+router.post('/with-attachment', async (req, res) => {
+  try {
+    const { email, password, ...emailData } = SendRequestSchema.parse(req.body);
+    
+    // Validate that attachments are provided
+    if (!emailData.attachments || emailData.attachments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No attachments provided. Use /api/send for emails without attachments.',
+      });
+    }
+    
+    const emailService = new EmailService({ email, password });
+    const result = await emailService.sendEmail(emailData);
+    
+    res.json({
+      success: true,
+      messageId: result.messageId,
+      attachmentCount: emailData.attachments.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to send email with attachment';
+    console.error('[Send With Attachment] Error:', message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
 export { router as sendRouter };

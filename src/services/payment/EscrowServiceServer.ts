@@ -7,6 +7,7 @@
 
 import { db } from '@/firebase/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { type TaskiloLevel, PAYOUT_CONFIG } from '@/services/TaskiloLevelService';
 
 // ============================================================================
 // TYPES
@@ -58,7 +59,26 @@ export interface CreateEscrowParams {
 export class EscrowServiceServer {
   private static COLLECTION = 'escrows';
   private static DEFAULT_CLEARING_DAYS = 14;
-  private static DEFAULT_PLATFORM_FEE_PERCENT = 10;
+
+  /**
+   * Holt die Platform-Gebühr basierend auf dem Provider-Level
+   * - new/level1: 15%
+   * - level2/top_rated: 10%
+   */
+  static async getPlatformFeePercent(providerId: string): Promise<number> {
+    try {
+      const companyDoc = await db.collection('companies').doc(providerId).get();
+      if (!companyDoc.exists) {
+        return 15; // Default für neue Unternehmen
+      }
+      
+      const companyData = companyDoc.data();
+      const taskerLevel = (companyData?.taskerLevel?.currentLevel || 'new') as TaskiloLevel;
+      return PAYOUT_CONFIG[taskerLevel].platformFeePercent;
+    } catch {
+      return 15; // Default bei Fehler
+    }
+  }
 
   /**
    * Erstellt einen neuen Escrow-Eintrag (Server-seitig mit Admin SDK)
@@ -72,10 +92,13 @@ export class EscrowServiceServer {
       amount,
       currency = 'EUR',
       clearingDays = this.DEFAULT_CLEARING_DAYS,
-      platformFeePercent = this.DEFAULT_PLATFORM_FEE_PERCENT,
+      platformFeePercent: explicitFeePercent,
       description,
       metadata,
     } = params;
+
+    // Hole Level-basierte Platform-Gebühr wenn nicht explizit angegeben
+    const platformFeePercent = explicitFeePercent ?? await this.getPlatformFeePercent(providerId);
 
     const platformFee = Math.round(amount * (platformFeePercent / 100) * 100) / 100;
     const providerAmount = Math.round((amount - platformFee) * 100) / 100;

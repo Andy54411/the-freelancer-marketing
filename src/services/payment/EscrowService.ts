@@ -10,6 +10,9 @@
  * - Käufer bestätigt früher → Vorzeitige Freigabe
  * - Käufer disputet → Manuelle Prüfung
  * - Käufer refundiert → Rückerstattung
+ * 
+ * HINWEIS: Für Server-seitige Operationen (API Routes) bitte EscrowServiceServer verwenden.
+ * Dieser Client-Service kann kein Level-basiertes platformFeePercent berechnen.
  */
 
 import { 
@@ -97,10 +100,15 @@ export interface EscrowSummary {
 export class EscrowService {
   private static COLLECTION = 'escrows';
   private static DEFAULT_CLEARING_DAYS = 14;
-  private static DEFAULT_PLATFORM_FEE_PERCENT = 10; // 10% Taskilo Provision
+  // Platform-Gebühr wird Level-basiert in EscrowServiceServer berechnet
+  // Dieser Default ist nur für Fallback
+  private static DEFAULT_PLATFORM_FEE_PERCENT = 15; // 15% für neue Unternehmen
 
   /**
    * Erstellt einen neuen Escrow-Eintrag
+   * 
+   * HINWEIS: Für Server-seitige Operationen mit Level-basierter Gebühr
+   * bitte EscrowServiceServer.create() verwenden.
    */
   static async create(params: CreateEscrowParams): Promise<EscrowRecord> {
     const {

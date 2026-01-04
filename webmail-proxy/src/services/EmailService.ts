@@ -12,6 +12,13 @@ export const EmailCredentialsSchema = z.object({
   smtpPort: z.number().default(587),
 });
 
+export const EmailAttachmentSchema = z.object({
+  filename: z.string(),
+  content: z.string(), // Base64 encoded content
+  encoding: z.literal('base64').optional().default('base64'),
+  contentType: z.string().optional().default('application/octet-stream'),
+});
+
 export const SendEmailSchema = z.object({
   to: z.union([z.string().email(), z.array(z.string().email())]),
   cc: z.array(z.string().email()).optional(),
@@ -22,6 +29,7 @@ export const SendEmailSchema = z.object({
   replyTo: z.string().email().optional(),
   inReplyTo: z.string().optional(),
   references: z.string().optional(),
+  attachments: z.array(EmailAttachmentSchema).optional(),
 });
 
 export type EmailCredentials = z.infer<typeof EmailCredentialsSchema>;
@@ -139,13 +147,25 @@ export class EmailService {
   }
 
   private createSmtpTransport() {
+    // Bei Master User: user@domain*masteruser als Login (wie bei IMAP)
+    const masterUser = process.env.DOVECOT_MASTER_USER;
+    const masterPassword = process.env.DOVECOT_MASTER_PASSWORD;
+    
+    let authUser = this.credentials.email;
+    let authPass = this.credentials.password;
+    
+    if (this.useMasterUser && masterUser && masterPassword) {
+      authUser = `${this.credentials.email}*${masterUser}`;
+      authPass = masterPassword;
+    }
+
     return nodemailer.createTransport({
       host: this.credentials.smtpHost,
       port: this.credentials.smtpPort,
       secure: false,
       auth: {
-        user: this.credentials.email,
-        pass: this.credentials.password,
+        user: authUser,
+        pass: authPass,
       },
     });
   }
@@ -340,6 +360,13 @@ export class EmailService {
     const validated = SendEmailSchema.parse(input);
     const transport = this.createSmtpTransport();
 
+    // Prepare attachments for nodemailer format
+    const attachments = validated.attachments?.map(att => ({
+      filename: att.filename,
+      content: Buffer.from(att.content, 'base64'),
+      contentType: att.contentType,
+    }));
+
     const mailOptions = {
       from: this.credentials.email,
       to: validated.to,
@@ -351,6 +378,7 @@ export class EmailService {
       replyTo: validated.replyTo,
       inReplyTo: validated.inReplyTo,
       references: validated.references,
+      attachments,
     };
 
     const result = await transport.sendMail(mailOptions);

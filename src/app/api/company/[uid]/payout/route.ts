@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiAuth, authErrorResponse, isAuthorizedForCompany } from '@/lib/apiAuth';
 import { type TaskiloLevel, PAYOUT_CONFIG } from '@/services/TaskiloLevelService';
+import { PlatformFeeInvoiceService, type PlatformFeeInvoiceData } from '@/services/payment/PlatformFeeInvoiceService';
 
 const PAYMENT_BACKEND_URL = process.env.PAYMENT_BACKEND_URL || 'https://mail.taskilo.de';
 const PAYMENT_API_KEY = process.env.PAYMENT_API_KEY || process.env.WEBMAIL_API_KEY;
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const adminDb = admin.firestore();
     const body = await request.json();
-    const { escrowIds } = body;
+    const { escrowIds, isExpress = false } = body;
 
     // Hole Company-Daten für Bankverbindung
     const companyDoc = await adminDb.collection('companies').doc(companyId).get();
@@ -48,6 +49,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const companyData = companyDoc.data()!;
+    
+    // Hole Level für Gebührenberechnung
+    const taskerLevel = (companyData.taskerLevel?.currentLevel || 'new') as TaskiloLevel;
+    const payoutConfig = PAYOUT_CONFIG[taskerLevel];
+    
+    // Prüfe ob Express erlaubt ist
+    if (isExpress && !payoutConfig.expressAvailable) {
+      return NextResponse.json({ 
+        error: 'Express-Auszahlung nicht verfügbar',
+        message: 'Als Level 2+ Tasker erhalten Sie bereits sofortige Auszahlungen ohne Express-Gebühr.',
+      }, { status: 400 });
+    }
     
     // Prüfe Bankverbindung
     const iban = companyData.iban || companyData.bankDetails?.iban || companyData.step3?.iban;
@@ -61,7 +74,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Wenn spezifische Escrows angegeben
     if (escrowIds && Array.isArray(escrowIds)) {
       // Hole alle angegebenen Escrows
-      const escrows: Array<{ id: string; orderId?: string; amount: number; providerAmount?: number; currency?: string; providerId?: string; status?: string }> = [];
+      const escrows: Array<{ 
+        id: string; 
+        orderId?: string; 
+        amount: number; 
+        providerAmount?: number; 
+        platformFee?: number;
+        platformFeePercent?: number;
+        currency?: string; 
+        providerId?: string; 
+        status?: string;
+      }> = [];
       for (const escrowId of escrowIds) {
         const escrowDoc = await adminDb.collection('escrows').doc(escrowId).get();
         if (escrowDoc.exists) {
@@ -72,6 +95,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               orderId: data.orderId,
               amount: data.amount || 0,
               providerAmount: data.providerAmount,
+              platformFee: data.platformFee,
+              platformFeePercent: data.platformFeePercent,
               currency: data.currency,
               providerId: data.providerId,
               status: data.status,
@@ -170,11 +195,74 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           throw new Error(firstError);
         }
 
-        // Teilerfolg oder voller Erfolg
-        const releasedAmount = successfulPayouts.reduce((sum, r) => {
-          const escrow = escrows.find(e => e.orderId === r.orderId);
-          return sum + (escrow?.providerAmount || escrow?.amount || 0);
-        }, 0);
+        // Teilerfolg oder voller Erfolg - Berechne Beträge
+        const successfulEscrows = successfulPayouts.map(r => escrows.find(e => e.orderId === r.orderId)).filter(Boolean);
+        let releasedAmount = successfulEscrows.reduce((sum, e) => sum + (e?.providerAmount || e?.amount || 0), 0);
+        const totalGrossAmount = successfulEscrows.reduce((sum, e) => sum + (e?.amount || 0), 0);
+        const totalPlatformFee = successfulEscrows.reduce((sum, e) => sum + (e?.platformFee || 0), 0);
+        
+        // Express-Gebühr berechnen (falls Express-Auszahlung gewählt)
+        let expressFeeAmount = 0;
+        const expressFeePercent = payoutConfig.expressFeePercent;
+        if (isExpress && payoutConfig.expressAvailable && expressFeePercent > 0) {
+          // Express-Gebühr wird vom providerAmount berechnet (nach Platform-Gebühr)
+          expressFeeAmount = Math.round(releasedAmount * (expressFeePercent / 100));
+          releasedAmount = releasedAmount - expressFeeAmount;
+        }
+
+        // Platform-Gebühr-Rechnung erstellen und per E-Mail senden
+        if ((totalPlatformFee > 0 || expressFeeAmount > 0) && successfulEscrows.length > 0) {
+          try {
+            // Hole Provider-Daten für die Rechnung
+            const providerEmail = companyData.email || companyData.step1?.email || '';
+            const providerName = companyData.companyName || companyData.name || '';
+            const providerStreet = companyData.street || companyData.step3?.street || '';
+            const providerZip = companyData.zip || companyData.step3?.zip || '';
+            const providerCity = companyData.city || companyData.step3?.city || '';
+            const providerCountry = companyData.country || companyData.step3?.country || 'Deutschland';
+            const providerVatId = companyData.ustIdNr || companyData.step2?.ustIdNr || '';
+            
+            // Ermittle Platform-Fee-Prozentsatz (aus erstem Escrow oder Level-basiert)
+            const firstEscrow = successfulEscrows[0];
+            let platformFeePercent = firstEscrow?.platformFeePercent || 15;
+            if (!firstEscrow?.platformFeePercent) {
+              platformFeePercent = payoutConfig.platformFeePercent;
+            }
+            
+            const payoutId = `payout_${companyId}_${Date.now()}`;
+            
+            const invoiceData: PlatformFeeInvoiceData = {
+              providerId: companyId,
+              providerName,
+              providerStreet,
+              providerZipCity: `${providerZip} ${providerCity}`.trim(),
+              providerCountry,
+              providerVatId,
+              providerEmail,
+              payoutId,
+              escrowIds: successfulEscrows.map(e => e?.id || '').filter(Boolean),
+              orderIds: successfulEscrows.map(e => e?.orderId || '').filter(Boolean),
+              grossAmount: totalGrossAmount / 100, // Cent zu Euro
+              platformFeeAmount: totalPlatformFee / 100, // Cent zu Euro
+              platformFeePercent,
+              expressFeeAmount: expressFeeAmount > 0 ? expressFeeAmount / 100 : undefined, // Cent zu Euro
+              expressFeePercent: expressFeeAmount > 0 ? expressFeePercent : undefined,
+              netPayoutAmount: releasedAmount / 100, // Cent zu Euro
+              payoutDate: new Date(),
+            };
+            
+            // Rechnung erstellen und speichern
+            const invoice = await PlatformFeeInvoiceService.createInvoice(invoiceData);
+            
+            // E-Mail mit Rechnung senden
+            if (providerEmail) {
+              await PlatformFeeInvoiceService.sendInvoiceEmail(invoice, providerEmail, providerName);
+            }
+          } catch (invoiceError) {
+            // Invoice-Fehler loggen aber Auszahlung nicht blockieren
+            console.error('[Payout] Platform Fee Invoice error:', invoiceError);
+          }
+        }
 
         return NextResponse.json({
           success: true,
@@ -182,6 +270,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             ? `Teilweise erfolgreich: ${successfulPayouts.length}/${escrows.length} Auszahlungen`
             : `Auszahlung von ${(releasedAmount / 100).toFixed(2)} EUR eingeleitet`,
           amount: releasedAmount / 100,
+          grossAmount: totalGrossAmount / 100,
+          platformFee: totalPlatformFee / 100,
+          expressFee: expressFeeAmount > 0 ? expressFeeAmount / 100 : undefined,
+          isExpress: isExpress && expressFeeAmount > 0,
           escrowsReleased: successfulPayouts.length,
           escrowsFailed: failedPayouts.length,
           failedOrders: failedPayouts.map(f => ({ orderId: f.orderId, error: f.error })),
@@ -415,6 +507,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         expressDays: payoutConfig.expressDays,
         expressFeePercent: payoutConfig.expressFeePercent,
         standardFeePercent: payoutConfig.standardFeePercent,
+        platformFeePercent: payoutConfig.platformFeePercent,
         isInstantPayout,
       },
       // Balance-Info
