@@ -35,8 +35,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if this is an admin token refresh request
-    const isAdminRefresh = !state.includes('|') && 
-      (state === 'refresh_token' || state === 'webhook_registration' || state === 'admin');
+    // Admin states: 'admin', 'refresh_token', 'webhook_registration', or any simple string without '|'
+    const isAdminRefresh = !state.includes('|') || 
+      state === 'refresh_token' || 
+      state === 'webhook_registration' || 
+      state === 'admin' ||
+      state.startsWith('admin');
     
     let userId: string;
     let companyEmail: string;
@@ -48,17 +52,20 @@ export async function GET(request: NextRequest) {
       returnBaseUrl = 'https://taskilo.de';
     } else {
       const stateParts = state.split('|');
-      if (stateParts.length < 3) {
-        return NextResponse.redirect(
-          `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Invalid state parameter')}`
-        );
-      }
-
-      [userId, companyEmail, returnBaseUrl] = stateParts;
-      if (!userId || !companyEmail) {
-        return NextResponse.redirect(
-          `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing user data')}`
-        );
+      if (stateParts.length < 2) {
+        // Fallback: Behandle als Admin-Request wenn Format nicht passt
+        userId = 'admin';
+        companyEmail = 'andy.staudinger@taskilo.de';
+        returnBaseUrl = 'https://taskilo.de';
+      } else {
+        [userId, companyEmail] = stateParts;
+        returnBaseUrl = stateParts[2] || 'https://taskilo.de';
+        
+        if (!userId || !companyEmail) {
+          return NextResponse.redirect(
+            `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing user data in state')}`
+          );
+        }
       }
     }
 
