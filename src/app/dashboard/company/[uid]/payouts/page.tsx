@@ -26,6 +26,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { TaskiloLevel, PayoutConfig } from '@/services/TaskiloLevelService';
 
 interface AvailableOrder {
@@ -99,6 +107,8 @@ export default function PayoutOverviewPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [ordersWithMissingInvoices, setOrdersWithMissingInvoices] = useState<AvailableOrder[]>([]);
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [pendingExpressPayout, setPendingExpressPayout] = useState(false);
 
   // Refs für Realtime-Listener
   const ordersUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -326,40 +336,28 @@ export default function PayoutOverviewPage() {
         .map(o => o.projectTitle || `Auftrag ${o.id.slice(-6)}`)
         .join(', ');
       
-      alert(
-        `Auszahlung nicht möglich!\n\n` +
-        `Für folgende Aufträge wurde noch keine Rechnung hochgeladen:\n` +
-        `${orderTitles}\n\n` +
-        `Bitte laden Sie zuerst für alle abgeschlossenen Aufträge eine Rechnung hoch, ` +
-        `bevor Sie eine Auszahlung beantragen können.`
+      setError(
+        `Auszahlung nicht möglich: Für folgende Aufträge wurde noch keine Rechnung hochgeladen: ${orderTitles}. ` +
+        `Bitte laden Sie zuerst für alle abgeschlossenen Aufträge eine Rechnung hoch.`
       );
       return;
     }
 
-    // Hole die richtige Option basierend auf Express-Wahl
-    const option = isExpressPayout && escrowData.payoutOptions.express
-      ? escrowData.payoutOptions.express
-      : escrowData.payoutOptions.standard;
-
     if (isExpressPayout && !escrowData.payoutOptions.express) {
-      alert('Express-Auszahlung ist für Ihr Level nicht verfügbar.');
+      setError('Express-Auszahlung ist für Ihr Level nicht verfügbar.');
       return;
     }
 
-    const confirmMessage =
-      `Auszahlung bestätigen\n\n` +
-      `${option.name}\n` +
-      `Verfügbarer Betrag: ${formatCurrency(escrowData.balance.available)}\n` +
-      `Gebühr: ${formatCurrency(option.fee)} (${option.feePercentage}%)\n` +
-      `Auszahlungsbetrag: ${formatCurrency(option.finalAmount)}\n` +
-      `Anzahl Aufträge: ${escrowData.orders.length}\n` +
-      `Dauer: ${option.estimatedTime}\n\n` +
-      `${option.description}\n\n` +
-      `Möchten Sie die Auszahlung beantragen?`;
+    // Modal öffnen statt confirm()
+    setPendingExpressPayout(isExpressPayout);
+    setShowPayoutModal(true);
+  };
 
-    const confirmPayout = confirm(confirmMessage);
-
-    if (!confirmPayout) return;
+  const executePayoutRequest = async () => {
+    if (!escrowData || escrowData.balance.available <= 0) return;
+    
+    const isExpressPayout = pendingExpressPayout;
+    setShowPayoutModal(false);
 
     try {
       setPayoutLoading(true);
@@ -1015,6 +1013,124 @@ export default function PayoutOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Auszahlung Bestätigungs-Modal */}
+      <Dialog open={showPayoutModal} onOpenChange={setShowPayoutModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              {pendingExpressPayout ? (
+                <Zap className="h-5 w-5 text-amber-500" />
+              ) : (
+                <Banknote className="h-5 w-5 text-teal-600" />
+              )}
+              Auszahlung bestätigen
+            </DialogTitle>
+            <DialogDescription>
+              {pendingExpressPayout
+                ? 'Express-Auszahlung innerhalb von 2 Werktagen'
+                : 'Standard-Auszahlung innerhalb von 5-7 Werktagen'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {escrowData && (
+            <div className="space-y-4 py-4">
+              {/* Auszahlungstyp */}
+              <div className={`rounded-lg p-4 ${pendingExpressPayout ? 'bg-amber-50 border border-amber-200' : 'bg-teal-50 border border-teal-200'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {pendingExpressPayout ? (
+                    <Zap className="h-4 w-4 text-amber-600" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-teal-600" />
+                  )}
+                  <span className="font-medium">
+                    {pendingExpressPayout ? 'Express-Auszahlung' : 'Sofortige Auszahlung'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {pendingExpressPayout
+                    ? escrowData.payoutOptions.express?.description
+                    : escrowData.payoutOptions.standard.description}
+                </p>
+              </div>
+
+              {/* Betragsübersicht */}
+              <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Verfügbarer Betrag</span>
+                  <span className="font-medium">{formatCurrency(escrowData.grossBalance.available)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Platform-Gebühr ({escrowData.payoutConfig.platformFeePercent}%)</span>
+                  <span className="text-gray-500">- {formatCurrency(escrowData.platformFees.available)}</span>
+                </div>
+
+                {pendingExpressPayout && escrowData.payoutOptions.express && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-amber-600">Express-Gebühr ({escrowData.payoutOptions.express.feePercentage}%)</span>
+                    <span className="text-amber-600">- {formatCurrency(escrowData.payoutOptions.express.fee)}</span>
+                  </div>
+                )}
+
+                <div className="border-t pt-3 flex justify-between items-center">
+                  <span className="font-semibold">Auszahlungsbetrag</span>
+                  <span className="text-xl font-bold text-teal-600">
+                    {formatCurrency(
+                      pendingExpressPayout && escrowData.payoutOptions.express
+                        ? escrowData.payoutOptions.express.finalAmount
+                        : escrowData.payoutOptions.standard.finalAmount
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Auftragsinfo */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <FileText className="h-4 w-4" />
+                <span>{escrowData.orders.length} {escrowData.orders.length === 1 ? 'Auftrag' : 'Aufträge'} zur Auszahlung</span>
+              </div>
+
+              {/* Dauer */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Clock className="h-4 w-4" />
+                <span>
+                  Dauer: {pendingExpressPayout && escrowData.payoutOptions.express
+                    ? escrowData.payoutOptions.express.estimatedTime
+                    : escrowData.payoutOptions.standard.estimatedTime}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowPayoutModal(false)}
+              disabled={payoutLoading}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={executePayoutRequest}
+              disabled={payoutLoading}
+              className={pendingExpressPayout ? 'bg-amber-500 hover:bg-amber-600' : 'bg-teal-600 hover:bg-teal-700'}
+            >
+              {payoutLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Wird verarbeitet...
+                </>
+              ) : (
+                <>
+                  {pendingExpressPayout ? <Zap className="h-4 w-4 mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                  Jetzt auszahlen
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

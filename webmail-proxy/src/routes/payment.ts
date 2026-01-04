@@ -12,8 +12,7 @@ import express, { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
-import jwt from 'jsonwebtoken';
-import { getAccessToken as getRevolutToken } from './revolut-proxy';
+import { getAccessToken as getRevolutToken, forceRefreshToken } from './revolut-proxy';
 
 const router = express.Router();
 
@@ -99,114 +98,11 @@ interface RevolutPaymentResponse {
   currency: string;
 }
 
-// Cached access token
-let cachedAccessToken: string | null = process.env.REVOLUT_ACCESS_TOKEN || null;
-let tokenExpiresAt: number = 0;
-
-async function getAccessToken(_scope: string = 'READ'): Promise<string> {
-  // Check if we have a valid cached token
-  const now = Math.floor(Date.now() / 1000);
-  if (cachedAccessToken && tokenExpiresAt > now + 60) {
-    console.log('[Revolut] Using cached access token');
-    return cachedAccessToken;
-  }
-
-  // Need to refresh the token
-  console.log('[Revolut] Refreshing access token...');
-  return refreshAccessToken();
-}
-
-async function refreshAccessToken(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const refreshToken = process.env.REVOLUT_REFRESH_TOKEN;
-    if (!refreshToken) {
-      reject(new Error('No refresh token available'));
-      return;
-    }
-
-    if (!revolutConfig.clientId || !revolutConfig.privateKey) {
-      reject(new Error('Revolut configuration incomplete'));
-      return;
-    }
-
-    // Create JWT for client assertion
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: 'taskilo.de',
-      sub: revolutConfig.clientId,
-      aud: 'https://revolut.com',
-      iat: now,
-      exp: now + 300,
-    };
-
-    let clientAssertion: string;
-    try {
-      clientAssertion = jwt.sign(payload, revolutConfig.privateKey, {
-        algorithm: 'RS256',
-        header: {
-          alg: 'RS256',
-          typ: 'JWT',
-        },
-      });
-    } catch (err) {
-      reject(new Error(`JWT signing failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-      return;
-    }
-
-    const postData = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: revolutConfig.clientId,
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-      client_assertion: clientAssertion,
-    }).toString();
-
-    const options = {
-      hostname: 'b2b.revolut.com',
-      port: 443,
-      path: '/api/1.0/auth/token',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(postData),
-        'Accept': 'application/json',
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode !== 200) {
-          console.error('[Revolut] Token refresh failed:', res.statusCode, data);
-          reject(new Error(`Token refresh failed: ${res.statusCode} - ${data}`));
-          return;
-        }
-        try {
-          const tokenData = JSON.parse(data);
-          cachedAccessToken = tokenData.access_token;
-          tokenExpiresAt = Math.floor(Date.now() / 1000) + (tokenData.expires_in || 2400) - 60;
-          console.log('[Revolut] Access token refreshed successfully');
-          resolve(tokenData.access_token);
-        } catch {
-          reject(new Error(`Failed to parse token response: ${data}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      reject(new Error(`Token refresh request failed: ${error.message}`));
-    });
-
-    req.write(postData);
-    req.end();
-  });
-}
-
 async function makeRevolutRequest<T>(
   endpoint: string,
   method: string = 'GET',
-  body?: object
+  body?: object,
+  isRetry: boolean = false
 ): Promise<T> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -233,7 +129,21 @@ async function makeRevolutRequest<T>(
       const req = https.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
-        res.on('end', () => {
+        res.on('end', async () => {
+          // Bei 401: Token refreshen und einmal retry
+          if (res.statusCode === 401 && !isRetry) {
+            console.log('[Payment] Got 401, refreshing token and retrying...');
+            try {
+              await forceRefreshToken();
+              const result = await makeRevolutRequest<T>(endpoint, method, body, true);
+              resolve(result);
+              return;
+            } catch (retryError) {
+              reject(new Error(`Retry after 401 failed: ${retryError}`));
+              return;
+            }
+          }
+          
           if (res.statusCode && res.statusCode >= 400) {
             reject(new Error(`API Error: ${res.statusCode} - ${data}`));
             return;
@@ -259,6 +169,154 @@ async function makeRevolutRequest<T>(
       reject(error);
     }
   });
+}
+
+// ============================================================================
+// COUNTERPARTY HELPERS
+// ============================================================================
+
+interface CounterpartyAccount {
+  id: string;
+  iban?: string;
+  name: string;
+  currency: string;
+}
+
+interface Counterparty {
+  id: string;
+  name: string;
+  state: string;
+  accounts: CounterpartyAccount[];
+}
+
+// Cache für eigene Revolut-IBANs (einmal laden, dann cachen)
+let ownRevolutIbans: string[] | null = null;
+
+/**
+ * Lädt alle eigenen Revolut-IBANs aus den Konten
+ */
+async function getOwnRevolutIbans(): Promise<string[]> {
+  if (ownRevolutIbans !== null) {
+    return ownRevolutIbans;
+  }
+  
+  try {
+    // Hole alle eigenen Konten
+    const accounts = await makeRevolutRequest<Array<{
+      id: string;
+      currency: string;
+      state: string;
+    }>>('/accounts', 'GET');
+    
+    const ibans: string[] = [];
+    
+    // Für jedes EUR-Konto die Bank-Details holen
+    for (const account of accounts) {
+      if (account.currency === 'EUR' && account.state === 'active') {
+        try {
+          const bankDetails = await makeRevolutRequest<Array<{
+            iban?: string;
+          }>>(`/accounts/${account.id}/bank-details`, 'GET');
+          
+          for (const detail of bankDetails) {
+            if (detail.iban) {
+              ibans.push(detail.iban.replace(/\s/g, '').toUpperCase());
+            }
+          }
+        } catch (detailError) {
+          console.log(`[Payment] Could not fetch bank details for account ${account.id}:`, detailError);
+        }
+      }
+    }
+    
+    ownRevolutIbans = ibans;
+    console.log(`[Payment] Loaded ${ibans.length} own Revolut IBANs:`, ibans);
+    return ibans;
+  } catch (error) {
+    console.error('[Payment] Failed to load own Revolut IBANs:', error);
+    return [];
+  }
+}
+
+/**
+ * Prüft ob eine IBAN zu einem eigenen Revolut-Konto gehört
+ */
+async function isOwnRevolutIban(iban: string): Promise<boolean> {
+  const ownIbans = await getOwnRevolutIbans();
+  const normalizedIban = iban.replace(/\s/g, '').toUpperCase();
+  return ownIbans.includes(normalizedIban);
+}
+
+/**
+ * Findet einen existierenden Counterparty anhand der IBAN oder erstellt einen neuen
+ */
+async function findOrCreateCounterparty(iban: string, bic: string | undefined, name: string): Promise<string> {
+  // WICHTIG: Prüfe ob die IBAN zu einem eigenen Revolut-Konto gehört
+  const isOwn = await isOwnRevolutIban(iban);
+  if (isOwn) {
+    throw new Error(`EIGENE_REVOLUT_IBAN: Die hinterlegte IBAN (${iban}) gehört zu Ihrem eigenen Revolut-Konto. Bitte hinterlegen Sie eine externe Bankverbindung für Auszahlungen.`);
+  }
+  
+  // Erst alle Counterparties holen und nach IBAN suchen
+  try {
+    const counterparties = await makeRevolutRequest<Counterparty[]>('/counterparties', 'GET');
+    
+    // Suche nach existierendem Counterparty mit dieser IBAN
+    for (const cp of counterparties) {
+      for (const account of cp.accounts) {
+        if (account.iban && account.iban.replace(/\s/g, '').toUpperCase() === iban.replace(/\s/g, '').toUpperCase()) {
+          console.log(`[Payment] Found existing counterparty: ${cp.id} (${cp.name})`);
+          return cp.id;
+        }
+      }
+    }
+  } catch (error) {
+    console.log('[Payment] Could not fetch counterparties, will create new one:', error);
+  }
+
+  // Kein existierender Counterparty gefunden - neuen erstellen
+  console.log(`[Payment] Creating new counterparty for ${name} (${iban})`);
+  
+  interface CreateCounterpartyRequest {
+    name: string;
+    profile_type: string;
+    individual_name?: { first_name: string; last_name: string };
+    company_name?: string;
+    bank_country: string;
+    currency: string;
+    iban: string;
+    bic?: string;
+  }
+  
+  const createRequest: CreateCounterpartyRequest = {
+    name: name,
+    profile_type: 'personal', // Kann auch 'business' sein
+    bank_country: iban.substring(0, 2), // Erste 2 Zeichen = Ländercode
+    currency: 'EUR',
+    iban: iban.replace(/\s/g, ''),
+  };
+  
+  // Name aufteilen wenn möglich
+  const nameParts = name.trim().split(' ');
+  if (nameParts.length >= 2) {
+    createRequest.individual_name = {
+      first_name: nameParts[0],
+      last_name: nameParts.slice(1).join(' '),
+    };
+  } else {
+    createRequest.company_name = name;
+    createRequest.profile_type = 'business';
+  }
+  
+  // BIC nur hinzufügen wenn gültig (8 oder 11 alphanumerische Zeichen)
+  if (bic && /^[A-Z0-9]{8}([A-Z0-9]{3})?$/i.test(bic)) {
+    createRequest.bic = bic.toUpperCase();
+  }
+
+  const newCounterparty = await makeRevolutRequest<Counterparty>('/counterparty', 'POST', createRequest);
+  console.log(`[Payment] Created new counterparty: ${newCounterparty.id}`);
+  
+  return newCounterparty.id;
 }
 
 // ============================================================================
@@ -353,17 +411,23 @@ router.post('/escrow/release', async (req: Request, res: Response) => {
 
     // Wenn IBAN vorhanden, erstelle Auszahlung über Revolut
     if (providerIban) {
+      // Erst Counterparty finden oder erstellen
+      const counterpartyId = await findOrCreateCounterparty(
+        providerIban,
+        providerBic,
+        providerName || 'Provider'
+      );
+
       const requestId = `payout_${orderId}_${Date.now()}`;
       
+      // Payment mit counterparty_id statt IBAN
       const paymentRequest: RevolutPaymentRequest = {
         request_id: requestId,
         account_id: process.env.REVOLUT_MAIN_ACCOUNT_ID || '',
         receiver: {
-          iban: providerIban,
-          bic: providerBic,
-          name: providerName || 'Provider',
+          counterparty_id: counterpartyId,
         },
-        amount: Math.round(Number(amount) * 100), // Revolut erwartet Cents
+        amount: Number(amount), // Revolut erwartet EUR (nicht Cents!)
         currency,
         reference: reference || `Taskilo Auszahlung ${orderId}`,
       };
@@ -456,17 +520,23 @@ router.post('/payout/batch', async (req: Request, res: Response) => {
 
     for (const payout of payouts) {
       try {
+        // Erst Counterparty finden oder erstellen
+        const counterpartyId = await findOrCreateCounterparty(
+          payout.iban,
+          payout.bic,
+          payout.name
+        );
+
         const requestId = `batch_${payout.orderId}_${Date.now()}`;
 
+        // Payment mit counterparty_id statt IBAN
         const paymentRequest: RevolutPaymentRequest = {
           request_id: requestId,
           account_id: process.env.REVOLUT_MAIN_ACCOUNT_ID || '',
           receiver: {
-            iban: payout.iban,
-            bic: payout.bic,
-            name: payout.name,
+            counterparty_id: counterpartyId,
           },
-          amount: Math.round(payout.amount * 100),
+          amount: payout.amount, // Revolut erwartet EUR (nicht Cents!)
           currency: payout.currency,
           reference: payout.reference || `Taskilo ${payout.orderId}`,
         };

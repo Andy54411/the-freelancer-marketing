@@ -189,6 +189,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Wenn alle fehlgeschlagen sind, Fehler werfen
         if (successfulPayouts.length === 0) {
           const firstError = failedPayouts[0]?.error || 'Alle Auszahlungen fehlgeschlagen';
+          
+          // Spezifische Fehlerbehandlung für eigene Revolut-IBAN
+          if (firstError.includes('EIGENE_REVOLUT_IBAN') || firstError.includes('3471') || firstError.includes('own accounts')) {
+            return NextResponse.json({ 
+              error: 'Ungueltige Bankverbindung',
+              message: 'Die hinterlegte IBAN gehoert zu Ihrem eigenen Revolut-Konto. Bitte hinterlegen Sie in den Unternehmenseinstellungen eine externe Bankverbindung (z.B. Girokonto bei einer anderen Bank) fuer Auszahlungen.',
+              code: 'OWN_REVOLUT_IBAN',
+            }, { status: 400 });
+          }
+          
           throw new Error(firstError);
         }
 

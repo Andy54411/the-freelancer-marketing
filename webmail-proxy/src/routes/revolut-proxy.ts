@@ -25,6 +25,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import path from 'path';
 
 const router = Router();
 
@@ -32,10 +33,51 @@ const router = Router();
 const REVOLUT_BASE_URL = 'https://b2b.revolut.com/api';
 const REVOLUT_CLIENT_ID = process.env.REVOLUT_CLIENT_ID || 'tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU';
 
-// Token Storage (in-memory, wird durch .env initialisiert)
+// Token Storage Pfad (persistent) - gemountet als Docker Volume
+const TOKEN_STORAGE_PATH = process.env.TOKEN_STORAGE_PATH || '/opt/taskilo/webmail-proxy/data/revolut-tokens.json';
+
+// Token Storage (in-memory, wird durch .env oder gespeicherte Datei initialisiert)
 let storedAccessToken = process.env.REVOLUT_ACCESS_TOKEN || '';
 let storedRefreshToken = process.env.REVOLUT_REFRESH_TOKEN || '';
 let tokenExpiresAt: Date | null = null;
+
+// Tokens aus persistenter Datei laden
+function loadStoredTokens(): void {
+  try {
+    if (fs.existsSync(TOKEN_STORAGE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(TOKEN_STORAGE_PATH, 'utf8'));
+      if (data.accessToken) storedAccessToken = data.accessToken;
+      if (data.refreshToken) storedRefreshToken = data.refreshToken;
+      if (data.expiresAt) tokenExpiresAt = new Date(data.expiresAt);
+      console.log('[Revolut] Tokens loaded from persistent storage');
+    }
+  } catch (error) {
+    console.error('[Revolut] Failed to load tokens from storage:', error);
+  }
+}
+
+// Tokens persistent speichern
+function saveTokens(): void {
+  try {
+    const dir = path.dirname(TOKEN_STORAGE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const data = {
+      accessToken: storedAccessToken,
+      refreshToken: storedRefreshToken,
+      expiresAt: tokenExpiresAt?.toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(TOKEN_STORAGE_PATH, JSON.stringify(data, null, 2));
+    console.log('[Revolut] Tokens saved to persistent storage');
+  } catch (error) {
+    console.error('[Revolut] Failed to save tokens:', error);
+  }
+}
+
+// Beim Start Tokens laden
+loadStoredTokens();
 
 // Private Key laden
 function getPrivateKey(): string {
@@ -142,7 +184,7 @@ async function refreshToken(refreshTokenToUse: string): Promise<{
       return { success: false, error: data.error || 'Token refresh failed' };
     }
     
-    // Token speichern
+    // Token in-memory speichern
     if (data.access_token) {
       storedAccessToken = data.access_token;
       tokenExpiresAt = new Date(Date.now() + ((data.expires_in || 2400) - 300) * 1000);
@@ -150,7 +192,11 @@ async function refreshToken(refreshTokenToUse: string): Promise<{
     }
     if (data.refresh_token) {
       storedRefreshToken = data.refresh_token;
+      console.log('[Revolut] New refresh token received');
     }
+    
+    // WICHTIG: Tokens persistent speichern damit sie Container-Neustarts ueberleben
+    saveTokens();
     
     return {
       success: true,
@@ -262,7 +308,10 @@ router.post('/token-exchange', async (req: Request, res: Response) => {
       storedRefreshToken = data.refresh_token;
     }
     
-    console.log('[Revolut] Token exchange successful');
+    // WICHTIG: Tokens persistent speichern
+    saveTokens();
+    
+    console.log('[Revolut] Token exchange successful, tokens persisted');
     return res.json({
       success: true,
       access_token: data.access_token,
@@ -744,6 +793,13 @@ router.get('/health', async (_req: Request, res: Response) => {
     // Pruefen ob Private Key vorhanden ist
     getPrivateKey();
     
+    // Token-Status berechnen
+    const now = new Date();
+    const tokenExpired = tokenExpiresAt ? now > tokenExpiresAt : true;
+    const tokenExpiresInMinutes = tokenExpiresAt 
+      ? Math.round((tokenExpiresAt.getTime() - now.getTime()) / 60000) 
+      : 0;
+    
     return res.json({
       success: true,
       status: 'healthy',
@@ -752,6 +808,9 @@ router.get('/health', async (_req: Request, res: Response) => {
       hasAccessToken: !!storedAccessToken,
       hasRefreshToken: !!storedRefreshToken,
       tokenExpiresAt: tokenExpiresAt?.toISOString() || null,
+      tokenExpired,
+      tokenExpiresInMinutes,
+      tokenStoragePath: TOKEN_STORAGE_PATH,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -781,9 +840,12 @@ router.post('/set-tokens', async (req: Request, res: Response) => {
       storedRefreshToken = refresh_token;
     }
     
+    // Tokens persistent speichern
+    saveTokens();
+    
     return res.json({
       success: true,
-      message: 'Tokens aktualisiert',
+      message: 'Tokens aktualisiert und persistent gespeichert',
       hasAccessToken: !!storedAccessToken,
       hasRefreshToken: !!storedRefreshToken,
       tokenExpiresAt: tokenExpiresAt?.toISOString() || null,
@@ -797,4 +859,17 @@ router.post('/set-tokens', async (req: Request, res: Response) => {
   }
 });
 
-export { router as revolutProxyRouter, getAccessToken };
+// Force Token Refresh (fuer Retry nach 401)
+async function forceRefreshToken(): Promise<string> {
+  console.log('[Revolut] Force refreshing token...');
+  if (!storedRefreshToken) {
+    throw new Error('Kein Refresh Token verfuegbar');
+  }
+  const result = await refreshToken(storedRefreshToken);
+  if (result.success && result.access_token) {
+    return result.access_token;
+  }
+  throw new Error(result.error || 'Token refresh failed');
+}
+
+export { router as revolutProxyRouter, getAccessToken, forceRefreshToken };
