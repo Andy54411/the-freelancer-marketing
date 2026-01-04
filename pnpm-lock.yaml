@@ -143,12 +143,6 @@ importers:
       '@sparticuz/chromium':
         specifier: ^123.0.1
         version: 123.0.1
-      '@stripe/react-stripe-js':
-        specifier: ^2.9.0
-        version: 2.9.0(@stripe/stripe-js@4.10.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
-      '@stripe/stripe-js':
-        specifier: ^4.10.0
-        version: 4.10.0
       '@tabler/icons-react':
         specifier: ^3.34.0
         version: 3.35.0(react@19.2.1)
@@ -515,9 +509,6 @@ importers:
       stemmer:
         specifier: ^2.0.1
         version: 2.0.1
-      stripe:
-        specifier: ^16.12.0
-        version: 16.12.0
       swiper:
         specifier: ^11.2.7
         version: 11.2.10
@@ -696,9 +687,6 @@ importers:
       pdf-parse:
         specifier: ^2.2.1
         version: 2.4.5
-      stripe:
-        specifier: ^16.12.0
-        version: 16.12.0
       zod:
         specifier: ^4.1.5
         version: 4.1.13
@@ -3244,17 +3232,6 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
-
-  '@stripe/react-stripe-js@2.9.0':
-    resolution: {integrity: sha512-+/j2g6qKAKuWSurhgRMfdlIdKM+nVVJCy/wl0US2Ccodlqx0WqfIIBhUkeONkCG+V/b+bZzcj4QVa3E/rXtT4Q==}
-    peerDependencies:
-      '@stripe/stripe-js': ^1.44.1 || ^2.0.0 || ^3.0.0 || ^4.0.0
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
-
-  '@stripe/stripe-js@4.10.0':
-    resolution: {integrity: sha512-KrMOL+sH69htCIXCaZ4JluJ35bchuCCznyPyrbN8JXSGQfwBI1SuIEMZNwvy8L8ykj29t6sa5BAAiL7fNoLZ8A==}
-    engines: {node: '>=12.16'}
 
   '@swc/core-darwin-arm64@1.15.3':
     resolution: {integrity: sha512-AXfeQn0CvcQ4cndlIshETx6jrAM45oeUrK8YeEY6oUZU/qzz0Id0CyvlEywxkWVC81Ajpd8TQQ1fW5yx6zQWkQ==}
@@ -8542,10 +8519,6 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  stripe@16.12.0:
-    resolution: {integrity: sha512-H7eFVLDxeTNNSn4JTRfL2//LzCbDrMSZ+2q1c7CanVWgK2qIW5TwS+0V7N9KcKZZNpYh/uCqK0PyZh/2UsaAtQ==}
-    engines: {node: '>=12.*'}
-
   strnum@1.1.2:
     resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==}
 
@@ -12454,15 +12427,6 @@ snapshots:
       - react-native-b4a
 
   '@standard-schema/utils@0.3.0': {}
-
-  '@stripe/react-stripe-js@2.9.0(@stripe/stripe-js@4.10.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
-    dependencies:
-      '@stripe/stripe-js': 4.10.0
-      prop-types: 15.8.1
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
-
-  '@stripe/stripe-js@4.10.0': {}
 
   '@swc/core-darwin-arm64@1.15.3':
     optional: true
@@ -18857,11 +18821,6 @@ snapshots:
   strip-bom@3.0.0: {}
 
   strip-json-comments@3.1.1: {}
-
-  stripe@16.12.0:
-    dependencies:
-      '@types/node': 18.19.130
-      qs: 6.14.0
 
   strnum@1.1.2: {}
 
