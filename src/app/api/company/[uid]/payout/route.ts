@@ -148,7 +148,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             payouts: escrows.map(e => ({
               orderId: e.orderId,
               providerId: companyId,
-              amount: e.providerAmount || e.amount,
+              // WICHTIG: Escrow-Betraege sind in CENT gespeichert, Revolut erwartet EUR
+              amount: (e.providerAmount || e.amount) / 100,
               currency: e.currency || 'EUR',
               iban: iban,
               bic: companyData.bic || companyData.bankDetails?.bic,
