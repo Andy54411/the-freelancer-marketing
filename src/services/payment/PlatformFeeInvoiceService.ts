@@ -8,7 +8,7 @@
 import jsPDF from 'jspdf';
 import * as fs from 'fs';
 import * as path from 'path';
-import { db } from '@/firebase/server';
+import { db, admin } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
 // Taskilo Firmendaten
@@ -76,7 +76,8 @@ export interface PlatformFeeInvoice {
   expressFeePercent?: number;
   netPayoutAmount: number;
   createdAt: FieldValue;
-  pdfBase64?: string;
+  pdfUrl?: string;          // URL zum PDF in Firebase Storage
+  pdfStoragePath?: string;  // Storage-Pfad zum PDF
   emailSent: boolean;
   emailSentAt?: FieldValue;
 }
@@ -367,6 +368,42 @@ export class PlatformFeeInvoiceService {
     // PDF generieren
     const pdfBase64 = this.generatePDF(data, invoiceNumber);
     
+    // PDF in Firebase Storage speichern (Firestore hat 1MB Limit)
+    let pdfUrl: string | undefined;
+    let pdfStoragePath: string | undefined;
+    
+    try {
+      if (admin) {
+        const bucket = admin.storage().bucket();
+        pdfStoragePath = `platform-fee-invoices/${data.providerId}/${invoiceId}.pdf`;
+        const file = bucket.file(pdfStoragePath);
+        
+        // Base64 zu Buffer konvertieren
+        const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+        
+        await file.save(pdfBuffer, {
+          metadata: {
+            contentType: 'application/pdf',
+            metadata: {
+              invoiceNumber,
+              providerId: data.providerId,
+              payoutId: data.payoutId,
+            },
+          },
+        });
+        
+        // Signierte URL generieren (1 Jahr gueltig)
+        const [signedUrl] = await file.getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        });
+        pdfUrl = signedUrl;
+      }
+    } catch (storageError) {
+      console.error('[PlatformFeeInvoice] Failed to upload PDF to Storage:', storageError);
+      // Weiter ohne PDF-URL - Invoice wird trotzdem erstellt
+    }
+    
     // Basis-Invoice erstellen (ohne optionale Felder die undefined sein koennten)
     const invoice: PlatformFeeInvoice = {
       id: invoiceId,
@@ -378,9 +415,16 @@ export class PlatformFeeInvoiceService {
       platformFeePercent: data.platformFeePercent,
       netPayoutAmount: data.netPayoutAmount,
       createdAt: FieldValue.serverTimestamp(),
-      pdfBase64,
       emailSent: false,
     };
+    
+    // PDF-URL hinzufuegen wenn vorhanden
+    if (pdfUrl) {
+      invoice.pdfUrl = pdfUrl;
+    }
+    if (pdfStoragePath) {
+      invoice.pdfStoragePath = pdfStoragePath;
+    }
     
     // Optionale Express-Fee Felder nur hinzufuegen wenn definiert
     if (data.expressFeeAmount !== undefined) {
@@ -478,14 +522,13 @@ export class PlatformFeeInvoiceService {
           to: providerEmail,
           subject: `Taskilo Platform-Gebühr Rechnung ${invoice.invoiceNumber}`,
           html: emailHtml,
-          attachments: [
+          attachments: invoice.pdfStoragePath ? [
             {
               filename: `Rechnung_${invoice.invoiceNumber}.pdf`,
-              content: invoice.pdfBase64,
-              encoding: 'base64',
+              storageUrl: invoice.pdfUrl,
               contentType: 'application/pdf',
             },
-          ],
+          ] : [],
         }),
       });
       
