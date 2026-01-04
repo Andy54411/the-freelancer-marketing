@@ -71,6 +71,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }, { status: 400 });
     }
 
+    // NEUE SICHERHEITSPRÜFUNG: Prüfe ob IBAN verifiziert ist
+    const { BankVerificationService } = await import('@/services/BankVerificationService');
+    const bankVerificationService = new BankVerificationService(adminDb);
+    const isIbanVerified = await bankVerificationService.isIbanVerified(companyId, iban);
+    
+    if (!isIbanVerified) {
+      // Hole pending Verification für Info
+      const pendingVerification = await bankVerificationService.getPendingVerification(companyId);
+      
+      return NextResponse.json({ 
+        error: 'Bankverbindung nicht verifiziert',
+        code: 'BANK_NOT_VERIFIED',
+        message: 'Aus Sicherheitsgründen müssen Sie Ihre Bankverbindung vor der ersten Auszahlung verifizieren. Wir überweisen 0,01 EUR mit einem Verifizierungscode an Ihr Konto. Bitte starten Sie die Verifizierung in den Unternehmenseinstellungen.',
+        pendingVerification: pendingVerification ? {
+          id: pendingVerification.id,
+          status: pendingVerification.status,
+          maskedIban: pendingVerification.maskedIban,
+        } : null,
+      }, { status: 403 });
+    }
+
     // Wenn spezifische Escrows angegeben
     if (escrowIds && Array.isArray(escrowIds)) {
       // Hole alle angegebenen Escrows

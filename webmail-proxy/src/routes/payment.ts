@@ -587,6 +587,94 @@ router.post('/payout/batch', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/payment/payout/single
+ * Einzelne Auszahlung - primär für Micro-Deposit Bankverifizierung
+ * Sendet 0,01 EUR mit Verifizierungscode im Verwendungszweck
+ */
+router.post('/payout/single', async (req: Request, res: Response) => {
+  try {
+    const { 
+      amount, 
+      currency = 'EUR', 
+      iban, 
+      bic, 
+      name, 
+      reference,
+      metadata 
+    } = req.body;
+
+    // Validierung
+    if (!iban || !name) {
+      return res.status(400).json({
+        success: false,
+        error: 'IBAN und Name sind erforderlich',
+      });
+    }
+
+    if (typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültiger Betrag',
+      });
+    }
+
+    // Für Micro-Deposits: Max 0,10 EUR als Sicherheit
+    if (metadata?.type === 'bank_verification' && amount > 0.10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Verifizierungs-Überweisungen dürfen max. 0,10 EUR betragen',
+      });
+    }
+
+    console.log(`[SinglePayout] Processing: ${amount} ${currency} to ${iban.slice(0, 8)}...`);
+
+    // Counterparty finden oder erstellen
+    const counterpartyId = await findOrCreateCounterparty(iban, bic, name);
+
+    const requestId = `single_${metadata?.verificationId || Date.now()}_${Date.now()}`;
+
+    // Payment erstellen
+    const paymentRequest: RevolutPaymentRequest = {
+      request_id: requestId,
+      account_id: process.env.REVOLUT_MAIN_ACCOUNT_ID || '',
+      receiver: {
+        counterparty_id: counterpartyId,
+      },
+      amount: amount, // EUR (nicht Cents)
+      currency: currency,
+      reference: reference || 'Taskilo Payment',
+    };
+
+    const payment = await makeRevolutRequest<RevolutPaymentResponse>(
+      '/pay',
+      'POST',
+      paymentRequest
+    );
+
+    console.log(`[SinglePayout] Success: ${payment.id}`);
+
+    res.json({
+      success: true,
+      paymentId: payment.id,
+      state: payment.state,
+      amount: payment.amount,
+      currency: payment.currency,
+      reference: payment.reference,
+    });
+
+  } catch (error) {
+    console.error('[SinglePayout] Error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Payment failed';
+    
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
 // ============================================================================
 // REVOLUT ACCOUNT ROUTES
 // ============================================================================

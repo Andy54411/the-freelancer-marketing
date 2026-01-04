@@ -275,7 +275,7 @@ export default function SettingsPage() {
         );
 
       case 'bank':
-        return <BankForm formData={form} handleChange={handleChange} />;
+        return <BankForm formData={form} handleChange={handleChange} companyId={uid as string} />;
       case 'accounting':
         return <AccountingForm formData={form} handleChange={handleChange} />;
       case 'logo':

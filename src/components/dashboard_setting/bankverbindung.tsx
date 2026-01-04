@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { UserDataForSettings } from '@/types/settings';
+import { BankVerificationCard } from '@/components/settings/BankVerificationCard';
 
 // ANPASSUNG: 'export' wurde hinzugefügt
 export interface BankFormProps {
   formData: UserDataForSettings;
   handleChange: (path: string, value: string) => void;
+  companyId?: string;
 }
 
-const BankForm: React.FC<BankFormProps> = ({ formData, handleChange }) => {
+const BankForm: React.FC<BankFormProps> = ({ formData, handleChange, companyId }) => {
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
@@ -61,6 +63,22 @@ const BankForm: React.FC<BankFormProps> = ({ formData, handleChange }) => {
           />
         </div>
       </div>
+
+      {/* Bankverifizierung */}
+      {companyId && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+            Bankverifizierung fuer Auszahlungen
+          </h3>
+          <BankVerificationCard
+            companyId={companyId}
+            currentIban={formData?.step4?.iban}
+            currentBic={formData?.step4?.bic}
+            currentAccountHolder={formData?.step4?.accountHolder}
+            currentBankName={formData?.step4?.bankName}
+          />
+        </div>
+      )}
     </div>
   );
 };
