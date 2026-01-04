@@ -367,6 +367,7 @@ export class PlatformFeeInvoiceService {
     // PDF generieren
     const pdfBase64 = this.generatePDF(data, invoiceNumber);
     
+    // Basis-Invoice erstellen (ohne optionale Felder die undefined sein koennten)
     const invoice: PlatformFeeInvoice = {
       id: invoiceId,
       invoiceNumber,
@@ -375,13 +376,19 @@ export class PlatformFeeInvoiceService {
       grossAmount: data.grossAmount,
       platformFeeAmount: data.platformFeeAmount,
       platformFeePercent: data.platformFeePercent,
-      expressFeeAmount: data.expressFeeAmount,
-      expressFeePercent: data.expressFeePercent,
       netPayoutAmount: data.netPayoutAmount,
       createdAt: FieldValue.serverTimestamp(),
       pdfBase64,
       emailSent: false,
     };
+    
+    // Optionale Express-Fee Felder nur hinzufuegen wenn definiert
+    if (data.expressFeeAmount !== undefined) {
+      invoice.expressFeeAmount = data.expressFeeAmount;
+    }
+    if (data.expressFeePercent !== undefined) {
+      invoice.expressFeePercent = data.expressFeePercent;
+    }
     
     // In Firestore speichern
     if (!db) throw new Error('Firebase db not initialized');
