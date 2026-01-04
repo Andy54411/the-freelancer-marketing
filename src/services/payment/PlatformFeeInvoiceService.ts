@@ -510,6 +510,19 @@ export class PlatformFeeInvoiceService {
 </html>
       `.trim();
       
+      // PDF aus Storage laden falls vorhanden
+      let pdfBase64: string | undefined;
+      if (invoice.pdfStoragePath && admin) {
+        try {
+          const bucket = admin.storage().bucket();
+          const file = bucket.file(invoice.pdfStoragePath);
+          const [buffer] = await file.download();
+          pdfBase64 = buffer.toString('base64');
+        } catch (downloadError) {
+          console.error('[PlatformFeeInvoice] Failed to download PDF from Storage:', downloadError);
+        }
+      }
+      
       // Verwende Master-Route (kein Passwort erforderlich für @taskilo.de E-Mails)
       const response = await fetch(`${WEBMAIL_API_URL}/api/send/master`, {
         method: 'POST',
@@ -522,10 +535,11 @@ export class PlatformFeeInvoiceService {
           to: providerEmail,
           subject: `Taskilo Platform-Gebühr Rechnung ${invoice.invoiceNumber}`,
           html: emailHtml,
-          attachments: invoice.pdfStoragePath ? [
+          attachments: pdfBase64 ? [
             {
               filename: `Rechnung_${invoice.invoiceNumber}.pdf`,
-              storageUrl: invoice.pdfUrl,
+              content: pdfBase64,
+              encoding: 'base64',
               contentType: 'application/pdf',
             },
           ] : [],
