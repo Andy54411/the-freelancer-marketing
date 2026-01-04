@@ -81,6 +81,8 @@ export default function PayoutOverviewPage() {
     taskerLevel: TaskiloLevel;
     payoutConfig: PayoutConfig & { isInstantPayout: boolean };
     balance: { inClearing: number; available: number; released: number; currency: string };
+    grossBalance: { inClearing: number; available: number; released: number };
+    platformFees: { inClearing: number; available: number; released: number; total: number };
     counts: { inClearing: number; available: number; released: number };
     payoutOptions: { standard: PayoutOption; express: PayoutOption | null };
     orders: AvailableOrder[];
@@ -203,6 +205,8 @@ export default function PayoutOverviewPage() {
         taskerLevel: data.taskerLevel,
         payoutConfig: data.payoutConfig,
         balance: data.balance,
+        grossBalance: data.grossBalance || { inClearing: 0, available: 0, released: 0 },
+        platformFees: data.platformFees || { inClearing: 0, available: 0, released: 0, total: 0 },
         counts: data.counts,
         payoutOptions: data.payoutOptions,
         orders: data.orders || [],
@@ -583,15 +587,49 @@ export default function PayoutOverviewPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
+                  {/* Platform-Gebühr Übersicht */}
+                  {escrowData.platformFees && escrowData.platformFees.total > 0 && (
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-600 font-medium">Platform-Gebühren Übersicht</div>
+                        <Badge variant="outline" className="text-xs">
+                          {escrowData.payoutConfig.platformFeePercent}% Gebühr
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Brutto (Kundenzahlung):</span>
+                          <span className="font-medium ml-2">{formatCurrency(escrowData.grossBalance?.available || 0)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Platform-Gebühr:</span>
+                          <span className="font-medium text-red-600 ml-2">-{formatCurrency(escrowData.platformFees.available)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Netto (Ihre Auszahlung):</span>
+                          <span className="font-bold text-green-600 ml-2">{formatCurrency(escrowData.balance.available)}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Gesamt einbehaltene Platform-Gebühren: {formatCurrency(escrowData.platformFees.total)}
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Balance Uebersicht */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm text-green-600 font-medium">Verfügbar</div>
+                          <div className="text-sm text-green-600 font-medium">Verfügbar (Netto)</div>
                           <div className="text-2xl font-bold text-green-700">
                             {formatCurrency(escrowData.balance.available)}
                           </div>
+                          {escrowData.grossBalance && escrowData.grossBalance.available > 0 && (
+                            <div className="text-xs text-gray-500">
+                              Brutto: {formatCurrency(escrowData.grossBalance.available)}
+                            </div>
+                          )}
                         </div>
                         <CheckCircle className="h-8 w-8 text-green-500" />
                       </div>
@@ -604,10 +642,15 @@ export default function PayoutOverviewPage() {
                       <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm text-yellow-600 font-medium">In Clearing</div>
+                            <div className="text-sm text-yellow-600 font-medium">In Clearing (Netto)</div>
                             <div className="text-2xl font-bold text-yellow-700">
                               {formatCurrency(escrowData.balance.inClearing)}
                             </div>
+                            {escrowData.grossBalance && escrowData.grossBalance.inClearing > 0 && (
+                              <div className="text-xs text-gray-500">
+                                Brutto: {formatCurrency(escrowData.grossBalance.inClearing)}
+                              </div>
+                            )}
                           </div>
                           <Clock className="h-8 w-8 text-yellow-500" />
                         </div>
@@ -620,10 +663,15 @@ export default function PayoutOverviewPage() {
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm text-blue-600 font-medium">Bereits ausgezahlt</div>
+                          <div className="text-sm text-blue-600 font-medium">Bereits ausgezahlt (Netto)</div>
                           <div className="text-2xl font-bold text-blue-700">
                             {formatCurrency(escrowData.balance.released)}
                           </div>
+                          {escrowData.grossBalance && escrowData.grossBalance.released > 0 && (
+                            <div className="text-xs text-gray-500">
+                              Brutto: {formatCurrency(escrowData.grossBalance.released)}
+                            </div>
+                          )}
                         </div>
                         <CreditCard className="h-8 w-8 text-blue-500" />
                       </div>

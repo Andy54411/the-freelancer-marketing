@@ -136,9 +136,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }, { status: 400 });
       }
 
-      // Berechne Gesamtbetrag
-      const totalAmount = escrows.reduce((sum, e) => sum + (e.providerAmount || e.amount), 0);
-
       // Rufe Payment Backend für Batch-Payout
       try {
         const response = await fetch(`${PAYMENT_BACKEND_URL}/api/payment/payout/batch`, {
@@ -437,14 +434,31 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // WICHTIG: Escrow-Beträge sind in CENTS gespeichert, konvertiere zu EUR
     const centsToEur = (cents: number) => cents / 100;
     
+    // Netto-Beträge (providerAmount = nach Platform-Gebühr)
     const clearingTotalCents = clearing.reduce((sum, e: { providerAmount?: number; amount?: number }) => sum + (e.providerAmount || e.amount || 0), 0);
     const availableTotalCents = available.reduce((sum, e: { providerAmount?: number; amount?: number }) => sum + (e.providerAmount || e.amount || 0), 0);
     const releasedTotalCents = released.reduce((sum, e: { providerAmount?: number; amount?: number }) => sum + (e.providerAmount || e.amount || 0), 0);
+    
+    // Brutto-Beträge (amount = vor Platform-Gebühr, was der Kunde gezahlt hat)
+    const clearingGrossCents = clearing.reduce((sum, e: { amount?: number }) => sum + (e.amount || 0), 0);
+    const availableGrossCents = available.reduce((sum, e: { amount?: number }) => sum + (e.amount || 0), 0);
+    const releasedGrossCents = released.reduce((sum, e: { amount?: number }) => sum + (e.amount || 0), 0);
+    
+    // Platform-Gebühren (Differenz zwischen Brutto und Netto)
+    const clearingPlatformFeeCents = clearingGrossCents - clearingTotalCents;
+    const availablePlatformFeeCents = availableGrossCents - availableTotalCents;
+    const releasedPlatformFeeCents = releasedGrossCents - releasedTotalCents;
     
     // Konvertiere zu EUR
     const clearingTotal = centsToEur(clearingTotalCents);
     const availableTotal = centsToEur(availableTotalCents);
     const releasedTotal = centsToEur(releasedTotalCents);
+    const clearingGross = centsToEur(clearingGrossCents);
+    const availableGross = centsToEur(availableGrossCents);
+    const releasedGross = centsToEur(releasedGrossCents);
+    const clearingPlatformFee = centsToEur(clearingPlatformFeeCents);
+    const availablePlatformFee = centsToEur(availablePlatformFeeCents);
+    const releasedPlatformFee = centsToEur(releasedPlatformFeeCents);
 
     // Hole Rechnungsstatus für alle verfügbaren Escrows
     const ordersWithInvoiceStatus = await Promise.all(
@@ -510,12 +524,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         platformFeePercent: payoutConfig.platformFeePercent,
         isInstantPayout,
       },
-      // Balance-Info
+      // Balance-Info (Netto = nach Platform-Gebühr)
       balance: {
         inClearing: clearingTotal,
         available: availableTotal,
         released: releasedTotal,
         currency: 'EUR',
+      },
+      // Brutto-Beträge (vor Platform-Gebühr)
+      grossBalance: {
+        inClearing: clearingGross,
+        available: availableGross,
+        released: releasedGross,
+      },
+      // Platform-Gebühren
+      platformFees: {
+        inClearing: clearingPlatformFee,
+        available: availablePlatformFee,
+        released: releasedPlatformFee,
+        total: clearingPlatformFee + availablePlatformFee + releasedPlatformFee,
       },
       counts: {
         inClearing: clearing.length,
