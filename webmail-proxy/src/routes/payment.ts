@@ -632,7 +632,11 @@ router.post('/payout/single', async (req: Request, res: Response) => {
     // Counterparty finden oder erstellen
     const counterpartyId = await findOrCreateCounterparty(iban, bic, name);
 
-    const requestId = `single_${metadata?.verificationId || Date.now()}_${Date.now()}`;
+    // request_id max 40 Zeichen - kuerze verificationId
+    const shortId = metadata?.verificationId 
+      ? metadata.verificationId.slice(-12) // Letzte 12 Zeichen
+      : String(Date.now()).slice(-10);
+    const requestId = `sp_${shortId}_${Date.now()}`.slice(0, 40);
 
     // Payment erstellen
     const paymentRequest: RevolutPaymentRequest = {

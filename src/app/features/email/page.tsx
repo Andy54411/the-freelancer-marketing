@@ -65,7 +65,7 @@ const statsData = [
 
 const emailPreviewData = [
   { from: 'Meier GmbH', subject: 'Angebot für Projekt 2024', time: '09:15', unread: true, starred: true },
-  { from: 'Schmidt & Partner', subject: 'RE: Terminbestatigung', time: '08:42', unread: true, starred: false },
+  { from: 'Schmidt & Partner', subject: 'RE: Terminbestätigung', time: '08:42', unread: true, starred: false },
   { from: 'Amazon Web Services', subject: 'Ihre monatliche Rechnung', time: 'Gestern', unread: false, starred: false },
   { from: 'LinkedIn', subject: '5 neue Profilbesuche', time: 'Gestern', unread: false, starred: false },
 ];

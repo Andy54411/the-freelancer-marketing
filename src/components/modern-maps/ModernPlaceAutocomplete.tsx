@@ -7,6 +7,7 @@ interface PlaceDetails {
   city: string;
   postalCode: string;
   country: string;
+  state: string;
   latitude?: number;
   longitude?: number;
 }
@@ -44,6 +45,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
       let city = '';
       let postalCode = '';
       let country = '';
+      let state = '';
 
       place.address_components.forEach((component: any) => {
         const types = component.types;
@@ -54,6 +56,8 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
           postalCode = component.long_name;
         } else if (types.includes('country')) {
           country = component.long_name;
+        } else if (types.includes('administrative_area_level_1')) {
+          state = component.long_name;
         }
       });
 
@@ -62,6 +66,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
         city,
         postalCode,
         country,
+        state,
         latitude: place.geometry?.location?.lat?.(),
         longitude: place.geometry?.location?.lng?.(),
       };

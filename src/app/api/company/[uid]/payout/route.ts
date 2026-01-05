@@ -423,6 +423,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const taskerLevel = (companyData?.taskerLevel?.currentLevel || 'new') as TaskiloLevel;
     const payoutConfig = PAYOUT_CONFIG[taskerLevel];
 
+    // Bank-Daten extrahieren
+    const bankData = {
+      iban: companyData?.iban || companyData?.bankDetails?.iban || companyData?.step4?.iban,
+      bic: companyData?.bic || companyData?.bankDetails?.bic || companyData?.step4?.bic,
+      accountHolder: companyData?.accountHolder || companyData?.bankDetails?.accountHolder || companyData?.step4?.accountHolder,
+      bankName: companyData?.bankName || companyData?.bankDetails?.bankName || companyData?.step4?.bankName,
+    };
+
+    // Bank-Verifizierungsstatus pruefen
+    let bankVerified = false;
+    if (bankData.iban) {
+      const { BankVerificationService } = await import('@/services/BankVerificationService');
+      const bankVerificationService = new BankVerificationService(adminDb);
+      bankVerified = await bankVerificationService.isIbanVerified(companyId, bankData.iban);
+    }
+
     // Hole alle Escrows für diese Company
     const escrowsSnapshot = await adminDb
       .collection('escrows')
@@ -610,7 +626,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       orderCount: available.length,
       orders: ordersWithInvoiceStatus,
       ordersWithMissingInvoices: ordersWithMissingInvoices.length,
-      canPayout: ordersWithMissingInvoices.length === 0 && availableTotal > 0,
+      canPayout: ordersWithMissingInvoices.length === 0 && availableTotal > 0 && bankVerified,
+      // Bank-Daten und Verifizierung
+      bankData,
+      bankVerified,
     });
 
   } catch (error) {

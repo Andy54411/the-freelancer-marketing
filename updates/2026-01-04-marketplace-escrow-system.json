@@ -1,0 +1,53 @@
+{
+  "version": "2.5.0",
+  "date": "2026-01-04",
+  "title": "Marktplatz Escrow-System",
+  "description": "Komplettes Marktplatz-System mit korrektem Gebühren- und Escrow-Flow",
+  "category": "feature",
+  "priority": "high",
+  "changes": [
+    {
+      "type": "feature",
+      "title": "3,75 EUR Veröffentlichungsgebühr",
+      "description": "Kunden zahlen eine einmalige Gebühr von 3,75 EUR beim Erstellen eines Marktplatz-Projekts"
+    },
+    {
+      "type": "feature",
+      "title": "Escrow-basierte Angebotannahme",
+      "description": "Bei Annahme eines Angebots wird der volle Auftragsbetrag ins Escrow gezahlt. Danach werden die Kontaktdaten für beide Seiten freigeschaltet."
+    },
+    {
+      "type": "feature",
+      "title": "MarketplaceProposalCard Komponente",
+      "description": "Neue Komponente zur Anzeige von Marktplatz-Angeboten mit Escrow-Integration und Kontaktfreischaltung"
+    },
+    {
+      "type": "improvement",
+      "title": "CreateOrderModal Marktplatz-Flow",
+      "description": "Verbesserter Workflow mit klar kommunizierter Gebührenstruktur und Schritt-für-Schritt Erklärung"
+    },
+    {
+      "type": "improvement",
+      "title": "Revolut Webhook Erweiterung",
+      "description": "Automatische Kontaktfreischaltung nach erfolgreicher Escrow-Zahlung für Marktplatz-Projekte"
+    }
+  ],
+  "files_modified": [
+    "src/components/marketplace/MarketplaceProposalCard.tsx",
+    "src/app/api/marketplace/publishing-fee/route.ts",
+    "src/app/api/marketplace/publishing-fee/webhook/route.ts",
+    "src/app/api/marketplace/proposals/[proposalId]/decline/route.ts",
+    "src/app/api/payment/escrow/route.ts",
+    "src/app/api/payment/revolut-webhook/route.ts",
+    "src/app/dashboard/user/[uid]/components/createordermodal.tsx",
+    "src/app/dashboard/user/[uid]/projects/[projectId]/page.tsx"
+  ],
+  "breaking_changes": false,
+  "requires_migration": false,
+  "tested": false,
+  "notes": [
+    "Flow: Kunde erstellt Projekt (3,75 EUR) -> Anbieter senden Angebote -> Kunde nimmt an (Escrow) -> Kontaktdaten freigeschaltet",
+    "Alte reveal-fee API wurde entfernt und durch publishing-fee ersetzt",
+    "Kontaktdaten werden erst nach Escrow-Zahlung für BEIDE Seiten sichtbar"
+  ]
+}

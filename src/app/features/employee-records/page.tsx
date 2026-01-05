@@ -209,17 +209,17 @@ export default function EmployeeRecordsPage() {
                       <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
                         <FileText className="h-5 w-5 text-teal-300" />
                         <span className="text-white text-sm">Arbeitsvertrag_2020.pdf</span>
-                        <Badge className="ml-auto bg-green-500/20 text-green-300 text-xs">Gultig</Badge>
+                        <Badge className="ml-auto bg-green-500/20 text-green-300 text-xs">Gültig</Badge>
                       </div>
                       <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
                         <GraduationCap className="h-5 w-5 text-teal-300" />
                         <span className="text-white text-sm">Zertifikat_Projektmanagement.pdf</span>
-                        <Badge className="ml-auto bg-yellow-500/20 text-yellow-300 text-xs">Lauft ab</Badge>
+                        <Badge className="ml-auto bg-yellow-500/20 text-yellow-300 text-xs">Läuft ab</Badge>
                       </div>
                       <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
                         <UserCheck className="h-5 w-5 text-teal-300" />
                         <span className="text-white text-sm">Gesundheitszeugnis.pdf</span>
-                        <Badge className="ml-auto bg-green-500/20 text-green-300 text-xs">Gultig</Badge>
+                        <Badge className="ml-auto bg-green-500/20 text-green-300 text-xs">Gültig</Badge>
                       </div>
                     </div>
                   </div>

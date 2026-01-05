@@ -21,7 +21,10 @@ import {
   Crown,
   User,
   CreditCard,
+  Download,
+  ShieldCheck,
 } from 'lucide-react';
+import { BankVerificationCard } from '@/components/settings/BankVerificationCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +69,11 @@ interface PayoutHistoryItem {
   arrival_date: number;
   method: string;
   description?: string;
+  invoiceUrl?: string;
+  invoiceId?: string;
+  grossAmount?: number;
+  platformFee?: number;
+  expressFee?: number;
 }
 
 interface PayoutHistoryData {
@@ -109,6 +117,13 @@ export default function PayoutOverviewPage() {
   const [ordersWithMissingInvoices, setOrdersWithMissingInvoices] = useState<AvailableOrder[]>([]);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [pendingExpressPayout, setPendingExpressPayout] = useState(false);
+  const [bankVerified, setBankVerified] = useState<boolean | null>(null);
+  const [companyBankData, setCompanyBankData] = useState<{
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    bankName?: string;
+  } | null>(null);
 
   // Refs für Realtime-Listener
   const ordersUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -234,6 +249,14 @@ export default function PayoutOverviewPage() {
       } else {
         setOrdersWithMissingInvoices([]);
       }
+
+      // Lade Bank-Daten und Verifizierungsstatus
+      if (data.bankData) {
+        setCompanyBankData(data.bankData);
+      }
+      if (data.bankVerified !== undefined) {
+        setBankVerified(data.bankVerified);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
@@ -308,10 +331,13 @@ export default function PayoutOverviewPage() {
       setHistoryLoading(true);
       setError(null);
 
-      const response = await fetch('/api/get-payout-history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUserId: uid }),
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch(`/api/company/${uid}/payout-history`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -483,9 +509,8 @@ export default function PayoutOverviewPage() {
           <button
             onClick={() => {
               setActiveTab('history');
-              if (!historyData) {
-                loadPayoutHistory();
-              }
+              // Immer neu laden wenn Tab gewechselt wird
+              loadPayoutHistory();
             }}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'history'
@@ -572,6 +597,30 @@ export default function PayoutOverviewPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bankverifizierung - wenn nicht verifiziert */}
+            {bankVerified === false && (
+              <Alert className="border-amber-200 bg-amber-50">
+                <ShieldCheck className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>Bankverifizierung erforderlich:</strong> Bevor Sie eine Auszahlung beantragen koennen, muss Ihr Bankkonto verifiziert werden. 
+                  Dies dient Ihrer Sicherheit und stellt sicher, dass Auszahlungen an das richtige Konto erfolgen.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* BankVerificationCard */}
+            <BankVerificationCard
+              companyId={uid}
+              currentIban={companyBankData?.iban}
+              currentBic={companyBankData?.bic}
+              currentAccountHolder={companyBankData?.accountHolder}
+              currentBankName={companyBankData?.bankName}
+              onVerificationComplete={() => {
+                setBankVerified(true);
+                loadEscrowData();
+              }}
+            />
 
             <Card>
               <CardHeader>
@@ -927,10 +976,10 @@ export default function PayoutOverviewPage() {
                                 {getPayoutStatusBadge(payout.status)}
                               </div>
                               <div className="text-sm text-gray-500 mt-1">
-                                Beantragt am {formatDate(payout.created * 1000)}
+                                Beantragt am {formatDate(payout.created)}
                                 {payout.arrival_date && (
                                   <span className="ml-2">
-                                    • Ankunft: {formatDate(payout.arrival_date * 1000)}
+                                    Ankunft: {formatDate(payout.arrival_date)}
                                   </span>
                                 )}
                               </div>
@@ -939,12 +988,41 @@ export default function PayoutOverviewPage() {
                                   {payout.description}
                                 </div>
                               )}
+                              {/* Gebühren-Details wenn vorhanden */}
+                              {(payout.grossAmount || payout.platformFee || payout.expressFee) && (
+                                <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-2">
+                                  {payout.grossAmount && (
+                                    <span>Brutto: {formatCurrency(payout.grossAmount / 100)}</span>
+                                  )}
+                                  {payout.platformFee && payout.platformFee > 0 && (
+                                    <span className="text-red-500">Platform-Gebühr: -{formatCurrency(payout.platformFee / 100)}</span>
+                                  )}
+                                  {payout.expressFee && payout.expressFee > 0 && (
+                                    <span className="text-amber-500">Express-Gebühr: -{formatCurrency(payout.expressFee / 100)}</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-right">
-                              <div className="font-medium text-[#14ad9f]">
-                                {formatCurrency(payout.amount / 100)}
+                            <div className="text-right flex items-center gap-3">
+                              <div>
+                                <div className="font-medium text-[#14ad9f]">
+                                  {formatCurrency(payout.amount / 100)}
+                                </div>
+                                <div className="text-sm text-gray-500">{payout.method || 'SEPA'}</div>
                               </div>
-                              <div className="text-sm text-gray-500">{payout.method || 'SEPA'}</div>
+                              {/* Rechnung Download Button */}
+                              {payout.invoiceUrl && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(payout.invoiceUrl, '_blank')}
+                                  className="flex items-center gap-1.5 text-[#14ad9f] hover:text-[#0d8a7f] hover:bg-[#14ad9f]/10"
+                                  title="Platform-Gebühr Rechnung herunterladen"
+                                >
+                                  <Download className="h-4 w-4" />
+                                  <span className="hidden sm:inline text-sm">Rechnung</span>
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}

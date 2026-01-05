@@ -252,8 +252,9 @@ export default function CustomerQuoteDetailsPage({
       }
 
       if (paymentMethod === 'card' && data.checkoutUrl) {
-        // Redirect to Revolut Checkout
-        window.location.href = data.checkoutUrl;
+        // Redirect to Revolut Checkout - im neuen Tab öffnen
+        window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
+        alert('Checkout wurde in einem neuen Tab geöffnet.');
       } else if (paymentMethod === 'bank_transfer') {
         // Show bank transfer instructions
         alert(`Bitte überweisen Sie ${paymentProposal.totalAmount.toFixed(2)} ${paymentProposal.currency} an unser Treuhandkonto. Verwendungszweck: ${data.escrow?.id || quoteId}`);

@@ -8,7 +8,7 @@ import LinkTransactionModal from '@/components/finance/LinkTransactionModal';
 import ConnectedDocumentsModal from '@/components/finance/ConnectedDocumentsModal';
 import { TransactionLinkService, TransactionLink } from '@/services/transaction-link.service';
 import { InvoiceStatusService } from '@/services/invoice-status.service';
-import { Filter, Download, Search, ChevronDown, Link, FileText, X } from 'lucide-react';
+import { Filter, Download, Search, ChevronDown, Link, FileText } from 'lucide-react';
 
 // UI Transaction interface
 interface Transaction {
@@ -34,14 +34,14 @@ interface Transaction {
 export default function IncompleteTransactionsPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { firebaseUser } = useAuth();
   const uid = params?.uid as string;
 
   const credentialType = getFinAPICredentialType();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isLoading, setIsLoading] = useState(false);
   const [linksLoaded, setLinksLoaded] = useState(false);
 
   // UI States
@@ -69,7 +69,18 @@ export default function IncompleteTransactionsPage() {
   const [connectedDocumentsModal, setConnectedDocumentsModal] = useState<{
     visible: boolean;
     transactionId: string;
-    connectedDocuments: any[];
+    connectedDocuments: Array<{ 
+      id: string; 
+      documentId: string;
+      documentNumber: string;
+      customerName: string;
+      type: 'Invoice' | 'Expense'; 
+      href: string; 
+      amount: number;
+      date: string;
+      selected: boolean;
+      unlinkable: boolean;
+    }>;
   }>({
     visible: false,
     transactionId: '',
@@ -83,15 +94,23 @@ export default function IncompleteTransactionsPage() {
   const loadTransactions = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (!uid) {
-        console.log('❌ No UID provided');
+      if (!uid || !firebaseUser) {
+        console.log('❌ No UID or firebaseUser provided');
         return;
       }
 
       console.log('🔄 Loading incomplete transactions for UID:', uid);
 
+      // Get Firebase ID Token for authentication
+      const idToken = await firebaseUser.getIdToken();
+      
       const response = await fetch(
-        `/api/finapi/transactions?userId=${uid}&credentialType=${credentialType}&page=1&perPage=500`
+        `/api/finapi/transactions?userId=${uid}&credentialType=${credentialType}&page=1&perPage=500`,
+        {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        }
       );
 
       console.log('📡 API Response status:', response.status);
@@ -108,7 +127,7 @@ export default function IncompleteTransactionsPage() {
         console.log('✅ Found transactions:', data.data.transactions.length);
 
         // Filter NUR unvollständige Transaktionen (keine Verknüpfungen)
-        const allTransactions = data.data.transactions.map((t: any) => ({
+        const allTransactions = data.data.transactions.map((t: { id: string | number; counterpartName?: string; purpose?: string; bankBookingDate?: string; amount: number; accountId?: string | number }) => ({
           id: t.id.toString(),
           status: 'pending' as const,
           name: t.counterpartName || 'Unbekannt',
@@ -135,11 +154,13 @@ export default function IncompleteTransactionsPage() {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [uid, credentialType]);
+  }, [uid, credentialType, firebaseUser]);
 
   useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
+    if (firebaseUser) {
+      loadTransactions();
+    }
+  }, [loadTransactions, firebaseUser]);
 
   // Load transaction links
   const loadTransactionLinks = useCallback(async () => {
@@ -157,7 +178,7 @@ export default function IncompleteTransactionsPage() {
       const links = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-      })) as any[];
+      })) as TransactionLink[];
 
       setTransactionLinks(links);
 
@@ -170,7 +191,7 @@ export default function IncompleteTransactionsPage() {
 
         const updated = prevTransactions.map(tx => {
           // Konvertiere beide IDs zu Strings für Vergleich
-          const txLinks = links.filter((link: any) => {
+          const txLinks = links.filter((link: TransactionLink) => {
             const linkTxId = String(link.transactionId);
             const txId = String(tx.id);
             return linkTxId === txId;
@@ -180,11 +201,11 @@ export default function IncompleteTransactionsPage() {
             console.log(`✅ Transaction ${tx.id}: ${txLinks.length} links gefunden`, txLinks);
           }
 
-          const linkedDocuments = txLinks.map((link: any) => link.documentId);
-          const linkedInvoices = txLinks.map((link: any) => ({
+          const linkedDocuments = txLinks.map((link: TransactionLink) => link.documentId);
+          const linkedInvoices = txLinks.map((link: TransactionLink) => ({
             documentId: link.documentId,
-            documentNumber: link.documentNumber || link.documentData?.number || 'Unbekannt',
-            customerName: link.customerName || link.documentData?.customerName || 'Unbekannt',
+            documentNumber: String(link.documentNumber || 'Unbekannt'),
+            customerName: String(link.customerName || 'Unbekannt'),
           }));
 
           return {
@@ -219,10 +240,10 @@ export default function IncompleteTransactionsPage() {
   const handleLinkTransaction = async (
     transactionId: string,
     documentId: string,
-    documentData?: any
+    documentData?: Record<string, unknown>
   ) => {
     try {
-      if (!user?.uid || !uid) return;
+      if (!firebaseUser?.uid || !uid) return;
 
       const transaction = transactions.find(tx => tx.id === transactionId);
       if (!transaction) return;
@@ -249,7 +270,7 @@ export default function IncompleteTransactionsPage() {
           accountId: transaction.accountId,
         },
         finalDocumentData,
-        user.uid
+        firebaseUser.uid
       );
 
       if (result.success) {
@@ -277,8 +298,8 @@ export default function IncompleteTransactionsPage() {
                     ...(tx.linkedInvoices || []),
                     {
                       documentId: documentId,
-                      documentNumber: finalDocumentData.documentNumber,
-                      customerName: finalDocumentData.customerName,
+                      documentNumber: String(finalDocumentData.documentNumber || ''),
+                      customerName: String(finalDocumentData.customerName || ''),
                     },
                   ],
                   bookingStatus: 'booked' as const,
@@ -315,7 +336,7 @@ export default function IncompleteTransactionsPage() {
       }
 
       const relevantLink = transactionLinks.find(
-        (link: any) =>
+        (link: TransactionLink) =>
           link.transactionId === transaction.id && link.documentId === invoice.documentId
       );
 
@@ -345,17 +366,16 @@ export default function IncompleteTransactionsPage() {
   // Handle unlinking
   const handleUnlinkDocument = async (transactionId: string, documentId: string) => {
     try {
-      if (!user?.uid || !uid) return;
+      if (!firebaseUser?.uid || !uid) return;
 
       const confirmed = window.confirm('Sind Sie sicher, dass Sie die Verknüpfung lösen möchten?');
       if (!confirmed) return;
 
-      const { doc, deleteDoc, collection } = await import('firebase/firestore');
+      const { doc, deleteDoc } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
-      const transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
       const linkToDelete = transactionLinks.find(
-        (link: any) => link.transactionId === transactionId && link.documentId === documentId
+        (link: TransactionLink) => link.transactionId === transactionId && link.documentId === documentId
       );
 
       if (linkToDelete && linkToDelete.id) {
@@ -382,7 +402,7 @@ export default function IncompleteTransactionsPage() {
 
       setTransactionLinks(prev =>
         prev.filter(
-          (link: any) => !(link.transactionId === transactionId && link.documentId === documentId)
+          (link: TransactionLink) => !(link.transactionId === transactionId && link.documentId === documentId)
         )
       );
     } catch (error) {
@@ -478,8 +498,8 @@ export default function IncompleteTransactionsPage() {
       }
 
       // Dann nach gewähltem Kriterium sortieren
-      let aVal: any;
-      let bVal: any;
+      let aVal: Date | number | string;
+      let bVal: Date | number | string;
 
       switch (sortBy) {
         case 'buchungstag':

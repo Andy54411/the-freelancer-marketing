@@ -26,7 +26,7 @@ import {
   Settings,
   AlertTriangle,
 } from 'lucide-react';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 interface Message {
@@ -179,8 +179,14 @@ Wie kann ich Ihnen heute helfen?`,
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(inputValue.trim());
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const validation = await validateAndLogSensitiveData(
+      inputValue.trim(),
+      'chat',
+      userId,
+      'Projekt-Assistent',
+      userId
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,

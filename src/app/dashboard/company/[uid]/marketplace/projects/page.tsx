@@ -19,7 +19,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { db } from '@/firebase/clients';
-import { collection, query, where, orderBy, onSnapshot, limit, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit, doc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import MarketplaceProposalModal from '@/components/MarketplaceProposalModal';
@@ -115,8 +115,6 @@ export default function CompanyMarketplacePage() {
   useEffect(() => {
     if (!uid || !user || !companyData) return;
 
-    // Debug: Zeige Unternehmensdaten
-
     // Extrahiere die Kategorien des Unternehmens
     const companyMainCategory = companyData.selectedCategory;
     const companySubcategory = companyData.selectedSubcategory;
@@ -130,16 +128,21 @@ export default function CompanyMarketplacePage() {
 
     const projectRequestsRef = collection(db, 'project_requests');
 
-    // Query: Hole ALLE aktiven öffentlichen Projekte der Hauptkategorie
-    // und filtere clientseitig nach Subkategorie (wegen möglicher Dateninkonsistenzen)
-    const q = query(
-      projectRequestsRef,
-      where('status', 'in', ['open', 'active']), // Unterstütze beide Status-Typen
-      where('isPublic', '==', true), // Nur öffentliche Projekte
+    // Query: Hole aktive öffentliche Projekte der Haupt- und Subkategorie
+    // KEIN orderBy - Sort in App (Firestore Regel)
+    // Wenn Subkategorie vorhanden, filtere danach
+    const constraints = [
+      where('status', 'in', ['open', 'active']),
+      where('isPublic', '==', true),
       where('category', '==', companyMainCategory),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
+    ];
+    
+    // Subkategorie-Filter hinzufügen wenn vorhanden
+    if (companySubcategory) {
+      constraints.push(where('subcategory', '==', companySubcategory));
+    }
+
+    const q = query(projectRequestsRef, ...constraints, limit(50));
 
     const unsubscribe = onSnapshot(
       q,
@@ -175,6 +178,13 @@ export default function CompanyMarketplacePage() {
           };
         });
 
+        // Sortiere in App nach createdAt (neueste zuerst)
+        availableProjects.sort((a, b) => {
+          const aDate = getDateFromFirestore(a.createdAt).getTime();
+          const bDate = getDateFromFirestore(b.createdAt).getTime();
+          return bDate - aDate;
+        });
+
         // TEMPORÄR: Zeige ALLE Projekte der Hauptkategorie (ignoriere Subkategorie-Filter)
         // Dies hilft bei Dateninkonsistenzen wo Projekte falsche Subkategorien haben
         const filteredProjects = availableProjects;
@@ -182,7 +192,7 @@ export default function CompanyMarketplacePage() {
         setProjects(filteredProjects);
         setLoading(false);
       },
-      error => {
+      _error => {
         toast.error('Fehler beim Laden der verfügbaren Projekte');
         setLoading(false);
       }

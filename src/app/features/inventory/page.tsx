@@ -87,11 +87,11 @@ export default function InventoryPage() {
                 <Badge variant="outline" className="mb-4 bg-white/10 text-white border-white/20">
                   Business Solutions
                 </Badge>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                  Lager-<br />
-                  <span className="text-teal-200">bestandsverwaltung</span>
+                <h1 className="text-4xl md:text-5xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                  Lagerbestands-<br />
+                  <span className="text-teal-200">verwaltung</span>
                 </h1>
-                <p className="text-xl text-white/90 mb-8 leading-relaxed">
+                <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-lg">
                   Behalten Sie den Überblick über Ihren Lagerbestand. 
                   Automatische Warnungen, Barcode-Scanning und Analysen.
                 </p>
@@ -153,7 +153,7 @@ export default function InventoryPage() {
                               item.status === 'out' ? 'text-red-600' : 
                               item.status === 'low' ? 'text-yellow-600' : 'text-gray-900'
                             }`}>
-                              {item.stock} Stuck
+                              {item.stock} Stück
                             </p>
                             <p className="text-xs text-gray-500">Min: {item.minStock}</p>
                           </div>

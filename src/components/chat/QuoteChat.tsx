@@ -20,7 +20,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import ChatNotificationBell from './ChatNotificationBell';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 interface Message {
@@ -225,8 +225,14 @@ export default function QuoteChat({
 
     if (!newMessage.trim() || !firebaseUser || loading) return;
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(newMessage.trim());
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const validation = await validateAndLogSensitiveData(
+      newMessage.trim(),
+      'chat',
+      companyId,
+      providerName,
+      firebaseUser.uid
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,

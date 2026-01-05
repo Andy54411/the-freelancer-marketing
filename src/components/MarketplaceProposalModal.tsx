@@ -1,10 +1,11 @@
 /**
  * MarketplaceProposalModal - Angebot für Marketplace-Projekt abgeben
  * Spezifisch für bestehende project_requests aus dem Marketplace
+ * Inkl. Content-Safety-Prüfung zur Verhinderung von Datenweitergabe
  */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Calendar, MapPin, Euro, Send, Loader2, Building } from 'lucide-react';
+import { FileText, Calendar, MapPin, Euro, Send, Loader2, Building, AlertTriangle, Info } from 'lucide-react';
+import { ContentSafetyService } from '@/services/ContentSafetyService';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { db } from '@/firebase/clients';
 import { collection, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 
@@ -62,12 +70,38 @@ export default function MarketplaceProposalModal({
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [availableDate, setAvailableDate] = useState('');
 
+  // Content Safety Check
+  const contentSafetyResult = useMemo(() => {
+    if (!proposalMessage.trim()) return { isSafe: true, violations: [] };
+    return ContentSafetyService.checkContent(proposalMessage);
+  }, [proposalMessage]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user || !proposalPrice || !proposalMessage) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
+    }
+
+    // Content Safety Check - Blockiere bei Verstößen
+    if (!contentSafetyResult.isSafe) {
+      const severity = ContentSafetyService.getViolationSeverity(contentSafetyResult.violations);
+      
+      if (severity === 'block') {
+        // Protokolliere Verstoß für Admin
+        ContentSafetyService.logViolation(
+          companyId,
+          companyName,
+          user.uid,
+          'proposal',
+          proposalMessage,
+          contentSafetyResult.violations
+        );
+        
+        toast.error(ContentSafetyService.getViolationMessage(contentSafetyResult.violations));
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -240,7 +274,26 @@ export default function MarketplaceProposalModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="proposalMessage">Nachricht an den Kunden *</Label>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Label htmlFor="proposalMessage">Nachricht an den Kunden *</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="cursor-help">
+                            <Info className="h-4 w-4 text-gray-400 hover:text-[#14ad9f]" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-sm">
+                            <strong>Wichtiger Hinweis:</strong> Die Weitergabe von Kontaktdaten 
+                            (Telefon, E-Mail, Adressen) ist nicht gestattet und führt zur 
+                            <strong> sofortigen Sperrung Ihres Kontos</strong>. Die Kommunikation 
+                            erfolgt über die Plattform.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Textarea
                     id="proposalMessage"
                     value={proposalMessage}
@@ -248,7 +301,20 @@ export default function MarketplaceProposalModal({
                     placeholder="Beschreiben Sie Ihr Angebot, Ihre Erfahrung und warum Sie der richtige Anbieter für dieses Projekt sind..."
                     rows={6}
                     required
+                    className={!contentSafetyResult.isSafe ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {!contentSafetyResult.isSafe && (
+                    <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-red-700">
+                        <p className="font-medium">Kontaktdaten erkannt</p>
+                        <p className="mt-1">
+                          Ihre Nachricht enthält private Kontaktdaten. Bitte entfernen Sie diese, 
+                          um fortzufahren. Die Weitergabe von Kontaktdaten führt zur Sperrung Ihres Kontos.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -257,8 +323,8 @@ export default function MarketplaceProposalModal({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+                    disabled={isSubmitting || !contentSafetyResult.isSafe}
+                    className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>

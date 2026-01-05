@@ -7,15 +7,16 @@ export const metadata: Metadata = {
 };
 
 interface CashbookPageProps {
-  params: {
+  params: Promise<{
     uid: string;
-  };
+  }>;
 }
 
-export default function CashbookPage({ params }: CashbookPageProps) {
+export default async function CashbookPage({ params }: CashbookPageProps) {
+  const { uid } = await params;
   return (
     <div className="container mx-auto py-6 px-4">
-      <CashbookComponent companyId={params.uid} />
+      <CashbookComponent companyId={uid} />
     </div>
   );
 }

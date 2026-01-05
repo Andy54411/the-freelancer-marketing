@@ -432,17 +432,19 @@ export class EInvoiceService {
     try {
       const q = query(
         collection(db, this.COLLECTION),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
+        where('companyId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const results = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as EInvoiceData[];
+      
+      // Sort in application (no orderBy in Firestore)
+      return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
       throw new Error('E-Rechnungen konnten nicht geladen werden');
     }

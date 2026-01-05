@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Bot, User, Clock, CheckCircle2 } from 'lucide-react';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 interface ChatMessage {
@@ -84,8 +84,14 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
   const sendMessage = async () => {
     if (!newMessage.trim() || isLoading) return;
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(newMessage.trim());
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const validation = await validateAndLogSensitiveData(
+      newMessage.trim(),
+      'chat',
+      customerId,
+      customerName || 'Unbekannt',
+      customerId
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,

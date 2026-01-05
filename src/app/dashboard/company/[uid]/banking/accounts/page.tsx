@@ -1153,6 +1153,44 @@ export default function BankingAccountsPage() {
     );
   }
 
+  // Keine Konten verbunden - zeige Verbindungs-Aufforderung
+  if (accounts.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Banking</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Verbinden Sie Ihr Bankkonto, um Transaktionen zu sehen
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <div className="text-center max-w-md mx-auto">
+            <div className="mx-auto w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-6">
+              <Euro className="h-8 w-8 text-[#14ad9f]" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Kein Bankkonto verbunden
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Verbinden Sie Ihr Bankkonto um Transaktionen automatisch zu importieren, 
+              Rechnungen zuzuordnen und den Zahlungsstatus zu verfolgen.
+            </p>
+            <button
+              onClick={() => router.push(`/dashboard/company/${uid}/banking`)}
+              className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-[#14ad9f] rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Bankkonto verbinden
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

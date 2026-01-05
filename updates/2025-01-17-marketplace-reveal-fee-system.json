@@ -1,0 +1,67 @@
+{
+  "version": "2.8.0",
+  "date": "2025-01-17",
+  "title": "Marktplatz-System mit Vermittlungsgebühr",
+  "type": "feature",
+  "priority": "high",
+  "description": "Neues Marktplatz-System: Kunden können Aufträge öffentlich veröffentlichen. Dienstleister geben Angebote ab. Kontaktdaten werden erst nach Zahlung der 3,75 EUR Vermittlungsgebühr freigeschaltet.",
+  "changes": [
+    {
+      "category": "Neue Funktion",
+      "items": [
+        "Marktplatz-Modus beim Erstellen neuer Aufträge",
+        "Toggle zwischen 'Tasker direkt auswählen' und 'Im Marktplatz veröffentlichen'",
+        "Projekt-Formular für Marktplatz-Anfragen mit Titel, Budget und Zeitrahmen",
+        "Automatische Benachrichtigung an alle Dienstleister der Subkategorie"
+      ]
+    },
+    {
+      "category": "Vermittlungsgebühr",
+      "items": [
+        "3,75 EUR Gebühr zum Freischalten von Anbieter-Kontaktdaten",
+        "Kontaktdaten (E-Mail, Telefon) erst nach Zahlung sichtbar",
+        "API-Route für Reveal-Fee Zahlung über Hetzner Payment",
+        "Webhook-Handler für Zahlungsbestätigung",
+        "Speicherung in platformFeeInvoices für Buchhaltung"
+      ]
+    },
+    {
+      "category": "Neue Komponenten",
+      "items": [
+        "MarketplaceProposalCard - Zeigt Angebote mit gesperrten/freigeschalteten Kontaktdaten",
+        "Marketplace Success Screen nach Veröffentlichung",
+        "Info-Banner über Vermittlungsgebühr für Transparenz"
+      ]
+    },
+    {
+      "category": "Neue API-Routes",
+      "items": [
+        "/api/marketplace/reveal-fee - POST: Zahlung initiieren, GET: Status prüfen",
+        "/api/marketplace/reveal-fee/webhook - Zahlungsbestätigung verarbeiten"
+      ]
+    },
+    {
+      "category": "Neue Firestore Collections",
+      "items": [
+        "marketplace_reveal_fees - Speichert Zahlungsstatus für Kontaktfreischaltungen"
+      ]
+    }
+  ],
+  "affectedAreas": [
+    "Kunden-Dashboard - Auftragserfassung",
+    "Marktplatz - Angebotsansicht",
+    "Payment System - Hetzner Integration",
+    "Benachrichtigungen"
+  ],
+  "technicalNotes": [
+    "project_requests Collection um isMarketplaceRequest Feld erweitert",
+    "proposals Collection speichert contactsRevealed Status",
+    "Integration mit bestehendem Escrow-System vorbereitet"
+  ],
+  "testedBy": "AI Assistant",
+  "deploymentNotes": [
+    "Keine Migration erforderlich",
+    "Neue Collection marketplace_reveal_fees wird automatisch erstellt",
+    "Webhook-URL auf Hetzner konfigurieren: /api/marketplace/reveal-fee/webhook"
+  ]
+}

@@ -17,7 +17,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 interface DirectChatMessage {
@@ -159,8 +159,15 @@ export default function DirectChatComponent({
     e.preventDefault();
     if (!newMessage.trim() || sending || !currentUser) return;
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(newMessage.trim());
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const senderName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Unbekannt';
+    const validation = await validateAndLogSensitiveData(
+      newMessage.trim(),
+      'chat',
+      currentUser.uid,
+      senderName,
+      currentUser.uid
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,
@@ -179,8 +186,7 @@ export default function DirectChatComponent({
       const messagesRef = collection(db, 'directChats', cleanChatId, 'messages');
       await addDoc(messagesRef, {
         senderId: currentUser.uid,
-        senderName:
-          `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Unbekannt',
+        senderName,
         senderType: 'company', // TODO: Bestimme dynamisch basierend auf User-Typ
         text: newMessage.trim(),
         timestamp: serverTimestamp(),

@@ -7,13 +7,51 @@ import {
 import { ProjectNotificationService } from '@/lib/project-notifications';
 import admin from 'firebase-admin';
 
+interface ResponseData {
+  message?: string;
+  notes?: string;
+  totalAmount?: number;
+  currency?: string;
+  timeline?: string;
+  serviceItems?: Array<{
+    title: string;
+    description: string;
+    price?: number;
+    quantity?: number;
+    unitPrice?: number;
+    total?: number;
+  }>;
+  terms?: string;
+  validUntil?: string;
+}
+
+interface UserData {
+  companyUid?: string;
+  companyName?: string;
+  displayName?: string;
+  name?: string;
+}
+
 /**
- * Neue Angebot-Response Struktur verarbeiten
+ * UNIFIED: Prüft ob das Projekt in project_requests existiert
+ * Gibt projectData zurück wenn gefunden, sonst null
+ */
+async function getProjectFromUnifiedCollection(projectId: string): Promise<FirebaseFirestore.DocumentData | null> {
+  const projectDoc = await db!.collection('project_requests').doc(projectId).get();
+  if (projectDoc.exists) {
+    return { id: projectDoc.id, ...projectDoc.data() };
+  }
+  return null;
+}
+
+/**
+ * UNIFIED: Neue Angebot-Response Struktur verarbeiten
+ * Unterstützt sowohl project_requests (unified) als auch legacy quotes
  */
 async function handleNewQuoteResponse(
   request: NextRequest,
   quoteId: string,
-  response: any,
+  response: ResponseData,
   companyId: string
 ) {
   // Token aus Authorization Header extrahieren
@@ -30,22 +68,21 @@ async function handleNewQuoteResponse(
     const uid = decodedToken.uid;
 
     // B2B/B2C: Prüfe sowohl users als auch companies Collection
-    let userData: any = null;
+    let userData: UserData | null = null;
     let companyUid = uid; // Default fallback
     let companyName = 'Unbekanntes Unternehmen';
 
     // Erst in users Collection suchen (B2C)
     const userDoc = await db!.collection('users').doc(uid).get();
     if (userDoc.exists) {
-      userData = userDoc.data();
+      userData = userDoc.data() as UserData;
       companyUid = userData?.companyUid || uid;
       companyName = userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen';
     } else {
       // Dann in companies Collection suchen (B2B)
-
       const companyDoc = await db!.collection('companies').doc(uid).get();
       if (companyDoc.exists) {
-        userData = companyDoc.data();
+        userData = companyDoc.data() as UserData;
         companyUid = uid; // Bei companies ist die uid direkt die companyUid
         companyName = userData?.companyName || userData?.name || 'Unbekanntes Unternehmen';
       } else {
@@ -53,28 +90,51 @@ async function handleNewQuoteResponse(
       }
     }
 
-    // Quote-Daten abrufen für Notification
-    const quoteDoc = await db!
-      .collection('companies')
-      .doc(companyId)
-      .collection('quotes')
-      .doc(quoteId)
-      .get();
-    if (!quoteDoc.exists) {
-      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
-    }
+    // UNIFIED: Prüfe zuerst ob das Projekt in project_requests existiert
+    const unifiedProject = await getProjectFromUnifiedCollection(quoteId);
+    
+    let customerUid: string | undefined;
+    let subcategory: string;
+    let isUnifiedProject = false;
 
-    const quoteData = quoteDoc.data();
-    const customerUid = quoteData?.customerUid;
-    const subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
+    if (unifiedProject) {
+      // UNIFIED: Projekt ist in project_requests
+      isUnifiedProject = true;
+      customerUid = unifiedProject.customerData?.uid || unifiedProject.customerUid;
+      subcategory = unifiedProject.subcategory || unifiedProject.serviceSubcategory || unifiedProject.title || 'Service';
+      
+      // Prüfen ob bereits ein Angebot existiert (in project_requests subcollection)
+      const hasExisting = await ProposalSubcollectionService.hasExistingProposalForProject(quoteId, companyUid);
+      if (hasExisting) {
+        return NextResponse.json(
+          { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
+          { status: 409 }
+        );
+      }
+    } else {
+      // LEGACY: Fallback auf quotes Collection
+      const quoteDoc = await db!
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
+        .doc(quoteId)
+        .get();
+      if (!quoteDoc.exists) {
+        return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+      }
 
-    // Prüfen ob bereits ein Angebot existiert
-    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, companyId);
-    if (hasExisting) {
-      return NextResponse.json(
-        { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
-        { status: 409 }
-      );
+      const quoteData = quoteDoc.data();
+      customerUid = quoteData?.customerUid;
+      subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
+
+      // Prüfen ob bereits ein Angebot existiert (legacy)
+      const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, companyId);
+      if (hasExisting) {
+        return NextResponse.json(
+          { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
+          { status: 409 }
+        );
+      }
     }
 
     // Response-Daten in Proposal-Format konvertieren
@@ -94,11 +154,13 @@ async function handleNewQuoteResponse(
       additionalNotes: response.notes || '',
     };
 
-    // Erstelle Proposal in Subcollection
-    try {
+    // Erstelle Proposal in entsprechender Subcollection
+    if (isUnifiedProject) {
+      // UNIFIED: Nutze createProposalForProject
+      await ProposalSubcollectionService.createProposalForProject(quoteId, proposalData, response as Record<string, unknown>);
+    } else {
+      // LEGACY: Nutze createProposal
       await ProposalSubcollectionService.createProposal(quoteId, proposalData, companyId, response);
-    } catch (proposalError) {
-      throw proposalError; // Re-throw to be caught by outer try-catch
     }
 
     // Benachrichtigung an Kunden senden
@@ -116,8 +178,9 @@ async function handleNewQuoteResponse(
             message: proposalData.message,
           }
         );
-      } catch (notificationError) {}
-    } else {
+      } catch {
+        // Notification-Fehler still behandeln
+      }
     }
 
     return NextResponse.json({
@@ -125,6 +188,7 @@ async function handleNewQuoteResponse(
       message: 'Angebot erfolgreich abgegeben',
       proposalId: companyUid,
       quoteId,
+      isUnifiedProject,
     });
   } catch (error) {
     return NextResponse.json(
@@ -187,14 +251,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
-    // Check if company has already submitted a proposal - verwende companyId aus body oder companyUid als Fallback
+    // UNIFIED: Prüfe zuerst ob das Projekt in project_requests existiert
+    const unifiedProject = await getProjectFromUnifiedCollection(quoteId);
     const targetCompanyId = companyId || companyUid;
-    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, targetCompanyId);
-    if (hasExisting) {
-      return NextResponse.json(
-        { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
-        { status: 409 }
-      );
+    let isUnifiedProject = false;
+
+    if (unifiedProject) {
+      // UNIFIED: Prüfe ob bereits ein Proposal existiert
+      isUnifiedProject = true;
+      const hasExisting = await ProposalSubcollectionService.hasExistingProposalForProject(quoteId, companyUid);
+      if (hasExisting) {
+        return NextResponse.json(
+          { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
+          { status: 409 }
+        );
+      }
+    } else {
+      // LEGACY: Check in quotes subcollection
+      const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, targetCompanyId);
+      if (hasExisting) {
+        return NextResponse.json(
+          { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
+          { status: 409 }
+        );
+      }
     }
 
     // Erstelle Proposal-Daten
@@ -212,31 +292,44 @@ export async function POST(request: NextRequest) {
       additionalNotes: `Email: ${providerEmail || 'Nicht angegeben'}`,
     };
 
-    // Erstelle Proposal in Subcollection
-    await ProposalSubcollectionService.createProposal(quoteId, proposalData, targetCompanyId);
+    // Erstelle Proposal in entsprechender Subcollection
+    if (isUnifiedProject) {
+      // UNIFIED: Nutze createProposalForProject
+      await ProposalSubcollectionService.createProposalForProject(quoteId, proposalData);
+    } else {
+      // LEGACY: Nutze createProposal
+      await ProposalSubcollectionService.createProposal(quoteId, proposalData, targetCompanyId);
+    }
 
     // Sende Benachrichtigung an Kunden (falls customerUid verfügbar)
-    if (customerUid) {
+    const targetCustomerUid = isUnifiedProject 
+      ? (unifiedProject?.customerData?.uid || unifiedProject?.customerUid)
+      : customerUid;
+      
+    if (targetCustomerUid) {
       try {
         await ProjectNotificationService.createNewProposalNotification(
           quoteId,
-          customerUid,
+          targetCustomerUid,
           companyUid,
           {
             companyName,
-            subcategory: subcategory || 'Service',
+            subcategory: subcategory || (isUnifiedProject ? unifiedProject?.subcategory : 'Service') || 'Service',
             proposedPrice: proposalData.totalAmount,
             proposedTimeline: proposalData.timeline,
             message: proposalData.message,
           }
         );
-      } catch (notificationError) {}
+      } catch {
+        // Notification-Fehler still behandeln
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: 'Angebot erfolgreich abgegeben',
       proposalId: companyUid,
+      isUnifiedProject,
     });
   } catch (error) {
     return NextResponse.json(

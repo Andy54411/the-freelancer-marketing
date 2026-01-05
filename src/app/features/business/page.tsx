@@ -5,14 +5,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { HeroHeader } from '@/components/hero8-header';
 import {
   ArrowRight,
-  CheckCircle,
   Star,
   Zap,
   FileText,
-  MessageSquare,
   CreditCard,
   Clock,
   Users,
@@ -22,98 +21,113 @@ import {
   FolderKanban,
   Mail,
   Calendar,
+  ShoppingBag,
+  Headphones,
+  Shield,
+  Globe,
 } from 'lucide-react';
 
-const featuresData = [
+interface Feature {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badges: string[];
+  highlight?: boolean;
+}
+
+const featuresData: Feature[] = [
+  {
+    title: 'Tasker',
+    description: 'Finden Sie qualifizierte Dienstleister für jede Aufgabe. Von Handwerk bis IT - alle Services auf einen Blick.',
+    href: '/services',
+    icon: Users,
+    badges: ['Geprüfte Anbieter', 'Sofort verfügbar'],
+    highlight: true,
+  },
+  {
+    title: 'Marktplatz',
+    description: 'Veröffentlichen Sie Projekte und erhalten Sie Angebote von qualifizierten Dienstleistern. Sichere Zahlungsabwicklung mit Escrow-System.',
+    href: '/marketplace',
+    icon: ShoppingBag,
+    badges: ['Escrow-Schutz', 'Bewertungssystem'],
+  },
   {
     title: 'XRechnung & E-Invoicing',
     description: 'GoBD-konforme Rechnungen mit automatischem DATEV-Export und deutschem Steuerrecht.',
     href: '/features/accounting',
-    gradient: 'from-emerald-400 to-teal-600',
-    badges: ['100% GoBD-konform'],
     icon: FileText,
-    secondaryIcons: [MessageSquare],
+    badges: ['100% GoBD-konform'],
   },
   {
     title: 'Banking & Zahlungen',
     description: 'Stripe, Revolut & FinAPI Integration mit automatischem Transaktionsabgleich.',
     href: '/features/banking',
-    gradient: 'from-blue-400 to-indigo-600',
-    badges: ['DSGVO-konform', 'Multi-Bank'],
     icon: CreditCard,
-    secondaryIcons: [],
+    badges: ['DSGVO-konform', 'Multi-Bank'],
+  },
+  {
+    title: 'Kundenservice',
+    description: 'Ticket-System, Live-Chat und Kundenkommunikation. Alle Anfragen zentral verwalten.',
+    href: '/features/service',
+    icon: Headphones,
+    badges: ['Omnichannel', 'KI-Support'],
   },
   {
     title: 'Zeiterfassung',
     description: 'Dienstplanung, Arbeitszeiterfassung und Integration mit Lohnbuchhaltung.',
     href: '/features/time-tracking',
-    gradient: 'from-orange-400 to-red-500',
-    badges: ['Gesetzeskonform', 'Mobile App'],
     icon: Clock,
-    secondaryIcons: [],
+    badges: ['Gesetzeskonform'],
   },
   {
     title: 'Personalverwaltung',
     description: 'Digitale Mitarbeiterakte, Dienstplanung und Gehaltsabrechnung in einem System.',
     href: '/features/hr-management',
-    gradient: 'from-purple-400 to-violet-600',
-    badges: ['All-in-One HR'],
     icon: Users,
-    secondaryIcons: [],
+    badges: ['All-in-One HR'],
   },
   {
     title: 'Recruiting & Stellenanzeigen',
     description: 'Stellenanzeigen erstellen, auf Jobportalen veröffentlichen und Bewerbungen verwalten.',
     href: '/features/recruiting',
-    gradient: 'from-pink-400 to-rose-600',
-    badges: ['10+ Jobportale'],
     icon: Briefcase,
-    secondaryIcons: [],
+    badges: ['10+ Jobportale'],
   },
   {
     title: 'Taskilo Advertising',
     description: 'Multi-Channel Werbung mit Google Ads, LinkedIn und Meta. Alle Kampagnen zentral verwalten.',
     href: '/features/advertising',
-    gradient: 'from-amber-400 to-orange-600',
-    badges: ['Multi-Platform', 'ROI-Tracking'],
     icon: TrendingUp,
-    secondaryIcons: [],
+    badges: ['Multi-Platform'],
   },
   {
     title: 'Lagerbestandsverwaltung',
     description: 'Produkte verwalten, Bestände tracken und automatische Warnungen bei niedrigem Bestand.',
     href: '/features/inventory',
-    gradient: 'from-lime-400 to-green-600',
-    badges: ['Echtzeit-Sync'],
     icon: Package,
-    secondaryIcons: [],
+    badges: ['Echtzeit-Sync'],
   },
   {
     title: 'Workspace & Projekte',
     description: 'Projekte, Aufgaben und Dokumente organisieren. Kanban-Boards und Team-Kollaboration.',
     href: '/features/workspace',
-    gradient: 'from-cyan-400 to-blue-600',
-    badges: ['Team-Kollaboration'],
     icon: FolderKanban,
-    secondaryIcons: [],
+    badges: ['Team-Kollaboration'],
   },
   {
     title: 'E-Mail Integration',
     description: 'Professionelle E-Mail-Verwaltung mit Vorlagen, Tracking und CRM-Integration.',
     href: '/features/email',
-    gradient: 'from-red-400 to-pink-600',
-    badges: ['Multi-Account'],
     icon: Mail,
-    secondaryIcons: [],
+    badges: ['Multi-Account'],
   },
   {
     title: 'Kalender & Termine',
     description: 'Termine, Aufgaben und Ressourcen zentral planen. Synchronisation mit Google & Outlook.',
     href: '/features/calendar',
-    gradient: 'from-sky-400 to-cyan-600',
-    badges: ['Sync mit Google/Outlook'],
     icon: Calendar,
-    secondaryIcons: [],
+    badges: ['Sync'],
   },
 ];
 
@@ -124,13 +138,36 @@ const statsData = [
   { value: '24/7', label: 'Support verfügbar' },
 ];
 
+const whyTaskiloData = [
+  {
+    icon: Zap,
+    title: 'Alles in einer Plattform',
+    description: 'Keine Insellösungen mehr. Alle Tools arbeiten nahtlos zusammen.',
+  },
+  {
+    icon: Shield,
+    title: 'Deutsche Compliance',
+    description: 'GoBD, DSGVO, Arbeitszeitgesetz - wir erfüllen alle Anforderungen.',
+  },
+  {
+    icon: Globe,
+    title: 'Cloud-basiert',
+    description: 'Zugriff von überall. Sichere deutsche Rechenzentren.',
+  },
+  {
+    icon: Star,
+    title: 'Exzellenter Support',
+    description: 'Deutschsprachiger Support, der Ihre Branche versteht.',
+  },
+];
+
 export default function BusinessFeaturesPage() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-teal-700">
         <HeroHeader />
 
-        {/* Hero Section */}
         <section className="pt-32 pb-24 px-4">
           <div className="max-w-6xl mx-auto text-center">
             <motion.div
@@ -146,7 +183,7 @@ export default function BusinessFeaturesPage() {
                 <span className="text-teal-200">erfolgreiches Unternehmen</span>
               </h1>
               <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
-                Von Zeiterfassung über Buchhaltung bis Recruiting - Taskilo bietet alles, 
+                Von Marktplatz über Buchhaltung bis Recruiting - Taskilo bietet alles, 
                 was moderne Unternehmen brauchen. Alles in einer Plattform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -195,7 +232,7 @@ export default function BusinessFeaturesPage() {
         </section>
       </div>
 
-      {/* Features Grid - Large Cards with Image Left, Text Right */}
+      {/* Features Grid */}
       <section className="py-24 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -210,73 +247,72 @@ export default function BusinessFeaturesPage() {
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Von GoBD-konformer Buchhaltung über Multi-Plattform Werbung bis hin zu 
-              WhatsApp Business - alles in einer Plattform.
+              unserem Dienstleister-Marktplatz - alles in einer Plattform.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuresData.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
                 viewport={{ once: true }}
               >
-                <Link href={feature.href} className="block group">
-                  <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden h-full">
-                    <div className="flex flex-col lg:flex-row h-full">
-                      {/* Visual Section with Gradient and Icon */}
-                      <div className={`relative lg:w-1/2 h-56 lg:h-auto min-h-[220px] bg-linear-to-br ${feature.gradient} overflow-hidden flex items-center justify-center`}>
-                        {/* Main Icon */}
-                        <div className="relative z-10">
-                          <feature.icon className="h-24 w-24 text-white/90 group-hover:scale-110 transition-transform duration-300" />
-                        </div>
-                        {/* Decorative Elements */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-                        
-                        {/* Badges on Image */}
-                        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                          {feature.badges.map((badge, i) => (
-                            <Badge
-                              key={i}
-                              className="bg-white/95 text-gray-800 border-0 font-medium px-3 py-1.5 shadow-md text-sm"
-                            >
-                              {badge}
-                            </Badge>
-                          ))}
-                        </div>
-                        {/* Floating Secondary Icons */}
-                        {feature.secondaryIcons.length > 0 && (
-                          <div className="absolute top-4 right-4 flex gap-2">
-                            {feature.secondaryIcons.map((Icon, i) => (
-                              <div
-                                key={i}
-                                className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center"
-                              >
-                                <Icon className="h-5 w-5 text-[#14ad9f]" />
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                <Link href={feature.href} className="block group h-full">
+                  <Card className={`h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 ${
+                    feature.highlight 
+                      ? 'bg-gradient-to-br from-[#14ad9f] to-teal-600 text-white' 
+                      : 'bg-white'
+                  }`}>
+                    <CardContent className="p-6">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+                        feature.highlight 
+                          ? 'bg-white/20' 
+                          : 'bg-[#14ad9f]/10'
+                      }`}>
+                        <feature.icon className={`h-7 w-7 ${
+                          feature.highlight ? 'text-white' : 'text-[#14ad9f]'
+                        }`} />
                       </div>
                       
-                      {/* Text Section */}
-                      <div className="lg:w-1/2 p-6 lg:p-8 flex flex-col justify-center">
-                        <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3 group-hover:text-[#14ad9f] transition-colors">
-                          {feature.title}
-                        </h3>
-                        <p className="text-gray-600 mb-4 leading-relaxed text-base">
-                          {feature.description}
-                        </p>
-                        <div className="flex items-center text-[#14ad9f] font-semibold group-hover:gap-2 transition-all">
-                          Mehr erfahren
-                          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                        </div>
+                      <h3 className={`text-xl font-bold mb-2 group-hover:underline decoration-2 underline-offset-4 ${
+                        feature.highlight ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {feature.title}
+                      </h3>
+                      
+                      <p className={`mb-4 leading-relaxed ${
+                        feature.highlight ? 'text-white/90' : 'text-gray-600'
+                      }`}>
+                        {feature.description}
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {feature.badges.map((badge, i) => (
+                          <Badge
+                            key={i}
+                            variant="secondary"
+                            className={`text-xs ${
+                              feature.highlight 
+                                ? 'bg-white/20 text-white border-white/30' 
+                                : 'bg-[#14ad9f]/10 text-[#14ad9f] border-0'
+                            }`}
+                          >
+                            {badge}
+                          </Badge>
+                        ))}
                       </div>
-                    </div>
-                  </div>
+                      
+                      <div className={`flex items-center font-medium ${
+                        feature.highlight ? 'text-white' : 'text-[#14ad9f]'
+                      }`}>
+                        Mehr erfahren
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </Link>
               </motion.div>
             ))}
@@ -302,24 +338,8 @@ export default function BusinessFeaturesPage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Zap,
-                title: 'Alles in einer Plattform',
-                description: 'Keine Insellosugen mehr. Alle Tools arbeiten nahtlos zusammen und teilen Daten automatisch.',
-              },
-              {
-                icon: CheckCircle,
-                title: 'Deutsche Compliance',
-                description: 'GoBD, DSGVO, Arbeitszeitgesetz - wir kennen die Anforderungen und erfullen sie.',
-              },
-              {
-                icon: Star,
-                title: 'Exzellenter Support',
-                description: 'Deutschsprachiger Support, der Ihre Branche versteht. Schnell und kompetent.',
-              },
-            ].map((item, index) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {whyTaskiloData.map((item, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -331,8 +351,8 @@ export default function BusinessFeaturesPage() {
                 <div className="w-16 h-16 bg-[#14ad9f]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <item.icon className="h-8 w-8 text-[#14ad9f]" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm">{item.description}</p>
               </motion.div>
             ))}
           </div>
@@ -340,7 +360,7 @@ export default function BusinessFeaturesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4 bg-linear-to-r from-[#14ad9f] to-teal-600">
+      <section className="py-24 px-4 bg-gradient-to-r from-[#14ad9f] to-teal-600">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

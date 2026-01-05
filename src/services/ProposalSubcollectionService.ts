@@ -3,7 +3,8 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Service für Proposal-Management mit Subcollections
- * Struktur: quotes/{quoteId}/proposals/{proposalId}
+ * UNIFIED: Struktur ist jetzt project_requests/{projectId}/proposals/{proposalId}
+ * Legacy: quotes/{quoteId}/proposals/{proposalId} wird weiterhin unterstützt
  */
 
 export interface ProposalData {
@@ -45,7 +46,71 @@ export interface ProposalData {
 
 export class ProposalSubcollectionService {
   /**
-   * Create a new proposal in subcollection
+   * UNIFIED: Create a new proposal in project_requests subcollection
+   * Dies ist die neue Hauptmethode für alle Proposals
+   */
+  static async createProposalForProject(
+    projectId: string,
+    proposalData: ProposalData,
+    fullResponse?: Record<string, unknown>
+  ): Promise<string> {
+    const proposalId = proposalData.companyUid; // Use companyUid as document ID
+
+    const proposalRef = db!
+      .collection('project_requests')
+      .doc(projectId)
+      .collection('proposals')
+      .doc(proposalId);
+
+    const now = Timestamp.now();
+    const proposal = {
+      ...proposalData,
+      providerId: proposalData.companyUid,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await proposalRef.set(proposal);
+
+    // Update project status
+    const projectUpdate: Record<string, unknown> = {
+      status: 'has_proposals',
+      lastProposalAt: now,
+      proposalCount: FieldValue.increment(1),
+      updatedAt: now,
+    };
+
+    if (fullResponse) {
+      projectUpdate.lastResponse = fullResponse;
+    }
+
+    await db!
+      .collection('project_requests')
+      .doc(projectId)
+      .update(projectUpdate);
+
+    return proposalId;
+  }
+
+  /**
+   * Get all proposals for a project (UNIFIED)
+   */
+  static async getProposalsForProject(projectId: string): Promise<ProposalData[]> {
+    const proposalsSnapshot = await db!
+      .collection('project_requests')
+      .doc(projectId)
+      .collection('proposals')
+      .get();
+
+    return proposalsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as ProposalData[];
+  }
+
+  /**
+   * LEGACY: Create a new proposal in subcollection (alte Struktur)
+   * @deprecated Nutze createProposalForProject stattdessen
    */
   static async createProposal(
     quoteId: string,
@@ -229,6 +294,23 @@ export class ProposalSubcollectionService {
       .doc(companyId)
       .collection('quotes')
       .doc(quoteId)
+      .collection('proposals')
+      .doc(companyUid)
+      .get();
+
+    return proposalDoc.exists;
+  }
+
+  /**
+   * UNIFIED: Check if company has already submitted a proposal for a project
+   */
+  static async hasExistingProposalForProject(
+    projectId: string,
+    companyUid: string
+  ): Promise<boolean> {
+    const proposalDoc = await db!
+      .collection('project_requests')
+      .doc(projectId)
       .collection('proposals')
       .doc(companyUid)
       .get();

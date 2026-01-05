@@ -144,21 +144,29 @@ export class BankVerificationService {
    * Holt aktuelle ausstehende Verifizierung
    */
   async getPendingVerification(companyId: string): Promise<BankVerification | null> {
+    // KEIN orderBy - Sort in App (Firestore Regel)
     const snapshot = await this.db
       .collection('bankVerifications')
       .where('companyId', '==', companyId)
       .where('status', 'in', ['pending', 'code_sent'])
-      .orderBy('createdAt', 'desc')
-      .limit(1)
+      .limit(10)
       .get();
     
     if (snapshot.empty) return null;
     
-    const doc = snapshot.docs[0];
-    return {
+    // Sortiere in App nach createdAt (neueste zuerst)
+    const docs = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-    } as BankVerification;
+    })) as BankVerification[];
+    
+    docs.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
+    
+    return docs[0] || null;
   }
   
   /**
@@ -194,7 +202,7 @@ export class BankVerificationService {
           success: true,
           verificationId: pending.id,
           maskedIban: pending.maskedIban,
-          message: 'Verifizierung bereits gestartet. Bitte pruefen Sie Ihr Bankkonto auf die 0,01 EUR Gutschrift.',
+        message: 'Verifizierung bereits gestartet. Bitte prüfen Sie Ihr Bankkonto auf die 0,01 EUR Gutschrift.',
           expiresAt,
         };
       }
@@ -284,7 +292,7 @@ export class BankVerificationService {
         success: true,
         verificationId: verificationRef.id,
         maskedIban: maskedIbanStr,
-        message: `Wir haben 0,01 EUR an ${maskedIbanStr} ueberwiesen. Der Verwendungszweck enthaelt Ihren Verifizierungscode (TASKILO-XXXXXX). Bitte geben Sie diesen Code ein.`,
+        message: `Wir haben 0,01 EUR an ${maskedIbanStr} überwiesen. Der Verwendungszweck enthält Ihren Verifizierungscode (TASKILO-XXXXXX). Bitte geben Sie diesen Code ein.`,
         expiresAt,
       };
       
@@ -294,7 +302,7 @@ export class BankVerificationService {
       
       return {
         success: false,
-        error: 'Fehler beim Senden der Verifizierungs-Ueberweisung',
+        error: 'Fehler beim Senden der Verifizierungs-Überweisung',
       };
     }
   }

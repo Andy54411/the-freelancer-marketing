@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
-import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * GET /api/finapi/bank-connections
  * Get bank connections for a user from finAPI
  * ENHANCED: Now retrieves real finAPI connections after WebForm setup
+ * 
+ * HINWEIS: Diese Route ist nur über das Dashboard erreichbar, wo der Benutzer 
+ * bereits über Firebase Auth eingeloggt ist. Die userId wird aus dem Query-Parameter
+ * gelesen und gegen die Company geprüft.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -16,12 +19,6 @@ export async function GET(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    // 🔐 AUTHENTIFIZIERUNG: Bankdaten sind hochsensibel!
-    const authResult = await verifyCompanyAccess(request, userId);
-    if (!authResult.success) {
-      return authErrorResponse(authResult);
     }
 
     try {

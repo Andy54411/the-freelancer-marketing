@@ -10,8 +10,28 @@ import {
   User,
   OAuthProvider,
 } from 'firebase/auth';
-import { auth } from '@/firebase/clients';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/firebase/clients';
 import { LoginForm } from './login-form';
+
+// Hilfsfunktion: Stellt sicher, dass ein Firestore-Dokument für den Benutzer existiert
+async function ensureUserDocument(user: User): Promise<void> {
+  const userDocRef = doc(db, 'users', user.uid);
+  const userDocSnap = await getDoc(userDocRef);
+  
+  if (!userDocSnap.exists()) {
+    // Erstelle ein Basis-Benutzerdokument für neue Benutzer
+    await setDoc(userDocRef, {
+      uid: user.uid,
+      email: user.email,
+      user_type: 'kunde',
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+}
 interface LoginPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -63,10 +83,14 @@ export default function LoginPopup({
       if (authMode === 'signup') {
         // Registrierung
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Erstelle Firestore-Dokument für neuen Benutzer
+        await ensureUserDocument(userCredential.user);
         onLoginSuccess(userCredential.user, redirectTo);
       } else {
         // Anmeldung
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Stelle sicher, dass Firestore-Dokument existiert (falls fehlend)
+        await ensureUserDocument(userCredential.user);
         onLoginSuccess(userCredential.user, redirectTo);
       }
     } catch (err: unknown) {
@@ -111,7 +135,8 @@ export default function LoginPopup({
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-
+      // Stelle sicher, dass Firestore-Dokument existiert
+      await ensureUserDocument(result.user);
       onLoginSuccess(result.user, redirectTo);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
@@ -142,6 +167,8 @@ export default function LoginPopup({
       provider.addScope('email');
       provider.addScope('name');
       const appleResult = await signInWithPopup(auth, provider);
+      // Stelle sicher, dass Firestore-Dokument existiert
+      await ensureUserDocument(appleResult.user);
       onLoginSuccess(appleResult.user, redirectTo);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
@@ -208,7 +235,7 @@ export default function LoginPopup({
           <div className="absolute inset-0 bg-linear-to-br from-[#14ad9f]/85 to-teal-700/85" />
           
           {/* Content */}
-          <div className="relative z-10 p-8 flex flex-col justify-center text-white">
+          <div className="relative z-10 p-8 flex flex-col justify-center text-white h-full">
             <h2 className="text-2xl font-bold mb-6">
               Erfolg beginnt hier
             </h2>
@@ -232,6 +259,22 @@ export default function LoginPopup({
                 <span className="text-sm">Zugang zu Talenten in ganz Deutschland</span>
               </li>
             </ul>
+
+            {/* Unternehmen Hinweis */}
+            <div className="mt-8 pt-6 border-t border-white/30">
+              <p className="text-sm text-white/90 mb-3">
+                Du bist ein Unternehmen und möchtest Aufträge gewinnen?
+              </p>
+              <a 
+                href="/register/company"
+                className="inline-flex items-center justify-center gap-2 bg-white text-teal-700 hover:bg-gray-100 font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm shadow-md"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Als Unternehmen registrieren
+              </a>
+            </div>
           </div>
         </div>
 

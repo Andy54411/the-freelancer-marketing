@@ -20,6 +20,8 @@ import {
   Key,
   Settings,
   Inbox,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -138,6 +140,7 @@ const SupportChatbot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [faqExpanded, setFaqExpanded] = useState(false);
   const [ticketCreated, setTicketCreated] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
@@ -404,20 +407,38 @@ const SupportChatbot = () => {
 
             {/* Quick Actions */}
             {showQuickActions && !showEmailForm && (
-              <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 mb-2">Häufige Fragen:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {quickActions.map(action => (
-                    <button
-                      key={action.id}
-                      onClick={() => handleQuickAction(action)}
-                      className="flex items-center gap-2 p-2 text-left text-sm bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#14ad9f] hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
+              <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <button
+                  onClick={() => setFaqExpanded(!faqExpanded)}
+                  className="w-full p-3 flex items-center justify-between text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <span>Häufige Fragen:</span>
+                  {faqExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                </button>
+                <AnimatePresence>
+                  {faqExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
                     >
-                      <action.icon size={16} className="text-[#14ad9f] shrink-0" />
-                      <span className="text-gray-700 dark:text-gray-300 text-xs">{action.label}</span>
-                    </button>
-                  ))}
-                </div>
+                      <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                        {quickActions.map(action => (
+                          <button
+                            key={action.id}
+                            onClick={() => handleQuickAction(action)}
+                            className="flex items-center gap-2 p-2 text-left text-sm bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#14ad9f] hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
+                          >
+                            <action.icon size={16} className="text-[#14ad9f] shrink-0" />
+                            <span className="text-gray-700 dark:text-gray-300 text-xs">{action.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 

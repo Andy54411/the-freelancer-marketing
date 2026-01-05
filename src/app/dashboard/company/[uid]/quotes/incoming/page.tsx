@@ -40,7 +40,7 @@ interface IncomingQuote {
   deadline?: string;
   location?: string;
   hasResponse?: boolean; // Flag indicating if the quote has been responded to
-  response?: any; // The actual response object
+  response?: Record<string, unknown>; // The actual response object
   customer: {
     name: string;
     type: 'user' | 'company';
@@ -63,6 +63,10 @@ interface IncomingQuote {
   customerType?: string;
   customerUid?: string;
   customerCompanyUid?: string;
+  // UNIFIED Felder
+  requestType?: 'direct' | 'marketplace';
+  isPublic?: boolean;
+  escrowRequired?: boolean;
 }
 
 export default function IncomingQuotesPage() {
@@ -322,10 +326,10 @@ export default function IncomingQuotesPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                 <FiInbox className="mr-3 h-6 w-6 text-[#14ad9f]" />
-                Eingehende Angebots-Anfragen
+                Eingehende Anfragen
               </h1>
               <p className="text-gray-600 mt-1">
-                Verwalten Sie eingehende B2B und B2C Angebots-Anfragen
+                Verwalten Sie direkte Kundenanfragen und Marktplatz-Projekte
               </p>
             </div>
           </div>
@@ -509,14 +513,26 @@ export default function IncomingQuotesPage() {
                     <tr key={quote.id} className="hover:bg-gray-50">
                       <td className="px-3 py-4">
                         <div className="max-w-xs">
-                          <div
-                            className="text-sm font-medium text-gray-900 truncate"
-                            title={quote.title}
-                          >
-                            {quote.title}
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span
+                              className="text-sm font-medium text-gray-900 truncate"
+                              title={quote.title}
+                            >
+                              {quote.title}
+                            </span>
+                            {/* UNIFIED: Badge für requestType */}
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                                quote.requestType === 'direct'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-teal-100 text-teal-700'
+                              }`}
+                            >
+                              {quote.requestType === 'direct' ? 'Direkt' : 'Marktplatz'}
+                            </span>
                           </div>
                           <div className="text-xs text-gray-500 truncate">
-                            {quote.serviceCategory} • {quote.serviceSubcategory}
+                            {quote.serviceCategory} {quote.serviceSubcategory ? `| ${quote.serviceSubcategory}` : ''}
                           </div>
                         </div>
                       </td>

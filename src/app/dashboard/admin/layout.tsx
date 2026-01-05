@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Sparkles,
   Newspaper,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -53,6 +54,7 @@ const navigation = [
   { name: 'Workspace', href: '/dashboard/admin/workspace', icon: Briefcase },
   { name: 'Tickets', href: '/dashboard/admin/tickets', icon: Ticket },
   { name: 'Chat-Monitoring', href: '/dashboard/admin/chat-monitoring', icon: MessageSquare },
+  { name: 'Content-Überwachung', href: '/dashboard/admin/content-monitoring', icon: AlertTriangle },
   { name: 'Storno-Verwaltung', href: '/dashboard/admin/storno-management', icon: XCircle },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Taskilo KI Analytics', href: '/dashboard/admin/ai-analytics', icon: Sparkles },

@@ -2483,45 +2483,15 @@ export default function ProfilePage() {
 
               {/* Create Order Modal */}
               {isCreateOrderModalOpen && currentUser && userProfile && (
-                <div className="fixed inset-0 bg-transparent backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto">
-                  <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8 max-h-[calc(100vh-4rem)] flex flex-col">
-                    {/* Fixed Header */}
-                    <div className="flex items-center justify-between p-6 border-b bg-white rounded-t-lg shrink-0 sticky top-0 z-10">
-                      <h2 className="text-2xl font-bold text-gray-900">Auftrag erstellen</h2>
-                      <button
-                        onClick={handleCloseCreateOrderModal}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
-                        aria-label="Modal schließen"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto">
-                      <CreateOrderModal
-                        onClose={handleCloseCreateOrderModal}
-                        onSuccess={handleCreateOrderSuccess}
-                        currentUser={currentUser}
-                        userProfile={userProfile}
-                        preselectedProviderId={profile.id}
-                        preselectedCategory={profile.selectedCategory}
-                        preselectedSubcategory={profile.selectedSubcategory}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <CreateOrderModal
+                  onClose={handleCloseCreateOrderModal}
+                  onSuccess={handleCreateOrderSuccess}
+                  currentUser={currentUser}
+                  userProfile={userProfile}
+                  preselectedProviderId={profile.id}
+                  preselectedCategory={profile.selectedCategory}
+                  preselectedSubcategory={profile.selectedSubcategory}
+                />
               )}
             </div>
           </main>

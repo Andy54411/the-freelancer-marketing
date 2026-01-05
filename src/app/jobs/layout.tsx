@@ -2,7 +2,8 @@
 
 import React from 'react';
 import UserHeader from '@/components/UserHeader';
-import Header from '@/components/Header';
+import { HeroHeader } from '@/components/hero8-header';
+import FooterSection from '@/components/footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 as FiLoader } from 'lucide-react';
 
@@ -22,11 +23,12 @@ export default function JobsLayout({ children }: { children: React.ReactNode }) 
       {user ? (
         <UserHeader currentUid={user.uid} />
       ) : (
-        <Header />
+        <HeroHeader />
       )}
       <main className="flex-1 bg-gray-50">
         {children}
       </main>
+      {!user && <FooterSection />}
     </div>
   );
 }

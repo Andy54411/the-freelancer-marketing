@@ -59,30 +59,25 @@ export const HeroHeader = () => {
   });
 
   const menuItems = [
+    { name: 'Tasker', href: '/services', labelKey: 'nav.services' },
+    { name: 'Marktplatz', href: '/marketplace', labelKey: 'nav.marketplace' },
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
     { name: 'Preise', href: '/webmail/pricing', labelKey: 'nav.pricing' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
-    { name: 'Kontakt', href: '/contact', labelKey: 'nav.contact' },
   ];
 
   const businessSolutionsItems = [
     { 
-      name: 'Dienstleistungen', 
+      name: 'Tasker - Dienstleister', 
       href: '/services', 
       description: 'Alle Dienstleistungen durchsuchen',
       icon: Star
     },
     { 
-      name: 'Zeiterfassung', 
-      href: '/features/time-tracking', 
-      description: 'Arbeitszeiten digital erfassen',
-      icon: Clock
-    },
-    { 
-      name: 'Digitale Mitarbeiterakte', 
-      href: '/features/employee-records', 
-      description: 'Personalverwaltung digitalisieren',
-      icon: FileUser
+      name: 'Marktplatz', 
+      href: '/marketplace', 
+      description: 'Projekte ausschreiben & Angebote erhalten',
+      icon: Star
     },
     { 
       name: 'Kalender & Termine', 
@@ -99,19 +94,13 @@ export const HeroHeader = () => {
     { 
       name: 'Buchhaltung & Rechnungen', 
       href: '/features/accounting', 
-      description: 'Automatisierte Rechnungsstellung und Buchhaltung',
+      description: 'GoBD-konforme Rechnungsstellung',
       icon: FileUser
-    },
-    { 
-      name: 'WhatsApp Business', 
-      href: '/features/whatsapp', 
-      description: 'Kundenkommunikation über WhatsApp',
-      icon: Star
     },
     { 
       name: 'Banking & Zahlungen', 
       href: '/features/banking', 
-      description: 'Revolut Business Integration',
+      description: 'Revolut & FinAPI Multi-Bank Integration',
       icon: Star
     },
     { 
@@ -123,7 +112,31 @@ export const HeroHeader = () => {
     { 
       name: 'Taskilo Advertising', 
       href: '/features/advertising', 
-      description: 'Multi-Plattform Werbe-Management',
+      description: 'Google Ads, LinkedIn & Meta',
+      icon: Star
+    },
+    { 
+      name: 'Personal & HR', 
+      href: '/features/hr-management', 
+      description: 'Mitarbeiter, Dienstplan, Gehaltsabrechnung',
+      icon: FileUser
+    },
+    { 
+      name: 'Recruiting', 
+      href: '/features/recruiting', 
+      description: 'Stellenanzeigen & Bewerbungen',
+      icon: Star
+    },
+    { 
+      name: 'Workspace & Projekte', 
+      href: '/features/workspace', 
+      description: 'Projekte, Aufgaben, Dokumente',
+      icon: Star
+    },
+    { 
+      name: 'WhatsApp Business', 
+      href: '/features/whatsapp', 
+      description: 'Kundenkommunikation über WhatsApp',
       icon: Star
     },
   ];
@@ -200,7 +213,7 @@ export const HeroHeader = () => {
     <header>
       <nav
         data-state={menuState && 'active'}
-        className="bg-[#14ad9f]/95 fixed top-0 z-20 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
+        className="bg-[#14ad9f]/95 relative z-50 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
       >
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-wrap items-center justify-between py-3">

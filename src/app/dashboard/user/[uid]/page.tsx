@@ -33,6 +33,7 @@ import {
   Briefcase,
   ArrowRight,
   RotateCw,
+  Globe,
 } from 'lucide-react';
 import Modal from './components/Modal';
 import AddressForm from './components/AddressForm';
@@ -41,18 +42,13 @@ import ProfilePictureUploadModal from './components/ProfilePictureUploadModal'; 
 import CreateOrderModal from './components/CreateOrderModal';
 import SupportChatInterface from './components/Support/SupportChatInterface';
 import TaskiloProjectAssistant from '@/components/TaskiloProjectAssistant';
-import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
+import { SavedAddress, UserProfileData, OrderListItem } from '@/types/types';
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 import TimeTrackingOverview from '@/components/TimeTrackingOverview';
 import BillingHistory from '@/components/BillingHistory';
 import JobBoardPromoModal from './components/JobBoardPromoModal';
 
 // Stripe wurde durch Escrow-System ersetzt - keine stripePromise mehr benötigt
-
-const PAGE_LOG = 'UserDashboardPage:'; // Für Logging
-
-// Hinweis: createSetupIntent, getSavedPaymentMethods und detachPaymentMethod
-// sind nicht mehr verfügbar, da Stripe durch Escrow-System ersetzt wurde
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -70,24 +66,43 @@ export default function UserDashboardPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false); // Beibehalten, da es für den "Neuen Auftrag erstellen"-Button verwendet wird
   const [showSupportChatModal, setShowSupportChatModal] = useState(false); // NEU: State für Support-Chat
-  // const [activeView, setActiveView] = useState<"dashboard" | "settings">("dashboard"); // Nicht mehr benötigt, da Header die Navigation übernimmt
 
-  const [clientSecretForSetupIntent, setClientSecretForSetupIntent] = useState<string | null>(null);
-  const [_loadingSetupIntent, setLoadingSetupIntent] = useState(false);
-  const [_setupIntentError, setSetupIntentError] = useState<string | null>(null);
-
-  const [userOrders, setUserOrders] = useState<OrderListItem[]>([]);
+  const [userOrders, setUserOrders] = useState<OrderListItem[]>([]);;
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
   // Job Board & Applications State
+  interface JobApplication {
+    id: string;
+    jobTitle?: string;
+    companyName?: string;
+    status?: string;
+    appliedAt?: unknown;
+  }
   const [matchingJobsCount, setMatchingJobsCount] = useState<number | null>(null);
-  const [recentApplications, setRecentApplications] = useState<any[]>([]);
+  const [recentApplications, setRecentApplications] = useState<JobApplication[]>([]);
   const [hasJobFilter, setHasJobFilter] = useState(false);
   const [showJobBoardPromo, setShowJobBoardPromo] = useState(false);
   const [isJobCardFlipped, setIsJobCardFlipped] = useState(false);
   const [isApplicationsCardFlipped, setIsApplicationsCardFlipped] = useState(false);
   const [isSupportCardFlipped, setIsSupportCardFlipped] = useState(false);
+
+  // Marktplatz-Projekte State
+  interface MarketplaceProject {
+    id: string;
+    title?: string;
+    category?: string;
+    subcategory?: string;
+    status?: string;
+    requestType?: 'direct' | 'marketplace';
+    isPublic?: boolean;
+    proposals?: unknown[];
+    proposalCount?: number;
+    createdAt?: { toMillis?: () => number; seconds?: number };
+  }
+  const [marketplaceProjects, setMarketplaceProjects] = useState<MarketplaceProject[]>([]);
+  const [isMarketplaceCardFlipped, setIsMarketplaceCardFlipped] = useState(false);
+  const [loadingMarketplace, setLoadingMarketplace] = useState(true);
 
   const loadInitialDashboardData = useCallback(async (user: FirebaseUser) => {
     setLoading(true);
@@ -143,20 +158,20 @@ export default function UserDashboardPage() {
         allOrderDocs.set(doc.id, doc);
       });
 
-      const ordersData = Array.from(allOrderDocs.values()).map(doc => {
-        const data = doc.data() as any; // Temporär any verwenden für Debugging
+      const ordersData = Array.from(allOrderDocs.values()).map(docSnap => {
+        const data = docSnap.data() as Record<string, unknown>;
         // Debug-Log hinzufügen
 
         // Mapping der korrekten Felder
         return {
-          id: doc.id,
-          selectedSubcategory: data.selectedSubcategory || data.unterkategorie || 'Unbekannt',
-          status: data.status || 'unbekannt',
-          totalPriceInCents: data.jobCalculatedPriceInCents || data.totalPriceInCents || (data.totalAmount ? data.totalAmount * 100 : 0) || (data.price ? data.price * 100 : 0),
-          jobDateFrom: data.jobDateFrom || null,
-          jobTimePreference: data.jobTimePreference || null,
-          selectedAnbieterId: data.selectedAnbieterId || null,
-          providerName: data.providerName || null,
+          id: docSnap.id,
+          selectedSubcategory: (data.selectedSubcategory as string) || (data.unterkategorie as string) || 'Unbekannt',
+          status: (data.status as string) || 'unbekannt',
+          totalPriceInCents: (data.jobCalculatedPriceInCents as number) || (data.totalPriceInCents as number) || ((data.totalAmount as number) ? (data.totalAmount as number) * 100 : 0) || ((data.price as number) ? (data.price as number) * 100 : 0),
+          jobDateFrom: (data.jobDateFrom as string) || null,
+          jobTimePreference: (data.jobTimePreference as string) || null,
+          selectedAnbieterId: (data.selectedAnbieterId as string) || null,
+          providerName: (data.providerName as string) || null,
         } as OrderListItem & { selectedAnbieterId?: string };
       });
 
@@ -188,7 +203,7 @@ export default function UserDashboardPage() {
                   'Unbekannter Anbieter';
                 providerNameCache.set(providerId, name);
               }
-            } catch (error) {
+            } catch {
               providerNameCache.set(providerId, 'Unbekannter Anbieter');
             }
           })
@@ -209,9 +224,10 @@ export default function UserDashboardPage() {
       );
       setUserOrders(visibleOrders);
       setLoadingOrders(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten.';
       setError(
-        `Fehler beim Laden der Daten: ${err.message || 'Ein unbekannter Fehler ist aufgetreten.'}`
+        `Fehler beim Laden der Daten: ${errorMessage}`
       );
       setLoadingOrders(false);
     } finally {
@@ -234,29 +250,6 @@ export default function UserDashboardPage() {
     });
     return () => unsubscribe();
   }, [pageUid, router, loadInitialDashboardData]);
-
-  // NEU: useEffect Hook zur Behandlung von Stripe Redirects
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const setupRedirect = urlParams.get('setup_redirect');
-    const redirectStatus = urlParams.get('redirect_status');
-    const setupIntentClientSecret = urlParams.get('setup_intent_client_secret');
-
-    if (setupRedirect === 'true' && setupIntentClientSecret) {
-      if (redirectStatus === 'succeeded') {
-        toast.success('Zahlungsmethode erfolgreich hinzugefügt!');
-        handlePaymentMethodAdded(); // Lade Zahlungsmethoden neu
-      } else if (redirectStatus === 'failed' || redirectStatus === 'canceled') {
-        toast.error('Einrichtung der Zahlungsmethode fehlgeschlagen oder abgebrochen.');
-        // Optional: Stripe.retrieveSetupIntent verwenden, um mehr Details zum Fehler zu bekommen
-      }
-      // Entferne die Query-Parameter aus der URL, um zu verhindern,
-      // dass die Nachricht bei jedem Neuladen erneut angezeigt wird.
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Nur einmal beim Mounten ausführen, um die URL zu prüfen
 
   // Fetch Job Board Data
   useEffect(() => {
@@ -320,6 +313,57 @@ export default function UserDashboardPage() {
     fetchJobData();
   }, [currentUser]);
 
+  // UNIFIED: Marktplatz-Projekte laden (alle Projekt-Typen aus project_requests)
+  useEffect(() => {
+    const fetchMarketplaceProjects = async () => {
+      if (!currentUser?.uid) return;
+
+      try {
+        setLoadingMarketplace(true);
+        // UNIFIED: Hole alle Projekte des Users aus project_requests
+        // Unterstütze sowohl customerUid (legacy) als auch customerData.uid (unified)
+        const projectsQuery = query(
+          collection(db, 'project_requests'),
+          where('customerUid', '==', currentUser.uid),
+          where('isActive', '==', true)
+        );
+        const projectsSnap = await getDocs(projectsQuery);
+        
+        interface ProjectData {
+          id: string;
+          title?: string;
+          category?: string;
+          subcategory?: string;
+          status?: string;
+          requestType?: 'direct' | 'marketplace';
+          isPublic?: boolean;
+          proposals?: unknown[];
+          proposalCount?: number;
+          createdAt?: { toMillis?: () => number; seconds?: number };
+        }
+        
+        const projects: ProjectData[] = projectsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        
+        // Sortiere nach Erstellungsdatum (neueste zuerst)
+        projects.sort((a: ProjectData, b: ProjectData) => {
+          const aTime = a.createdAt?.toMillis?.() || (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0) || 0;
+          const bTime = b.createdAt?.toMillis?.() || (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0) || 0;
+          return bTime - aTime;
+        });
+        setMarketplaceProjects(projects.slice(0, 5)); // Nur die 5 neuesten
+      } catch {
+        // Fehler stillschweigend behandeln - Card zeigt einfach leeren Zustand
+      } finally {
+        setLoadingMarketplace(false);
+      }
+    };
+
+    fetchMarketplaceProjects();
+  }, [currentUser]);
+
   const handleProfilePictureUploaded = (newUrl: string) => {
     // Update local state to reflect the change immediately
     setUserProfile(prev =>
@@ -332,75 +376,7 @@ export default function UserDashboardPage() {
     setShowUploadModal(false);
   };
 
-  const _handleOpenAddPaymentMethodModal = async () => {
-    if (!currentUser || !userProfile?.stripeCustomerId) {
-      setError(
-        'Nutzer nicht authentifiziert oder Stripe Customer ID fehlt. Bitte versuchen Sie, die Seite neu zu laden.'
-      );
-      return;
-    }
-    setLoadingSetupIntent(true);
-    setSetupIntentError(null);
-    try {
-      const result = await createSetupIntentCallable({});
-      setClientSecretForSetupIntent(result.data.clientSecret);
-      setShowAddPaymentMethodModal(true);
-    } catch (err: any) {
-      setSetupIntentError(
-        `Fehler beim Vorbereiten der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
-      ); // Typ für msg wird in der Komponente selbst behandelt
-    } finally {
-      setLoadingSetupIntent(false);
-    }
-  };
-
-  const handlePaymentMethodAdded = async () => {
-    setShowAddPaymentMethodModal(false);
-    setClientSecretForSetupIntent(null);
-    setSetupIntentError(null);
-
-    try {
-      const paymentMethodsResult = await getSavedPaymentMethodsCallable({});
-      if (paymentMethodsResult.data?.savedPaymentMethods) {
-        // Hier den Fehler in der Zuweisung beheben: savedPaymentMethods aktualisieren, nicht savedAddresses
-        setUserProfile(prev => ({
-          ...prev!,
-          savedPaymentMethods: paymentMethodsResult.data.savedPaymentMethods,
-        }));
-      }
-    } catch (err: any) {
-      setError(
-        `Fehler beim Aktualisieren der Zahlungsmethoden: ${err.message || 'Unbekannter Fehler'}`
-      );
-    }
-  };
-
-  const _handleRemovePaymentMethod = async (paymentMethodId: string) => {
-    if (!currentUser) return;
-    if (confirm('Sind Sie sicher, dass Sie diese Zahlungsmethode entfernen möchten?')) {
-      try {
-        const result = await detachPaymentMethodCallable({ paymentMethodId });
-
-        if (result.data.success) {
-          setUserProfile(prev => ({
-            ...prev!,
-            savedPaymentMethods:
-              prev!.savedPaymentMethods?.filter(pm => pm.id !== paymentMethodId) || [],
-          }));
-          alert('Zahlungsmethode erfolgreich entfernt.');
-        } else {
-          alert(
-            `Fehler beim Entfernen der Zahlungsmethode: ${result.data.message || 'Unbekannter Fehler'}`
-          );
-        }
-      } catch (err: any) {
-        alert(`Fehler beim Entfernen: ${err.message || 'Unbekannter Fehler'}`);
-        setError(
-          `Fehler beim Entfernen der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
-        );
-      }
-    }
-  };
+  // Stripe-bezogene Funktionen wurden entfernt - Escrow-System wird verwendet
 
   const handleAddAddress = async (newAddress: SavedAddress) => {
     if (!currentUser) return;
@@ -430,8 +406,9 @@ export default function UserDashboardPage() {
       setShowAddAddressModal(false);
       setEditingAddress(null);
       alert('Adresse erfolgreich hinzugefügt.');
-    } catch (err: any) {
-      setError(`Fehler beim Hinzufügen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError(`Fehler beim Hinzufügen der Adresse: ${errorMessage}`);
     }
   };
 
@@ -463,8 +440,9 @@ export default function UserDashboardPage() {
       setShowAddAddressModal(false);
       setEditingAddress(null);
       alert('Adresse erfolgreich aktualisiert.');
-    } catch (err: any) {
-      setError(`Fehler beim Aktualisieren der Adresse: ${err.message || 'Unbekannter Fehler'}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError(`Fehler beim Aktualisieren der Adresse: ${errorMessage}`);
     }
   };
 
@@ -488,9 +466,10 @@ export default function UserDashboardPage() {
           savedAddresses: prev!.savedAddresses?.filter(addr => addr.id !== addressId) || [],
         }));
         alert('Adresse erfolgreich entfernt.');
-      } catch (err: any) {
-        alert(`Fehler beim Löschen: ${err.message || 'Unbekannter Fehler'}`);
-        setError(`Fehler beim Löschen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        alert(`Fehler beim Löschen: ${errorMessage}`);
+        setError(`Fehler beim Löschen der Adresse: ${errorMessage}`);
       }
     }
   };
@@ -499,8 +478,9 @@ export default function UserDashboardPage() {
     try {
       await signOut(auth);
       router.replace('/');
-    } catch (err: any) {
-      alert(`Fehler beim Abmelden: ${err.message || 'Unbekannter Fehler'}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      alert(`Fehler beim Abmelden: ${errorMessage}`);
     }
   };
 
@@ -590,11 +570,11 @@ export default function UserDashboardPage() {
         <div className="max-w-6xl mx-auto space-y-6">
           <WelcomeBox
             firstname={
-              (userProfile as any)?.firstName ||
-              (userProfile as any)?.firstname ||
-              (userProfile as any)?.profile?.firstName ||
-              (userProfile as any)?.step1?.firstName ||
-              (userProfile as any)?.displayName?.split(' ')[0] ||
+              ((userProfile as Record<string, unknown>)?.firstName as string) ||
+              ((userProfile as Record<string, unknown>)?.firstname as string) ||
+              (((userProfile as Record<string, unknown>)?.profile as Record<string, unknown>)?.firstName as string) ||
+              (((userProfile as Record<string, unknown>)?.step1 as Record<string, unknown>)?.firstName as string) ||
+              (((userProfile as Record<string, unknown>)?.displayName as string)?.split(' ')[0]) ||
               (currentUser?.displayName ? currentUser.displayName.split(' ')[0] : '') ||
               'Benutzer'
             }
@@ -605,17 +585,17 @@ export default function UserDashboardPage() {
               (typeof userProfile?.profilePictureFirebaseUrl === 'string'
                 ? userProfile.profilePictureFirebaseUrl
                 : null) ||
-              (typeof (userProfile as any)?.profileImage === 'string'
-                ? (userProfile as any).profileImage
+              (typeof ((userProfile as Record<string, unknown>)?.profileImage) === 'string'
+                ? ((userProfile as Record<string, unknown>).profileImage as string)
                 : null) ||
-              (typeof (userProfile as any)?.photoURL === 'string'
-                ? (userProfile as any).photoURL
+              (typeof ((userProfile as Record<string, unknown>)?.photoURL) === 'string'
+                ? ((userProfile as Record<string, unknown>).photoURL as string)
                 : null) ||
-              (typeof (userProfile as any)?.profile?.profilePictureURL === 'string'
-                ? (userProfile as any).profile.profilePictureURL
+              (typeof (((userProfile as Record<string, unknown>)?.profile as Record<string, unknown>)?.profilePictureURL) === 'string'
+                ? (((userProfile as Record<string, unknown>).profile as Record<string, unknown>).profilePictureURL as string)
                 : null) ||
-              (typeof (userProfile as any)?.step1?.profilePictureURL === 'string'
-                ? (userProfile as any).step1.profilePictureURL
+              (typeof (((userProfile as Record<string, unknown>)?.step1 as Record<string, unknown>)?.profilePictureURL) === 'string'
+                ? (((userProfile as Record<string, unknown>).step1 as Record<string, unknown>).profilePictureURL as string)
                 : null) ||
               currentUser?.photoURL
             }
@@ -743,7 +723,7 @@ export default function UserDashboardPage() {
                           Meine Bewerbungen
                         </h3>
                         <div className="space-y-2 overflow-y-auto grow pr-1">
-                          {recentApplications.map((app: any) => (
+                          {recentApplications.map((app) => (
                             <div
                               key={app.id}
                               className="p-2 bg-gray-50 rounded-lg border border-gray-100 hover:border-teal-200 transition-colors cursor-pointer"
@@ -822,9 +802,160 @@ export default function UserDashboardPage() {
                 </div>
               </div>
 
+              {/* Marktplatz-Projekte Flip Card */}
+              <div
+                className="relative h-full min-h-[200px] cursor-pointer group perspective-1000"
+                onClick={() => setIsMarketplaceCardFlipped(!isMarketplaceCardFlipped)}
+              >
+                <div
+                  className="relative w-full h-full transition-all duration-500 transform-style-3d"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: isMarketplaceCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  }}
+                >
+                  {/* Front Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-between"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                      <Globe size={80} />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                        <Globe className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="font-bold text-xl mb-2">Marktplatz</h3>
+                      <p className="text-teal-50 text-sm">
+                        {loadingMarketplace
+                          ? 'Lade Projekte...'
+                          : marketplaceProjects.length > 0
+                            ? `${marketplaceProjects.length} aktive Projekte`
+                            : 'Keine aktiven Projekte'}
+                      </p>
+                    </div>
+                    <div className="relative z-10 flex items-center text-sm font-medium text-teal-100 mt-2">
+                      <RotateCw size={16} className="mr-2" />
+                      Klicken zum Umdrehen
+                    </div>
+                  </div>
+
+                  {/* Back Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-white text-gray-800 shadow-2xl rounded-2xl p-4 overflow-hidden flex flex-col"
+                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  >
+                    {loadingMarketplace ? (
+                      <div className="h-full flex items-center justify-center">
+                        <FiLoader className="animate-spin text-2xl text-[#14ad9f]" />
+                      </div>
+                    ) : marketplaceProjects.length > 0 ? (
+                      <>
+                        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center shrink-0">
+                          <Globe className="w-5 h-5 text-[#14ad9f] mr-2" />
+                          Meine Projekte
+                        </h3>
+                        <div className="space-y-2 overflow-y-auto grow pr-1">
+                          {marketplaceProjects.map((project: { id: string; title?: string; category?: string; status?: string; requestType?: string; isPublic?: boolean; proposals?: unknown[]; proposalCount?: number }) => (
+                            <div
+                              key={project.id}
+                              className="p-2 bg-gray-50 rounded-lg border border-gray-100 hover:border-teal-200 transition-colors cursor-pointer"
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/user/${currentUser?.uid}/projects/${project.id}`);
+                              }}
+                            >
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <p className="font-semibold text-gray-900 text-xs truncate flex-1">
+                                  {project.title || 'Projekt'}
+                                </p>
+                                {/* UNIFIED: Badge für requestType */}
+                                <span
+                                  className={`text-[8px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                                    project.requestType === 'direct' || !project.isPublic
+                                      ? 'bg-purple-100 text-purple-700'
+                                      : 'bg-teal-100 text-teal-700'
+                                  }`}
+                                >
+                                  {project.requestType === 'direct' || !project.isPublic ? 'Direkt' : 'Marktplatz'}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-500 truncate">
+                                {project.category}
+                              </p>
+                              <div className="flex justify-between items-center mt-1">
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                    project.status === 'open'
+                                      ? 'bg-green-100 text-green-700'
+                                      : project.status === 'in_progress'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : project.status === 'completed'
+                                          ? 'bg-gray-100 text-gray-700'
+                                          : project.status === 'has_proposals'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-yellow-100 text-yellow-700'
+                                  }`}
+                                >
+                                  {project.status === 'open'
+                                    ? 'Offen'
+                                    : project.status === 'in_progress'
+                                      ? 'In Bearbeitung'
+                                      : project.status === 'completed'
+                                        ? 'Abgeschlossen'
+                                        : project.status === 'has_proposals'
+                                          ? 'Angebote erhalten'
+                                          : project.status}
+                                </span>
+                                {(project.proposals?.length ?? 0) > 0 || (project.proposalCount ?? 0) > 0 ? (
+                                  <span className="text-[10px] text-[#14ad9f] font-medium">
+                                    {project.proposals?.length || project.proposalCount} Angebote
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/user/${currentUser?.uid}/projects`);
+                          }}
+                          className="w-full mt-2 py-1.5 text-xs text-[#14ad9f] font-medium hover:bg-teal-50 rounded-lg transition-colors shrink-0"
+                        >
+                          Alle anzeigen
+                        </button>
+                      </>
+                    ) : (
+                      <div className="h-full flex flex-col justify-center items-center text-center">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                          <Globe className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <h3 className="text-base font-bold text-gray-800 mb-1">
+                          Keine Projekte
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Erstelle dein erstes Projekt im Marktplatz.
+                        </p>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push('/marketplace');
+                          }}
+                          className="text-xs text-[#14ad9f] font-medium hover:underline"
+                        >
+                          Zum Marktplatz
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Support Flip Card */}
               <div
-                className="md:col-span-2 relative h-full min-h-[200px] cursor-pointer group perspective-1000"
+                className="relative h-full min-h-[200px] cursor-pointer group perspective-1000"
                 onClick={() => setIsSupportCardFlipped(!isSupportCardFlipped)}
               >
                 <div
@@ -1040,14 +1171,12 @@ export default function UserDashboardPage() {
         )}
         {/* Modal für Neuen Auftrag erstellen */}
         {showCreateOrderModal && (
-          <Modal onClose={() => setShowCreateOrderModal(false)} title="Neuen Auftrag erstellen">
-            <CreateOrderModal
-              onClose={() => setShowCreateOrderModal(false)}
-              onSuccess={handleOrderCreationSuccess}
-              currentUser={currentUser!}
-              userProfile={userProfile!}
-            />
-          </Modal>
+          <CreateOrderModal
+            onClose={() => setShowCreateOrderModal(false)}
+            onSuccess={handleOrderCreationSuccess}
+            currentUser={currentUser!}
+            userProfile={userProfile!}
+          />
         )}
         {/* Modal für Support Chat */}
         {showSupportChatModal && currentUser && userProfile && (
@@ -1099,7 +1228,7 @@ export default function UserDashboardPage() {
         {currentUser?.uid && (
           <TaskiloProjectAssistant
             userId={currentUser.uid}
-            onOrderCreate={orderData => {
+            onOrderCreate={() => {
               toast.success('Auftrag erfolgreich erstellt!');
               // Optional: Refresh der Seite oder Navigation
               window.location.reload();

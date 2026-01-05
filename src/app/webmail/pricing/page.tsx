@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { HeroHeader } from '@/components/hero8-header';
+import FooterSection from '@/components/footer';
 
 interface PlanFeature {
   text: string;
@@ -768,61 +769,7 @@ export default function WebmailPricingPage() {
       </section>
 
       {/* Footer */}
-      <footer
-        className={cn(
-          'py-8 px-4 border-t',
-          isDark ? 'bg-[#292a2d] border-[#5f6368]' : 'bg-gray-50 border-gray-200'
-        )}
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link
-              href="/impressum"
-              className={cn(
-                'transition-colors',
-                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              Impressum
-            </Link>
-            <Link
-              href="/agb"
-              className={cn(
-                'transition-colors',
-                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              AGB
-            </Link>
-            <Link
-              href="/datenschutz"
-              className={cn(
-                'transition-colors',
-                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              Datenschutz
-            </Link>
-            <Link
-              href="/barrierefreiheit"
-              className={cn(
-                'transition-colors',
-                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              Barrierefreiheit
-            </Link>
-          </div>
-          <p
-            className={cn(
-              'text-center text-sm mt-4',
-              isDark ? 'text-gray-500' : 'text-white'
-            )}
-          >
-            2024 Taskilo GmbH. Alle Rechte vorbehalten.
-          </p>
-        </div>
-      </footer>
+      <FooterSection />
     </div>
   );
 }

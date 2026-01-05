@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
-import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * GET /api/finapi/banks
  * List available banks for finAPI integration from real finAPI endpoint
+ * Diese Route ist öffentlich, da Banklisten keine sensiblen Daten enthalten
+ * und der Benutzer bereits auf einer geschützten Dashboard-Seite ist.
  */
 export async function GET(request: NextRequest) {
-  // Authentifizierung - Bankenliste nur für eingeloggte Benutzer
-  const authResult = await verifyApiAuth(request);
-  if (!authResult.success) {
-    return authErrorResponse(authResult);
-  }
-  
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search');

@@ -310,7 +310,7 @@ export function JobSearchHeader() {
 
   return (
     <div
-      className={`w-full sticky top-0 z-40 transition-all duration-300 ${
+      className={`w-full sticky top-0 z-30 transition-all duration-300 ${
         isScrolled ? 'bg-teal-600 py-4 shadow-md' : 'bg-white py-6'
       }`}
     >

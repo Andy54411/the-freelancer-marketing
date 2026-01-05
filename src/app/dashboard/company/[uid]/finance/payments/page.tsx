@@ -22,13 +22,12 @@ export default function PaymentsPage() {
         setLoading(true);
         // Da FinanceService private Methoden für Zahlungen hat,
         // erstellen wir hier eine direkte Firestore-Abfrage
-        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
 
         const paymentsQuery = query(
           collection(db, 'payments'),
-          where('companyId', '==', uid),
-          orderBy('date', 'desc')
+          where('companyId', '==', uid)
         );
 
         const querySnapshot = await getDocs(paymentsQuery);
@@ -51,8 +50,11 @@ export default function PaymentsPage() {
           });
         });
 
+        // Sort in application (no orderBy in Firestore)
+        loadedPayments.sort((a, b) => b.date.getTime() - a.date.getTime());
+
         setPayments(loadedPayments);
-      } catch (error) {
+      } catch {
         toast.error('Fehler beim Laden der Zahlungen');
       } finally {
         setLoading(false);

@@ -44,6 +44,168 @@ FORMATIERUNG:
 AUSGABE:
 Antworte NUR mit dem HTML-formatierten Text. Keine Einleitung, keine Erklärung, kein Markdown.`;
 
+// Basis-Prompt für Auftragsbeschreibungen
+const baseOrderPrompt = `Du bist ein Experte für die Erstellung klarer und strukturierter Auftragsbeschreibungen auf der deutschen Dienstleistungsplattform Taskilo.
+
+DEINE AUFGABE:
+Verbessere und strukturiere die Auftragsbeschreibung des Kunden, damit Dienstleister sofort verstehen, was benötigt wird.
+
+KONTEXT:
+Kategorie: {{category}}
+Dienstleistung: {{subcategory}}
+Beschreibung des Kunden: {{userInput}}
+
+STILRICHTLINIEN:
+- Schreibe klar, präzise und professionell
+- Strukturiere den Text logisch
+- Behalte alle wichtigen Informationen bei (Anzahl Personen, Datum, Ort, spezielle Wünsche)
+- Ergänze hilfreiche Details, die Dienstleister typischerweise benötigen
+- Formuliere konkrete Anforderungen und Erwartungen
+- Halte den Text kompakt (max. 150-200 Wörter)
+
+WICHTIGE INFORMATIONEN ZU EXTRAHIEREN/HERVORHEBEN:
+- WAS genau soll gemacht werden?
+- WO soll es stattfinden?
+- WANN (Datum, Uhrzeit, Dauer)?
+- FÜR WEN (Anzahl Personen, besondere Anforderungen)?
+- BESONDERE WÜNSCHE (Stil, Präferenzen, Einschränkungen)?
+
+FORMATIERUNG:
+- Reiner Text ohne HTML
+- Verwende Zeilenumbrüche für Struktur
+- Listen mit - für Aufzählungen
+- KEINE Emojis
+- KEINE Überschriften
+
+AUSGABE:
+Antworte NUR mit der verbesserten Beschreibung. Keine Einleitung wie "Hier ist die verbesserte Version", keine Erklärung.`;
+
+// ============================================
+// KATEGORIESSPEZIFISCHE ORDER-ERWEITERUNGEN
+// ============================================
+
+export const orderCategoryExtensions: Record<string, string> = {
+  'handwerk': `
+TYPISCHE DETAILS FÜR HANDWERKSAUFTRÄGE:
+- Genaue Maße und Flächen
+- Zustand des Objekts (Altbau/Neubau)
+- Materialwünsche
+- Zugänglichkeit der Baustelle
+- Parkplatz für Handwerker-Fahrzeug`,
+
+  'haushalt': `
+TYPISCHE DETAILS FÜR HAUSHALTSAUFTRÄGE:
+- Wohnungsgröße (qm oder Zimmeranzahl)
+- Regelmäßigkeit (einmalig/wiederkehrend)
+- Besondere Bereiche (Küche, Bad, Fenster)
+- Haustiere vorhanden?
+- Reinigungsmittel vorhanden oder mitbringen?`,
+
+  'transport': `
+TYPISCHE DETAILS FÜR TRANSPORTAUFTRÄGE:
+- Start- und Zieladresse
+- Art und Menge der Gegenstände
+- Etagen (mit/ohne Aufzug)
+- Datum und gewünschte Uhrzeit
+- Verpackung nötig?`,
+
+  'it_digital': `
+TYPISCHE DETAILS FÜR IT-AUFTRÄGE:
+- Aktuelle technische Situation
+- Gewünschtes Ergebnis
+- Deadline
+- Budget-Vorstellung
+- Vorhandene Systeme/Software`,
+
+  'garten': `
+TYPISCHE DETAILS FÜR GARTENAUFTRÄGE:
+- Gartengröße (qm)
+- Art der Bepflanzung
+- Regelmäßigkeit (einmalig/Pflegevertrag)
+- Grünschnitt-Entsorgung inklusive?
+- Werkzeug vorhanden?`,
+
+  'wellness': `
+TYPISCHE DETAILS FÜR WELLNESS-AUFTRÄGE:
+- Art der gewünschten Behandlung
+- Dauer der Sitzung
+- Ort (Hausbesuch/Studio)
+- Besondere gesundheitliche Hinweise
+- Anzahl der Personen`,
+
+  'gastronomie': `
+TYPISCHE DETAILS FÜR GASTRONOMIE-AUFTRÄGE:
+- Anlass der Veranstaltung
+- Anzahl der Gäste
+- Gewünschte Küche/Menü
+- Allergien/Unverträglichkeiten
+- Getränke inklusive?
+- Location mit Küche?`,
+
+  'marketing': `
+TYPISCHE DETAILS FÜR MARKETING-AUFTRÄGE:
+- Zielgruppe
+- Aktuelle Online-Präsenz
+- Gewünschte Kanäle
+- Budget
+- Messbare Ziele`,
+
+  'finanzen': `
+TYPISCHE DETAILS FÜR FINANZ-AUFTRÄGE:
+- Art der Beratung/Dienstleistung
+- Unternehmensgröße/Privatperson
+- Zeitraum
+- Besondere Anforderungen
+- Vorhandene Unterlagen`,
+
+  'bildung': `
+TYPISCHE DETAILS FÜR BILDUNGSAUFTRÄGE:
+- Fach/Thema
+- Niveau (Schule/Studium/Erwachsene)
+- Häufigkeit und Dauer
+- Ort (online/vor Ort)
+- Ziel (Prüfungsvorbereitung/Allgemein)`,
+
+  'tiere': `
+TYPISCHE DETAILS FÜR TIERBETREUUNG:
+- Tierart und Anzahl
+- Zeitraum der Betreuung
+- Ort (Zuhause/beim Betreuer)
+- Besonderheiten des Tieres
+- Futter vorhanden?`,
+
+  'kreativ': `
+TYPISCHE DETAILS FÜR KREATIVAUFTRÄGE:
+- Art des Projekts
+- Stil und Referenzen
+- Lieferformat
+- Nutzungsrechte
+- Deadline`,
+
+  'event': `
+TYPISCHE DETAILS FÜR EVENT-AUFTRÄGE:
+- Art der Veranstaltung
+- Datum und Dauer
+- Gästeanzahl
+- Location
+- Equipment vorhanden?`,
+
+  'buero': `
+TYPISCHE DETAILS FÜR BÜRO-AUFTRÄGE:
+- Art der Aufgaben
+- Zeitlicher Umfang
+- Einmalig oder regelmäßig
+- Sprachkenntnisse erforderlich?
+- Software-Kenntnisse nötig?`,
+
+  'default': `
+ALLGEMEINE DETAILS:
+- Was genau soll erledigt werden?
+- Wann soll es stattfinden?
+- Wo befindet sich der Einsatzort?
+- Gibt es besondere Anforderungen?`
+};
+
 // ============================================
 // HAUPTKATEGORIE-SPEZIFISCHE ERWEITERUNGEN
 // ============================================
@@ -376,6 +538,40 @@ export function generateProfilePrompt(
 }
 
 /**
+ * Generiert den vollständigen Prompt für eine Auftragsbeschreibung
+ */
+export function generateOrderPrompt(
+  category: string,
+  subcategory: string,
+  userInput: string
+): string {
+  // Normalisiere Kategorie-Key
+  const categoryKey = category.toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/&/g, 'und')
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss');
+  
+  // Finde passende Erweiterung
+  const categoryExtension = orderCategoryExtensions[categoryKey] || orderCategoryExtensions['default'];
+  
+  // Ersetze Platzhalter im Basis-Prompt
+  let fullPrompt = baseOrderPrompt
+    .replace('{{category}}', category || 'Noch nicht ausgewählt')
+    .replace('{{subcategory}}', subcategory || 'Noch nicht ausgewählt')
+    .replace('{{userInput}}', userInput);
+  
+  // Füge kategoriesspezifische Erweiterung hinzu
+  if (categoryExtension) {
+    fullPrompt += '\n' + categoryExtension;
+  }
+  
+  return fullPrompt;
+}
+
+/**
  * Alle verfügbaren Prompt-Konfigurationen
  */
 export const promptConfigs: PromptConfig[] = [
@@ -386,6 +582,14 @@ export const promptConfigs: PromptConfig[] = [
     prompt: baseProfilePrompt,
     version: '2.0.0',
     lastUpdated: '2025-01-21',
+  },
+  {
+    id: 'order-description',
+    name: 'Auftragsbeschreibung',
+    description: 'Verbessert und strukturiert Auftragsbeschreibungen für Kunden',
+    prompt: baseOrderPrompt,
+    version: '1.0.0',
+    lastUpdated: '2026-01-05',
   },
 ];
 

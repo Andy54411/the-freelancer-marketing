@@ -1235,7 +1235,13 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
       <LoginPopup 
         isOpen={showLoginPopup} 
-        onClose={() => setShowLoginPopup(false)} 
+        onClose={() => setShowLoginPopup(false)}
+        onLoginSuccess={(user) => {
+          setShowLoginPopup(false);
+          // Auth state wird automatisch durch onAuthStateChanged aktualisiert
+          // Optional: Seite neu laden für volle Synchronisation
+          window.location.reload();
+        }}
       />
     </>
   );

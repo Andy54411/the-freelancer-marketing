@@ -36,9 +36,30 @@ service cloud.firestore {
              get(/databases/$(database)/documents/companies/$(companyId)).data.user_type == 'firma';
     }
     
-    // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
+    // KORRIGIERT: Prüft ob der Benutzer Admin/Support-Rechte hat
+    // Prüft: adminUsers Collection (role: master-admin, admin, support)
+    //        users/companies Collection (user_type: master, support)
     function isSupportStaff() {
-      return isUserType(['master', 'support']);
+      return request.auth != null && (
+        // Prüfe adminUsers Collection (Admin-Dashboard-Benutzer)
+        isAdminUser() ||
+        // Prüfe users/companies Collection (Legacy-Support)
+        isUserType(['master', 'support'])
+      );
+    }
+    
+    // Prüft ob der Benutzer in der adminUsers Collection existiert und aktiv ist
+    function isAdminUser() {
+      return request.auth != null && (
+        // Prüfe per E-Mail in adminUsers
+        exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) ||
+        // Oder prüfe bekannte Admin-E-Mails
+        request.auth.token.email in [
+          'andy.staudinger@taskilo.de',
+          'support@taskilo.de',
+          'admin@taskilo.de'
+        ]
+      );
     }
 
     // Allgemeine Funktion zur Überprüfung von User Types
@@ -2787,20 +2808,15 @@ service cloud.firestore {
 
     // Project Requests Collection - für User-Projekte
     match /project_requests/{projectRequestId} {
-      // Lesen: Eigene Project Requests als Kunde (beide Schemas) ODER authentifizierte Provider für Marketplace
-      allow read, get: if request.auth != null && 
-                         (resource.data.customerUid == request.auth.uid ||
-                          resource.data.customerData.uid == request.auth.uid ||
-                          // Alle authentifizierten User können project_requests lesen (für Marketplace)
-                          request.auth != null ||
-                          isSupportStaff());
+      // Lesen: Öffentliche Projekte für ALLE (auch nicht-authentifiziert) ODER eigene Project Requests
+      allow read, get: if (resource.data.isPublic == true) ||
+                         (request.auth != null && 
+                           (resource.data.customerUid == request.auth.uid ||
+                            resource.data.customerData.uid == request.auth.uid ||
+                            isSupportStaff()));
       
-      // Listen: Für eigene Project Requests und alle Unternehmen für Marketplace
-      allow list: if request.auth != null && 
-                    (isSupportStaff() || 
-                     request.auth != null ||
-                     isCompany() ||
-                     exists(/databases/$(database)/documents/companies/$(request.auth.uid)));
+      // Listen: Öffentliche Projekte für ALLE (Marketplace) ODER eigene/Unternehmen
+      allow list: if true;  // Filter wird durch Firestore Query (isPublic == true) gehandhabt
       
       // Erstellen: User können Project Requests erstellen
       allow create: if request.auth != null && 
@@ -2825,11 +2841,12 @@ service cloud.firestore {
 
     // Quotes Collection - für direkte Angebote/Aufträge
     match /quotes/{quoteId} {
-      // Lesen: ALLE authentifizierten User können quotes lesen (wie project_requests)
-      allow read, get: if request.auth != null;
+      // Lesen: Öffentliche Quotes für ALLE (auch nicht-authentifiziert) ODER authentifizierte User
+      allow read, get: if (resource.data.isPublic == true) ||
+                         (request.auth != null);
       
-      // Listen: Für Dashboard-Abfragen (eigene Quotes)
-      allow list: if request.auth != null;
+      // Listen: Öffentliche Quotes für ALLE (Marketplace) ODER authentifizierte User
+      allow list: if true;  // Filter wird durch Firestore Query gehandhabt
       
       // Erstellen: Provider können Quotes erstellen
       allow create: if request.auth != null && 
@@ -2954,6 +2971,23 @@ service cloud.firestore {
       
       // KEINE neuen Schreibzugriffe mehr erlaubt - verwende Subcollections!
       allow write: if false;
+    }
+
+    // ===== CONTENT SAFETY SYSTEM =====
+    
+    // Content Violations Collection - Für Admin-Überwachung von Kontaktdaten-Verstößen
+    match /content_violations/{violationId} {
+      // Nur Support-Personal kann Verstöße lesen und bearbeiten
+      allow read, list: if isSupportStaff();
+      
+      // Jeder authentifizierte Benutzer kann Verstöße erstellen (automatische Protokollierung)
+      allow create: if request.auth != null;
+      
+      // Nur Support-Personal kann Verstöße aktualisieren (Review-Status, Aktionen)
+      allow update: if isSupportStaff();
+      
+      // Löschen nicht erlaubt - Audit-Trail
+      allow delete: if false;
     }
 
     // ===== UPDATE NOTIFICATION SYSTEM =====

@@ -99,7 +99,7 @@ const benefitsData = [
 ];
 
 const statsData = [
-  { value: 'All-in-One', label: 'HR-Losung' },
+  { value: 'All-in-One', label: 'HR-Lösung' },
   { value: '< 5 Min', label: 'Dienstplan erstellen' },
   { value: '100%', label: 'Arbeitszeitgesetz-konform' },
 ];

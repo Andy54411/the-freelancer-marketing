@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { ResponseTimeTracker } from '@/lib/responseTimeTracker';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 interface DirectChatModalProps {
@@ -207,8 +207,14 @@ export default function DirectChatModal({
     e.preventDefault();
     if (!newMessage.trim() || sending || !user) return;
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(newMessage.trim());
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const validation = await validateAndLogSensitiveData(
+      newMessage.trim(),
+      'chat',
+      companyId,
+      companyName,
+      user.uid
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,

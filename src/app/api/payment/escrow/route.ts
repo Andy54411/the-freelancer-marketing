@@ -37,7 +37,21 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'create': {
-        const { orderId, buyerId, providerId, amount, currency, clearingDays, description, paymentMethod } = params;
+        const { 
+          orderId, 
+          buyerId, 
+          providerId, 
+          amount, 
+          currency, 
+          clearingDays, 
+          description, 
+          paymentMethod,
+          // Marktplatz-spezifische Felder
+          proposalId,
+          projectId,
+          isMarketplaceOrder,
+          orderDetails,
+        } = params;
 
         if (!orderId || !buyerId || !providerId || !amount) {
           return NextResponse.json(
@@ -57,6 +71,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Metadata für Marktplatz-Aufträge vorbereiten
+        const metadata: Record<string, unknown> = {};
+        if (isMarketplaceOrder) {
+          metadata.isMarketplaceOrder = true;
+          metadata.proposalId = proposalId;
+          metadata.projectId = projectId;
+          metadata.orderDetails = orderDetails;
+        }
+
         const escrow = await EscrowService.create({
           orderId,
           buyerId,
@@ -65,6 +88,7 @@ export async function POST(request: NextRequest) {
           currency,
           clearingDays: clearingDays ? Number(clearingDays) : undefined,
           description,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
 
         // Bei Kartenzahlung: Revolut Checkout erstellen

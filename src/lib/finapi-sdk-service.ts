@@ -751,8 +751,15 @@ export class FinAPISDKService {
       }
 
       // Include test banks if requested (wichtig für FinAPI Sandbox Test-Banken!)
-      if (includeTestBanks) {
-        url.searchParams.set('isTestBank', 'true');
+      // In der Sandbox können wir nach Test-Banken suchen
+      // isTestBank=true zeigt NUR Test-Banken
+      // Ohne den Parameter werden alle Banken angezeigt
+      if (includeTestBanks && this.config.environment === 'sandbox') {
+        // In Sandbox: Suche nach allen verfügbaren Banken inkl. Testbanken
+        // Wenn kein Suchbegriff, suche nach "Test" um Testbanken zu finden
+        if (!search || search.trim() === '') {
+          url.searchParams.set('search', 'Testbank');
+        }
       }
 
 
@@ -789,6 +796,7 @@ export class FinAPISDKService {
         }
       };
     } catch (error: any) {
+      console.error('❌ getBanks Error:', error.message);
       // Return empty result instead of throwing
       return {
         banks: [],

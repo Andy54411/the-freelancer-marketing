@@ -6,25 +6,20 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  Euro,
   MapPin,
-  Star,
   MessageSquare,
   CheckCircle2,
-  XCircle,
   AlertCircle,
-  Phone,
-  Mail,
   Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db } from '@/firebase/clients';
 import { doc, getDoc, onSnapshot, collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import MarketplaceProposalCard from '@/components/marketplace/MarketplaceProposalCard';
 
 interface ProjectRequest {
   id: string;
@@ -41,7 +36,7 @@ interface ProjectRequest {
   startDate?: string;
   endDate?: string;
   preferredDate?: string;
-  location: string | { address?: string; coordinates?: any; type?: string } | any;
+  location: string | { address?: string; coordinates?: { lat: number; lng: number }; type?: string };
   isRemote: boolean;
   isActive: boolean;
   urgency: 'low' | 'medium' | 'high';
@@ -76,6 +71,12 @@ interface ProjectRequest {
   hasSelectedProviders?: boolean;
   isDirectAssignment?: boolean;
   isPublic?: boolean;
+  isMarketplaceRequest?: boolean; // NEU: Marktplatz-Projekt
+  publishingFeePaid?: boolean;
+  escrowId?: string;
+  escrowPaidAt?: Date;
+  acceptedProposalId?: string;
+  acceptedProviderId?: string;
   subcategoryData?: {
     accommodation?: string;
     cuisine?: string;
@@ -90,7 +91,7 @@ interface ProjectRequest {
     subcategory?: string;
     timeframe?: string;
     timeline?: string;
-    [key: string]: any; // Für weitere dynamische Felder
+    [key: string]: string | string[] | undefined; // Für weitere dynamische Felder
   };
 }
 
@@ -98,6 +99,7 @@ interface Proposal {
   id: string;
   providerId: string;
   companyUid?: string; // Für Company proposals
+  companyId?: string; // Alias für providerId bei Marktplatz
   providerName: string;
   providerEmail: string;
   providerPhone?: string;
@@ -109,17 +111,163 @@ interface Proposal {
   proposedTimeline: string;
   availability: string;
   submittedAt: Date;
-  status: 'pending' | 'accepted' | 'rejected' | 'declined' | 'withdrawn' | 'cancelled';
+  status: 'pending' | 'accepted' | 'rejected' | 'declined' | 'withdrawn' | 'cancelled' | 'escrow_paid';
   totalAmount?: number;
   timeline?: string;
-  serviceItems?: any[];
+  serviceItems?: ServiceItem[];
   // Zusätzliche Company-Informationen
   companyDescription?: string;
   companyIndustry?: string;
   companyExperience?: string;
   companySkills?: string[];
   companyLocation?: string;
+  // Marktplatz-Escrow Felder
+  escrowPaid?: boolean;
+  escrowId?: string;
+  escrowPaidAt?: Date;
+  companyWebsite?: string;
+  estimatedDuration?: string;
 }
+
+interface ServiceItem {
+  name: string;
+  quantity?: number;
+  price?: number;
+  description?: string;
+}
+
+interface FirestoreProjectData {
+  title?: string;
+  description?: string;
+  category?: string;
+  serviceCategory?: string;
+  subcategory?: string;
+  serviceSubcategory?: string;
+  budgetRange?: { min: number; max: number; currency: string };
+  estimatedBudget?: number;
+  budgetAmount?: number;
+  budget?: number;
+  maxBudget?: number;
+  budgetType?: 'fixed' | 'hourly' | 'negotiable';
+  timeline?: string;
+  timeframe?: string;
+  startDate?: string;
+  endDate?: string;
+  preferredDate?: string;
+  location?: string | { address?: string; coordinates?: { lat: number; lng: number }; type?: string };
+  isRemote?: boolean;
+  isActive?: boolean;
+  urgency?: 'low' | 'medium' | 'high';
+  priority?: string;
+  requiredSkills?: string[];
+  projectRequirements?: string;
+  requiredServices?: string[];
+  originalPrompt?: string;
+  projectType?: string;
+  maxProposals?: number;
+  aiGenerated?: boolean;
+  source?: string;
+  status?: string;
+  customerUid?: string;
+  customerEmail?: string;
+  customerData?: { uid: string };
+  proposals?: ProposalData[] | Record<string, ProposalData>;
+  createdAt?: { toDate: () => Date } | string | number;
+  updatedAt?: { toDate: () => Date } | string | number;
+  viewCount?: number;
+  subcategoryData?: Record<string, string | string[] | undefined>;
+  selectedProviders?: (string | { companyName?: string; name?: string; id: string; priceRange?: string; rating?: number })[];
+  hasSelectedProviders?: boolean;
+  isDirectAssignment?: boolean;
+  isPublic?: boolean;
+  isMarketplaceRequest?: boolean;
+  publishingFeePaid?: boolean;
+  escrowId?: string;
+  escrowPaidAt?: { toDate: () => Date };
+  acceptedProposalId?: string;
+  acceptedProviderId?: string;
+  requestType?: 'direct' | 'marketplace';
+}
+
+interface ProposalData {
+  id?: string;
+  providerId?: string;
+  companyId?: string;
+  companyUid?: string;
+  uid?: string;
+  providerName?: string;
+  providerEmail?: string;
+  providerPhone?: string;
+  providerAvatar?: string;
+  providerRating?: number;
+  providerReviewCount?: number;
+  message?: string;
+  proposedPrice?: number;
+  proposedTimeline?: string;
+  availability?: string;
+  submittedAt?: { toDate: () => Date } | string | Date;
+  status?: string;
+  totalAmount?: number;
+  timeline?: string;
+  serviceItems?: ServiceItem[];
+  estimatedDuration?: string;
+  availableFrom?: string;
+  paymentIntentId?: string;
+  escrowPaid?: boolean;
+  escrowId?: string;
+  escrowPaidAt?: { toDate: () => Date };
+  companyWebsite?: string;
+}
+
+interface CompanyData {
+  companyName?: string;
+  businessName?: string;
+  displayName?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  phoneNumber?: string;
+  step3?: { profilePictureURL?: string };
+  profileBannerImage?: string;
+  averageRating?: number;
+  rating?: number;
+  reviewCount?: number;
+  totalReviews?: number;
+  publicDescription?: string;
+  description?: string;
+  industry?: string;
+  selectedCategory?: string;
+  yearsOfExperience?: string;
+  skills?: string[];
+  city?: string;
+  location?: string;
+  responseTime?: number;
+}
+
+// Hilfsfunktion zum sicheren Parsen von Firestore-Timestamps
+const parseFirestoreDate = (value: { toDate?: () => Date } | string | number | Date | undefined | null): Date => {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
+  if (typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return new Date(value);
+  }
+  return new Date();
+};
+
+// Typen für Status-Felder
+type ProjectStatus = 'open' | 'in_progress' | 'completed' | 'cancelled' | 'directly_assigned' | 'payment_pending';
+type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'declined' | 'withdrawn' | 'cancelled' | 'escrow_paid';
+
+const isValidProjectStatus = (status: string | undefined): status is ProjectStatus => {
+  return ['open', 'in_progress', 'completed', 'cancelled', 'directly_assigned', 'payment_pending'].includes(status || '');
+};
+
+const isValidProposalStatus = (status: string | undefined): status is ProposalStatus => {
+  return ['pending', 'accepted', 'rejected', 'declined', 'withdrawn', 'cancelled', 'escrow_paid'].includes(status || '');
+};
 
 const ProjectDetailPage: React.FC = () => {
   const params = useParams();
@@ -145,16 +293,9 @@ const ProjectDetailPage: React.FC = () => {
 
     const loadProjectDetails = async () => {
       try {
-        // Versuche zuerst project_requests Collection
-        let projectDocRef = doc(db, 'project_requests', projectId);
-        let projectDocSnap = await getDoc(projectDocRef);
-        const isFromProjectRequests = projectDocSnap.exists();
-
-        // Falls nicht in project_requests gefunden, prüfe quotes Collection
-        if (!projectDocSnap.exists()) {
-          projectDocRef = doc(db, 'companies', companyId, 'quotes', projectId);
-          projectDocSnap = await getDoc(projectDocRef);
-        }
+        // UNIFIED: Alle Projekte sind in project_requests
+        const projectDocRef = doc(db, 'project_requests', projectId);
+        const projectDocSnap = await getDoc(projectDocRef);
 
         if (!projectDocSnap.exists()) {
           setError('Projekt nicht gefunden.');
@@ -162,10 +303,11 @@ const ProjectDetailPage: React.FC = () => {
           return;
         }
 
-        // Setze ob es ein öffentliches Projekt ist (project_requests = öffentlich, quotes = privat)
-        setIsPublicProject(isFromProjectRequests);
-
-        const data = projectDocSnap.data();
+        const data = projectDocSnap.data() as FirestoreProjectData;
+        
+        // Setze ob es ein öffentliches Projekt ist basierend auf requestType
+        // requestType: 'marketplace' = öffentlich, 'direct' = privat
+        setIsPublicProject(data.requestType === 'marketplace' || data.isPublic === true);
 
         // Prüfe ob der User der Eigentümer ist (berücksichtige beide Schemas)
         const customerUid = data.customerData?.uid || data.customerUid;
@@ -175,19 +317,19 @@ const ProjectDetailPage: React.FC = () => {
           return;
         }
 
-        // Verarbeite Proposals - lade aus Subcollection!
-        let proposalsToProcess: any[] = [];
+        // Verarbeite Proposals - lade aus Subcollection unter project_requests!
+        let proposalsToProcess: ProposalData[] = [];
 
         try {
-          // Lade Proposals aus der Subcollection
-          const proposalsCollectionRef = collection(db, 'quotes', projectId, 'proposals');
+          // UNIFIED: Proposals sind unter project_requests/{id}/proposals
+          const proposalsCollectionRef = collection(db, 'project_requests', projectId, 'proposals');
           const proposalsSnapshot = await getDocs(proposalsCollectionRef);
 
           proposalsToProcess = proposalsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
           }));
-        } catch (error) {
+        } catch {
           // Fallback: Versuche aus dem Hauptdokument zu lesen
           if (Array.isArray(data.proposals)) {
             proposalsToProcess = data.proposals;
@@ -243,16 +385,12 @@ const ProjectDetailPage: React.FC = () => {
           maxProposals: data.maxProposals,
           aiGenerated: data.aiGenerated,
           source: data.source,
-          status: data.status || 'open',
+          status: isValidProjectStatus(data.status) ? data.status : 'open',
           customerUid: data.customerUid || '',
           customerEmail: data.customerEmail || '',
-          proposals: proposalsToProcess, // Verwende die verarbeiteten Proposals
-          createdAt: data.createdAt?.toDate
-            ? data.createdAt.toDate()
-            : new Date(data.createdAt || Date.now()),
-          updatedAt: data.updatedAt?.toDate
-            ? data.updatedAt.toDate()
-            : new Date(data.updatedAt || data.createdAt || Date.now()),
+          proposals: [], // Wird später mit enhancedProposals ersetzt
+          createdAt: parseFirestoreDate(data.createdAt),
+          updatedAt: parseFirestoreDate(data.updatedAt || data.createdAt),
           viewCount: data.viewCount || 0,
           subcategoryData: data.subcategoryData || {},
           // Neue Felder für direkte Zuweisung
@@ -269,7 +407,7 @@ const ProjectDetailPage: React.FC = () => {
         // Erweitere Proposals mit Company-Daten
 
         const enhancedProposals = await Promise.all(
-          proposalsToProcess.map(async (proposal: any) => {
+          proposalsToProcess.map(async (proposal: ProposalData) => {
             try {
               // Sichere providerId Behandlung
               const providerId =
@@ -290,12 +428,8 @@ const ProjectDetailPage: React.FC = () => {
                   proposedTimeline:
                     proposal.proposedTimeline || proposal.timeline || 'Nicht angegeben',
                   availability: proposal.availability || 'Nicht angegeben',
-                  submittedAt: proposal.submittedAt?.toDate
-                    ? proposal.submittedAt.toDate()
-                    : proposal.submittedAt
-                      ? new Date(proposal.submittedAt)
-                      : new Date(),
-                  status: proposal.status || 'pending',
+                  submittedAt: parseFirestoreDate(proposal.submittedAt),
+                  status: isValidProposalStatus(proposal.status) ? proposal.status : 'pending',
                   totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
                   timeline: proposal.timeline || proposal.proposedTimeline || 'Nicht angegeben',
                   serviceItems: proposal.serviceItems || [],
@@ -304,7 +438,7 @@ const ProjectDetailPage: React.FC = () => {
 
               // Lade Company-Daten direkt aus der companies collection (wo die Daten tatsächlich sind!)
 
-              let companyData: any = {};
+              let companyData: CompanyData = {};
 
               // DIREKT aus companies collection laden - da sind die Daten!
               const companiesDocRef = doc(db, 'companies', providerId);
@@ -358,12 +492,8 @@ const ProjectDetailPage: React.FC = () => {
                   (companyData.responseTime
                     ? `Antwort innerhalb ${companyData.responseTime}h`
                     : 'Sofort verfügbar'),
-                submittedAt: proposal.submittedAt?.toDate
-                  ? proposal.submittedAt.toDate()
-                  : proposal.submittedAt
-                    ? new Date(proposal.submittedAt)
-                    : new Date(),
-                status: proposal.status || 'pending',
+                submittedAt: parseFirestoreDate(proposal.submittedAt),
+                status: isValidProposalStatus(proposal.status) ? proposal.status : 'pending',
                 totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
                 timeline: proposal.timeline || proposal.proposedTimeline || 'Flexibel',
                 serviceItems: proposal.serviceItems || [],
@@ -375,7 +505,7 @@ const ProjectDetailPage: React.FC = () => {
                 companyLocation: companyData.city || companyData.location || '',
               };
               return enhancedProposal;
-            } catch (error) {
+            } catch {
               // Fallback für defekte Proposals
               const fallbackProviderId =
                 proposal.providerId ||
@@ -397,12 +527,8 @@ const ProjectDetailPage: React.FC = () => {
                 proposedTimeline:
                   proposal.proposedTimeline || proposal.timeline || 'Nicht angegeben',
                 availability: proposal.availability || 'Nicht angegeben',
-                submittedAt: proposal.submittedAt?.toDate
-                  ? proposal.submittedAt.toDate()
-                  : proposal.submittedAt
-                    ? new Date(proposal.submittedAt)
-                    : new Date(),
-                status: proposal.status || 'pending',
+                submittedAt: parseFirestoreDate(proposal.submittedAt),
+                status: isValidProposalStatus(proposal.status) ? proposal.status : 'pending',
                 totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
                 timeline: proposal.timeline || proposal.proposedTimeline || 'Nicht angegeben',
                 serviceItems: proposal.serviceItems || [],
@@ -415,7 +541,7 @@ const ProjectDetailPage: React.FC = () => {
 
         setProject(projectData);
         setLoading(false);
-      } catch (error) {
+      } catch {
         setError('Fehler beim Laden der Projektdetails');
         setLoading(false);
         toast.error('Fehler beim Laden der Projektdetails');
@@ -469,7 +595,7 @@ const ProjectDetailPage: React.FC = () => {
             });
           }
         },
-        error => {}
+        _error => {}
       );
 
       // Cleanup function
@@ -552,17 +678,6 @@ const ProjectDetailPage: React.FC = () => {
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getProposalStatusIcon = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case 'rejected':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-orange-600" />;
     }
   };
 
@@ -895,6 +1010,7 @@ const ProjectDetailPage: React.FC = () => {
                       )}
                     </div>
                   ) : (
+                    // UNIFIED: MarketplaceProposalCard für ALLE Projekte (Escrow ist IMMER erforderlich)
                     <div className="space-y-4">
                       {project.proposals
                         .filter(
@@ -903,172 +1019,48 @@ const ProjectDetailPage: React.FC = () => {
                             proposal.status !== 'withdrawn' &&
                             proposal.status !== 'cancelled'
                         )
-                        .map((proposal, index) => (
-                          <div
-                            key={proposal.id || proposal.companyUid || index}
-                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={proposal.providerAvatar} />
-                                  <AvatarFallback>
-                                    {(proposal.providerName || 'A').charAt(0).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h4 className="font-semibold text-gray-900">
-                                    <button
-                                      onClick={() =>
-                                        window.open(
-                                          `/profile/${proposal.companyUid || proposal.providerId}`,
-                                          '_blank'
-                                        )
-                                      }
-                                      className="text-[#14ad9f] hover:text-taskilo-hover hover:underline transition-colors"
-                                    >
-                                      {proposal.providerName || 'Anbieter'}
-                                    </button>
-                                  </h4>
-                                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                                    {proposal.providerRating !== undefined &&
-                                      proposal.providerRating !== null && (
-                                        <div className="flex items-center gap-1">
-                                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                          <span>{proposal.providerRating.toFixed(1)}</span>
-                                          {(proposal.providerReviewCount ?? 0) > 0 && (
-                                            <span>
-                                              ({proposal.providerReviewCount} Bewertungen)
-                                            </span>
-                                          )}
-                                          {(proposal.providerReviewCount ?? 0) === 0 && (
-                                            <span>(Keine Bewertungen)</span>
-                                          )}
-                                        </div>
-                                      )}
-                                    {(proposal.providerRating === undefined ||
-                                      proposal.providerRating === null) && (
-                                      <span className="text-gray-500">Noch keine Bewertungen</span>
-                                    )}
-                                  </div>
-                                  {/* Zusätzliche Company-Informationen */}
-                                  {(proposal.companyIndustry || proposal.companyLocation) && (
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                      {proposal.companyIndustry && (
-                                        <span>{proposal.companyIndustry}</span>
-                                      )}
-                                      {proposal.companyIndustry && proposal.companyLocation && (
-                                        <span>•</span>
-                                      )}
-                                      {proposal.companyLocation && (
-                                        <span>{proposal.companyLocation}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {getProposalStatusIcon(proposal.status)}
-                                <span className="text-sm font-medium">
-                                  {proposal.status === 'accepted'
-                                    ? 'Angenommen'
-                                    : proposal.status === 'rejected'
-                                      ? 'Abgelehnt'
-                                      : 'Ausstehend'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <p className="text-gray-700 mb-4">{proposal.message}</p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Euro className="h-4 w-4 text-gray-500" />
-                                <span className="font-semibold">
-                                  {(
-                                    proposal.proposedPrice ||
-                                    proposal.totalAmount ||
-                                    0
-                                  ).toLocaleString('de-DE', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                  })}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Clock className="h-4 w-4 text-gray-500" />
-                                <span>
-                                  {proposal.proposedTimeline ||
-                                    proposal.timeline ||
-                                    'Nicht angegeben'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Calendar className="h-4 w-4 text-gray-500" />
-                                <span>{proposal.availability}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
-                                {/* Kontaktdaten werden nur nach Annahme des Angebots angezeigt */}
-                                {proposal.status === 'accepted' && proposal.providerEmail && (
-                                  <div className="flex items-center gap-1">
-                                    <Mail className="h-4 w-4" />
-                                    <span>{proposal.providerEmail}</span>
-                                  </div>
-                                )}
-                                {proposal.status === 'accepted' && proposal.providerPhone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="h-4 w-4" />
-                                    <span>{proposal.providerPhone}</span>
-                                  </div>
-                                )}
-                                {proposal.status !== 'accepted' && (
-                                  <span className="text-sm text-gray-500">
-                                    Kontaktdaten verfügbar nach Annahme des Angebots
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                Eingegangen am{' '}
-                                {proposal.submittedAt
-                                  ? new Date(proposal.submittedAt).toLocaleDateString('de-DE')
-                                  : 'Unbekannt'}
-                              </p>
-                            </div>
-
-                            <div className="flex gap-2 mt-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="flex-1"
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
-                                    )
-                                  }
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Angebot anschauen
-                                </Button>
-
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    window.open(
-                                      `/profile/${proposal.companyUid || proposal.providerId}`,
-                                      '_blank'
-                                    )
-                                  }
-                                >
-                                  Profil anzeigen
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                        .map((proposal) => (
+                          <MarketplaceProposalCard
+                            key={proposal.id}
+                            proposal={{
+                              id: proposal.id,
+                              companyId: proposal.providerId || proposal.companyUid || '',
+                              companyName: proposal.providerName,
+                              companyLogo: proposal.providerAvatar,
+                              message: proposal.message,
+                              proposedPrice: proposal.proposedPrice || proposal.totalAmount || 0,
+                              currency: 'EUR',
+                              estimatedDuration: proposal.proposedTimeline || proposal.timeline,
+                              availableDate: proposal.availability,
+                              status: proposal.status === 'escrow_paid' ? 'escrow_paid' : 
+                                     proposal.status === 'accepted' ? (proposal.escrowPaid ? 'escrow_paid' : 'accepted') :
+                                     proposal.status === 'rejected' ? 'declined' :
+                                     'pending',
+                              createdAt: proposal.submittedAt,
+                              escrowPaid: proposal.escrowPaid,
+                              escrowId: proposal.escrowId,
+                              companyEmail: proposal.escrowPaid ? proposal.providerEmail : undefined,
+                              companyPhone: proposal.escrowPaid ? proposal.providerPhone : undefined,
+                              companyWebsite: proposal.escrowPaid ? proposal.companyWebsite : undefined,
+                            }}
+                            projectId={project.id}
+                            projectTitle={project.title}
+                            customerId={project.customerUid}
+                            onAcceptAndPay={(proposalId, amount) => {
+                              toast.success(`Weiterleitung zur Zahlung (${amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})`);
+                            }}
+                            onDecline={(proposalId) => {
+                              setProject(prev => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  proposals: prev.proposals.map(p => 
+                                    p.id === proposalId ? { ...p, status: 'declined' as const } : p
+                                  ),
+                                };
+                              });
+                            }}
+                          />
                         ))}
                     </div>
                   )}
@@ -1168,7 +1160,7 @@ const ProjectDetailPage: React.FC = () => {
                       <MapPin className="h-4 w-4 text-gray-500" />
                       <span>
                         {(() => {
-                          const location = project.location as any;
+                          const location = project.location as string | { address?: string; type?: string };
                           if (typeof location === 'object' && location?.address) {
                             return location.address;
                           } else if (typeof location === 'object' && location?.type === 'tbd') {

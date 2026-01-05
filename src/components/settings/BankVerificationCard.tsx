@@ -3,13 +3,14 @@
 /**
  * BankVerificationCard - Micro-Deposit Bankverifizierung
  * 
- * Zeigt den Verifizierungsstatus der Bankverbindung und ermoeglicht:
- * - Start einer neuen Verifizierung (0,01 EUR Ueberweisung)
+ * Zeigt den Verifizierungsstatus der Bankverbindung und ermöglicht:
+ * - Start einer neuen Verifizierung (0,01 EUR Überweisung)
  * - Eingabe des Verifizierungscodes aus dem Kontoauszug
  * - Anzeige bereits verifizierter Konten
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { auth } from '@/firebase/clients';
 import { ShieldCheck, AlertCircle, Clock, CreditCard, RefreshCw, CheckCircle2, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -60,8 +61,16 @@ export function BankVerificationCard({
   // Status laden
   const loadVerificationStatus = useCallback(async () => {
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      
       const response = await fetch(`/api/company/${companyId}/bank-verification`, {
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
       
       if (!response.ok) throw new Error('Fehler beim Laden');
@@ -105,10 +114,19 @@ export function BankVerificationCard({
     setIsInitiating(true);
     
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        toast.error('Nicht authentifiziert');
+        setIsInitiating(false);
+        return;
+      }
+      
       const response = await fetch(`/api/company/${companyId}/bank-verification`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           iban: currentIban,
           bic: currentBic,
@@ -152,12 +170,21 @@ export function BankVerificationCard({
     setIsVerifying(true);
     
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        toast.error('Nicht authentifiziert');
+        setIsVerifying(false);
+        return;
+      }
+      
       const response = await fetch(
         `/api/company/${companyId}/bank-verification/${pendingVerification.id}/verify`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
           body: JSON.stringify({ code: verificationCode }),
         }
       );
@@ -210,7 +237,7 @@ export function BankVerificationCard({
           <div>
             <h3 className="font-medium text-yellow-800">Keine Bankverbindung</h3>
             <p className="text-sm text-yellow-700 mt-1">
-              Bitte tragen Sie zuerst Ihre Bankverbindung ein, bevor Sie diese verifizieren koennen.
+              Bitte tragen Sie zuerst Ihre Bankverbindung ein, bevor Sie diese verifizieren können.
             </p>
           </div>
         </div>
@@ -256,15 +283,15 @@ export function BankVerificationCard({
           <div className="flex-1">
             <h3 className="font-medium text-blue-800">Verifizierungscode eingeben</h3>
             <p className="text-sm text-blue-700 mt-1">
-              Wir haben 0,01 EUR an <strong>{pendingVerification.maskedIban}</strong> ueberwiesen.
-              Der Verwendungszweck enthaelt Ihren Code (TASKILO-XXXXXX).
+              Wir haben 0,01 EUR an <strong>{pendingVerification.maskedIban}</strong> überwiesen.
+              Der Verwendungszweck enthält Ihren Code (TASKILO-XXXXXX).
             </p>
             
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
                 <Info className="w-4 h-4 text-blue-500" />
                 <span className="text-xs text-blue-600">
-                  Pruefen Sie Ihren Kontoauszug. Die Ueberweisung kann 1-3 Werktage dauern.
+                  Prüfen Sie Ihren Kontoauszug. Die Überweisung kann 1-3 Werktage dauern.
                 </span>
               </div>
               
@@ -285,7 +312,7 @@ export function BankVerificationCard({
                   {isVerifying ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Pruefen...
+                      Prüfen...
                     </>
                   ) : (
                     <>

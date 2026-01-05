@@ -3,8 +3,7 @@ import { db, auth } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   const { uid } = await params;
 
@@ -40,235 +39,211 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get company data to verify it exists and get additional info - Try companies collection first
+    // Get company data to verify it exists
     let companyDoc = await db.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
-      // Fallback to users collection
       companyDoc = await db.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
       }
     }
 
-    const _companyData = companyDoc.data();
-
-    // Get company's service subcategory to filter relevant projects - Try companies collection first
-    let companyUserDoc = await db.collection('companies').doc(uid).get();
-    if (!companyUserDoc.exists) {
-      // Fallback to users collection
-      companyUserDoc = await db.collection('users').doc(uid).get();
-      if (!companyUserDoc.exists) {
-        return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
-      }
-    }
-
-    const companyUserData = companyUserDoc.data();
-    const selectedSubcategory =
-      companyUserData?.onboarding?.selectedSubcategory || companyUserData?.selectedSubcategory;
-
-    if (!selectedSubcategory) {
-      return NextResponse.json({
-        success: true,
-        quotes: [],
-        message: 'Keine Subkategorie definiert',
-      });
-    }
-
-    // Query for incoming quotes - Optimized to only get quotes for this provider
-    let quotesSnapshot;
-    try {
-      // Get only quotes for this specific provider to improve performance
-      quotesSnapshot = await db
-        .collection('companies')
-        .doc(companyId)
-        .collection('quotes')
-        .where('providerId', '==', uid)
-        .get();
-    } catch (error) {
-      // Fallback: Get all quotes if the filtered query fails
-      quotesSnapshot = await db!.collection('companies').doc(companyId).collection('quotes').get();
-    }
-
     const quotes: Record<string, unknown>[] = [];
 
-    for (const doc of quotesSnapshot.docs) {
-      const quoteData = doc.data();
+    // UNIFIED: Lade Direkt-Anfragen aus project_requests (targetProviderId === uid)
+    try {
+      const directRequestsSnapshot = await db
+        .collection('project_requests')
+        .where('targetProviderId', '==', uid)
+        .where('isActive', '==', true)
+        .get();
 
-      // Skip if not for this provider (in case of fallback query)
-      if (quoteData.providerId !== uid) {
-        continue;
-      }
+      for (const docSnap of directRequestsSnapshot.docs) {
+        const data = docSnap.data();
 
-      // Get customer information
-      let customerInfo: Record<string, unknown> | null = null;
-
-      // If we have customerUid, get full customer data
-      if (quoteData.customerUid) {
-        try {
-          // First try to get from users collection
-          const userDoc = await db!.collection('users').doc(quoteData.customerUid).get();
-
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            if (userData) {
-              // Use customerType from quote data directly
-              const customerType = quoteData.customerType || 'user';
-
-              customerInfo = {
-                name:
-                  userData.companyName ||
-                  userData.firstName + ' ' + userData.lastName ||
-                  quoteData.customerName ||
-                  'Unbekannter Kunde',
-                type: customerType,
-                email: userData.email,
-                phone: userData.phone,
-                avatar:
-                  userData.step3?.profilePictureURL ||
-                  userData.avatar ||
-                  userData.profilePictureURL ||
-                  null,
-                uid: userDoc.id,
-              };
-            }
-          }
-        } catch (error) {}
-      }
-
-      // If no customerUid or customer not found, try to find customer by email
-      if (!customerInfo && quoteData.customerEmail) {
-        try {
-          const usersSnapshot = await db
-            .collection('users')
-            .where('email', '==', quoteData.customerEmail)
-            .get();
-
-          if (!usersSnapshot.empty) {
-            const userDoc = usersSnapshot.docs[0];
-            const userData = userDoc.data();
-
-            if (userData) {
-              // Use customerType from quote data directly
-              const customerType = quoteData.customerType || 'user';
-
-              customerInfo = {
-                name:
-                  userData.companyName ||
-                  userData.firstName + ' ' + userData.lastName ||
-                  quoteData.customerName ||
-                  'Unbekannter Kunde',
-                type: customerType,
-                email: userData.email,
-                phone: userData.phone || quoteData.customerPhone,
-                avatar:
-                  userData.step3?.profilePictureURL ||
-                  userData.avatar ||
-                  userData.profilePictureURL ||
-                  null,
-                uid: userDoc.id,
-              };
-            }
-          }
-        } catch (error) {}
-      }
-
-      // If no customerUid or customer not found, use the basic info from quote
-      if (!customerInfo) {
-        customerInfo = {
-          name: quoteData.customerName || 'Unbekannter Kunde',
-          type: quoteData.customerType || 'user', // Use customerType from quote data
-          email: quoteData.customerEmail || '',
-          phone: quoteData.customerPhone || '',
+        // Lade Customer-Info
+        let customerInfo: Record<string, unknown> = {
+          name: data.customerName || 'Unbekannter Kunde',
+          type: data.customerType || 'user',
+          email: data.customerEmail || '',
+          phone: data.customerPhone || '',
           avatar: null,
-          uid: quoteData.customerUid || null,
+          uid: data.customerUid || null,
         };
-      }
 
-      // Check if this company has already submitted a response/proposal
-      let hasResponse = false;
-      let responseData: Record<string, unknown> | null = null;
-      let proposalStatus: string | null = null;
+        if (data.customerUid) {
+          try {
+            const userDoc = await db.collection('users').doc(data.customerUid).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              if (userData) {
+                customerInfo = {
+                  name: userData.companyName || `${userData.firstname || ''} ${userData.lastname || ''}`.trim() || data.customerName || 'Kunde',
+                  type: data.customerType || 'user',
+                  email: userData.email || data.customerEmail,
+                  phone: userData.phone || data.customerPhone,
+                  avatar: userData.step3?.profilePictureURL || userData.profilePictureURL || null,
+                  uid: userDoc.id,
+                };
+              }
+            }
+          } catch (_e) { /* ignore */ }
+        }
 
-      try {
-        // First check subcollection proposals (new format)
-        const proposalsSnapshot = await db
-          .collection('companies')
-          .doc(companyId)
-          .collection('quotes')
-          .doc(doc.id)
-          .collection('proposals')
-          .where('providerId', '==', uid)
-          .get();
+        // Prüfe ob Company bereits geantwortet hat
+        let hasResponse = false;
+        let responseData: Record<string, unknown> | null = null;
+        let proposalStatus: string | null = null;
 
-        if (!proposalsSnapshot.empty) {
-          hasResponse = true;
-          responseData = proposalsSnapshot.docs[0].data();
-          proposalStatus = (responseData as { status?: string })?.status || null; // Get proposal status
-        } else {
-          // Fallback: Check old proposals collection
-          const oldProposalsSnapshot = await db
+        try {
+          const proposalsSnapshot = await db
+            .collection('project_requests')
+            .doc(docSnap.id)
             .collection('proposals')
-            .where('quoteId', '==', doc.id)
             .where('providerId', '==', uid)
             .get();
 
-          if (!oldProposalsSnapshot.empty) {
+          if (!proposalsSnapshot.empty) {
             hasResponse = true;
-            responseData = oldProposalsSnapshot.docs[0].data();
+            responseData = proposalsSnapshot.docs[0].data();
             proposalStatus = (responseData as { status?: string })?.status || null;
           }
-        }
-      } catch (error) {}
+        } catch (_e) { /* ignore */ }
 
-      // Determine actual status based on proposal status and payment
-      let actualStatus = quoteData.status || 'pending';
-
-      // Priority 1: Use proposal status if available
-      if (proposalStatus) {
+        // Status bestimmen
+        let actualStatus = data.status || 'open';
         if (proposalStatus === 'accepted') {
-          // Check if payment is complete
-          if (quoteData.payment?.status === 'paid') {
-            actualStatus = 'accepted';
-          } else {
-            actualStatus = 'accepted'; // Still show as accepted even if payment pending
-          }
+          actualStatus = data.escrowPaid ? 'accepted' : 'accepted';
         } else if (proposalStatus === 'declined' || proposalStatus === 'rejected') {
           actualStatus = 'declined';
-        } else if (proposalStatus === 'pending' && hasResponse) {
+        } else if (hasResponse && actualStatus === 'open') {
           actualStatus = 'responded';
         }
-      } else if (hasResponse && actualStatus === 'pending') {
-        actualStatus = 'responded';
+
+        quotes.push({
+          id: docSnap.id,
+          title: data.title || 'Kein Titel',
+          description: data.description || '',
+          serviceCategory: data.category || data.serviceCategory || '',
+          serviceSubcategory: data.subcategory || data.serviceSubcategory || '',
+          projectType: 'fixed_price',
+          status: actualStatus,
+          budgetRange: data.budgetRange || { min: data.budgetAmount, max: data.maxBudget },
+          deadline: data.preferredDate || data.timeline,
+          location: data.location || '',
+          urgency: data.urgency || 'medium',
+          estimatedDuration: data.timeline || '',
+          hasResponse,
+          response: responseData,
+          proposalStatus,
+          customer: customerInfo,
+          customerType: customerInfo.type,
+          customerUid: customerInfo.uid,
+          // UNIFIED Felder
+          requestType: data.requestType || 'direct',
+          isPublic: data.isPublic || false,
+          escrowRequired: data.escrowRequired !== false, // Default true
+          createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt || Date.now()),
+        });
       }
-
-      // Build the quote object
-      const quote = {
-        id: doc.id,
-        title: quoteData.projectTitle || quoteData.title || 'Kein Titel',
-        description: quoteData.projectDescription || quoteData.description || '',
-        serviceCategory: quoteData.projectCategory || quoteData.serviceCategory || '',
-        serviceSubcategory: quoteData.projectSubcategory || quoteData.serviceSubcategory || '',
-        projectType: 'fixed_price', // Default for quotes
-        status: actualStatus,
-        budgetRange: quoteData.budgetRange || 'Nicht angegeben',
-        deadline: quoteData.preferredStartDate || quoteData.deadline,
-        location: quoteData.location || '',
-        urgency: quoteData.urgency || 'normal',
-        estimatedDuration: quoteData.estimatedDuration || '',
-        hasResponse: hasResponse,
-        response: responseData,
-        payment: quoteData.payment || null, // Include payment info
-        proposalStatus: proposalStatus, // Include proposal status
-        customer: customerInfo,
-        customerType: customerInfo.type,
-        customerUid: customerInfo.uid,
-        createdAt: quoteData.createdAt?.toDate
-          ? quoteData.createdAt.toDate()
-          : new Date(quoteData.createdAt || Date.now()),
-      };
-
-      quotes.push(quote);
+    } catch (_e) { 
+      // Direkt-Anfragen Fehler ignorieren
     }
+
+    // AUCH: Lade öffentliche Marktplatz-Projekte die zur Subkategorie der Company passen
+    try {
+      const companyUserData = companyDoc.data();
+      const selectedSubcategory = companyUserData?.onboarding?.selectedSubcategory || companyUserData?.selectedSubcategory;
+
+      if (selectedSubcategory) {
+        const marketplaceSnapshot = await db
+          .collection('project_requests')
+          .where('isPublic', '==', true)
+          .where('isActive', '==', true)
+          .where('subcategory', '==', selectedSubcategory)
+          .get();
+
+        for (const docSnap of marketplaceSnapshot.docs) {
+          // Skip wenn bereits in quotes (von Direkt-Anfrage)
+          if (quotes.some(q => q.id === docSnap.id)) continue;
+
+          const data = docSnap.data();
+
+          // Lade Customer-Info
+          let customerInfo: Record<string, unknown> = {
+            name: data.customerName || 'Unbekannter Kunde',
+            type: data.customerType || 'user',
+            email: '', // Email erst nach Escrow sichtbar
+            phone: '',
+            avatar: null,
+            uid: data.customerUid || null,
+          };
+
+          // Prüfe ob Company bereits geantwortet hat
+          let hasResponse = false;
+          let responseData: Record<string, unknown> | null = null;
+          let proposalStatus: string | null = null;
+
+          try {
+            const proposalsSnapshot = await db
+              .collection('project_requests')
+              .doc(docSnap.id)
+              .collection('proposals')
+              .where('providerId', '==', uid)
+              .get();
+
+            if (!proposalsSnapshot.empty) {
+              hasResponse = true;
+              responseData = proposalsSnapshot.docs[0].data();
+              proposalStatus = (responseData as { status?: string })?.status || null;
+            }
+          } catch (_e) { /* ignore */ }
+
+          let actualStatus = data.status || 'open';
+          if (proposalStatus === 'accepted') {
+            actualStatus = 'accepted';
+          } else if (proposalStatus === 'declined') {
+            actualStatus = 'declined';
+          } else if (hasResponse) {
+            actualStatus = 'responded';
+          }
+
+          quotes.push({
+            id: docSnap.id,
+            title: data.title || 'Kein Titel',
+            description: data.description || '',
+            serviceCategory: data.category || data.serviceCategory || '',
+            serviceSubcategory: data.subcategory || data.serviceSubcategory || '',
+            projectType: 'fixed_price',
+            status: actualStatus,
+            budgetRange: data.budgetRange || { min: data.budgetAmount, max: data.maxBudget },
+            deadline: data.preferredDate || data.timeline,
+            location: data.location || '',
+            urgency: data.urgency || 'medium',
+            estimatedDuration: data.timeline || '',
+            hasResponse,
+            response: responseData,
+            proposalStatus,
+            customer: customerInfo,
+            customerType: customerInfo.type,
+            customerUid: customerInfo.uid,
+            requestType: 'marketplace',
+            isPublic: true,
+            escrowRequired: true,
+            createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt || Date.now()),
+          });
+        }
+      }
+    } catch (_e) {
+      // Marktplatz-Fehler ignorieren
+    }
+
+    // Sortiere nach Datum (neueste zuerst)
+    quotes.sort((a, b) => {
+      const aTime = (a.createdAt as Date)?.getTime?.() || 0;
+      const bTime = (b.createdAt as Date)?.getTime?.() || 0;
+      return bTime - aTime;
+    });
 
     return NextResponse.json({
       success: true,

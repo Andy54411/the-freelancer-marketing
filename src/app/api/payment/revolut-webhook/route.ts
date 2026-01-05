@@ -249,7 +249,118 @@ export async function POST(request: NextRequest) {
 
       console.log('[Revolut Webhook] Escrow marked as paid:', escrowId);
 
-      // 2. Auftrag erstellen (falls noch nicht existiert)
+      // 2. Marktplatz-Projekt: Kontaktdaten freischalten (falls proposalId vorhanden)
+      // Metadaten können in metadata-Objekt oder direkt am Escrow liegen
+      const escrowMetadata = escrowData?.metadata || {};
+      const proposalId = escrowMetadata?.proposalId || escrowData?.proposalId || escrowData?.orderDetails?.proposalId;
+      const projectId = escrowMetadata?.projectId || escrowData?.taskId || escrowData?.orderDetails?.projectId;
+      const isMarketplaceOrder = escrowMetadata?.isMarketplaceOrder === true || escrowData?.orderDetails?.isMarketplaceOrder === true;
+      
+      if (isMarketplaceOrder && proposalId && projectId) {
+        console.log('[Revolut Webhook] Marketplace order - updating proposal:', proposalId);
+        
+        try {
+          // Proposal-Status auf escrow_paid setzen
+          const proposalRef = db.collection('proposals').doc(proposalId);
+          const proposalDoc = await proposalRef.get();
+          
+          if (proposalDoc.exists) {
+            const proposalData = proposalDoc.data();
+            
+            // Anbieter-Daten laden
+            let providerContact = {};
+            const providerCompanyId = proposalData?.companyId || proposalData?.providerId;
+            if (providerCompanyId) {
+              const companyDoc = await db.collection('companies').doc(providerCompanyId).get();
+              const companyData = companyDoc.data();
+              providerContact = {
+                companyEmail: companyData?.email || companyData?.companyEmail,
+                companyPhone: companyData?.phone || companyData?.companyPhoneNumber,
+                companyWebsite: companyData?.website,
+                companyAddress: companyData?.address,
+              };
+            }
+            
+            // Kunden-Daten laden
+            let customerContact = {};
+            if (escrowData?.buyerId) {
+              const customerDoc = await db.collection('users').doc(escrowData.buyerId).get();
+              const customerData = customerDoc.data();
+              customerContact = {
+                customerEmail: customerData?.email,
+                customerPhone: customerData?.phone || customerData?.phoneNumber,
+                customerName: customerData?.displayName || `${customerData?.firstName || ''} ${customerData?.lastName || ''}`.trim(),
+              };
+            }
+
+            // Proposal mit Kontaktdaten aktualisieren
+            await proposalRef.update({
+              status: 'escrow_paid',
+              escrowPaid: true,
+              escrowId: escrowId,
+              escrowPaidAt: new Date(),
+              ...providerContact,
+              updatedAt: new Date(),
+            });
+
+            // Projekt aktualisieren
+            const projectRef = db.collection('project_requests').doc(projectId);
+            await projectRef.update({
+              status: 'in_progress',
+              acceptedProposalId: proposalId,
+              acceptedProviderId: proposalData?.companyId,
+              escrowId: escrowId,
+              escrowPaidAt: new Date(),
+              ...customerContact,
+              updatedAt: new Date(),
+            });
+
+            console.log('[Revolut Webhook] Marketplace contacts revealed for proposal:', proposalId);
+
+            // Benachrichtigungen senden
+            // An Anbieter
+            if (proposalData?.companyId) {
+              await db.collection('notifications').add({
+                userId: proposalData.companyId,
+                type: 'marketplace_escrow_paid',
+                title: 'Angebot angenommen - Zahlung eingegangen',
+                message: `Ihr Angebot wurde angenommen und der Kunde hat bezahlt. Sie können jetzt die Kontaktdaten einsehen und mit dem Auftrag beginnen.`,
+                data: {
+                  projectId,
+                  proposalId,
+                  escrowId,
+                  action: 'view_project',
+                },
+                read: false,
+                createdAt: new Date(),
+              });
+            }
+
+            // An Kunden
+            if (escrowData?.buyerId) {
+              await db.collection('notifications').add({
+                userId: escrowData.buyerId,
+                type: 'marketplace_escrow_paid',
+                title: 'Zahlung erfolgreich - Kontaktdaten freigeschaltet',
+                message: `Ihre Zahlung ist eingegangen. Die Kontaktdaten des Anbieters sind jetzt freigeschaltet.`,
+                data: {
+                  projectId,
+                  proposalId,
+                  escrowId,
+                  action: 'view_project',
+                },
+                read: false,
+                createdAt: new Date(),
+              });
+            }
+          }
+        } catch (marketplaceError) {
+          console.error('[Revolut Webhook] Error updating marketplace:', marketplaceError);
+          // Nicht fehlschlagen lassen, Escrow wurde trotzdem gezahlt
+        }
+      }
+
+      // 3. Auftrag erstellen (falls noch nicht existiert)
       const tempDraftId = escrowData?.tempDraftId;
       
       if (tempDraftId) {

@@ -27,9 +27,14 @@ import {
   MessageCircle as FiMessageCircle,
   PanelLeftClose as FiPanelLeftClose,
   PanelLeftOpen as FiPanelLeftOpen,
+  AlertTriangle as FiAlertTriangle,
+  Ban as FiBan,
+  CheckCircle as FiCheckCircle,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
 import { CurrentPlanCard } from './CurrentPlanCard';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 interface NavigationItem {
   label: string;
@@ -694,6 +699,8 @@ export default function CompanySidebar({
   const effectiveUserId = user?.uid || uid;
   
   const [hasBankConnection, setHasBankConnection] = useState(false);
+  const [taskerStatus, setTaskerStatus] = useState<'active' | 'suspended' | 'banned'>('active');
+  const [taskerStatusReason, setTaskerStatusReason] = useState<string>('');
   const [unreadEmailCounts, setUnreadEmailCounts] = useState<Record<string, number>>({
     inbox: 0,
     sent: 0,
@@ -716,6 +723,33 @@ export default function CompanySidebar({
       localStorage.setItem('sidebar-collapsed', newValue.toString());
     }
   };
+
+  // Lade Tasker-Status aus Company
+  useEffect(() => {
+    if (!uid) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'companies', uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.taskerStatus) {
+            setTaskerStatus(data.taskerStatus);
+          } else {
+            setTaskerStatus('active');
+          }
+          if (data.taskerStatusReason) {
+            setTaskerStatusReason(data.taskerStatusReason);
+          }
+        }
+      },
+      (error) => {
+        // Silent fail
+      }
+    );
+
+    return () => unsubscribe();
+  }, [uid]);
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
   useEffect(() => {
@@ -1249,6 +1283,38 @@ export default function CompanySidebar({
                   {/* Sub Items */}
                   {hasSubItems && isItemExpanded && !isCollapsed && (
                     <div className="ml-6 mt-1 space-y-1">
+                      {/* Tasker Status Banner */}
+                      {item.value === 'tasker' && taskerStatus !== 'active' && (
+                        <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm mb-2 ${
+                          taskerStatus === 'banned' 
+                            ? 'bg-red-100 text-red-800 border border-red-200' 
+                            : 'bg-orange-100 text-orange-800 border border-orange-200'
+                        }`}>
+                          {taskerStatus === 'banned' ? (
+                            <FiBan className="h-4 w-4 flex-shrink-0" />
+                          ) : (
+                            <FiAlertTriangle className="h-4 w-4 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">
+                              {taskerStatus === 'banned' ? 'Konto gesperrt' : 'Vorübergehend gesperrt'}
+                            </p>
+                            {taskerStatusReason && (
+                              <p className="text-xs truncate" title={taskerStatusReason}>
+                                {taskerStatusReason}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Tasker aktiv Badge */}
+                      {item.value === 'tasker' && taskerStatus === 'active' && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm mb-2 bg-green-50 text-green-700 border border-green-200">
+                          <FiCheckCircle className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-medium">Tasker aktiv</span>
+                        </div>
+                      )}
+
                       {/* E-Mail spezifische Elemente */}
                       {item.value === 'email' && (
                         <>

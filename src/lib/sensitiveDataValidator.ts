@@ -1,7 +1,10 @@
 /**
  * Utility zur Validierung und Blockierung sensibler Daten in Chat-Eingaben
  * Verhindert die Eingabe von Telefonnummern, E-Mails und Adressen
+ * Protokolliert Verstöße für Admin-Überwachung
  */
+
+import { ContentSafetyService } from '@/services/ContentSafetyService';
 
 // Regex-Patterns für sensible Daten (ähnlich wie im Lambda)
 const SENSITIVE_DATA_PATTERNS = {
@@ -136,12 +139,53 @@ export function containsSensitiveData(text: string): boolean {
 export function getSensitiveDataWarning(blockedType: 'phone' | 'email' | 'address'): string {
   switch (blockedType) {
     case 'phone':
-      return '📞 Das Teilen von Telefonnummern im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
+      return 'Das Teilen von Telefonnummern im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
     case 'email':
-      return '📧 Das Teilen von E-Mail-Adressen im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
+      return 'Das Teilen von E-Mail-Adressen im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
     case 'address':
-      return '🏠 Das Teilen von Adressen im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
+      return 'Das Teilen von Adressen im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
     default:
-      return '⚠️ Das Teilen von Kontaktdaten im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
+      return 'Das Teilen von Kontaktdaten im Chat ist nicht erlaubt. Für direkten Kontakt nutzen Sie bitte die kostenpflichtigen Taskilo-Services.';
   }
+}
+
+/**
+ * Validiert und protokolliert sensible Daten für Admin-Überwachung
+ * @param text - Der zu validierende Text
+ * @param context - Kontext der Validierung (chat, proposal, order_message)
+ * @param companyId - ID des Unternehmens
+ * @param companyName - Name des Unternehmens
+ * @param userId - ID des Benutzers
+ * @returns Validierungsergebnis
+ */
+export async function validateAndLogSensitiveData(
+  text: string,
+  context: 'proposal' | 'chat' | 'order_message',
+  companyId: string,
+  companyName: string,
+  userId: string
+): Promise<SensitiveDataResult> {
+  const result = validateSensitiveData(text);
+  
+  if (!result.isValid && result.blockedType && result.detectedData) {
+    // Protokolliere Verstoß für Admin-Überwachung
+    try {
+      await ContentSafetyService.logViolation(
+        companyId,
+        companyName,
+        userId,
+        context,
+        text,
+        [{
+          type: result.blockedType,
+          match: result.detectedData,
+          position: text.indexOf(result.detectedData),
+        }]
+      );
+    } catch {
+      // Silent fail - Logging sollte Hauptfunktion nicht blockieren
+    }
+  }
+  
+  return result;
 }

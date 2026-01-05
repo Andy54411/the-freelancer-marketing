@@ -20,7 +20,7 @@ import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle, Vid
 import { Badge } from '@/components/ui/badge';
 import { TaskiloVideoService } from '@/services/TaskiloVideoService';
 import Image from 'next/image';
-import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { validateSensitiveData, getSensitiveDataWarning, validateAndLogSensitiveData } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
 
 // Interface für ein Chat-Nachrichten-Dokument in Firestore
@@ -322,8 +322,15 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       return;
     }
 
-    // Finale Validierung vor dem Senden
-    const validation = validateSensitiveData(messageToSend);
+    // Finale Validierung vor dem Senden mit Admin-Logging
+    const senderNameForLog = loggedInUserProfile.companyName || loggedInUserProfile.firstName || 'Unbekannt';
+    const validation = await validateAndLogSensitiveData(
+      messageToSend,
+      'order_message',
+      currentUser.uid,
+      senderNameForLog,
+      currentUser.uid
+    );
     if (!validation.isValid) {
       toast.error(getSensitiveDataWarning(validation.blockedType!), {
         duration: 5000,
