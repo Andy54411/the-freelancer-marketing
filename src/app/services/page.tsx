@@ -604,7 +604,7 @@ setShowDropdown(value.length > 0);
               poster="/hero_bild_video.png"
               style={{ maxHeight: '589px' }}
             >
-              <source src="https://mail.taskilo.de/webmail-api/static/videos/office-video.mov" type="video/mp4" />
+              <source src="https://mail.taskilo.de/webmail-api/static/videos/office-video.mp4" type="video/mp4" />
               Ihr Browser unterstützt das Video-Tag nicht.
             </video>
           </div>
