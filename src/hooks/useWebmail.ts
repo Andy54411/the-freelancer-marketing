@@ -192,14 +192,56 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     replyTo?: string;
     inReplyTo?: string;
     references?: string;
+    attachments?: File[] | { filename: string; content: string; contentType?: string }[];
   }) => {
     setLoading(true);
     setError(null);
     try {
+      // Wenn File-Objekte vorhanden sind, zu Base64 konvertieren
+      let processedAttachments: { filename: string; content: string; contentType?: string }[] | undefined;
+      
+      if (data.attachments && data.attachments.length > 0) {
+        processedAttachments = await Promise.all(
+          data.attachments.map(async (att) => {
+            if (att instanceof File) {
+              // Prüfe Dateigröße (max 25MB pro Datei für E-Mail)
+              if (att.size > 25 * 1024 * 1024) {
+                throw new Error(`Datei "${att.name}" ist zu groß. Maximale Größe: 25MB`);
+              }
+              
+              // Browser-kompatible Base64 Konvertierung mit Chunks für große Dateien
+              const arrayBuffer = await att.arrayBuffer();
+              const uint8Array = new Uint8Array(arrayBuffer);
+              
+              // Konvertiere in Chunks um Stack-Overflow zu vermeiden
+              const chunkSize = 32768; // 32KB chunks
+              let binary = '';
+              for (let offset = 0; offset < uint8Array.length; offset += chunkSize) {
+                const chunk = uint8Array.subarray(offset, Math.min(offset + chunkSize, uint8Array.length));
+                binary += String.fromCharCode.apply(null, Array.from(chunk));
+              }
+              const base64 = btoa(binary);
+              
+              return {
+                filename: att.name,
+                content: base64,
+                contentType: att.type || 'application/octet-stream',
+              };
+            }
+            return att;
+          })
+        );
+      }
+      
       const response = await fetch(getAbsoluteApiUrl('/api/webmail/send'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, ...data }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          ...data,
+          attachments: processedAttachments,
+        }),
       });
       const result = await response.json();
       setLoading(false);

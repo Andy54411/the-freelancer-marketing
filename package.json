@@ -61,6 +61,7 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
+    "@google/genai": "^1.34.0",
     "@google/generative-ai": "^0.24.1",
     "@googlemaps/js-api-loader": "^1.16.8",
     "@headlessui/react": "^2.2.4",

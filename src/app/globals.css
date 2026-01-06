@@ -463,3 +463,69 @@
 .animate-slide-out-right {
   animation: slide-out-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Floating animation for cards */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Delayed floating animation */
+.animate-float-delayed {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Line drawing animation */
+@keyframes draw-line {
+  0% {
+    stroke-dashoffset: 200;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-line {
+  animation: draw-line 2s ease-out forwards;
+  animation-delay: 0.5s;
+}
+
+/* Pulsing dot animation */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    r: 4;
+  }
+  50% {
+    opacity: 0.7;
+    r: 6;
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+
+/* Shimmer loading animation for attachments */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite linear;
+}

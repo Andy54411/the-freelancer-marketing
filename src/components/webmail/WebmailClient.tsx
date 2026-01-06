@@ -1122,13 +1122,18 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
 
   const handleSendEmail = useCallback(async (composeData: EmailComposeType, windowId?: string) => {
     // Convert EmailComposeType to webmail API format
+    // Parse 'to' field - kann kommagetrennt sein oder einzelne Adresse
+    const toAddresses = composeData.to.split(',').map(e => e.trim()).filter(Boolean);
+    const toValue = toAddresses.length === 1 ? toAddresses[0] : toAddresses;
+    
     const apiData = {
-      to: composeData.to,
+      to: toValue,
       subject: composeData.subject,
       text: composeData.body,
       html: composeData.body, // TODO: Implement rich text
       cc: composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
       bcc: composeData.bcc ? composeData.bcc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+      attachments: composeData.attachments,
     };
     
     const result = await sendEmail(apiData);

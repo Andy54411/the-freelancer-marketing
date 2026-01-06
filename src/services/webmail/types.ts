@@ -17,6 +17,13 @@ export const EmailCredentialsSchema = z.object({
   smtpPort: z.number().default(587),
 });
 
+export const EmailAttachmentSchema = z.object({
+  filename: z.string(),
+  content: z.string(), // Base64 encoded content
+  encoding: z.literal('base64').optional().default('base64'),
+  contentType: z.string().optional().default('application/octet-stream'),
+});
+
 export const SendEmailSchema = z.object({
   to: z.union([z.string().email(), z.array(z.string().email())]),
   cc: z.array(z.string().email()).optional(),
@@ -27,6 +34,7 @@ export const SendEmailSchema = z.object({
   replyTo: z.string().email().optional(),
   inReplyTo: z.string().optional(),
   references: z.string().optional(),
+  attachments: z.array(EmailAttachmentSchema).optional(),
 });
 
 export type EmailCredentials = z.infer<typeof EmailCredentialsSchema>;
@@ -41,6 +49,7 @@ export type EmailCredentialsInput = {
 };
 
 export type SendEmailInput = z.infer<typeof SendEmailSchema>;
+export type EmailAttachment = z.infer<typeof EmailAttachmentSchema>;
 
 export interface EmailMessage {
   uid: number;

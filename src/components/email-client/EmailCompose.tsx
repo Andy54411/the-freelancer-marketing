@@ -256,6 +256,7 @@ export function EmailCompose({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [loadingAttachmentNames, setLoadingAttachmentNames] = useState<Set<string>>(new Set());
   const [firestoreAttachments, setFirestoreAttachments] = useState<FirestoreDocument[]>([]);
   const [showDocumentPicker, setShowDocumentPicker] = useState(false);
   const [documentPickerType, setDocumentPickerType] = useState<
@@ -750,7 +751,54 @@ export function EmailCompose({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setAttachments(prev => [...prev, ...files]);
+    if (files.length === 0) return;
+    
+    // Prüfe Dateigröße - max 25MB pro Datei
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+    const validFiles: File[] = [];
+    const oversizedFiles: string[] = [];
+    
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    }
+    
+    // Zeige Warnung für zu große Dateien
+    if (oversizedFiles.length > 0) {
+      toast.error(
+        `Datei${oversizedFiles.length > 1 ? 'en' : ''} zu groß (max. 25 MB)`,
+        {
+          description: oversizedFiles.join(', '),
+          duration: 5000,
+        }
+      );
+    }
+    
+    // Nur gültige Dateien hinzufügen
+    if (validFiles.length === 0) {
+      e.target.value = '';
+      return;
+    }
+    
+    // Füge Dateinamen zum Loading-Set hinzu
+    const fileNames = validFiles.map(f => f.name);
+    setLoadingAttachmentNames(prev => new Set([...prev, ...fileNames]));
+    setAttachments(prev => [...prev, ...validFiles]);
+    
+    // Loading-Animation nach 1.5 Sekunden beenden
+    setTimeout(() => {
+      setLoadingAttachmentNames(prev => {
+        const newSet = new Set(prev);
+        fileNames.forEach(name => newSet.delete(name));
+        return newSet;
+      });
+    }, 1500);
+    
+    // Input zurücksetzen für erneute Auswahl derselben Datei
+    e.target.value = '';
   };
 
   const removeAttachment = (index: number) => {
@@ -1429,15 +1477,43 @@ export function EmailCompose({
             {(attachments.length > 0 || firestoreAttachments.length > 0) && (
               <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
                 <div className="flex flex-wrap gap-2">
-                  {attachments.map((file, index) => (
-                    <div key={`file-${index}`} className="flex items-center gap-1 bg-white border rounded px-2 py-1 text-[11px]">
-                      <Paperclip className="h-3 w-3 text-gray-400" />
-                      <span className="max-w-[120px] truncate">{file.name}</span>
-                      <button onClick={() => removeAttachment(index)} className="text-gray-400 hover:text-red-500">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                  {attachments.map((file, index) => {
+                    const isLoading = loadingAttachmentNames.has(file.name);
+                    return (
+                      <div 
+                        key={`file-${file.name}-${index}`} 
+                        className={cn(
+                          "relative flex items-center gap-1 border rounded px-2 py-1 text-[11px] overflow-hidden transition-all duration-300",
+                          isLoading ? "bg-teal-50 border-teal-300" : "bg-white border-gray-200"
+                        )}
+                      >
+                        {/* Ladebalken-Animation */}
+                        {isLoading && (
+                          <div className="absolute inset-0 overflow-hidden">
+                            <div 
+                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-teal-200 via-teal-400 to-teal-200"
+                              style={{
+                                width: '200%',
+                                animation: 'shimmer 1.5s infinite linear',
+                              }}
+                            />
+                          </div>
+                        )}
+                        <Paperclip className={cn("h-3 w-3 relative z-10", isLoading ? "text-teal-600" : "text-gray-400")} />
+                        <span className={cn("max-w-[120px] truncate relative z-10", isLoading && "text-teal-700 font-medium")}>{file.name}</span>
+                        {!isLoading && (
+                          <button onClick={() => removeAttachment(index)} className="text-gray-400 hover:text-red-500 relative z-10">
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                        {isLoading && (
+                          <div className="h-3 w-3 relative z-10">
+                            <div className="animate-spin h-3 w-3 border-2 border-teal-600 border-t-transparent rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {firestoreAttachments.map(doc => (
                     <div key={`doc-${doc.id}`} className="flex items-center gap-1 bg-white border rounded px-2 py-1 text-[11px]">
                       {doc.type === 'invoice' ? <Receipt className="h-3 w-3 text-teal-600" /> : <FileText className="h-3 w-3 text-teal-600" />}

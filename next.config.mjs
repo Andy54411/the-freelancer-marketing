@@ -20,6 +20,9 @@ const nextConfig = {
       'react-hook-form',
     ],
     cpus: Math.max(1, os.cpus().length - 1),
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
   },
 
   serverExternalPackages: ['firebase-admin'],

@@ -61,6 +61,9 @@ export const HeroHeader = () => {
   const menuItems = [
     { name: 'Tasker', href: '/services', labelKey: 'nav.services' },
     { name: 'Marktplatz', href: '/marketplace', labelKey: 'nav.marketplace' },
+  ];
+
+  const menuItemsAfterDropdown = [
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
     { name: 'Preise', href: '/webmail/pricing', labelKey: 'nav.pricing' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
@@ -252,7 +255,7 @@ export const HeroHeader = () => {
 
               {/* Desktop Nav */}
               <div className="hidden lg:flex items-center gap-8 text-sm">
-                {menuItems.slice(0, 1).map((item, i) => (
+                {menuItems.map((item, i) => (
                   <Link
                     key={i}
                     href={item.href}
@@ -295,7 +298,7 @@ export const HeroHeader = () => {
                   </NavigationMenuList>
                 </NavigationMenu>
 
-                {menuItems.slice(1).map((item, i) => (
+                {menuItemsAfterDropdown.map((item, i) => (
                   <Link
                     key={i}
                     href={item.href}

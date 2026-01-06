@@ -85,3 +85,5 @@ AuthKey_*.p8
 firebase_functions/.env.lambda.template
 firebase_functions/deploy-lambda.sh
 .whatsapp-auth/
+public/Video/*.mov
+public/Video/*.mp4
