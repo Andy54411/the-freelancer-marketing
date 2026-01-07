@@ -101,7 +101,6 @@ export function WhatsAppButton({
         toast.error('Fehler beim Senden');
       }
     } catch (error) {
-      console.error('[WhatsApp Send Error]', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Senden der Nachricht');
     } finally {
       setSending(false);

@@ -9,8 +9,18 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { companyId, name, category, language, bodyText, headerText, footerText, buttonText } =
-      body;
+    const { 
+      companyId, 
+      name, 
+      category = 'MARKETING', 
+      language = 'de', 
+      bodyText, 
+      headerText, 
+      footerText, 
+      buttonText,
+      variableMapping,
+      originalBodyText 
+    } = body;
 
     if (!companyId || !name || !bodyText) {
       return NextResponse.json(
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Erstelle Template in Firestore
-    const templateData = {
+    const templateData: Record<string, unknown> = {
       companyId,
       name: name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
       category: category.toUpperCase(),
@@ -87,31 +97,84 @@ export async function POST(request: NextRequest) {
       status: 'PENDING',
       components,
       variables,
+      variableMapping: variableMapping || {},
+      originalBodyText: originalBodyText || bodyText,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    // Hole WhatsApp Connection für Meta API
+    const connectionDoc = await db
+      .collection('companies')
+      .doc(companyId)
+      .collection('whatsappConnection')
+      .doc('current')
+      .get();
+
+    let metaTemplateId = null;
+    let metaStatus = 'PENDING';
+
+    if (connectionDoc.exists) {
+      const connection = connectionDoc.data();
+      
+      if (connection?.accessToken && connection?.wabaId) {
+        // Reiche Template bei Meta zur Genehmigung ein
+        const metaResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${connection.wabaId}/message_templates`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${connection.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: templateData.name,
+              language: templateData.language,
+              category: templateData.category,
+              components: templateData.components,
+            }),
+          }
+        );
+
+        const metaData = await metaResponse.json();
+        
+        if (metaData.id) {
+          metaTemplateId = metaData.id;
+          metaStatus = metaData.status || 'PENDING';
+        } else if (metaData.error) {
+          // Bei Fehler trotzdem in Firestore speichern, aber Status anpassen
+          metaStatus = 'FAILED';
+          templateData.metaError = metaData.error.message;
+        }
+      }
+    }
+
+    // Speichere Template in Firestore mit Meta-Status
     const templateRef = await db
       .collection('companies')
       .doc(companyId)
       .collection('whatsappTemplates')
-      .add(templateData);
-
-    // TODO: Submit to Meta API for approval
-    // const connection = await getWhatsAppConnection(companyId);
-    // await submitTemplateToMeta(connection.accessToken, templateData);
+      .add({
+        ...templateData,
+        metaTemplateId,
+        status: metaStatus,
+      });
 
     return NextResponse.json({
       success: true,
       templateId: templateRef.id,
-      message: 'Template erstellt und zur Prüfung eingereicht',
+      metaTemplateId,
+      message: metaTemplateId 
+        ? 'Template erstellt und zur Prüfung eingereicht' 
+        : 'Template lokal gespeichert (Meta-Verbindung prüfen)',
       template: {
         id: templateRef.id,
         ...templateData,
+        metaTemplateId,
+        status: metaStatus,
       },
     });
   } catch (error) {
-    console.error('[Create Template] Error:', error);
     return NextResponse.json(
       {
         success: false,

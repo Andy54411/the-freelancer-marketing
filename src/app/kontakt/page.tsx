@@ -1,11 +1,12 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { HeroHeader } from '@/components/hero8-header';
 import { 
   MessageSquare, 
   Mail, 
   Phone, 
-  ExternalLink, 
+  ExternalLink,
   Users, 
   FileText,
   Video,
@@ -16,64 +17,15 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Kontakt & Community | Taskilo',
+  title: 'Kontakt & Support | Taskilo',
   description: 'Kontaktiere das Taskilo Support-Team oder stöbere in der Community für Hilfe und Tipps.',
 };
 
 export default function KontaktPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header/Appbar */}
-      <header className="sticky top-0 z-50 border-b bg-white border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Logo and Product Name */}
-            <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-linear-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">T</span>
-                </div>
-              </Link>
-              <div className="flex items-center gap-2">
-                <Link 
-                  href="/hilfe" 
-                  className="text-sm font-medium text-gray-900 hover:text-teal-700"
-                >
-                  Taskilo Kalender Hilfe
-                </Link>
-              </div>
-            </div>
-
-            {/* Center: Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-6">
-              <Link 
-                href="/hilfe"
-                className="text-sm font-medium pb-4 pt-5 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
-              >
-                Hilfecenter
-              </Link>
-              <Link 
-                href="/kontakt"
-                className="text-sm font-medium pb-4 pt-5 border-b-2 border-teal-600 text-teal-600"
-              >
-                Kontakt
-              </Link>
-            </nav>
-
-            {/* Right: Product Link */}
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/dashboard"
-                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                target="_blank"
-              >
-                <span>Taskilo Kalender</span>
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Standard Header für öffentliche Seiten */}
+      <HeroHeader />
 
       {/* Hero Section */}
       <div className="bg-linear-to-b from-teal-50 to-white border-b border-gray-200">
@@ -363,62 +315,6 @@ export default function KontaktPage() {
                 </div>
               </Link>
             ))}
-          </div>
-        </section>
-
-        {/* Useful Links Section */}
-        <section className="mt-16 pt-8 border-t border-gray-200 mb-12">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Nützliche Links</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>
-                  <Link href="/about" className="hover:text-teal-600">Über Taskilo</Link>
-                </li>
-                <li>
-                  <Link href="/community-richtlinien" className="hover:text-teal-600">Community-Richtlinien</Link>
-                </li>
-                <li>
-                  <Link href="/product-expert" className="hover:text-teal-600">Product Expert werden</Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Entwickler</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>
-                  <Link href="/status" className="hover:text-teal-600">Status-Seite</Link>
-                </li>
-                <li>
-                  <Link href="/api-docs" className="hover:text-teal-600">API-Dokumentation</Link>
-                </li>
-                <li>
-                  <Link href="/changelog" className="hover:text-teal-600">Changelog</Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Folge uns</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>
-                  <a href="https://twitter.com/taskilo" target="_blank" rel="noopener noreferrer" className="hover:text-teal-600 flex items-center gap-1">
-                    Twitter <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-                <li>
-                  <a href="https://linkedin.com/company/taskilo" target="_blank" rel="noopener noreferrer" className="hover:text-teal-600 flex items-center gap-1">
-                    LinkedIn <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/taskilo" target="_blank" rel="noopener noreferrer" className="hover:text-teal-600 flex items-center gap-1">
-                    GitHub <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              </ul>
-            </div>
           </div>
         </section>
       </main>

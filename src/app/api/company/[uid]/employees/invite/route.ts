@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, auth as adminAuth } from '@/firebase/server';
 import { z } from 'zod';
 import { ResendEmailService } from '@/lib/resend-email-service';
+import { SeatService } from '@/services/subscription/SeatService';
 
 // Interface für LinkedCompany
 interface LinkedCompany {
@@ -119,10 +120,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    // Hole den Mitarbeiter
+    // SEAT-LIMIT PRÜFEN
+    // Nur prüfen wenn es sich um einen neuen Dashboard-Zugang handelt
     const employeeRef = db.collection('companies').doc(companyId).collection('employees').doc(employeeId);
     const employeeSnap = await employeeRef.get();
+    const existingEmployeeData = employeeSnap.data();
+    
+    const hasExistingAccess = existingEmployeeData?.dashboardAccess?.enabled === true;
+    
+    if (!hasExistingAccess) {
+      // Neuer Dashboard-Zugang - Seat-Verfügbarkeit prüfen
+      const seatCheck = await SeatService.checkSeatAvailable(companyId);
+      
+      if (!seatCheck.available) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Seat-Limit erreicht (${seatCheck.currentUsed}/${seatCheck.totalSeats}). Bitte buchen Sie zusätzliche Nutzer-Plätze unter Einstellungen → Module & Seats.`,
+            code: 'SEAT_LIMIT_REACHED',
+            upgradeRequired: true,
+          },
+          { status: 402 } // Payment Required
+        );
+      }
+    }
 
+    // Hole den Mitarbeiter
     if (!employeeSnap.exists) {
       return NextResponse.json(
         { success: false, error: 'Mitarbeiter nicht gefunden' },
@@ -130,7 +153,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    const employeeData = employeeSnap.data();
+    const employeeData = existingEmployeeData;
 
     if (!employeeData) {
       return NextResponse.json(

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Grid as FiGrid,
@@ -30,11 +30,14 @@ import {
   AlertTriangle as FiAlertTriangle,
   Ban as FiBan,
   CheckCircle as FiCheckCircle,
+  Lock as FiLock,
+  Sparkles as FiSparkles,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
 import { CurrentPlanCard } from './CurrentPlanCard';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { type PremiumModuleId } from '@/lib/moduleConfig';
 
 interface NavigationItem {
   label: string;
@@ -42,6 +45,8 @@ interface NavigationItem {
   value: string;
   href?: string;
   subItems?: NavigationSubItem[];
+  /** Premium-Modul ID - wenn gesetzt, wird das Item gesperrt wenn das Modul nicht gebucht ist */
+  premiumModule?: 'whatsapp' | 'advertising' | 'recruiting' | 'workspace';
 }
 
 interface NavigationSubItem {
@@ -260,6 +265,7 @@ const navigationItems: NavigationItem[] = [
     icon: FiMessageCircle,
     value: 'whatsapp',
     href: 'whatsapp',
+    premiumModule: 'whatsapp',
   },
   {
     label: 'Banking',
@@ -286,6 +292,7 @@ const navigationItems: NavigationItem[] = [
     icon: FiTrendingUp,
     value: 'advertising',
     href: 'taskilo-advertising',
+    premiumModule: 'advertising',
     subItems: [
       { label: 'Dashboard', value: 'advertising-dashboard', href: 'taskilo-advertising' },
       {
@@ -356,6 +363,7 @@ const navigationItems: NavigationItem[] = [
     icon: FiBriefcase,
     value: 'recruiting',
     href: 'recruiting',
+    premiumModule: 'recruiting',
     subItems: [
       { label: 'Unternehmensprofil', value: 'recruiting-profile', href: 'recruiting/profile' },
       { label: 'Stellenanzeigen', value: 'recruiting-jobs', href: 'recruiting' },
@@ -391,6 +399,7 @@ const navigationItems: NavigationItem[] = [
     value: 'settings',
     subItems: [
       { label: 'Allgemein', value: 'settings-general' },
+      { label: 'Module & Seats', value: 'settings-modules', href: 'settings/modules' },
       { label: 'Buchhaltung & Steuer', value: 'settings-accounting' },
       { label: 'Zahlungskonditionen', value: 'settings-payment-terms' },
       { label: 'Bankverbindung', value: 'settings-bank' },
@@ -693,10 +702,17 @@ export default function CompanySidebar({
   hideCollapseButton = false,
 }: CompanySidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, firebaseUser } = useAuth();
   
   // Die effektive User-ID für benutzer-spezifische E-Mails
   const effectiveUserId = user?.uid || uid;
+  
+  // Premium-Module Status
+  const [activeModules, setActiveModules] = useState<string[]>([]);
+  const [trialingModules, setTrialingModules] = useState<string[]>([]);
+  const [bundleActive, setBundleActive] = useState(false);
+  const [modulesLoading, setModulesLoading] = useState(true);
   
   const [hasBankConnection, setHasBankConnection] = useState(false);
   const [taskerStatus, setTaskerStatus] = useState<'active' | 'suspended' | 'banned'>('active');
@@ -750,6 +766,44 @@ export default function CompanySidebar({
 
     return () => unsubscribe();
   }, [uid]);
+
+  // Lade Premium-Module Status
+  useEffect(() => {
+    const fetchModules = async () => {
+      if (!firebaseUser || !uid) {
+        setModulesLoading(false);
+        return;
+      }
+
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        const res = await fetch(`/api/company/${uid}/modules`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setActiveModules(data.data.summary.activeModules || []);
+            setTrialingModules(data.data.summary.trialingModules || []);
+            setBundleActive(data.data.summary.bundleActive || false);
+          }
+        }
+      } catch {
+        // Silent fail - Module werden als nicht gebucht behandelt
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, [firebaseUser, uid]);
+
+  // Prüft ob ein Premium-Modul aktiv ist
+  const isModuleActive = (moduleId: PremiumModuleId): boolean => {
+    if (bundleActive) return true;
+    return activeModules.includes(moduleId) || trialingModules.includes(moduleId);
+  };
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
   useEffect(() => {
@@ -1148,11 +1202,22 @@ export default function CompanySidebar({
 
               const hasSubItems = filteredSubItems && filteredSubItems.length > 0;
 
+              // Prüfe ob das Item ein Premium-Modul ist und ob es aktiv ist
+              const isPremiumModule = !!item.premiumModule;
+              const isPremiumActive = item.premiumModule ? isModuleActive(item.premiumModule) : true;
+              const showPremiumLock = isPremiumModule && !isPremiumActive && !modulesLoading;
+
               return (
                 <div key={item.value}>
                   {/* Main Button */}
                   <button
                     onClick={async () => {
+                      // Premium-Modul nicht gebucht -> zur Pricing-Seite
+                      if (showPremiumLock) {
+                        router.push('/pricing/business');
+                        return;
+                      }
+
                       // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü (mit userId)
                       if (item.value === 'email') {
                         console.log('🔍 E-Mail Icon geklickt, prüfe Email-Status für User:', effectiveUserId);
@@ -1257,21 +1322,39 @@ export default function CompanySidebar({
                       }
                     }}
                     className={`${
-                      isMainActive
+                      showPremiumLock
+                        ? 'text-gray-400 bg-gray-50 cursor-pointer'
+                        : isMainActive
                         ? 'bg-[#14ad9f] text-white'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     } group flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 py-2 text-sm font-medium rounded-md w-full transition-colors relative`}
-                    title={isCollapsed ? item.label : undefined}
+                    title={isCollapsed ? item.label : showPremiumLock ? `${item.label} (Premium-Modul)` : undefined}
                   >
                     <div className="flex items-center">
-                      <item.icon
-                        className={`${
-                          isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                        } ${isCollapsed ? '' : 'mr-3'} shrink-0 h-6 w-6`}
-                      />
-                      {!isCollapsed && item.label}
+                      {showPremiumLock ? (
+                        <FiLock
+                          className={`text-gray-400 ${isCollapsed ? '' : 'mr-3'} shrink-0 h-6 w-6`}
+                        />
+                      ) : (
+                        <item.icon
+                          className={`${
+                            isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                          } ${isCollapsed ? '' : 'mr-3'} shrink-0 h-6 w-6`}
+                        />
+                      )}
+                      {!isCollapsed && (
+                        <span className={showPremiumLock ? 'line-through opacity-60' : ''}>
+                          {item.label}
+                        </span>
+                      )}
                     </div>
-                    {hasSubItems && !isCollapsed && (
+                    {showPremiumLock && !isCollapsed && (
+                      <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                        <FiSparkles className="h-3 w-3" />
+                        Premium
+                      </span>
+                    )}
+                    {!showPremiumLock && hasSubItems && !isCollapsed && (
                       <FiChevronDown
                         className={`h-4 w-4 transition-transform ${
                           isItemExpanded ? 'rotate-180' : ''
@@ -1280,8 +1363,8 @@ export default function CompanySidebar({
                     )}
                   </button>
 
-                  {/* Sub Items */}
-                  {hasSubItems && isItemExpanded && !isCollapsed && (
+                  {/* Sub Items - nicht anzeigen wenn Premium-Modul nicht gebucht */}
+                  {hasSubItems && isItemExpanded && !isCollapsed && !showPremiumLock && (
                     <div className="ml-6 mt-1 space-y-1">
                       {/* Tasker Status Banner */}
                       {item.value === 'tasker' && taskerStatus !== 'active' && (

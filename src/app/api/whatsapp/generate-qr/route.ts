@@ -65,37 +65,19 @@ export async function POST(request: NextRequest) {
         status: 'pending_authorization',
       });
 
-    // Facebook Embedded Signup Dialog URL
+    // Facebook OAuth Dialog URL
     // Der Kunde loggt sich ein und wählt SEINE WhatsApp Business Nummer!
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/whatsapp/callback`;
 
-    // WICHTIG: Nutze config_id für Embedded Signup (wie LeadTable)
-    // Fallback auf normale OAuth wenn keine config_id vorhanden
-    const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
-
-    let loginDialogUrl;
-    if (configId) {
-      // Embedded Signup mit config_id (empfohlen - wie LeadTable)
-      loginDialogUrl =
-        `https://www.facebook.com/v19.0/dialog/oauth?` +
-        `app_id=${process.env.NEXT_PUBLIC_META_APP_ID}&` +
-        `config_id=${configId}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `state=${companyId}&` +
-        `display=popup&` +
-        `override_default_response_type=true`;
-    } else {
-      // Fallback: Standard OAuth Dialog
-      loginDialogUrl =
-        `https://www.facebook.com/v18.0/dialog/oauth?` +
-        `client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `scope=whatsapp_business_management,whatsapp_business_messaging,business_management&` +
-        `state=${companyId}&` +
-        `display=popup`;
-    }
+    // Standard OAuth Dialog (config_id wird nicht mehr verwendet)
+    const loginDialogUrl =
+      `https://www.facebook.com/v18.0/dialog/oauth?` +
+      `client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=whatsapp_business_management,whatsapp_business_messaging,business_management&` +
+      `state=${companyId}&` +
+      `display=popup`;
 
     console.log(`[WhatsApp] Generated signup URL for company ${companyId}`);
 

@@ -7,7 +7,7 @@ import { collection, query, getDocs, limit } from 'firebase/firestore';
 import { Star, ArrowLeft, Briefcase, ChevronDown, Info } from 'lucide-react';
 import { categories } from '@/lib/categoriesData';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
-import Header from '@/components/Header';
+import { HeroHeader } from '@/components/hero8-header';
 import LoginPopup from '@/components/LoginPopup';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -447,7 +447,7 @@ export default function SubcategoryPage() {
   if (!categoryInfo) {
     return (
       <>
-        <Header />
+        <HeroHeader />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Kategorie nicht gefunden</h1>
@@ -463,7 +463,7 @@ export default function SubcategoryPage() {
 
   return (
     <>
-      <Header />
+      <HeroHeader />
 
       {/* Hero Section - Fiverr Style */}
       <div className="bg-white border-b border-gray-200">

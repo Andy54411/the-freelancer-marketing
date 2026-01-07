@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   MapPin,
@@ -13,9 +13,7 @@ import {
   Calendar,
   Briefcase,
   ChevronRight,
-  Star,
   Share2,
-  ArrowLeft,
   Monitor,
   Bell,
   Linkedin,
@@ -30,9 +28,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Header from '@/components/Header';
+import { HeroHeader } from '@/components/hero8-header';
 
 interface CompanyData {
   id: string;
@@ -65,7 +62,7 @@ interface JobData {
   title: string;
   location: string;
   type: string; // full-time, part-time, etc.
-  createdAt: any;
+  createdAt: { seconds: number; nanoseconds: number } | Date | null;
   department?: string;
 }
 
@@ -182,7 +179,7 @@ export default function CompanyProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="bg-white border-b border-gray-200">
-        <Header />
+        <HeroHeader />
       </div>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10">
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
@@ -190,9 +187,11 @@ export default function CompanyProfilePage() {
           <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center">
             <div className="w-24 h-24 md:w-32 md:h-32 bg-white border border-gray-200 shadow-sm overflow-hidden relative shrink-0 flex items-center justify-center">
               {company.logoUrl ? (
-                <img
+                <Image
                   src={company.logoUrl}
                   alt={company.companyName}
+                  width={128}
+                  height={128}
                   className="w-full h-full object-contain p-2"
                 />
               ) : (
@@ -376,7 +375,9 @@ export default function CompanyProfilePage() {
                                         <div className="flex items-center gap-1">
                                           <Calendar className="w-3.5 h-3.5" />
                                           {new Date(
-                                            job.createdAt.seconds * 1000
+                                            'seconds' in job.createdAt 
+                                              ? job.createdAt.seconds * 1000 
+                                              : job.createdAt
                                           ).toLocaleDateString('de-DE')}
                                         </div>
                                       )}

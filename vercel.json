@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/refresh-knowledge-base",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/renew-whatsapp-tokens",
+      "schedule": "0 4 * * *"
     }
   ],
   "functions": {

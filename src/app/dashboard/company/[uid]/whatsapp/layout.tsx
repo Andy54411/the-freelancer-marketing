@@ -2,7 +2,7 @@
 
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { MessageCircle, FileText, Link2 } from 'lucide-react';
+import { MessageCircle, FileText, Link2, User } from 'lucide-react';
 
 export default function WhatsAppLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -21,6 +21,12 @@ export default function WhatsAppLayout({ children }: { children: React.ReactNode
       href: `/dashboard/company/${uid}/whatsapp/templates`,
       icon: FileText,
       current: pathname === `/dashboard/company/${uid}/whatsapp/templates`,
+    },
+    {
+      name: 'Profil',
+      href: `/dashboard/company/${uid}/whatsapp/profile`,
+      icon: User,
+      current: pathname === `/dashboard/company/${uid}/whatsapp/profile`,
     },
     {
       name: 'Verbindungen',

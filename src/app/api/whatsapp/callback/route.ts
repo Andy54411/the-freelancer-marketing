@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      console.error('[WhatsApp Callback] Error:', error);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/whatsapp?error=${error}`
       );
@@ -43,20 +42,41 @@ export async function GET(request: NextRequest) {
     );
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error('[WhatsApp Callback] Token exchange failed:', errorData);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/whatsapp?error=token_exchange_failed`
       );
     }
 
     const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+    let accessToken = tokenData.access_token;
 
-    console.log('[WhatsApp Callback] Token data received:', JSON.stringify(tokenData, null, 2));
+    // AUTOMATISCH: Short-Lived Token in Long-Lived Token umtauschen (60 Tage gültig!)
+    let tokenType = 'short-lived';
+    let tokenExpiresAt = null;
+    
+    try {
+      const longLivedResponse = await fetch(
+        `https://graph.facebook.com/v18.0/oauth/access_token?` +
+        `grant_type=fb_exchange_token&` +
+        `client_id=${process.env.META_APP_ID}&` +
+        `client_secret=${process.env.META_APP_SECRET}&` +
+        `fb_exchange_token=${accessToken}`
+      );
+      
+      if (longLivedResponse.ok) {
+        const longLivedData = await longLivedResponse.json();
+        if (longLivedData.access_token) {
+          accessToken = longLivedData.access_token;
+          tokenType = 'long-lived';
+          // Long-lived tokens sind 60 Tage gültig
+          tokenExpiresAt = new Date(Date.now() + (longLivedData.expires_in || 5184000) * 1000).toISOString();
+        }
+      }
+    } catch {
+      // Token-Upgrade fehlgeschlagen, fahre mit short-lived Token fort
+    }
 
     // Bei Embedded Signup gibt Meta die Daten DIREKT zurück!
-    // Keine verschachtelten API Calls nötig!
     // Siehe: https://developers.facebook.com/docs/whatsapp/embedded-signup/handle-response
 
     const wabaId = tokenData.granted_scopes?.includes('whatsapp_business_management')
@@ -67,9 +87,6 @@ export async function GET(request: NextRequest) {
     let phoneNumberId = '';
     let phoneNumber = '';
 
-    // Debug: Zeige vollständigen Token Response
-    console.log('[WhatsApp Callback] Full token response:', tokenData);
-
     // Option 1: Direkt im Token Response (bei manchen Embedded Signups)
     if (tokenData.phone_number_id) {
       phoneNumberId = tokenData.phone_number_id;
@@ -78,13 +95,6 @@ export async function GET(request: NextRequest) {
     // Option 2: Hole via Graph API (falls nicht direkt enthalten)
     else if (accessToken) {
       try {
-        // Verwende /me/accounts für WhatsApp Business Accounts
-        const debugResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`
-        );
-        const debugData = await debugResponse.json();
-        console.log('[WhatsApp Callback] Debug user data:', debugData);
-
         // Hole subscribed WhatsApp Business Accounts
         const wabaResponse = await fetch(
           `https://graph.facebook.com/v18.0/me/businesses?fields=owned_whatsapp_business_accounts{id,phone_numbers{id,display_phone_number,verified_name}}&access_token=${accessToken}`
@@ -92,7 +102,6 @@ export async function GET(request: NextRequest) {
 
         if (wabaResponse.ok) {
           const wabaData = await wabaResponse.json();
-          console.log('[WhatsApp Callback] WABA Response:', JSON.stringify(wabaData, null, 2));
 
           // Durchsuche alle Business Accounts nach WABA mit Phone Numbers
           if (wabaData.data && wabaData.data.length > 0) {
@@ -105,28 +114,20 @@ export async function GET(request: NextRequest) {
                   phoneNumberId = phoneNumbers[0].id;
                   phoneNumber =
                     phoneNumbers[0].display_phone_number || phoneNumbers[0].verified_name || '';
-                  console.log(
-                    '[WhatsApp Callback] Found phone number:',
-                    phoneNumber,
-                    'ID:',
-                    phoneNumberId
-                  );
                   break;
                 }
               }
             }
           }
         }
-      } catch (apiError) {
-        console.error('[WhatsApp Callback] API error:', apiError);
+      } catch {
+        // API-Fehler, fahre fort ohne Phone Number
       }
     }
 
     if (!phoneNumberId) {
-      console.error('[WhatsApp Callback] No phone number found in token response or Graph API');
-      console.error('[WhatsApp Callback] Token data keys:', Object.keys(tokenData));
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/whatsapp?error=no_phone_number_found&debug=check_logs`
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/whatsapp?error=no_phone_number_found`
       );
     }
 
@@ -145,20 +146,19 @@ export async function GET(request: NextRequest) {
         isConnected: true,
         connectedAt: new Date().toISOString(),
         status: 'active',
+        tokenType,
+        tokenExpiresAt,
+        tokenLastUpdated: new Date().toISOString(),
       });
-
-    console.log(
-      `[WhatsApp Callback] Successfully connected for company ${state}, phone: ${phoneNumber}, phoneNumberId: ${phoneNumberId}`
-    );
 
     // Redirect zurück zur WhatsApp-Seite
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/whatsapp?success=true`
     );
-  } catch (error) {
-    console.error('[WhatsApp Callback] Error:', error);
+  } catch {
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=callback_failed`
     );
   }
 }
+

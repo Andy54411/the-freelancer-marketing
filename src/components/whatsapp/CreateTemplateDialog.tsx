@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Eye, Plus, Bold, Italic, Smile, Shield, X } from 'lucide-react';
+import { Eye, Plus, Bold, Italic, Smile, Shield, X, Loader2 } from 'lucide-react';
 import { DsgvoSettingsDialog } from '@/components/whatsapp/DsgvoSettingsDialog';
+import { toast } from 'sonner';
 
 interface CreateTemplateDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function CreateTemplateDialog({
 }: CreateTemplateDialogProps) {
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('de');
+  const [category, setCategory] = useState<'MARKETING' | 'UTILITY' | 'AUTHENTICATION'>('MARKETING');
   const [bodyText, setBodyText] = useState('');
   const [charCount, setCharCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,26 +96,49 @@ export function CreateTemplateDialog({
     if (!name || !bodyText || charCount > MAX_CHARS) return;
     setIsSubmitting(true);
     try {
+      // Konvertiere [%PLACEHOLDER%] zu {{1}}, {{2}}, etc. für Meta API
+      const placeholderRegex = /\[%[A-Z_]+%\]/g;
+      const foundPlaceholders = bodyText.match(placeholderRegex) || [];
+      const uniquePlaceholders = [...new Set(foundPlaceholders)];
+      
+      let convertedBody = bodyText;
+      const variableMapping: Record<string, string> = {};
+      
+      uniquePlaceholders.forEach((placeholder, index) => {
+        const metaVariable = `{{${index + 1}}}`;
+        convertedBody = convertedBody.split(placeholder).join(metaVariable);
+        variableMapping[metaVariable] = placeholder;
+      });
+
       const response = await fetch('/api/whatsapp/templates/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyId,
-          name: name.toLowerCase().replace(/\s+/g, '_'),
+          name: name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
           language,
-          category: 'MARKETING',
-          components: [{ type: 'BODY', text: bodyText }],
+          category,
+          bodyText: convertedBody,
+          variableMapping,
+          originalBodyText: bodyText,
         }),
       });
-      if (response.ok) {
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        toast.success('Vorlage erstellt und zur Prüfung eingereicht');
         onClose();
         setName('');
         setBodyText('');
         setCharCount(0);
+        setCategory('MARKETING');
         onSuccess?.();
+      } else {
+        toast.error(data.error || 'Fehler beim Erstellen der Vorlage');
       }
-    } catch (error) {
-      console.error('Failed to create template:', error);
+    } catch {
+      toast.error('Netzwerkfehler beim Erstellen der Vorlage');
     } finally {
       setIsSubmitting(false);
     }
@@ -252,7 +277,7 @@ export function CreateTemplateDialog({
 
           <div className="flex-1 flex flex-col overflow-hidden bg-white">
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="name" className="text-sm font-medium text-gray-700 mb-2 block">
                     Name der Vorlage
@@ -261,8 +286,35 @@ export function CreateTemplateDialog({
                     id="name"
                     value={name}
                     onChange={e => setName(e.target.value)}
+                    placeholder="z.B. bestellbestaetigung"
                     className="h-11"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Nur Kleinbuchstaben und Unterstriche</p>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="category"
+                    className="text-sm font-medium text-gray-700 mb-2 block"
+                  >
+                    Kategorie
+                  </Label>
+                  <Select value={category} onValueChange={(v) => setCategory(v as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION')}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MARKETING">
+                        Marketing
+                      </SelectItem>
+                      <SelectItem value="UTILITY">
+                        Dienstprogramm
+                      </SelectItem>
+                      <SelectItem value="AUTHENTICATION">
+                        Authentifizierung
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">Beeinflusst Kosten und Limits</p>
                 </div>
                 <div>
                   <Label
@@ -487,9 +539,16 @@ export function CreateTemplateDialog({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!name || !bodyText || charCount > MAX_CHARS || isSubmitting}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-400 font-medium disabled:opacity-50"
+                className="bg-[#25D366] hover:bg-[#128C7E] text-white font-medium disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400"
               >
-                Vorlage erstellen
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Wird erstellt...
+                  </>
+                ) : (
+                  'Vorlage erstellen'
+                )}
               </Button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   QuerySnapshot,
   DocumentData,
   FirestoreError,
+  writeBatch,
 } from 'firebase/firestore';
 import { createClickToChatLink } from '@/lib/whatsapp';
 
@@ -38,13 +39,19 @@ export interface WhatsAppMessage {
   customerId?: string;
   customerName?: string;
   customerPhone: string;
+  waId?: string;
   direction: 'outbound' | 'inbound';
   status: 'queued' | 'sent' | 'delivered' | 'read' | 'failed';
   body: string;
   messageId?: string;
+  messageType?: string;
+  mediaId?: string;
+  mediaUrl?: string;
+  templateName?: string;
   errorMessage?: string;
-  metadata?: Record<string, any>;
-  createdAt: any;
+  metadata?: Record<string, unknown>;
+  createdAt: Date | string | { seconds: number; nanoseconds: number };
+  timestamp?: Date | string;
 }
 
 export interface WhatsAppConnection {
@@ -55,6 +62,15 @@ export interface WhatsAppConnection {
   connectedAt?: string;
   expiresAt?: string;
   lastQrGeneratedAt?: string;
+  // Meta API Credentials
+  accessToken?: string;
+  phoneNumberId?: string;
+  wabaId?: string;
+  displayName?: string;
+  status?: string;
+  tokenType?: string;
+  tokenExpiresAt?: string;
+  tokenLastUpdated?: string;
 }
 
 export class WhatsAppService {
@@ -97,14 +113,6 @@ export class WhatsAppService {
         throw new Error('Company ID ist erforderlich');
       }
 
-      console.log('Sending WhatsApp message from company number:', {
-        companyId,
-        toPhone,
-        message: message.substring(0, 50),
-        customerId,
-        customerName,
-      });
-
       // Sende über Meta API mit KUNDENEIGENER Nummer
       const response = await fetch('/api/whatsapp/send', {
         method: 'POST',
@@ -119,49 +127,20 @@ export class WhatsAppService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('WhatsApp API Error:', error);
-        throw new Error(error.error || 'Fehler beim Senden');
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'Fehler beim Senden');
       }
 
       const result = await response.json();
 
-      // Speichere in Firestore für Historie (nur wenn companyId vorhanden)
-      if (companyId) {
-        await this.saveMessage({
-          companyId,
-          customerId,
-          customerName,
-          customerPhone: toPhone,
-          direction: 'outbound',
-          status: 'sent',
-          body: message,
-          messageId: result.messageId,
-          createdAt: serverTimestamp(),
-        });
-      }
+      // Nachricht wird bereits in der API gespeichert - KEINE doppelte Speicherung!
 
       return {
         success: true,
         messageId: result.messageId,
       };
     } catch (error) {
-      console.error('[WhatsApp] Send error:', error);
-
-      // Fehler loggen (nur wenn companyId vorhanden)
-      if (companyId) {
-        await this.saveMessage({
-          companyId,
-          customerId,
-          customerName,
-          customerPhone: toPhone,
-          direction: 'outbound',
-          status: 'failed',
-          body: message,
-          errorMessage: error instanceof Error ? error.message : 'Unbekannter Fehler',
-          createdAt: serverTimestamp(),
-        });
-      }
+      // Fehler wird geloggt, aber nicht nochmal gespeichert (API macht das bereits)
 
       throw error;
     }
@@ -187,8 +166,7 @@ export class WhatsAppService {
         id: doc.id,
         ...doc.data(),
       })) as WhatsAppMessage[];
-    } catch (error) {
-      console.error('[WhatsApp] Load messages error:', error);
+    } catch {
       return [];
     }
   }
@@ -224,14 +202,13 @@ export class WhatsAppService {
 
           callback(messages);
         },
-        (error: FirestoreError) => {
-          console.error('[WhatsApp] Real-time listener error:', error);
+        (_error: FirestoreError) => {
+          // Fehler wird ignoriert - Listener wird fortgesetzt
         }
       );
 
       return unsubscribe;
-    } catch (error) {
-      console.error('[WhatsApp] Subscribe to messages error:', error);
+    } catch {
       return () => {}; // Noop unsubscribe
     }
   }
@@ -254,8 +231,109 @@ export class WhatsAppService {
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
         };
       }) as WhatsAppMessage[];
-    } catch (error) {
-      console.error('[WhatsApp] Load company messages error:', error);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Lädt alle Chats gruppiert nach Telefonnummer
+   * Gibt eine Liste von Chat-Objekten zurück mit letzter Nachricht
+   */
+  static async getChats(companyId: string): Promise<{
+    phone: string;
+    customerId?: string;
+    customerName?: string;
+    lastMessage: WhatsAppMessage;
+    unreadCount: number;
+  }[]> {
+    try {
+      const messages = await this.getCompanyMessages(companyId);
+      
+      // Gruppiere nach Telefonnummer (customerPhone - konsistent für inbound und outbound)
+      const chatMap = new Map<string, {
+        phone: string;
+        customerId?: string;
+        customerName?: string;
+        messages: WhatsAppMessage[];
+      }>();
+
+      for (const msg of messages) {
+        // Nutze customerPhone als primären Schlüssel (wird jetzt konsistent gespeichert)
+        const rawPhone = msg.customerPhone || (msg as unknown as { to?: string }).to || '';
+        if (!rawPhone) continue;
+        
+        // Normalisiere Telefonnummer (entferne alles außer Ziffern, behalte + am Anfang)
+        const phone = rawPhone.startsWith('+') ? rawPhone : `+${rawPhone.replace(/\D/g, '')}`;
+
+        if (!chatMap.has(phone)) {
+          chatMap.set(phone, {
+            phone,
+            customerId: msg.customerId,
+            customerName: msg.customerName,
+            messages: [],
+          });
+        }
+        
+        const chat = chatMap.get(phone);
+        if (chat) {
+          chat.messages.push(msg);
+          // Update customerName falls vorhanden
+          if (msg.customerName && !chat.customerName) {
+            chat.customerName = msg.customerName;
+          }
+          if (msg.customerId && !chat.customerId) {
+            chat.customerId = msg.customerId;
+          }
+        }
+      }
+
+      // Konvertiere zu Array und sortiere nach letzter Nachricht
+      return Array.from(chatMap.values())
+        .filter(chat => chat.messages.length > 0)
+        .map(chat => ({
+          phone: chat.phone,
+          customerId: chat.customerId,
+          customerName: chat.customerName,
+          lastMessage: chat.messages[0], // Neueste Nachricht (bereits nach createdAt desc sortiert)
+          unreadCount: chat.messages.filter(m => m.direction === 'inbound' && m.status !== 'read').length,
+        }))
+        .sort((a, b) => {
+          const dateA = a.lastMessage.createdAt instanceof Date ? a.lastMessage.createdAt : new Date(a.lastMessage.createdAt);
+          const dateB = b.lastMessage.createdAt instanceof Date ? b.lastMessage.createdAt : new Date(b.lastMessage.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Lädt Nachrichten für eine bestimmte Telefonnummer
+   */
+  static async getMessagesByPhone(
+    companyId: string,
+    phone: string
+  ): Promise<WhatsAppMessage[]> {
+    try {
+      // Normalisiere die gesuchte Telefonnummer
+      const normalizedSearch = phone.replace(/\D/g, '');
+      
+      // Lade alle Nachrichten und filtere nach Telefonnummer
+      const messages = await this.getCompanyMessages(companyId);
+      
+      return messages.filter(msg => {
+        const msgPhone = (msg.customerPhone || (msg as unknown as { to?: string }).to || '').replace(/\D/g, '');
+        // Vergleiche die letzten 10 Ziffern (für internationale Nummern)
+        return msgPhone === normalizedSearch || 
+               msgPhone.endsWith(normalizedSearch.slice(-10)) || 
+               normalizedSearch.endsWith(msgPhone.slice(-10));
+      }).sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateA.getTime() - dateB.getTime(); // Älteste zuerst für Chat-Ansicht
+      });
+    } catch {
       return [];
     }
   }
@@ -269,7 +347,6 @@ export class WhatsAppService {
       const docRef = await addDoc(messagesRef, message);
       return docRef.id;
     } catch (error) {
-      console.error('[WhatsApp] Save message error:', error);
       throw error;
     }
   }
@@ -282,8 +359,7 @@ export class WhatsAppService {
       const response = await fetch(`/api/whatsapp/status?companyId=${companyId}`);
       const data = await response.json();
       return data.configured;
-    } catch (error) {
-      console.error('[WhatsApp] Config check error:', error);
+    } catch {
       return false;
     }
   }
@@ -302,8 +378,7 @@ export class WhatsAppService {
       }
 
       return connectionDoc.data() as WhatsAppConnection;
-    } catch (error) {
-      console.error('[WhatsApp] Get connection error:', error);
+    } catch {
       return null;
     }
   }
@@ -332,7 +407,6 @@ export class WhatsAppService {
         { merge: true }
       );
     } catch (error) {
-      console.error('[WhatsApp] Save QR code error:', error);
       throw error;
     }
   }
@@ -350,7 +424,6 @@ export class WhatsAppService {
         connectedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('[WhatsApp] Save connection error:', error);
       throw error;
     }
   }
@@ -367,8 +440,42 @@ export class WhatsAppService {
         qrCode: undefined,
       });
     } catch (error) {
-      console.error('[WhatsApp] Disconnect error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Markiert alle Nachrichten eines Chats als gelesen
+   */
+  static async markMessagesAsRead(companyId: string, phone: string): Promise<void> {
+    try {
+      const normalizedSearch = phone.replace(/\D/g, '');
+      const messagesRef = collection(db, 'companies', companyId, 'whatsappMessages');
+      const messagesSnapshot = await getDocs(messagesRef);
+      
+      const batch = writeBatch(db);
+      let updateCount = 0;
+      
+      messagesSnapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const msgPhone = (data.customerPhone || data.to || '').replace(/\D/g, '');
+        
+        // Prüfe ob Nachricht zu diesem Chat gehört und ungelesen ist
+        if ((msgPhone === normalizedSearch || 
+             msgPhone.endsWith(normalizedSearch.slice(-10)) || 
+             normalizedSearch.endsWith(msgPhone.slice(-10))) &&
+            data.direction === 'inbound' &&
+            data.status !== 'read') {
+          batch.update(docSnapshot.ref, { status: 'read', readAt: new Date() });
+          updateCount++;
+        }
+      });
+      
+      if (updateCount > 0) {
+        await batch.commit();
+      }
+    } catch {
+      // Fehler ignorieren - nicht kritisch
     }
   }
 }

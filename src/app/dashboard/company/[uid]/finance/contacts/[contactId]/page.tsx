@@ -31,6 +31,7 @@ import {
   Phone,
   UserPlus,
   FileEdit,
+  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateCustomerStats } from '@/utils/customerStatsUtils';
@@ -40,6 +41,7 @@ import { CustomerInvoiceCard } from '@/components/finance/customer-detail/Custom
 import { CustomerContactCard } from '@/components/finance/customer-detail/CustomerContactCard';
 import { CustomerHistoryTab } from '@/components/finance/customer-detail/CustomerHistoryTab';
 import { CustomerDocumentsTab } from '@/components/finance/customer-detail/CustomerDocumentsTab';
+import { CustomerWhatsAppTab } from '@/components/finance/customer-detail/CustomerWhatsAppTab';
 import CustomerOrdersTab from '@/components/finance/customer-detail/CustomerOrdersTab';
 import { EditContactPersonModal } from '@/components/finance/customer-detail/EditContactPersonModal';
 
@@ -497,7 +499,7 @@ function CustomerDetailPageContent({
   companyId: string;
 }) {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'invoices' | 'contacts' | 'history' | 'documents' | 'orders' | 'credits'
+    'overview' | 'invoices' | 'contacts' | 'history' | 'documents' | 'orders' | 'credits' | 'whatsapp'
   >('overview');
   const [documentsCount, setDocumentsCount] = useState(0);
   const [showMoreTabs, setShowMoreTabs] = useState(false);
@@ -543,6 +545,13 @@ function CustomerDetailPageContent({
       label: 'Gutschriften',
       icon: Ticket,
       count: 0,
+      primary: true,
+    },
+    {
+      id: 'whatsapp' as const,
+      label: 'WhatsApp',
+      icon: MessageSquare,
+      count: null,
       primary: true,
     },
     {
@@ -659,6 +668,7 @@ function CustomerDetailPageContent({
             <CustomerDocumentsTab customer={customer} companyId={companyId} onDocumentsCountChange={setDocumentsCount} />
           )}
           {activeTab === 'orders' && <CustomerOrdersTab customer={customer} companyId={companyId} />}
+          {activeTab === 'whatsapp' && <CustomerWhatsAppTab customer={customer} companyId={companyId} />}
           {activeTab === 'credits' && (
             <div className="text-center py-20">
               <Ticket className="h-16 w-16 mx-auto mb-4 text-gray-300" />

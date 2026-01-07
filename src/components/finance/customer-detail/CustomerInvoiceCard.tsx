@@ -18,11 +18,13 @@ import {
   ExternalLink,
   Eye,
   Calendar,
-  Euro
+  Euro,
+  MessageSquare,
 } from 'lucide-react';
 import { Customer } from '../AddCustomerModal';
 import { InvoiceData, InvoiceStatusHelper } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { toast } from 'sonner';
 
 interface CustomerInvoiceCardProps {
   customer: Customer;
@@ -160,7 +162,7 @@ export function CustomerInvoiceCard({ customer }: CustomerInvoiceCardProps) {
                   <TableHead className="w-[120px]">Datum</TableHead>
                   <TableHead className="w-[120px]">Fälligkeitsdatum</TableHead>
                   <TableHead className="w-[120px] text-right">Betrag</TableHead>
-                  <TableHead className="w-[100px] text-center">Aktionen</TableHead>
+                  <TableHead className="w-[120px] text-center">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,15 +196,49 @@ export function CustomerInvoiceCard({ customer }: CustomerInvoiceCardProps) {
                       {formatCurrency(invoice.total || 0)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0 border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                        onClick={() => openInvoice(invoice.id)}
-                        title="Rechnung öffnen"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0 border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                          onClick={() => openInvoice(invoice.id)}
+                          title="Rechnung öffnen"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {customer.phone && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white"
+                            onClick={() => {
+                              const invoiceUrl = `${window.location.origin}/dashboard/company/${customer.companyId}/finance/invoices/${invoice.id}`;
+                              const message = `Sehr geehrte(r) ${customer.name},\n\nanbei erhalten Sie Ihre Rechnung ${invoice.invoiceNumber || invoice.number} über ${formatCurrency(invoice.total || 0)}.\n\nRechnung ansehen: ${invoiceUrl}\n\nMit freundlichen Grüßen`;
+                              window.open(`/dashboard/company/${customer.companyId}/whatsapp?phone=${encodeURIComponent(customer.phone || '')}&message=${encodeURIComponent(message)}&invoiceId=${invoice.id}`, '_blank');
+                              
+                              // Speichere Aktivität im Kundenprofil
+                              fetch('/api/whatsapp/activity', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  companyId: customer.companyId,
+                                  customerId: customer.id,
+                                  phone: customer.phone,
+                                  activityType: 'invoice_sent',
+                                  title: `Rechnung ${invoice.invoiceNumber || invoice.number} per WhatsApp gesendet`,
+                                  description: `Betrag: ${formatCurrency(invoice.total || 0)}`,
+                                  metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber || invoice.number },
+                                }),
+                              }).catch(() => {});
+                              
+                              toast.success('WhatsApp-Chat wird geöffnet...');
+                            }}
+                            title="Per WhatsApp senden"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

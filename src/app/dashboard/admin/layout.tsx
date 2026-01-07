@@ -30,6 +30,7 @@ import {
   Sparkles,
   Newspaper,
   AlertTriangle,
+  Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -66,6 +67,7 @@ const navigation = [
   { name: 'Admin-Benutzer', href: '/dashboard/admin/admin-users', icon: Shield },
   { name: 'E-Mail System', href: '/dashboard/admin/email', icon: Mail },
   { name: 'Webmail-Abrechnung', href: '/dashboard/admin/webmail-billing', icon: CreditCard },
+  { name: 'Modul-Abonnements', href: '/dashboard/admin/modules', icon: Package },
   { name: 'Taskilo Drive', href: '/dashboard/admin/drive', icon: HardDrive },
   { name: 'Einstellungen', href: '/dashboard/admin/settings', icon: Settings },
 ];

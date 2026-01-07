@@ -61,11 +61,15 @@ export async function POST(request: NextRequest) {
     const connection = connectionDoc.data();
 
     if (!connection?.isConnected || !connection?.accessToken || !connection?.phoneNumberId) {
+      const missingFields: string[] = [];
+      if (!connection?.accessToken) missingFields.push('Access Token');
+      if (!connection?.phoneNumberId) missingFields.push('Phone Number ID');
+      
       return NextResponse.json(
         {
           success: false,
-          error: 'WhatsApp-Verbindung unvollständig',
-          details: 'Bitte verbinde deine WhatsApp Business Nummer erneut',
+          error: 'WhatsApp Business API nicht konfiguriert',
+          details: `Meta WhatsApp Business API Zugangsdaten fehlen: ${missingFields.join(', ')}. Bitte verbinde dein WhatsApp Business Konto über Meta Embedded Signup.`,
         },
         { status: 400 }
       );
@@ -114,7 +118,6 @@ export async function POST(request: NextRequest) {
 
     if (!sendResponse.ok) {
       const errorData = await sendResponse.json();
-      console.error('[WhatsApp Send] API Error:', errorData);
 
       return NextResponse.json(
         {
@@ -139,6 +142,7 @@ export async function POST(request: NextRequest) {
         companyId,
         customerId: customerId || null,
         customerName: customerName || null,
+        customerPhone: `+${cleanPhone}`,
         direction: 'outbound',
         from: phoneNumberId,
         to: cleanPhone,
@@ -147,10 +151,8 @@ export async function POST(request: NextRequest) {
         status: 'sent',
         messageType: template ? 'template' : 'text',
         templateName: template || null,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       });
-
-    console.log(`[WhatsApp Send] Message sent successfully: ${messageId}`);
 
     return NextResponse.json({
       success: true,
@@ -170,7 +172,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('[WhatsApp Send] Error:', error);
     return NextResponse.json(
       {
         success: false,

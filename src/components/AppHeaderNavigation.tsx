@@ -3,32 +3,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Menu, X, Grid } from 'lucide-react';
+import { Menu, X, Grid } from 'lucide-react';
 import { categories, Category } from '@/lib/categoriesData';
-import { useAuth } from '@/contexts/AuthContext';
 
 const AppHeaderNavigation: React.FC = () => {
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const { user } = useAuth();
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  const handleMegaMenuEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    setIsMegaMenuOpen(true);
-  };
-
-  const handleMegaMenuLeave = () => {
-    const timeout = setTimeout(() => {
-      setIsMegaMenuOpen(false);
-    }, 150); // Kleine Verzögerung für bessere UX
-    setHoverTimeout(timeout);
-  };
 
   // Hover-Handler für einzelne Kategorien
   const handleCategoryEnter = (categoryTitle: string) => {
@@ -54,18 +35,6 @@ const AppHeaderNavigation: React.FC = () => {
       }
     };
   }, [hoverTimeout]);
-
-  const toggleCategoryExpansion = (categoryTitle: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryTitle)) {
-        newSet.delete(categoryTitle);
-      } else {
-        newSet.add(categoryTitle);
-      }
-      return newSet;
-    });
-  };
 
   // Liste der tatsächlich verfügbaren Subcategory-Forms
   const availableSubcategories = [
@@ -160,8 +129,6 @@ const AppHeaderNavigation: React.FC = () => {
 
   // Helper function to get the correct service URL - Zu Services-Seiten mit korrekter URL-Kodierung
   const getServiceUrl = (category: string, subcategory?: string) => {
-    if (!user?.uid) return '/';
-
     if (subcategory) {
       // Für Subcategorien führen wir zu den Services-Seiten mit Anbietern
       const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
@@ -188,23 +155,6 @@ const AppHeaderNavigation: React.FC = () => {
     if (!category) return [];
     return category.subcategories.filter(sub => availableSubcategories.includes(sub));
   };
-
-  // Organize categories into columns for mega menu - mehr Spalten für breiteres Layout
-  const filteredCategories = getFilteredCategories();
-  const megaMenuColumns = Array.isArray(filteredCategories)
-    ? [
-        filteredCategories.slice(0, Math.ceil(filteredCategories.length / 4)),
-        filteredCategories.slice(
-          Math.ceil(filteredCategories.length / 4),
-          Math.ceil((filteredCategories.length * 2) / 4)
-        ),
-        filteredCategories.slice(
-          Math.ceil((filteredCategories.length * 2) / 4),
-          Math.ceil((filteredCategories.length * 3) / 4)
-        ),
-        filteredCategories.slice(Math.ceil((filteredCategories.length * 3) / 4)),
-      ]
-    : [[], [], [], []];
 
   return (
     <nav className="bg-white relative">

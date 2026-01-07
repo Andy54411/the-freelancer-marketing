@@ -1,0 +1,140 @@
+{
+  "version": "2.6.0",
+  "date": "2026-01-05",
+  "title": "Modul-basiertes Abo-System für Taskilo Business",
+  "description": "Flexibles Modul-System mit Premium-Add-ons, Bundle-Angebot und Seat-Verwaltung für Unternehmen",
+  "category": "feature",
+  "priority": "high",
+  "changes": [
+    {
+      "type": "feature",
+      "title": "Premium-Module",
+      "description": "4 neue Premium-Module: WhatsApp Business (14,99 €), Taskilo Advertising (24,99 €), Recruiting (19,99 €), Workspace Pro (9,99 €)"
+    },
+    {
+      "type": "feature",
+      "title": "Modul-Bundle",
+      "description": "Alle Premium-Module im Bundle für 49,99 €/Monat (28% Ersparnis gegenüber Einzelbuchung)"
+    },
+    {
+      "type": "feature",
+      "title": "7-Tage Testphase",
+      "description": "Jedes Premium-Modul kann 7 Tage kostenlos getestet werden - pro Modul einmalig verfügbar"
+    },
+    {
+      "type": "feature",
+      "title": "Seat-Management",
+      "description": "Zusätzliche Mitarbeiter-Seats können für 5,99 €/Monat hinzugebucht werden"
+    },
+    {
+      "type": "feature",
+      "title": "ModuleGuard Komponente",
+      "description": "Automatische Sperrung von Premium-Features mit Upgrade-Hinweis und Link zur Pricing-Seite"
+    },
+    {
+      "type": "feature",
+      "title": "Premium-Indikatoren in Sidebar",
+      "description": "Lock-Icons und Sparkles für Premium-Module in der Dashboard-Navigation"
+    },
+    {
+      "type": "feature",
+      "title": "Modul-Verwaltung in Einstellungen",
+      "description": "Neue Settings-Seite unter Module & Seats zur Verwaltung aller Modul-Abos"
+    },
+    {
+      "type": "improvement",
+      "title": "Pricing Page für Business",
+      "description": "Öffentliche Übersichtsseite aller verfügbaren Module und Preise unter /pricing"
+    },
+    {
+      "type": "improvement",
+      "title": "Seat-Limitprüfung bei Einladungen",
+      "description": "Automatische Prüfung freier Seats vor Mitarbeiter-Einladung mit Hinweis zum Nachbuchen"
+    },
+    {
+      "type": "feature",
+      "title": "Revolut Webhook für Module",
+      "description": "Automatische Modul-Aktivierung bei erfolgreicher Zahlung über Revolut"
+    },
+    {
+      "type": "feature",
+      "title": "E-Mail-Benachrichtigungen",
+      "description": "Automatische E-Mails bei Trial-Ablauf (3 Tage, 1 Tag), Aktivierung, Kündigung und Zahlungsfehlern"
+    },
+    {
+      "type": "feature",
+      "title": "Automatische Rechnungserstellung",
+      "description": "ModuleInvoiceService erstellt GoBD-konforme Rechnungen für Module und Seats"
+    },
+    {
+      "type": "feature",
+      "title": "Admin-Dashboard für Module",
+      "description": "Übersicht aller Modul-Abonnements unter /dashboard/admin/modules mit Statistiken"
+    },
+    {
+      "type": "feature",
+      "title": "Separate Pricing-Seiten",
+      "description": "Webmail-Preise unter /pricing/webmail und Business-Module unter /pricing/business"
+    },
+    {
+      "type": "improvement",
+      "title": "Preise-Dropdown im Header",
+      "description": "Neues Dropdown-Menü im HeroHeader mit Links zu allen Pricing-Seiten"
+    },
+    {
+      "type": "feature",
+      "title": "Trial-Ablauf Cron-Job",
+      "description": "Täglicher Cron-Job auf Hetzner prüft Trial-Abläufe und sendet Erinnerungen"
+    },
+    {
+      "type": "feature",
+      "title": "Rabattstaffel für mehrere Module",
+      "description": "Automatische Rabatte bei Buchung mehrerer Module: 10% bei 2 Modulen, 20% bei 3 Modulen, 28% beim Komplett-Bundle"
+    },
+    {
+      "type": "feature",
+      "title": "Dynamische Preisberechnung",
+      "description": "Hilfsfunktionen calculateModulePrice() und getModulePriceRange() zur automatischen Preisberechnung mit Rabatten"
+    }
+  ],
+  "files_created": [
+    "src/lib/moduleConfig.ts",
+    "src/services/subscription/ModuleSubscriptionService.ts",
+    "src/services/subscription/SeatService.ts",
+    "src/services/subscription/ModuleNotificationService.ts",
+    "src/services/subscription/ModuleInvoiceService.ts",
+    "src/app/api/company/[uid]/modules/route.ts",
+    "src/app/api/company/[uid]/seats/route.ts",
+    "src/app/api/webhooks/revolut-modules/route.ts",
+    "src/app/api/cron/module-trial-expiration/route.ts",
+    "src/app/api/admin/modules/stats/route.ts",
+    "src/app/pricing/page.tsx",
+    "src/app/pricing/webmail/page.tsx",
+    "src/app/pricing/business/page.tsx",
+    "src/app/dashboard/admin/modules/page.tsx",
+    "src/components/guards/ModuleGuard.tsx",
+    "src/app/dashboard/company/[uid]/settings/modules/page.tsx",
+    "docs/MODULE_SUBSCRIPTION_SYSTEM.md"
+  ],
+  "files_modified": [
+    "src/app/api/company/[uid]/employees/invite/route.ts",
+    "src/components/dashboard/CompanySidebar.tsx",
+    "src/app/dashboard/admin/layout.tsx",
+    "src/components/hero8-header.tsx"
+  ],
+  "breaking_changes": false,
+  "requires_migration": false,
+  "tested": false,
+  "notes": [
+    "Basis-Module (10 Stück) sind im Taskilo Business Abo (29,99 €/Monat) enthalten",
+    "Premium-Module können einzeln oder als Bundle gebucht werden",
+    "Rabattstaffel: 1 Modul = 0%, 2 Module = 10%, 3 Module = 20%, 4 Module (Bundle) = 28%",
+    "Testphase ist pro Modul einmalig - wird im Firestore gespeichert",
+    "Seat-Änderungen werden pro-rata abgerechnet",
+    "Revolut Webhook für Zahlungsbestätigung implementiert",
+    "Cron-Job auf Hetzner für Trial-Ablauf konfiguriert",
+    "ModuleInvoiceService erstellt automatisch Rechnungen",
+    "subscribeMultipleModules() bucht mehrere Module mit automatischem Rabatt"
+  ],
+  "documentation": "docs/MODULE_SUBSCRIPTION_SYSTEM.md"
+}

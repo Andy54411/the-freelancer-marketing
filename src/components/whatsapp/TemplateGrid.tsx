@@ -1,15 +1,28 @@
 'use client';
 
-import { MoreVertical, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { MoreVertical, CheckCircle2, Clock, XCircle, RefreshCw, Trash2, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { WhatsAppTemplate } from '@/types/whatsapp';
+import { toast } from 'sonner';
 
 interface TemplateGridProps {
   templates: WhatsAppTemplate[];
@@ -18,6 +31,83 @@ interface TemplateGridProps {
 }
 
 export function TemplateGrid({ templates, onTemplateUpdate, companyId }: TemplateGridProps) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<WhatsAppTemplate | null>(null);
+
+  const handleDelete = async (template: WhatsAppTemplate) => {
+    setDeletingId(template.id);
+    try {
+      const response = await fetch(`/api/whatsapp/templates/${template.id}?companyId=${companyId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        toast.success('Vorlage gelöscht');
+        onTemplateUpdate();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Fehler beim Löschen');
+      }
+    } catch {
+      toast.error('Netzwerkfehler beim Löschen');
+    } finally {
+      setDeletingId(null);
+      setShowDeleteDialog(false);
+      setTemplateToDelete(null);
+    }
+  };
+
+  const handleRefreshStatus = async (template: WhatsAppTemplate) => {
+    setRefreshingId(template.id);
+    try {
+      const response = await fetch(`/api/whatsapp/templates/${template.id}/refresh?companyId=${companyId}`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        toast.success('Status aktualisiert');
+        onTemplateUpdate();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Fehler beim Aktualisieren');
+      }
+    } catch {
+      toast.error('Netzwerkfehler beim Aktualisieren');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const handleDuplicate = async (template: WhatsAppTemplate) => {
+    try {
+      const bodyComponent = template.components.find(c => c.type === 'BODY');
+      
+      const response = await fetch('/api/whatsapp/templates/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId,
+          name: `${template.name}_kopie`,
+          language: template.language,
+          category: template.category,
+          bodyText: bodyComponent?.text || '',
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('Vorlage dupliziert');
+        onTemplateUpdate();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Fehler beim Duplizieren');
+      }
+    } catch {
+      toast.error('Netzwerkfehler beim Duplizieren');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -107,11 +197,11 @@ export function TemplateGrid({ templates, onTemplateUpdate, companyId }: Templat
                 <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
                   <span>{getCategoryLabel(template.category)}</span>
                   <span>•</span>
-                  <span>{template.language.toUpperCase()}</span>
-                  {template.variables.length > 0 && (
+                  <span>{template.language?.toUpperCase() || 'DE'}</span>
+                  {(template.variables?.length ?? 0) > 0 && (
                     <>
                       <span>•</span>
-                      <span>{template.variables.length} Variablen</span>
+                      <span>{template.variables?.length || 0} Variablen</span>
                     </>
                   )}
                 </div>
@@ -122,19 +212,67 @@ export function TemplateGrid({ templates, onTemplateUpdate, companyId }: Templat
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
+                  {(deletingId === template.id || refreshingId === template.id) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MoreVertical className="h-4 w-4" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Bearbeiten</DropdownMenuItem>
-                <DropdownMenuItem>Duplizieren</DropdownMenuItem>
-                <DropdownMenuItem>Status aktualisieren</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600">Löschen</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDuplicate(template)}>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplizieren
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleRefreshStatus(template)}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Status aktualisieren
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-red-600"
+                  onClick={() => {
+                    setTemplateToDelete(template);
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Löschen
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       ))}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchtest du die Vorlage &quot;{templateToDelete?.name}&quot; wirklich löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => templateToDelete && handleDelete(templateToDelete)}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Wird gelöscht...
+                </>
+              ) : (
+                'Löschen'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

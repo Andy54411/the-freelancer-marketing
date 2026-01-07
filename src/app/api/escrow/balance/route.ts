@@ -17,7 +17,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const summary = await EscrowService.getProviderSummary(providerId);
+    // Versuche Summary zu holen, bei Fehler leere Werte zurückgeben
+    let summary;
+    try {
+      summary = await EscrowService.getProviderSummary(providerId);
+    } catch {
+      // Falls keine Escrows existieren oder Fehler auftritt, leere Summary
+      summary = {
+        totalHeld: 0,
+        totalReleased: 0,
+        totalRefunded: 0,
+        pendingPayouts: 0,
+        currency: 'EUR',
+      };
+    }
 
     return NextResponse.json({
       success: true,

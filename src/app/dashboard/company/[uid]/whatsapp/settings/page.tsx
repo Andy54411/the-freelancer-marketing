@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, MessageCircle, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Loader2, Trash2, Key, RefreshCw, CheckCircle2, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function WhatsAppSettingsPage() {
   const params = useParams();
@@ -21,6 +22,16 @@ export default function WhatsAppSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Token Management
+  const [accessToken, setAccessToken] = useState('');
+  const [newAccessToken, setNewAccessToken] = useState('');
+  const [tokenStatus, setTokenStatus] = useState<'valid' | 'expired' | 'unknown'>('unknown');
+  const [tokenExpiry, setTokenExpiry] = useState<string | null>(null);
+  const [isCheckingToken, setIsCheckingToken] = useState(false);
+  const [isSavingToken, setIsSavingToken] = useState(false);
+  const [phoneNumberId, setPhoneNumberId] = useState('');
+  const [wabaId, setWabaId] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -29,8 +40,90 @@ export default function WhatsAppSettingsPage() {
   useEffect(() => {
     if (isMounted) {
       loadSettings();
+      checkTokenStatus();
     }
   }, [uid, isMounted]);
+
+  const checkTokenStatus = async () => {
+    setIsCheckingToken(true);
+    try {
+      const response = await fetch(`/api/whatsapp/renew-token?companyId=${uid}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setTokenStatus(data.tokenStatus === 'gültig' ? 'valid' : 'expired');
+        setTokenExpiry(data.tokenExpiry);
+        if (data.connection) {
+          setPhoneNumberId(data.connection.phoneNumberId || '');
+          setWabaId(data.connection.wabaId || '');
+        }
+      } else {
+        setTokenStatus('expired');
+      }
+    } catch {
+      setTokenStatus('unknown');
+    } finally {
+      setIsCheckingToken(false);
+    }
+  };
+
+  const handleSaveNewToken = async () => {
+    if (!newAccessToken.trim()) {
+      toast.error('Bitte gib einen neuen Access Token ein');
+      return;
+    }
+
+    setIsSavingToken(true);
+    try {
+      const response = await fetch('/api/whatsapp/renew-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: uid,
+          newAccessToken: newAccessToken.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Access Token erfolgreich aktualisiert!');
+        setNewAccessToken('');
+        setAccessToken(newAccessToken.trim().substring(0, 20) + '...');
+        await checkTokenStatus();
+      } else {
+        toast.error(data.error || 'Fehler beim Speichern des Tokens');
+      }
+    } catch {
+      toast.error('Fehler beim Speichern des Tokens');
+    } finally {
+      setIsSavingToken(false);
+    }
+  };
+
+  const handleReconnect = async () => {
+    try {
+      const response = await fetch('/api/whatsapp/generate-qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: uid,
+          phoneNumber: businessPhone || '+49',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.signupUrl) {
+        window.open(data.signupUrl, 'whatsapp_signup', 'width=600,height=700');
+        toast.success('Bitte autorisiere deine WhatsApp Nummer im Popup');
+      } else {
+        toast.error(data.error || 'Fehler beim Starten der Autorisierung');
+      }
+    } catch {
+      toast.error('Fehler beim Starten der Autorisierung');
+    }
+  };
 
   const loadSettings = async () => {
     try {

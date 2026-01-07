@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+import { db, isFirebaseAvailable } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
-  const verifyToken = process.env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'taskilo_whatsapp_2024';
+  
+  // Hole Verify Token aus Firestore oder Env
+  let verifyToken = process.env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'taskilo_whatsapp_2024';
+  
+  if (isFirebaseAvailable() && db) {
+    try {
+      const webhookConfig = await db.collection('admin_config').doc('whatsapp_webhook').get();
+      if (webhookConfig.exists) {
+        verifyToken = webhookConfig.data()?.verifyToken || verifyToken;
+      }
+    } catch {
+      // Fallback auf Env-Variable
+    }
+  }
 
   if (mode === 'subscribe' && token === verifyToken) {
     return new NextResponse(challenge, { status: 200 });
@@ -17,55 +30,191 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isFirebaseAvailable() || !db) {
+      return NextResponse.json({ success: false, error: 'Firebase nicht verfügbar' }, { status: 503 });
+    }
+
     const body = await request.json();
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
 
-    if (value?.messages) {
+    // Verarbeite eingehende Nachrichten
+    if (value?.messages && value.messages.length > 0) {
       const message = value.messages[0];
-      const from = message.from;
-      const text = message.text?.body;
+      const from = message.from; // Telefonnummer des Absenders (ohne +)
       const messageId = message.id;
+      const timestamp = message.timestamp;
+      const messageType = message.type;
+      
+      // Kontakt-Info aus Webhook (enthält Namen!)
+      const contacts = value.contacts;
+      const contactName = contacts?.[0]?.profile?.name;
+      const waId = contacts?.[0]?.wa_id;
+      
+      // Phone Number ID der Business-Nummer
+      const phoneNumberId = value.metadata?.phone_number_id;
+      
+      // Nachrichteninhalt basierend auf Typ extrahieren
+      let messageBody = '';
+      let mediaId = null;
+      let mediaUrl = null;
+      
+      switch (messageType) {
+        case 'text':
+          messageBody = message.text?.body || '';
+          break;
+        case 'image':
+          messageBody = message.image?.caption || '[Bild]';
+          mediaId = message.image?.id;
+          break;
+        case 'video':
+          messageBody = message.video?.caption || '[Video]';
+          mediaId = message.video?.id;
+          break;
+        case 'audio':
+          messageBody = '[Sprachnachricht]';
+          mediaId = message.audio?.id;
+          break;
+        case 'document':
+          messageBody = message.document?.filename || '[Dokument]';
+          mediaId = message.document?.id;
+          break;
+        case 'sticker':
+          messageBody = '[Sticker]';
+          mediaId = message.sticker?.id;
+          break;
+        case 'location':
+          messageBody = `[Standort: ${message.location?.latitude}, ${message.location?.longitude}]`;
+          break;
+        case 'contacts':
+          messageBody = '[Kontakt geteilt]';
+          break;
+        case 'interactive':
+          // Button-Antworten oder Listen-Auswahl
+          if (message.interactive?.type === 'button_reply') {
+            messageBody = message.interactive.button_reply?.title || '[Button-Antwort]';
+          } else if (message.interactive?.type === 'list_reply') {
+            messageBody = message.interactive.list_reply?.title || '[Listen-Auswahl]';
+          }
+          break;
+        default:
+          messageBody = `[${messageType}]`;
+      }
 
-      const companiesSnapshot = await db!.collection('companies').get();
-
+      // Finde Company über phoneNumberId
+      const companiesSnapshot = await db.collection('companies').get();
+      
       for (const companyDoc of companiesSnapshot.docs) {
-        const customersSnapshot = await db!
+        const connectionDoc = await db
           .collection('companies')
           .doc(companyDoc.id)
-          .collection('customers')
-          .where('phone', '==', `+${from}`)
+          .collection('whatsappConnection')
+          .doc('current')
+          .get();
+
+        if (connectionDoc.exists) {
+          const connection = connectionDoc.data();
+          
+          // Prüfe ob diese Nachricht für diese Company ist
+          if (connection?.phoneNumberId === phoneNumberId) {
+            const customerPhone = `+${from}`;
+            
+            // Prüfe ob Kunde in customers-Collection existiert
+            let customerId: string | null = null;
+            let customerName = contactName || null;
+            
+            const customersSnapshot = await db
+              .collection('companies')
+              .doc(companyDoc.id)
+              .collection('customers')
+              .where('phone', '==', customerPhone)
+              .limit(1)
+              .get();
+
+            if (!customersSnapshot.empty) {
+              const customer = customersSnapshot.docs[0];
+              customerId = customer.id;
+              // Nutze gespeicherten Namen, falls vorhanden
+              customerName = customer.data().name || contactName || null;
+            }
+
+            // Speichere Nachricht in Firestore
+            await db
+              .collection('companies')
+              .doc(companyDoc.id)
+              .collection('whatsappMessages')
+              .add({
+                messageId,
+                customerPhone,
+                customerId,
+                customerName,
+                waId: waId || from,
+                direction: 'inbound',
+                status: 'delivered',
+                body: messageBody,
+                messageType,
+                mediaId,
+                mediaUrl,
+                companyId: companyDoc.id,
+                phoneNumberId,
+                timestamp: timestamp ? new Date(parseInt(timestamp) * 1000) : new Date(),
+                createdAt: new Date(),
+              });
+
+            // Aktualisiere oder erstelle WhatsApp-Kontakt
+            await db
+              .collection('companies')
+              .doc(companyDoc.id)
+              .collection('whatsappContacts')
+              .doc(waId || from)
+              .set({
+                phone: customerPhone,
+                waId: waId || from,
+                name: customerName,
+                customerId,
+                lastMessageAt: new Date(),
+                updatedAt: new Date(),
+              }, { merge: true });
+
+            break;
+          }
+        }
+      }
+    }
+
+    // Verarbeite Status-Updates (sent, delivered, read)
+    if (value?.statuses && value.statuses.length > 0) {
+      const status = value.statuses[0];
+      const messageId = status.id;
+      const newStatus = status.status; // sent, delivered, read, failed
+      const recipientId = status.recipient_id;
+      const phoneNumberId = value.metadata?.phone_number_id;
+
+      // Finde und aktualisiere die Nachricht
+      const companiesSnapshot = await db.collection('companies').get();
+      
+      for (const companyDoc of companiesSnapshot.docs) {
+        const messagesSnapshot = await db
+          .collection('companies')
+          .doc(companyDoc.id)
+          .collection('whatsappMessages')
+          .where('messageId', '==', messageId)
           .limit(1)
           .get();
 
-        if (!customersSnapshot.empty) {
-          const customer = customersSnapshot.docs[0];
-
-          await db!
-            .collection('companies')
-            .doc(companyDoc.id)
-            .collection('whatsappMessages')
-            .add({
-              messageId,
-              customerPhone: `+${from}`,
-              customerId: customer.id,
-              customerName: customer.data().name,
-              direction: 'inbound',
-              status: 'delivered',
-              body: text,
-              companyId: companyDoc.id,
-              createdAt: new Date(),
-            });
-
+        if (!messagesSnapshot.empty) {
+          await messagesSnapshot.docs[0].ref.update({
+            status: newStatus,
+            statusUpdatedAt: new Date(),
+          });
           break;
         }
       }
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[WhatsApp Webhook]', error);
+  } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

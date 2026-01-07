@@ -70,8 +70,6 @@ export async function POST(request: NextRequest) {
           status: 'active'
         });
 
-      console.log(`[WhatsApp] Credentials saved for company ${companyId}`);
-
       return NextResponse.json({
         success: true,
         message: 'WhatsApp erfolgreich verbunden!',

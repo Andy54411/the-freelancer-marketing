@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, User, LogOut, Settings, Star, Clock, FileUser, Mail } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Star, Clock, FileUser, Mail, CreditCard, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import React, { Suspense, useEffect } from 'react';
 import LoginPopup from '@/components/LoginPopup';
@@ -65,8 +65,28 @@ export const HeroHeader = () => {
 
   const menuItemsAfterDropdown = [
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
-    { name: 'Preise', href: '/webmail/pricing', labelKey: 'nav.pricing' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
+  ];
+
+  const pricingItems = [
+    { 
+      name: 'Alle Preise', 
+      href: '/pricing', 
+      description: 'Übersicht aller Taskilo-Produkte',
+      icon: CreditCard
+    },
+    { 
+      name: 'Webmail-Preise', 
+      href: '/pricing/webmail', 
+      description: 'E-Mail-Postfächer & Domain-Pakete',
+      icon: Mail
+    },
+    { 
+      name: 'Business-Module', 
+      href: '/pricing/business', 
+      description: 'Premium-Module für Unternehmen',
+      icon: Building2
+    },
   ];
 
   const businessSolutionsItems = [
@@ -298,6 +318,39 @@ export const HeroHeader = () => {
                   </NavigationMenuList>
                 </NavigationMenu>
 
+                {/* Preise Dropdown */}
+                <NavigationMenu>
+                  <NavigationMenuList>
+                    <NavigationMenuItem>
+                      <NavigationMenuTrigger className="bg-transparent text-white! hover:text-white! hover:bg-white/10 focus:bg-white/10 data-[state=open]:bg-white/10 data-[state=open]:text-white! font-medium drop-shadow-md data-active:text-white!">
+                        Preise
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[300px] gap-2 p-3 bg-white">
+                          {pricingItems.map((item) => (
+                            <li key={item.name}>
+                              <NavigationMenuLink asChild>
+                                <Link
+                                  href={item.href}
+                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-teal-50 hover:text-[#14ad9f] focus:bg-teal-50 focus:text-[#14ad9f]"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4 text-[#14ad9f]" />
+                                    <div className="text-sm font-medium leading-none text-gray-900">{item.name}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-sm leading-snug text-gray-600 mt-1">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  </NavigationMenuList>
+                </NavigationMenu>
+
                 {menuItemsAfterDropdown.map((item, i) => (
                   <Link
                     key={i}
@@ -399,6 +452,24 @@ export const HeroHeader = () => {
                     <p className="text-sm font-semibold text-muted-foreground mb-2">Unternehmenslösungen</p>
                     <ul className="pl-4 space-y-2">
                       {businessSolutionsItems.map((item, i) => (
+                        <li key={i}>
+                          <Link
+                            href={item.href}
+                            className="flex items-center gap-2 text-foreground hover:text-[#14ad9f] font-medium transition"
+                          >
+                            <item.icon className="h-4 w-4 text-[#14ad9f]" />
+                            {item.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                  
+                  {/* Preise Section */}
+                  <li>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">Preise</p>
+                    <ul className="pl-4 space-y-2">
+                      {pricingItems.map((item, i) => (
                         <li key={i}>
                           <Link
                             href={item.href}
