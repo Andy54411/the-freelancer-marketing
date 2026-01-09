@@ -16,20 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FileText,
-  Calendar,
-  MapPin,
   Clock,
   Euro,
-  User,
-  Phone,
-  Mail,
-  MessageSquare,
   CheckCircle,
   Loader2,
   AlertCircle,
@@ -199,7 +193,9 @@ export default function RequestQuoteModal({
           try {
             const token = await firebaseUser.getIdToken();
             headers['Authorization'] = `Bearer ${token}`;
-          } catch (error) {}
+          } catch {
+            // Silent error handling
+          }
         } else {
         }
 
@@ -217,7 +213,7 @@ export default function RequestQuoteModal({
 
       setStep('success');
       toast.success('Angebot erfolgreich angefragt!');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
     } finally {
       setLoading(false);

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db, isFirebaseAvailable } from '@/firebase/server';
+import { replaceWhatsAppVariables, validatePlaceholderData } from '@/lib/whatsapp-variable-replacer';
+import { hasCustomerOptedIn, generateOptInMessage } from '@/lib/whatsapp-dsgvo';
 
 const requestSchema = z
   .object({
@@ -10,6 +12,29 @@ const requestSchema = z
     template: z.string().optional(),
     customerId: z.string().optional(),
     customerName: z.string().optional(),
+    invoiceId: z.string().optional(),
+    quoteId: z.string().optional(),
+    appointmentId: z.string().optional(),
+    templateId: z.string().optional(),
+    skipDsgvoCheck: z.boolean().optional(),
+    // Termin-Daten für Variablen-Ersetzung
+    appointmentData: z.object({
+      title: z.string().optional(),
+      date: z.string().optional(),
+      time: z.string().optional(),
+      endTime: z.string().optional(),
+      location: z.string().optional(),
+      description: z.string().optional(),
+    }).optional(),
+    // Angebots-Daten für Variablen-Ersetzung
+    quoteData: z.object({
+      quoteNumber: z.string().optional(),
+      number: z.string().optional(),
+      documentDate: z.string().optional(),
+      validUntil: z.string().optional(),
+      totalAmount: z.number().optional(),
+      netAmount: z.number().optional(),
+    }).optional(),
   })
   .refine(data => data.message || data.template, {
     message: 'Entweder message oder template muss angegeben werden',
@@ -35,11 +60,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { companyId, to, message, template, customerId, customerName } =
-      requestSchema.parse(body);
+    const { 
+      companyId, 
+      to, 
+      message, 
+      template, 
+      customerId, 
+      customerName, 
+      invoiceId, 
+      quoteId, 
+      appointmentId, 
+      templateId, 
+      skipDsgvoCheck, 
+      appointmentData,
+      quoteData 
+    } = requestSchema.parse(body);
 
     // Hole KUNDEN-spezifische WhatsApp Connection
-    // Jeder Kunde hat seinen eigenen Access Token + Phone Number ID!
     const connectionDoc = await db
       .collection('companies')
       .doc(companyId)
@@ -75,15 +112,149 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Nutze den Access Token DES KUNDEN (nicht von Taskilo!)
     const accessToken = connection.accessToken;
     const phoneNumberId = connection.phoneNumberId;
 
     // Formatiere Telefonnummer (nur Ziffern)
     const cleanPhone = to.replace(/\D/g, '');
 
+    // DSGVO Opt-In Check (wenn Template DSGVO-pflichtig ist)
+    let isDsgvoTemplate = false;
+    
+    if (templateId) {
+      const templateDoc = await db
+        .collection('companies')
+        .doc(companyId)
+        .collection('whatsappTemplates')
+        .doc(templateId)
+        .get();
+      
+      if (templateDoc.exists) {
+        const templateData = templateDoc.data();
+        isDsgvoTemplate = templateData?.isDsgvoTemplate || false;
+      }
+    }
+    
+    // Wenn DSGVO-Template und Kunde hat noch nicht zugestimmt
+    if (isDsgvoTemplate && !skipDsgvoCheck) {
+      const hasOptedIn = await hasCustomerOptedIn(companyId, `+${cleanPhone}`);
+      
+      if (!hasOptedIn) {
+        // Sende zuerst Opt-In Anfrage
+        const companyDoc = await db.collection('companies').doc(companyId).get();
+        const companyData = companyDoc.data();
+        const companyName = companyData?.name || companyData?.companyName || 'Ihr Unternehmen';
+        
+        const optInMessage = generateOptInMessage(companyName);
+        
+        // Sende Opt-In Request
+        const optInPayload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'text',
+          text: {
+            preview_url: false,
+            body: optInMessage,
+          },
+        };
+        
+        const optInResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(optInPayload),
+        });
+        
+        if (!optInResponse.ok) {
+          const errorData = await optInResponse.json();
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Fehler beim Senden der Opt-In Anfrage',
+              details: errorData.error?.message || 'WhatsApp API Fehler',
+              timestamp: new Date().toISOString(),
+            },
+            { status: 500 }
+          );
+        }
+        
+        const optInResponseData = await optInResponse.json();
+        const optInMessageId = optInResponseData.messages?.[0]?.id;
+        
+        // Speichere Opt-In Anfrage in Firestore
+        await db
+          .collection('companies')
+          .doc(companyId)
+          .collection('whatsappMessages')
+          .add({
+            companyId,
+            customerId: customerId || null,
+            customerName: customerName || null,
+            customerPhone: `+${cleanPhone}`,
+            direction: 'outbound',
+            from: phoneNumberId,
+            to: cleanPhone,
+            body: optInMessage,
+            messageId: optInMessageId,
+            status: 'sent',
+            messageType: 'opt_in_request',
+            isDsgvoOptInRequest: true,
+            createdAt: new Date(),
+          });
+        
+        return NextResponse.json({
+          success: true,
+          messageId: optInMessageId,
+          message: 'DSGVO Opt-In Anfrage gesendet. Kunde muss zuerst mit START antworten.',
+          requiresOptIn: true,
+        });
+      }
+    }
+
+    // Ersetze Variablen in der Nachricht mit echten Daten
+    let processedMessage = message || '';
+    
+    if (message) {
+      // Validiere, ob alle benötigten Daten vorhanden sind
+      const validation = validatePlaceholderData(message, {
+        companyId,
+        customerId,
+        invoiceId,
+        quoteId,
+        appointmentId,
+        appointmentData,
+        quoteData,
+      });
+      
+      if (!validation.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Fehlende Daten für Variablen',
+            details: `Folgende Daten fehlen: ${validation.missing.join(', ')}`,
+            timestamp: new Date().toISOString(),
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Ersetze Platzhalter mit echten Daten
+      processedMessage = await replaceWhatsAppVariables(message, {
+        companyId,
+        customerId,
+        invoiceId,
+        quoteId,
+        appointmentId,
+        appointmentData,
+        quoteData,
+      });
+    }
+
     // Erstelle Message Payload
-    const messagePayload: any = {
+    const messagePayload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: cleanPhone,
@@ -98,15 +269,15 @@ export async function POST(request: NextRequest) {
       };
     }
     // Text Message (nur innerhalb 24h Session Window nach Kundenkontakt)
-    else if (message) {
+    else if (processedMessage) {
       messagePayload.type = 'text';
       messagePayload.text = {
         preview_url: false,
-        body: message,
+        body: processedMessage,
       };
     }
 
-    // Sende Nachricht via Meta Cloud API mit KUNDEN's Token
+    // Sende an Meta WhatsApp API
     const sendResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
       method: 'POST',
       headers: {
@@ -118,7 +289,6 @@ export async function POST(request: NextRequest) {
 
     if (!sendResponse.ok) {
       const errorData = await sendResponse.json();
-
       return NextResponse.json(
         {
           success: false,
@@ -133,7 +303,7 @@ export async function POST(request: NextRequest) {
     const responseData = await sendResponse.json();
     const messageId = responseData.messages?.[0]?.id;
 
-    // Speichere Nachricht in Firestore
+    // Speichere Nachricht in Firestore (mit ersetzten Variablen)
     await db
       .collection('companies')
       .doc(companyId)
@@ -146,11 +316,15 @@ export async function POST(request: NextRequest) {
         direction: 'outbound',
         from: phoneNumberId,
         to: cleanPhone,
-        body: message || `[Template: ${template}]`,
+        body: processedMessage || `[Template: ${template}]`,
+        originalMessage: message,
         messageId,
         status: 'sent',
         messageType: template ? 'template' : 'text',
         templateName: template || null,
+        invoiceId: invoiceId || null,
+        quoteId: quoteId || null,
+        appointmentId: appointmentId || null,
         createdAt: new Date(),
       });
 

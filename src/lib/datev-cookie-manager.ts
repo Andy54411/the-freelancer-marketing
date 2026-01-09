@@ -55,7 +55,7 @@ export class DatevCookieManager {
         `Secure=${window.location.protocol === 'https:'}`;
 
       document.cookie = cookieValue;
-    } catch (error) {
+    } catch {
       throw new Error('Failed to save DATEV token data');
     }
   }
@@ -82,7 +82,7 @@ export class DatevCookieManager {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -114,7 +114,7 @@ export class DatevCookieManager {
 
       // Set cookie with past expiration date to delete it
       document.cookie = `${cookieName}=; Max-Age=0; Path=/; SameSite=Lax`;
-    } catch (error) {}
+    } catch {}
   }
 
   /**
@@ -157,7 +157,7 @@ export class DatevCookieManager {
       });
 
       return true;
-    } catch (error) {
+    } catch {
       // Clear invalid tokens
       this.clearTokens(companyId);
       return false;

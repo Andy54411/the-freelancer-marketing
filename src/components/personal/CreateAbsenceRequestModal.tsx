@@ -123,14 +123,14 @@ export function CreateAbsenceRequestModal({
         reason: '',
         notes: '',
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Erstellen des Abwesenheitsantrags');
     } finally {
       setLoading(false);
     }
   };
 
-  const getTypeLabel = (type: AbsenceRequest['type']) => {
+  const _getTypeLabel = (type: AbsenceRequest['type']) => {
     const labels = {
       VACATION: 'Urlaub',
       SICK: 'Krankheit',

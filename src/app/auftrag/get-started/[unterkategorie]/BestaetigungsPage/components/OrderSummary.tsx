@@ -3,7 +3,6 @@
 import {
   Calendar as FiCalendar,
   Clock as FiClock,
-  User as FiUser,
   Truck as FiTruck,
   Loader2 as FiLoader,
   Edit3,

@@ -17,7 +17,7 @@ interface EmailSettingsCardProps {
 }
 
 export function EmailSettingsCard({ 
-  companyId, 
+  companyId: _companyId, 
   settings, 
   onSaveSettings 
 }: EmailSettingsCardProps) {

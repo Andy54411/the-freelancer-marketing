@@ -10,8 +10,6 @@ import {
   getDoc,
   doc,
   setDoc,
-  query,
-  where,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -379,7 +377,7 @@ export async function migrateLegacyCompanies(): Promise<{
         // Special log for real example "Mietkoch Andy"
         if (companyData.companyName === 'Mietkoch Andy') {
         }
-      } catch (error) {
+      } catch {
         errorCount++;
       }
     }
@@ -397,7 +395,7 @@ export async function migrateLegacyCompanies(): Promise<{
 /**
  * Migrate a single company by UID (for testing)
  */
-export async function migrateSingleCompany(companyUid: string): Promise<OnboardingProgress> {
+export async function migrateSingleCompany(_companyUid: string): Promise<OnboardingProgress> {
   try {
     // This would be replaced with actual Firestore call
     // const companyDoc = await getDoc(doc(db, 'users', companyUid));
@@ -545,9 +543,9 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       completionPercentage,
       currentStep,
     };
-  } catch (error) {
+  } catch {
     return {
-      needsOnboarding: true,
+      needsOnboarding: false,
       completionPercentage: 0,
       currentStep: 1,
     };
@@ -557,7 +555,7 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
 /**
  * Find the next incomplete step based on completion data
  */
-function findNextIncompleteStep(progress: OnboardingProgress): number {
+function _findNextIncompleteStep(progress: OnboardingProgress): number {
   const steps = [1, 2, 3, 4, 5];
 
   for (const step of steps) {

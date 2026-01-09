@@ -157,7 +157,7 @@ export default function MarketplaceProposalModal({
       setProposalMessage('');
       setEstimatedDuration('');
       setAvailableDate('');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Abgeben des Angebots');
     } finally {
       setIsSubmitting(false);
@@ -305,7 +305,7 @@ export default function MarketplaceProposalModal({
                   />
                   {!contentSafetyResult.isSafe && (
                     <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                       <div className="text-sm text-red-700">
                         <p className="font-medium">Kontaktdaten erkannt</p>
                         <p className="mt-1">

@@ -9,7 +9,6 @@ import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { detectDocumentType, getTranslatedDocumentTypeConfig } from '@/lib/document-utils';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface NeutralTemplateProps {
   data: ProcessedPDFData;
@@ -32,7 +31,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   // 📋 KUNDENNUMMER - Bereits aus LivePreviewModal angereichert
-  const companyId = (data as any).companyId || '';
+  const _companyId = (data as any).companyId || '';
   const displayCustomerNumber = data.customerNumber;
 
   // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
@@ -41,7 +40,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   const config = getTranslatedDocumentTypeConfig(detectedType, t, color);
 
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
-  const footerData = {
+  const _footerData = {
     companyName: (data as any).companyName,
     phoneNumber: (data as any).phoneNumber,
     email: (data as any).contactEmail,

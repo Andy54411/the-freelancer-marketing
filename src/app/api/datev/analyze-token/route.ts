@@ -5,9 +5,9 @@ import { getDatevCookieName } from '@/lib/datev-server-utils';
 /**
  * Analyze DATEV token in detail to debug "Token issued to another client"
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const companyId = searchParams.get('companyId');
 
     if (!companyId) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Could not decode token' });
     }
 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         const payload = JSON.parse(Buffer.from(accessTokenParts[1], 'base64url').toString());
         accessTokenDecoded = payload;
       }
-    } catch (e) {
+    } catch {
       // Not a JWT or decode failed
     }
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           idTokenDecoded = payload;
         }
       }
-    } catch (e) {
+    } catch {
       // ID token decode failed
     }
 

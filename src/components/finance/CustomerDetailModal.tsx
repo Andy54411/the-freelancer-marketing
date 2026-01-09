@@ -16,8 +16,6 @@ import { db } from '@/firebase/clients';
 import { Customer } from './AddCustomerModal';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { toast } from 'sonner';
-import { updateCustomerStats } from '@/utils/customerStatsUtils';
-import { useAuth } from '@/contexts/AuthContext';
 import { CustomerDetailModal as CustomerDetailModalComponent } from './customer-detail/CustomerDetailModal';
 
 interface CustomerDetailModalProps {
@@ -36,7 +34,7 @@ export function CustomerDetailModal({
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [syncingStats, setSyncingStats] = useState(false);
+  const [_syncingStats, setSyncingStats] = useState(false);
   const [calculatedStats, setCalculatedStats] = useState<{
     totalAmount: number;
     totalInvoices: number;
@@ -139,7 +137,7 @@ export function CustomerDetailModal({
 
       toast.success('Statistiken erfolgreich synchronisiert');
       onCustomerUpdated?.();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Synchronisieren der Statistiken');
     } finally {
       setSyncingStats(false);
@@ -251,7 +249,7 @@ export function CustomerDetailModal({
       setInvoices(loadedInvoices);
       setCalendarEvents(loadedCalendarEvents);
       calculateCustomerStats(loadedInvoices, loadedCalendarEvents);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Rechnungshistorie');
     } finally {
       setLoading(false);
@@ -315,7 +313,7 @@ export function CustomerDetailModal({
         }
       } else {
       }
-    } catch (error) {}
+    } catch { }
   };
 
   const handleEditContact = () => {

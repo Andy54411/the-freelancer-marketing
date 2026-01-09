@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { storage, auth, admin } from '@/firebase/server';
+import { NextResponse } from 'next/server';
+import { storage, admin } from '@/firebase/server';
 
 export async function GET(
-  request: NextRequest,
+  _request: Request,
   { params }: { params: Promise<{ uid: string; expenseId: string }> }
 ) {
   try {
@@ -111,10 +111,10 @@ export async function GET(
         url: signedUrl,
         expiresIn: 3600,
       });
-    } catch (storageError) {
+    } catch {
       return NextResponse.json({ error: 'Storage access failed' }, { status: 500 });
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

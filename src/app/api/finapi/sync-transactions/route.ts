@@ -10,7 +10,7 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, credentialType } = body;
+    const { userId } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });

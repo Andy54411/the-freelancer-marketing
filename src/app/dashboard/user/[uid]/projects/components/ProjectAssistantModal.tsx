@@ -10,9 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Bot, User, Loader2, CheckCircle, ArrowRight, Circle } from 'lucide-react';
+import { Send, Bot, User, Loader2, CheckCircle, Circle } from 'lucide-react';
 import { Gemini } from '@/components/logos';
 import { toast } from 'sonner';
 
@@ -146,7 +145,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       } else {
         throw new Error(result.error || 'Fehler beim Generieren der Fragen');
       }
-    } catch (error) {
+    } catch {
       addMessage(
         'Entschuldigung, es gab einen Fehler beim Analysieren Ihres Projekts. Können Sie es noch einmal versuchen?',
         'bot'
@@ -216,7 +215,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         );
         setStep('recommendations');
       }
-    } catch (error) {
+    } catch {
       addMessage(
         'Es gab einen Fehler beim Suchen nach Dienstleistern, aber wir können trotzdem Ihr Projekt erstellen.',
         'bot'
@@ -297,7 +296,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       } else {
         throw new Error(result.error || 'Fehler beim Erstellen der Projektbeschreibung');
       }
-    } catch (error) {
+    } catch {
       addMessage(
         'Es gab einen Fehler beim Erstellen Ihres Projekts. Bitte versuchen Sie es noch einmal.',
         'bot'
@@ -336,7 +335,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         // Nächste Frage oder Projekt erstellen
         handleNextQuestion();
       }
-    } catch (error) {
+    } catch {
       addMessage('Es gab einen Fehler. Bitte versuchen Sie es noch einmal.', 'bot');
     } finally {
       setLoading(false);

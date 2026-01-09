@@ -6,12 +6,9 @@ import {
   Calendar,
   CalendarDays,
   Clock,
-  Users,
-  AlertCircle,
   CheckCircle,
   XCircle,
   Plus,
-  Filter,
   Download,
   Search,
   RefreshCw,
@@ -25,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -138,12 +135,12 @@ export default function PersonalAbsencePage() {
         );
 
         setVacationBalances(balances);
-      } catch (error) {
+      } catch {
         // Keine Mock-Daten verwenden - zeige leere Listen für echte Daten
         setAbsenceRequests([]);
         setVacationBalances([]);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Abwesenheitsdaten');
     } finally {
       setLoading(false);
@@ -203,7 +200,7 @@ export default function PersonalAbsencePage() {
 
       setAbsenceRequests(prev => [createdRequest, ...prev]);
       toast.success('Abwesenheitsantrag erstellt');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Erstellen des Antrags');
     }
   };
@@ -238,7 +235,7 @@ export default function PersonalAbsencePage() {
 
       // Lade Daten neu um Urlaubssalden zu aktualisieren
       await loadAbsenceData();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Verarbeiten des Antrags');
     }
   };
@@ -254,7 +251,7 @@ export default function PersonalAbsencePage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Abwesenheitsdaten exportiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Export');
     }
   };

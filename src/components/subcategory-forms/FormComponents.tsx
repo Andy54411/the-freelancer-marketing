@@ -184,7 +184,7 @@ export interface FormSubmitButtonProps {
 export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
   isValid,
   subcategory,
-  loadingText = 'Wird verarbeitet...',
+  // loadingText Parameter entfernt da unbenutzt
   buttonText = 'Weiter zur Adresseingabe',
   formData,
   hideSubmitButton = false,

@@ -32,7 +32,7 @@ import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 
 // Debug-Logging für Hydration
-const mailHeaderLog = (step: string, data?: Record<string, unknown>) => {
+const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }
@@ -278,7 +278,7 @@ export function MailHeader({
           </button>
           
           {/* Apps Grid */}
-          <AppLauncher isDark={isDark} companyId={companyId} />
+          <AppLauncher isDarkMode={isDark} companyId={companyId} />
           
           {/* Avatar */}
           <DropdownMenu>

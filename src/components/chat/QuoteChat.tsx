@@ -15,8 +15,6 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
-  where,
-  getDocs,
   getDoc,
 } from 'firebase/firestore';
 import ChatNotificationBell from './ChatNotificationBell';
@@ -54,8 +52,8 @@ interface QuoteChatProps {
 
 export default function QuoteChat({
   quoteId,
-  customerId,
-  providerId,
+  customerId: _customerId,
+  providerId: _providerId,
   customerName,
   providerName,
   currentUserType,
@@ -176,7 +174,7 @@ export default function QuoteChat({
           setTimeout(() => markMessagesAsRead(), 1000); // Kurze Verzögerung für bessere UX
         }
       },
-      error => {
+      () => {
         setIsConnected(false);
       }
     );
@@ -216,7 +214,9 @@ export default function QuoteChat({
       });
 
       await Promise.all(updatePromises);
-    } catch (error) {}
+    } catch {
+      // Error handling silently
+    }
   };
 
   // Nachricht senden - optimiert für Real-time
@@ -262,7 +262,7 @@ export default function QuoteChat({
       };
 
       await addDoc(messagesRef, messageData);
-    } catch (error) {
+    } catch {
       // Nachricht wieder in Input setzen bei Fehler
       setNewMessage(messageText);
     } finally {
@@ -292,7 +292,7 @@ export default function QuoteChat({
 
   if (!isExpanded) {
     return (
-      <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-lg shadow-lg border-2 border-[#14ad9f] p-4 hover:shadow-xl transition-all duration-200 cursor-pointer">
+      <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-lg shadow-lg border-2 border-[#14ad9f] p-4 hover:shadow-xl transition-all duration-200 cursor-pointer">
         <button
           onClick={() => setIsExpanded(true)}
           className="w-full flex items-center justify-between text-left group"
@@ -324,7 +324,7 @@ export default function QuoteChat({
   return (
     <div className="bg-white rounded-lg shadow-lg border border-[#14ad9f] overflow-hidden w-full max-w-none">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r from-[#14ad9f]/10 to-[#129488]/10">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r from-[#14ad9f]/10 to-taskilo-hover/10">
         <div className="flex items-center gap-3">
           <div>
             <h3 className="text-lg font-bold text-gray-900">

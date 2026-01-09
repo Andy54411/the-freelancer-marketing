@@ -7,11 +7,9 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Loader2,
   Upload,
@@ -32,13 +30,11 @@ import {
   Image as ImageIcon,
   MoveVertical,
   Eye,
-  Building2,
   Check,
   Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { storage, db } from '@/firebase/clients';
-import { categories } from '@/lib/categories';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc } from 'firebase/firestore';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -367,7 +363,7 @@ export function JobCreationForm({ companyId, companyName }: JobCreationFormProps
         throw new Error('Fehler beim Erstellen der Stellenanzeige');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
       toast.success('Stellenanzeige erfolgreich erstellt');
       router.push(`/dashboard/company/${companyId}/recruiting`);
       router.refresh();

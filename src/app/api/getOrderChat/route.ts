@@ -7,16 +7,15 @@ async function getFirebaseServices() {
     const firebaseAdmin = await import('firebase-admin');
 
     // Check if app is already initialized
-    let app;
     try {
-      app = firebaseAdmin.app();
-    } catch (appError) {
+      firebaseAdmin.app();
+    } catch {
       if (
         process.env.FIREBASE_PROJECT_ID &&
         process.env.FIREBASE_PRIVATE_KEY &&
         process.env.FIREBASE_CLIENT_EMAIL
       ) {
-        app = firebaseAdmin.initializeApp({
+        firebaseAdmin.initializeApp({
           credential: firebaseAdmin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -24,7 +23,7 @@ async function getFirebaseServices() {
           }),
         });
       } else if (process.env.FIREBASE_PROJECT_ID) {
-        app = firebaseAdmin.initializeApp({
+        firebaseAdmin.initializeApp({
           credential: firebaseAdmin.credential.applicationDefault(),
           projectId: process.env.FIREBASE_PROJECT_ID,
         });
@@ -37,8 +36,8 @@ async function getFirebaseServices() {
     const db = firebaseAdmin.firestore();
 
     return { auth, db };
-  } catch (error: any) {
-    throw error;
+  } catch (err: unknown) {
+    throw err;
   }
 }
 
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -115,7 +114,7 @@ export async function POST(request: NextRequest) {
       success: true,
       messages,
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

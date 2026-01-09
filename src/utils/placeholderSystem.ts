@@ -268,8 +268,7 @@ export function replacePlaceholders(
         // Falls alles fehlschlägt, verwende den ursprünglichen String
         documentDateFormatted = String(data.documentDate);
       }
-    } catch (e) {
-      console.warn('Date parsing failed:', e);
+    } catch {
       documentDateFormatted = String(data.documentDate); // Fallback: ursprünglichen String verwenden
     }
   }
@@ -307,8 +306,7 @@ export function replacePlaceholders(
       } else {
         formattedDueDate = String(gueltigBis);
       }
-    } catch (e) {
-      console.warn('Invalid date for GUELTIG_BIS:', gueltigBis);
+    } catch {
       formattedDueDate = String(gueltigBis);
     }
   }
@@ -329,7 +327,7 @@ export function replacePlaceholders(
       } else {
         formattedServiceDate = leistungsDatum; // Falls es schon ein String ist
       }
-    } catch (e) {
+    } catch {
       formattedServiceDate = leistungsDatum; // Fallback: ursprünglichen String verwenden
     }
   }

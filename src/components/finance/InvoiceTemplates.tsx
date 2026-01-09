@@ -106,8 +106,8 @@ export interface InvoiceTemplateRendererProps {
 export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = ({
   template,
   data,
-  preview = false,
-  onRender,
+  preview: _preview = false,
+  onRender: _onRender,
   companySettings,
   customizations = { showLogo: true },
   pageMode = 'multi',

@@ -1,11 +1,13 @@
 // /Users/andystaudinger/Tasko/firebase_functions/src/callable_orders.ts
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb, getStripeInstance } from "./helpers";
-import { defineSecret } from "firebase-functions/params";
+import { getDb } from "./helpers";
+// STRIPE ENTFERNT (Januar 2026) - Zahlungen laufen über Revolut/Escrow
+// import { defineSecret } from "firebase-functions/params";
 import { FieldValue } from "firebase-admin/firestore";
 
-const STRIPE_SECRET_KEY_ORDERS = defineSecret("STRIPE_SECRET_KEY");
+// STRIPE ENTFERNT (Januar 2026)
+// const STRIPE_SECRET_KEY_ORDERS = defineSecret("STRIPE_SECRET_KEY");
 
 interface OrderActionPayload {
     orderId: string;
@@ -188,6 +190,7 @@ export const acceptOrder = onCall(
 
 /**
  * Lehnt einen bezahlten Auftrag ab und erstattet dem Kunden den Betrag zurück.
+ * HINWEIS: Stripe wurde entfernt (Januar 2026) - Rückerstattungen laufen über Revolut/Escrow
  * Ändert den Status zu 'abgelehnt_vom_anbieter'.
  */
 export const rejectOrder = onCall(
@@ -213,14 +216,12 @@ export const rejectOrder = onCall(
         }
 
         const { orderId, reason } = request.data;
-        const providerUid = request.auth.uid; // Capture UID
+        const providerUid = request.auth.uid;
         if (!orderId || !reason) {
             throw new HttpsError('invalid-argument', 'The function must be called with an "orderId" and a "reason".');
         }
 
         const db = getDb();
-        const stripeKey = STRIPE_SECRET_KEY_ORDERS.value();
-        const stripe = getStripeInstance(stripeKey);
         const orderRef = db.collection('auftraege').doc(orderId);
 
         try {
@@ -238,55 +239,45 @@ export const rejectOrder = onCall(
                 throw new HttpsError('failed-precondition', `Order cannot be rejected in its current state: ${orderData?.status}.`);
             }
 
-            const paymentIntentId = orderData?.paymentIntentId;
-            if (!paymentIntentId) {
-                throw new HttpsError('failed-precondition', 'Payment Intent ID is missing, cannot process refund.');
-            }
+            // STRIPE ENTFERNT - Rückerstattung erfolgt über Revolut/Escrow System
+            // Hier wird nur der Status aktualisiert, die Rückerstattung wird manuell oder über Escrow abgewickelt
+            logger.info(`[rejectOrder] Marking order as rejected (Refund via Revolut/Escrow)`);
 
-            // Create a refund via Stripe
-            logger.info(`[rejectOrder] Creating refund for Payment Intent: ${paymentIntentId}`);
-            const refund = await stripe.refunds.create({
-                payment_intent: paymentIntentId,
-            });
-            logger.info(`[rejectOrder] Stripe refund created: ${refund.id}`);
-
-            // Get a reference to the chat document. The chat ID is the same as the order ID.
+            // Get a reference to the chat document
             const chatDocRef = db.collection('chats').doc(orderId);
-
-            // Create a batch to update both documents atomically.
             const batch = db.batch();
 
-            // Update the order document
+            // Update the order document - ohne Stripe refundId
             batch.update(orderRef, {
                 status: 'abgelehnt_vom_anbieter',
                 rejectionReason: reason,
-                refundId: refund.id,
+                refundMethod: 'REVOLUT_ESCROW', // Neue Methode statt Stripe
                 lastUpdatedAt: FieldValue.serverTimestamp()
             });
 
-            // WICHTIG: UIDs beider Teilnehmer aus dem Auftrag holen.
             const customerId = orderData?.customerFirebaseUid || orderData?.kundeId;
             const providerId = orderData?.selectedAnbieterId;
 
-            // Lock the corresponding chat. Use set with merge to create the doc if it doesn't exist.
+            // Lock the corresponding chat
             batch.set(chatDocRef, {
                 isLocked: true,
                 lastUpdated: FieldValue.serverTimestamp(),
-                users: [customerId, providerId].filter(Boolean) // Stellt sicher, dass die UIDs für die Sicherheitsregeln vorhanden sind.
+                users: [customerId, providerId].filter(Boolean)
             }, { merge: true });
 
             await batch.commit();
 
-            logger.info(`[rejectOrder] Order ${orderId} successfully rejected, refunded, and chat locked.`);
-            return { success: true, message: 'Auftrag erfolgreich abgelehnt und Rückerstattung eingeleitet.' };
-
-        } catch (error: any) {
+            logger.info(`[rejectOrder] Order ${orderId} successfully rejected. Refund will be processed via Revolut/Escrow.`);
+            return { 
+                success: true, 
+                message: 'Auftrag erfolgreich abgelehnt. Rückerstattung wird über Revolut/Escrow abgewickelt.',
+                refundMethod: 'REVOLUT_ESCROW'
+            };
+        } catch (error: unknown) {
             logger.error(`[rejectOrder] Failed for order ${orderId}:`, error);
-            if (error.type === 'StripeInvalidRequestError') {
-                throw new HttpsError('internal', `Stripe error: ${error.message}`);
-            }
             if (error instanceof HttpsError) throw error;
-            throw new HttpsError('internal', 'An error occurred while rejecting the order.', error.message);
+            const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+            throw new HttpsError('internal', `Fehler beim Ablehnen des Auftrags: ${errorMessage}`);
         }
     }
 );

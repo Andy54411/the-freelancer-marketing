@@ -30,7 +30,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       });
 
       autocompleteRef.current = autocomplete;
-    } catch (error) {}
+    } catch {}
   }, []);
 
   // Update profile location from selected place
@@ -100,7 +100,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
         }
         setIsLoadingPlaces(false);
       });
-    } catch (error) {
+    } catch {
       setIsLoadingPlaces(false);
     }
   };

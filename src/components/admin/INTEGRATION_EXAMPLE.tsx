@@ -1,6 +1,8 @@
 // Demo-Anfragen Integration - Beispiel für Admin Dashboard
 // Füge diesen Code zu deiner Admin Dashboard Seite hinzu:
 
+import { DemoRequestsCard } from '@/components/admin/demo-requests-card';
+
 /*
 In /src/app/dashboard/admin/page.tsx:
 

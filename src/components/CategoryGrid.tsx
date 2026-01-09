@@ -178,7 +178,7 @@ const useCategoryData = () => {
         if (Object.keys(topSubcategories).length > 0) {
           setCategoryTags(prev => ({ ...prev, ...topSubcategories }));
         }
-      } catch (_error) {
+      } catch {
         // Statische Daten bleiben als Fallback
       } finally {
         setLoading(false);

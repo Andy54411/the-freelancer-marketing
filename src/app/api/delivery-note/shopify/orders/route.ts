@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       orders: data.orders,
       count: data.orders?.length || 0,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Shopify-Bestellungen' },
       { status: 500 }
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
       deliveryNoteId: deliveryNoteRef.id,
       message: 'Shopify-Bestellung erfolgreich in Lieferschein konvertiert',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Importieren der Shopify-Bestellung' },
       { status: 500 }

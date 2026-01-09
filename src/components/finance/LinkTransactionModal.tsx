@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Filter, FileText, Receipt, Plus } from 'lucide-react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { X, Search, Filter, FileText } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 
@@ -230,7 +230,7 @@ export default function LinkTransactionModal({
           if (daysDifference <= 30) {// Innerhalb von 30 Tagen
             score += (30 - daysDifference) / 30 * 20;
           }
-        } catch (error) {
+        } catch {
 
           // Ignore date parsing errors
         }}
@@ -312,7 +312,7 @@ export default function LinkTransactionModal({
     return baseDocuments;
   };
 
-  const getStatusBadge = (status: string) => {
+  const _getStatusBadge = (status: string) => {
     const config = {
       open: { color: 'bg-yellow-100 text-yellow-800', label: 'Offen' },
       paid: { color: 'bg-green-100 text-green-800', label: 'Bezahlt' },
@@ -419,7 +419,7 @@ export default function LinkTransactionModal({
                         const date = new Date(transaction.buchungstag);
                         if (isNaN(date.getTime())) return '---';
                         return date.toLocaleDateString('de-DE');
-                      } catch (error) {
+                      } catch {
                         return '---';
                       }
                     })()}

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'auth':
         // Generate OAuth URL and redirect to DATEV Sandbox
-        const { authUrl, codeVerifier, state, nonce } = generateDatevAuthUrl('test-company-123');
+        const { authUrl } = generateDatevAuthUrl('test-company-123');
 
         // Store PKCE data temporarily (in production, use secure storage)
         // For now, we'll store in the URL state parameter

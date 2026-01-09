@@ -13,7 +13,7 @@ export default function GlobalChatNotification({
   className = '',
   size = 'md',
 }: GlobalChatNotificationProps) {
-  const { totalUnreadCount, notifications } = useChatNotifications();
+  const { totalUnreadCount, notifications: _notifications } = useChatNotifications();
 
   if (totalUnreadCount === 0) return null;
 

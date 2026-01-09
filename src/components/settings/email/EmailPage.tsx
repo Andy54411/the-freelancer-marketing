@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, Settings, FileText, History, AlertCircle } from 'lucide-react';
-import { GmailConnectionCard } from './GmailConnectionCard';
 import { EmailProviderGrid } from './EmailProviderGrid';
 import { EmailTemplates } from './EmailTemplates';
 import { EmailSettingsCard } from './EmailSettingsCard';
@@ -29,7 +28,6 @@ interface EmailPageProps {
 
 export function EmailPage({ companyId }: EmailPageProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { user } = useAuth();
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
   const [webmailConfig, setWebmailConfig] = useState<WebmailConfig | null>(null);
@@ -90,7 +88,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
           const templates = await templatesResponse.json();
           setTemplates(templates);
         }
-      } catch (error) {
+      } catch {
         // Fehler beim Laden werden ignoriert
       } finally {
         setIsLoading(false);
@@ -117,7 +115,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
       if (response.ok) {
         setEmailConfig(null);
       }
-    } catch (error) {
+    } catch {
       // Fehler beim Trennen werden ignoriert
     }
   };
@@ -173,7 +171,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
       if (response.ok) {
         setWebmailConfig(null);
       }
-    } catch (error) {
+    } catch {
       // Fehler beim Trennen werden ignoriert
     }
   }, [companyId]);

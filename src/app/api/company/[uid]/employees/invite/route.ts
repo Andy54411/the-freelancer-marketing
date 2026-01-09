@@ -4,32 +4,6 @@ import { z } from 'zod';
 import { ResendEmailService } from '@/lib/resend-email-service';
 import { SeatService } from '@/services/subscription/SeatService';
 
-// Interface für LinkedCompany
-interface LinkedCompany {
-  companyId: string;
-  companyName: string;
-  role: string;
-  permissions: {
-    overview: boolean;
-    personal: boolean;
-    employees: boolean;
-    shiftPlanning: boolean;
-    timeTracking: boolean;
-    absences: boolean;
-    evaluations: boolean;
-    orders: boolean;
-    quotes: boolean;
-    invoices: boolean;
-    customers: boolean;
-    calendar: boolean;
-    workspace: boolean;
-    finance: boolean;
-    expenses: boolean;
-    inventory: boolean;
-    settings: boolean;
-  };
-}
-
 // Permissions Schema (wiederverwendbar)
 const permissionsSchema = z.object({
   overview: z.boolean().default(true),

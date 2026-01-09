@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     // Teste ob der aktuelle Token noch funktioniert
     let tokenStatus = 'unbekannt';
-    let tokenExpiry = null;
+    let tokenExpiry: string | null = null;
 
     try {
       const debugResponse = await fetch(

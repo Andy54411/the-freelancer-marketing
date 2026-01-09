@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
-    const credentialType = searchParams.get('credentialType') || 'sandbox';
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '100');
     const accountIds = searchParams.get('accountIds'); // Optional filter
@@ -120,10 +119,10 @@ export async function GET(request: NextRequest) {
             timestamp: new Date().toISOString(),
           });
         } else {
-          const errorText = await transactionsResponse.text();
+          const _errorText = await transactionsResponse.text();
         }
       }
-    } catch (finapiError: any) {}
+    } catch {}
 
     // For demo purposes, if we have accounts but no transactions,
     // show some sample transactions to demonstrate the UI

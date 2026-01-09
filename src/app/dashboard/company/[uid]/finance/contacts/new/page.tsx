@@ -23,8 +23,6 @@ import {
   Check,
   Building2,
   User,
-  Settings,
-  ChevronDown,
   X,
   Phone,
   Mail,
@@ -40,7 +38,6 @@ import {
 import { toast } from 'sonner';
 import { validateVATNumber } from '@/utils/vatValidation';
 import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
-import { CustomerService } from '@/services/customerService';
 import NewCategoryModal from '@/components/finance/NewCategoryModal';
 
 export interface ContactPerson {
@@ -245,7 +242,7 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+      const _viewportHeight = window.innerHeight;
       
       // Bestimme beste Position
       if (rect.right + 256 > viewportWidth) {
@@ -323,14 +320,14 @@ export default function ContactsPage() {
   const companyId = params?.uid as string;
   
   // Fixed values for page mode
-  const open = true;
-  const onOpenChange = () => {};
-  const defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
-  const contactType: 'organisation' | 'person' = 'organisation';
+  const _open = true;
+  const _onOpenChange = () => {};
+  const _defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
+  const _contactType: 'organisation' | 'person' = 'organisation';
   const saving = false;
-  const onSave = undefined;
+  const _onSave = undefined;
   const persistDirectly = true;
-  const onSaved = undefined;
+  const _onSaved = undefined;
 
   // Prüfe ob Prefill-Parameter vorhanden sind (von Auftragsseite)
   const prefillData = {
@@ -356,19 +353,19 @@ export default function ContactsPage() {
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
   const [formData, setFormData] = useState<ExtendedFormData>(DEFAULT_FORM_DATA);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
-  const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
-  const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
+  const [, setNextCustomerNumber] = useState('KD-001');
+  const [, _setCurrentNumberSequence] = useState<NumberSequence | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [customCategories, setCustomCategories] = useState<
     Array<{id: string;name: string;categoryType: string;}>>(
     []);
   const [referenceFieldType, setReferenceFieldType] = useState<'customerReference' | 'leitwegId'>('customerReference');
   const [newTag, setNewTag] = useState('');
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [, setShowTypeDropdown] = useState(false);
 
   // Refs for outside click detection
   const typeDropdownRef = useRef<HTMLDivElement>(null);
-  const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
+  const [, _setDefaultValuesApplied] = useState(false);
 
   // Tab Definitionen - nur relevante Tabs für neue Kunden
   const tabs: TabDefinition[] = [
@@ -430,11 +427,10 @@ export default function ContactsPage() {
 
   // 🔥 CRITICAL FIX: Separate category loading from tab changes
   useEffect(() => {
-    if (open) {
-      loadCategories();
-      generateNextCustomerNumber();
-    }
-  }, [open]);
+    // Page is always open, no modal check needed
+    loadCategories();
+    generateNextCustomerNumber();
+  }, []);
 
   // Prefill-Daten aus Query-Parametern anwenden (z.B. von Auftragsseite)
   useEffect(() => {
@@ -643,7 +639,7 @@ export default function ContactsPage() {
     });
   };
 
-  const addAddress = () => {
+  const _addAddress = () => {
     const newAddress = createDefaultAddress();
     setFormData((prev) => ({
       ...prev,
@@ -651,7 +647,7 @@ export default function ContactsPage() {
     }));
   };
 
-  const updateAddress = (addressId: string, field: keyof Address, value: string) => {
+  const _updateAddress = (addressId: string, field: keyof Address, value: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.map((addr) =>
@@ -660,7 +656,7 @@ export default function ContactsPage() {
     }));
   };
 
-  const removeAddress = (addressId: string) => {
+  const _removeAddress = (addressId: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.filter((addr) => addr.id !== addressId)
@@ -1929,7 +1925,7 @@ export default function ContactsPage() {
                     }
                   }
 
-                  if (onSave) {
+                  if (_onSave) {
                     // Custom save logic würde hier stehen
                     toast.success('Kunde erfolgreich gespeichert!');
                   }

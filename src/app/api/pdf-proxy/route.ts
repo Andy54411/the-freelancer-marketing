@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Auth not available' }, { status: 500 });
       }
       decodedToken = await auth.verifyIdToken(idToken);
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -156,10 +156,10 @@ export async function GET(request: NextRequest) {
           },
         });
       }
-    } catch (storageError) {
+    } catch {
       return NextResponse.json({ error: 'Failed to access Firebase Storage' }, { status: 403 });
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error while fetching PDF' },
       { status: 500 }

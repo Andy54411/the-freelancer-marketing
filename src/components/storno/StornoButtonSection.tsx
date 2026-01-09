@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiAlertTriangle, FiX, FiClock } from 'react-icons/fi';
+import { FiAlertTriangle } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -92,7 +92,7 @@ export default function StornoButtonSection({
 
         setStornoConditions(conditions);
       }
-    } catch (error) {
+    } catch {
       // Fallback auf alte Methode
       const isOverdue = checkIfOverdue();
       setStornoConditions({
@@ -163,7 +163,7 @@ export default function StornoButtonSection({
       });
 
       if (response.ok) {
-        const result = await response.json();
+        await response.json();
         setShowStornoDialog(false);
         onStornoSuccess();
 
@@ -178,10 +178,10 @@ export default function StornoButtonSection({
           );
         }
       } else {
-        const error = await response.json();
-        alert(`Fehler: ${error.message}`);
+        const errorData = await response.json();
+        alert(`Fehler: ${errorData.message}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Einreichen der Storno-Anfrage. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSubmitting(false);

@@ -2291,7 +2291,7 @@ export function EmailCompose({
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Download fehlgeschlagen');
               }
-            } catch (err) {
+            } catch {
               toast.error(`Fehler beim Laden von ${driveFile.name}`);
             }
           }

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
             finapiDisconnected = true;
           }
         }
-      } catch (finapiError: any) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,

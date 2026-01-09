@@ -15,7 +15,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { FiLoader, FiSend, FiUser, FiCpu } from 'react-icons/fi';
+import { FiLoader, FiSend } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 
 import ChatMessageBubble from './ChatMessageBubble'; // Import der neuen Komponente
@@ -42,7 +42,7 @@ interface SupportChatInterfaceProps {
   onClose: () => void;
 }
 
-const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) => {
+const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose: _onClose }) => {
   const { user: userProfile, firebaseUser: currentUser } = useAuth();
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -75,7 +75,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           setChat(doc.data());
         }
       },
-      error => {}
+      _error => {}
     );
 
     // Richte den Listener für Nachrichten ein.
@@ -94,7 +94,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         setChatMessages(loadedMessages);
         setLoading(false); // Set loading to false after first successful fetch
       },
-      error => {
+      _error => {
         setChatError('Nachrichten konnten nicht geladen werden.');
         setLoading(false);
       }
@@ -144,7 +144,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           }
         }
         setIsChatReady(true); // Chat ist jetzt initialisiert und bereit zum Senden.
-      } catch (error) {
+      } catch {
         setChatError('Chat konnte nicht initialisiert werden.');
         setIsChatReady(false);
       }
@@ -294,7 +294,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
                 }, 1000);
               }
             }
-          } catch (geminiError) {
+          } catch (_geminiError) {
             // Fallback: Setze Status auf "human" für manuelle Bearbeitung
             await updateDoc(chatDocRef, {
               status: 'human',
@@ -303,7 +303,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
             });
           }
         }
-      } catch (error) {
+      } catch {
         setChatError('Nachricht konnte nicht gesendet werden.');
       } finally {
         setIsSending(false);

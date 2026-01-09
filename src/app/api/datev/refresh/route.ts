@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       refresh_token: tokenData.refresh_token,
       scope: tokenData.scope,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -9,7 +9,6 @@ import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface TechnicalTemplateProps {
   data: ProcessedPDFData;
@@ -31,10 +30,10 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
   // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
-  const config = getDocumentTypeConfig(detectedType, color);
+  const _config = getDocumentTypeConfig(detectedType, color);
 
   // Übersetzungsfunktion
-  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
+  const { t: _t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   return (
     <div

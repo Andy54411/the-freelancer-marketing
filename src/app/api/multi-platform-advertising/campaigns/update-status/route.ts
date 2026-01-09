@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '');
     const decodedToken = await adminAuth.verifyIdToken(token);
-    const userId = decodedToken.uid;
+    const _userId = decodedToken.uid;
 
     const { companyId, campaignId, status }: { 
       companyId: string; 

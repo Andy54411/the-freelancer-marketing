@@ -6,10 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, MessageCircle, Loader2, Trash2, Key, RefreshCw, CheckCircle2, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, Key, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Settings, Bot, BookOpen, Phone } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import ChatbotSettingsEditor from '@/components/whatsapp/ChatbotSettingsEditor';
+import ChatbotKnowledgeEditor from '@/components/whatsapp/ChatbotKnowledgeEditor';
+
+type SettingsTab = 'general' | 'chatbot' | 'knowledge';
 
 export default function WhatsAppSettingsPage() {
   const params = useParams();
@@ -22,6 +25,7 @@ export default function WhatsAppSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   
   // Token Management
   const [accessToken, setAccessToken] = useState('');
@@ -213,111 +217,154 @@ export default function WhatsAppSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      <div className="flex items-center justify-center h-full bg-linear-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Settings className="h-8 w-8 text-white" />
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-[#25D366] mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-600">Einstellungen werden geladen...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="mb-8">
-        <Link
-          href={`/dashboard/company/${uid}/whatsapp`}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Zurück zu WhatsApp
-        </Link>
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center">
-            <MessageCircle className="h-6 w-6 text-teal-600" />
-          </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-5">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">WhatsApp Einstellungen</h1>
-            <p className="text-sm text-gray-500">Verwalte deine WhatsApp Business API Konfiguration</p>
+            <h1 className="text-xl font-bold text-gray-900">Einstellungen</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Verwalte deine WhatsApp Business API Konfiguration
+            </p>
           </div>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex gap-1 mt-4 -mb-5 border-b-0">
+          {[
+            { id: 'general' as SettingsTab, label: 'Allgemein', icon: Phone },
+            { id: 'chatbot' as SettingsTab, label: 'Chatbot & KI', icon: Bot },
+            { id: 'knowledge' as SettingsTab, label: 'Wissensdatenbank', icon: BookOpen },
+          ].map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border border-b-0 ${
+                  activeTab === tab.id
+                    ? 'bg-gray-50 text-[#25D366] border-gray-200'
+                    : 'bg-white text-gray-500 hover:text-gray-700 border-transparent hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Settings Form */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Business Telefonnummer</CardTitle>
-          <CardDescription>Verwalte deine WhatsApp Business Telefonnummer</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="businessPhone">
-              WhatsApp Business Telefonnummer <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="businessPhone"
-              placeholder="+49 151 12345678"
-              value={businessPhone}
-              onChange={(e) => setBusinessPhone(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">
-              Deine WhatsApp Business Nummer im internationalen Format
-            </p>
-          </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Allgemein Tab */}
+          {activeTab === 'general' && (
+            <>
+              {/* Settings Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Business Telefonnummer</CardTitle>
+                  <CardDescription>Verwalte deine WhatsApp Business Telefonnummer</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="businessPhone">
+                      WhatsApp Business Telefonnummer <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="businessPhone"
+                      placeholder="+49 151 12345678"
+                      value={businessPhone}
+                      onChange={(e) => setBusinessPhone(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Deine WhatsApp Business Nummer im internationalen Format
+                    </p>
+                  </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="displayName">Anzeigename (optional)</Label>
-            <Input
-              id="displayName"
-              placeholder="Mein Unternehmen"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">
-              Wie dein Unternehmen in WhatsApp angezeigt werden soll
-            </p>
-          </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Anzeigename (optional)</Label>
+                    <Input
+                      id="displayName"
+                      placeholder="Mein Unternehmen"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Wie dein Unternehmen in WhatsApp angezeigt werden soll
+                    </p>
+                  </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button onClick={handleSave} disabled={isSaving} className="bg-teal-600 hover:bg-teal-700">
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Speichere...
-                </>
-              ) : (
-                'Änderungen speichern'
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="flex gap-3 pt-4">
+                    <Button onClick={handleSave} disabled={isSaving} className="bg-[#25D366] hover:bg-[#128C7E]">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Speichere...
+                        </>
+                      ) : (
+                        'Änderungen speichern'
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="text-red-600">Gefahrenbereich</CardTitle>
-          <CardDescription>Irreversible Aktionen</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            variant="destructive"
-            className="w-full"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Deaktiviere...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4 mr-2" />
-                WhatsApp Integration deaktivieren
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+              {/* Danger Zone */}
+              <Card className="border-red-200">
+                <CardHeader>
+                  <CardTitle className="text-red-600">Gefahrenbereich</CardTitle>
+                  <CardDescription>Irreversible Aktionen</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deaktiviere...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        WhatsApp Integration deaktivieren
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Chatbot Tab */}
+          {activeTab === 'chatbot' && (
+            <ChatbotSettingsEditor companyId={uid} />
+          )}
+
+          {/* Wissensdatenbank Tab */}
+          {activeTab === 'knowledge' && (
+            <ChatbotKnowledgeEditor companyId={uid} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -24,7 +24,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Bell,
@@ -34,10 +33,9 @@ import {
   Search,
   AlertTriangle,
   Clock,
-  Euro,
-  Calendar,
   Send,
   Loader2,
+  Euro,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -144,7 +142,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
       ];
 
       setReminders(mockReminders);
-    } catch (error) {
+    } catch {
       toast.error('Mahnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -237,7 +235,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
       });
 
       toast.success('Mahnung wurde erstellt');
-    } catch (error) {
+    } catch {
       toast.error('Mahnung konnte nicht erstellt werden');
     }
   };

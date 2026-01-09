@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         responseData.ShipmentResponse?.ShipmentResults?.PackageResults?.ShippingLabel?.GraphicImage,
       message: 'UPS-Versandlabel erfolgreich erstellt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Erstellen des UPS-Versandlabels' },
       { status: 500 }
@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
       trackingNumber,
       trackingData,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Tracking-Informationen' },
       { status: 500 }

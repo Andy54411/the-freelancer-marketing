@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { googleAdsClientService } from '@/services/googleAdsClientService';
 
 export async function GET(request: NextRequest) {
   try {

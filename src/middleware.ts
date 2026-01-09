@@ -16,7 +16,7 @@ function logMiddleware(message: string, request: NextRequest, additionalData?: R
 }
 
 export default async function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host') || '';
+  const _hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
   
   // Skip static files completely - ALL public folder assets
@@ -63,7 +63,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   // Helper function to redirect subdomain to path-based routing
-  const createSubdomainRedirect = (targetPath: string) => {
+  const _createSubdomainRedirect = (targetPath: string) => {
     const redirectUrl = new URL(`https://taskilo.de${targetPath}`);
     logMiddleware('Subdomain Redirect', request, { to: redirectUrl.href });
     return NextResponse.redirect(redirectUrl, { status: 301 });

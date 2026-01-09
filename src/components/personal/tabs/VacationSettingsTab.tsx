@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, Save, Settings, AlertCircle, Minus, Plus, Clock } from 'lucide-react';
+import { Calendar, Save, Settings, Minus, Plus, Clock } from 'lucide-react';
 import { Employee, VacationSettings, PersonalService } from '@/services/personalService';
 import { toast } from 'sonner';
 
@@ -46,7 +44,7 @@ export default function VacationSettingsTab({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [_hasChanges, setHasChanges] = useState(false);
 
   const handleInputChange = (field: keyof VacationSettings, value: string | number | boolean) => {
     setSettings(prev => ({
@@ -57,7 +55,12 @@ export default function VacationSettingsTab({
 
     // Update das Parent-Component
     const updatedVacation = {
-      ...employee.vacation,
+      totalDays: employee.vacation?.totalDays ?? settings.annualVacationDays,
+      usedDays: employee.vacation?.usedDays ?? 0,
+      remainingDays: employee.vacation?.remainingDays ?? settings.annualVacationDays,
+      yearStart: employee.vacation?.yearStart ?? new Date().getFullYear().toString(),
+      requests: employee.vacation?.requests ?? [],
+      history: employee.vacation?.history ?? [],
       settings: {
         ...settings,
         [field]: value,
@@ -107,16 +110,24 @@ export default function VacationSettingsTab({
 
       // Update das Employee-Objekt lokal für sofortige UI-Reaktion
       const updatedVacation = {
-        ...employee.vacation,
-        settings,
         totalDays: settings.annualVacationDays,
+        usedDays: employee.vacation?.usedDays ?? 0,
         remainingDays: PersonalService.calculateAvailableVacationDays({
           ...employee,
           vacation: {
-            ...employee.vacation,
+            totalDays: settings.annualVacationDays,
+            usedDays: employee.vacation?.usedDays ?? 0,
+            remainingDays: employee.vacation?.remainingDays ?? settings.annualVacationDays,
+            yearStart: employee.vacation?.yearStart ?? new Date().getFullYear().toString(),
+            requests: employee.vacation?.requests ?? [],
+            history: employee.vacation?.history ?? [],
             settings,
           },
         }),
+        yearStart: employee.vacation?.yearStart ?? new Date().getFullYear().toString(),
+        requests: employee.vacation?.requests ?? [],
+        history: employee.vacation?.history ?? [],
+        settings,
       };
 
       // Update sowohl lokalen State als auch Parent-Component
@@ -127,7 +138,7 @@ export default function VacationSettingsTab({
 
       setHasChanges(false);
       toast.success('Urlaubseinstellungen erfolgreich in der Datenbank gespeichert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern der Urlaubseinstellungen');
     } finally {
       setIsLoading(false);
@@ -137,7 +148,12 @@ export default function VacationSettingsTab({
   const availableDays = PersonalService.calculateAvailableVacationDays({
     ...employee,
     vacation: {
-      ...employee.vacation,
+      totalDays: employee.vacation?.totalDays ?? settings.annualVacationDays,
+      usedDays: employee.vacation?.usedDays ?? 0,
+      remainingDays: employee.vacation?.remainingDays ?? settings.annualVacationDays,
+      yearStart: employee.vacation?.yearStart ?? new Date().getFullYear().toString(),
+      requests: employee.vacation?.requests ?? [],
+      history: employee.vacation?.history ?? [],
       settings,
     },
   });
@@ -343,7 +359,7 @@ export default function VacationSettingsTab({
                       min="2020"
                       max="2030"
                       value={new Date().getFullYear()}
-                      onChange={e => {}} // Jahr kann nicht geändert werden
+                      onChange={_e => {}} // Jahr kann nicht geändert werden
                     />
                   ) : (
                     <Badge variant="secondary" className="text-lg px-3 py-1">
@@ -494,7 +510,7 @@ export default function VacationSettingsTab({
               className="h-auto p-4 flex flex-col items-center gap-2"
               onClick={() => {
                 // Export der Urlaubsdaten
-                const data = {
+                const _data = {
                   employee: `${employee.firstName} ${employee.lastName}`,
                   year: new Date().getFullYear(),
                   settings: settings,

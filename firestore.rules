@@ -2186,6 +2186,99 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Tax Reports Collection - Steuerberichte (UStVA, EÜR, GuV, BWA)
+    match /companies/{companyId}/taxReports/{reportId} {
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Eigene Firma oder Mitarbeiter (nur wenn nicht finalisiert)
+      allow update: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
+                       request.resource.data.updatedAt == request.time &&
+                       (!('status' in resource.data) || resource.data.status != 'finalized');
+      
+      // Löschen: Nur Support Staff (Steuerberichte sollten nicht gelöscht werden - GoBD)
+      allow delete: if isSupportStaff();
+    }
+
+    // Tax Settings Collection - Steuereinstellungen pro Unternehmen
+    match /companies/{companyId}/taxSettings/{settingId} {
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany();
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Fixed Assets Collection - Anlagenbuchhaltung (§7 EStG AfA)
+    match /companies/{companyId}/fixedAssets/{assetId} {
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Eigene Firma oder Mitarbeiter (nur aktive Anlagen)
+      allow update: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
+                       request.resource.data.updatedAt == request.time &&
+                       (!('status' in resource.data) || resource.data.status == 'active');
+      
+      // Löschen: Nur Support Staff (Anlagen sollten nicht gelöscht werden - GoBD)
+      allow delete: if isSupportStaff();
+    }
+
     // Company Settings Collection - für Nummerkreise und andere Einstellungen
     match /companies/{companyId}/settings/{settingId} {
       // Lesen: Nur eigene Firma oder Support Staff

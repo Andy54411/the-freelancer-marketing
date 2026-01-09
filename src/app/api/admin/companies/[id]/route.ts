@@ -2,18 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 
-// Support Ticket Interface
-interface SupportTicket {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-  commentsCount: number;
-}
-
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -71,7 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const quotesSnapshot = await db!.collection('quotes').where('providerId', '==', id).get();
 
     // Hole auch Payout Logs für komplette Einnahmenübersicht
-    const payoutLogsSnapshot = await db
+    const _payoutLogsSnapshot = await db
       .collection('payout_logs')
       .where('companyId', '==', id)
       .get();
@@ -172,8 +160,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     });
 
-    // Entferne Payout Logs um Doppelzählung zu vermeiden
-    const payoutLogsRevenue = 0; // Nicht verwenden, um Doppelzählung zu vermeiden
+    // Payout Logs werden nicht für Revenue-Berechnung verwendet, um Doppelzählung zu vermeiden
 
     // Hole Reviews aus der companies/{id}/reviews Subcollection
     console.log(`[DEBUG] Fetching reviews from companies/${id}/reviews subcollection`);
@@ -455,7 +442,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     // Support-Tickets für diese Company laden
-    let supportTickets: SupportTicket[] = [];
+    let supportTickets: Array<{
+      id: string;
+      title: string;
+      status: string;
+      priority: string;
+      category: string;
+      createdAt: string;
+      updatedAt: string;
+      commentsCount: number;
+    }> = [];
     try {
       const ticketsSnapshot = await db!
         .collection('adminTickets')
@@ -488,11 +484,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       source: 'firebase_direct',
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json(
       {
         error: 'Failed to fetch company details',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: err instanceof Error ? err.message : 'Unknown error',
         company: null,
       },
       { status: 500 }

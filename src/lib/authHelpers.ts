@@ -22,7 +22,7 @@ export function onAuthStateChangedSafe(
  */
 export function useAuthStateListener(
   callback: (user: User | null) => void | Promise<void>,
-  dependencies?: any[]
+  _dependencies?: any[]
 ): () => void {
   // Diese Funktion kann in useEffect verwendet werden
   const unsubscribe = onAuthStateChangedSafe(callback);

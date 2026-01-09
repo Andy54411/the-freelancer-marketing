@@ -47,7 +47,7 @@ function initializeFirebase() {
 
         try {
           serviceAccount = JSON.parse(fixedKey);
-        } catch (secondError) {
+        } catch {
           throw firstError;
         }
       }
@@ -90,7 +90,7 @@ initializeFirebase();
 export const db = (() => {
   try {
     return admin.firestore();
-  } catch (error) {
+  } catch {
     console.warn('Firestore not available during build time');
     return null;
   }
@@ -99,7 +99,7 @@ export const db = (() => {
 export const auth = (() => {
   try {
     return admin.auth();
-  } catch (error) {
+  } catch {
     console.warn('Auth not available during build time');
     return null;
   }
@@ -121,7 +121,7 @@ export function withFirebase<T>(operation: () => Promise<T>): Promise<T> {
 export const storage = (() => {
   try {
     return admin.storage();
-  } catch (error) {
+  } catch {
     console.warn('Storage not available during build time');
     return null;
   }

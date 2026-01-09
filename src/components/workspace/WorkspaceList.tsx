@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, User, Tag, Clock, MoreHorizontal, ArrowUpDown, Filter } from 'lucide-react';
+import { Calendar, MoreHorizontal, ArrowUpDown, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +34,7 @@ type SortDirection = 'asc' | 'desc';
 
 export function WorkspaceList({
   workspaces,
-  onUpdateWorkspace,
+  onUpdateWorkspace: _onUpdateWorkspace,
   onDeleteWorkspace,
   onWorkspaceClick,
 }: WorkspaceListProps) {
@@ -339,7 +339,7 @@ export function WorkspaceList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    {(workspace.assignedTo || []).slice(0, 3).map((userId, index) => (
+                    {(workspace.assignedTo || []).slice(0, 3).map((userId, _index) => (
                       <Avatar key={userId} className="h-6 w-6">
                         <AvatarFallback className="text-xs">
                           {userId.substring(0, 2).toUpperCase()}

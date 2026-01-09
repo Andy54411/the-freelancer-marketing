@@ -60,7 +60,7 @@ export function AdminWorkspaceBoard({
         // Update selectedWorkspace with tasks
         const updatedWorkspace = { ...selectedWorkspace, tasks };
         setSelectedWorkspace(updatedWorkspace);
-      } catch (error) {}
+      } catch {}
     };
 
     loadWorkspaceTasks();
@@ -337,7 +337,7 @@ export function AdminWorkspaceBoard({
           boardColumns: updatedColumns,
           tasks: updatedTasks,
         });
-      } catch (error) {
+      } catch {
         // Fallback to local update if backend call fails
         const updatedColumns = columns.map(col => {
           if (col.id === selectedColumnId) {
@@ -526,7 +526,7 @@ export function AdminWorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -603,7 +603,7 @@ export function AdminWorkspaceBoard({
         boardColumns: updatedColumns,
         archivedTasks: updatedArchivedTasks,
       });
-    } catch (error) {
+    } catch {
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -657,7 +657,7 @@ export function AdminWorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

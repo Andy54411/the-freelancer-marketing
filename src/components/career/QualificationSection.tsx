@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, Award, UploadCloud, FileText, Trash2, Eye, X } from 'lucide-react';
+import { Loader2, Pencil, Award, UploadCloud, FileText, Eye, X } from 'lucide-react';
 import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 

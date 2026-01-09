@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
-    const includeMetrics = searchParams.get('metrics') !== 'false';
+    const _includeMetrics = searchParams.get('metrics') !== 'false';
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { companyId, name, type, budget, biddingStrategy, targeting, schedule, creatives } = body;
+    const { companyId, name, type, budget, biddingStrategy, targeting, schedule, creatives: _creatives } = body;
 
     if (!companyId || !name || !type || !budget) {
       return NextResponse.json(

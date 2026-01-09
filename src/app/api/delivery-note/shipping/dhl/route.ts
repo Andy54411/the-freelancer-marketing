@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       labelUrl: responseData.CreationState?.labelUrl,
       message: 'DHL-Versandlabel erfolgreich erstellt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Erstellen des DHL-Versandlabels' },
       { status: 500 }
@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
       trackingNumber,
       trackingData,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Tracking-Informationen' },
       { status: 500 }

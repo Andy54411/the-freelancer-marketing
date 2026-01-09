@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       },
       count: orders?.length || 0,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der WooCommerce-Bestellungen' },
       { status: 500 }
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
       deliveryNoteId: deliveryNoteRef.id,
       message: 'WooCommerce-Bestellung erfolgreich in Lieferschein konvertiert',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Importieren der WooCommerce-Bestellung' },
       { status: 500 }

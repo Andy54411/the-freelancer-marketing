@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
       footerText, 
       buttonText,
       variableMapping,
-      originalBodyText 
+      originalBodyText,
+      isDsgvoTemplate = false
     } = body;
 
     if (!companyId || !name || !bodyText) {
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
       variables,
       variableMapping: variableMapping || {},
       originalBodyText: originalBodyText || bodyText,
+      isDsgvoTemplate,
+      requiresOptIn: isDsgvoTemplate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

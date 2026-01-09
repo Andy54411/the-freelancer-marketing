@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -26,7 +24,6 @@ import {
   Save,
   Share2,
   Plus,
-  MoreHorizontal,
   Clock,
   Sun,
   Moon,
@@ -35,7 +32,6 @@ import {
   Heart,
   X,
   Gift,
-  Calendar,
   RefreshCw,
 } from 'lucide-react';
 import { Shift, Employee } from '@/services/personalService';
@@ -188,11 +184,12 @@ export default function WeeklyScheduleGrid({
     const map: Record<string, Record<string, Shift[]>> = {};
     
     employees.forEach(emp => {
-      if (emp.id) {
-        map[emp.id] = {};
+      const empId = emp.id;
+      if (empId) {
+        map[empId] = {};
         weekDates.forEach(date => {
-          const dateStr = date.toISOString().split('T')[0];
-          map[emp.id][dateStr] = [];
+          const dateStr = date.toISOString().substring(0, 10);
+          map[empId][dateStr] = [];
         });
       }
     });
@@ -495,7 +492,6 @@ export default function WeeklyScheduleGrid({
                   const dateStr = date.toISOString().split('T')[0];
                   const dayShifts = shiftsByEmployeeAndDay[employee.id!]?.[dateStr] || [];
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                  const cellKey = `${employee.id}-${dateStr}`;
                   
                   return (
                     <Popover 

@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
           router.push('/dashboard/admin');
         }
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
       } else {
         setError(data.error || 'Anmeldung fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       setError('Verbindungsfehler. Bitte versuchen Sie es erneut.');
     } finally {
       setLoading(false);

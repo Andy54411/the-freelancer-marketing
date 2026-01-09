@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings, FileText, CreditCard, BarChart3, MessageSquare, XCircle, Bell, Shield, Mail, Briefcase, HardDrive, type LucideIcon } from 'lucide-react';
+import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings, CreditCard, BarChart3, MessageSquare, XCircle, Bell, Shield, Mail, Briefcase, HardDrive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 

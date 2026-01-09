@@ -6,23 +6,14 @@ import {
   MapPin,
   Clock,
   Play,
-  Square,
   Camera,
   Smartphone,
   Wifi,
   WifiOff,
-  CheckCircle,
-  XCircle,
   AlertTriangle,
   Users,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Download,
-  RefreshCw,
   Navigation,
-  Shield,
   Eye,
   Map,
 } from 'lucide-react';
@@ -31,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -40,13 +30,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -60,8 +43,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'react-hot-toast';
-import { PersonalService, Employee, TimeEntry } from '@/services/personalService';
-import { collection, getDocs, doc, addDoc, updateDoc, query, where, Timestamp } from 'firebase/firestore';
+import { PersonalService, Employee } from '@/services/personalService';
+import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 // Check-In Methoden
@@ -134,10 +117,10 @@ export default function GpsCheckPage() {
 
   // State
   const [loading, setLoading] = useState(true);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [_employees, setEmployees] = useState<Employee[]>([]);
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, _setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('live');
 
   // Settings
@@ -215,7 +198,7 @@ export default function GpsCheckPage() {
 
       setLocations(locs);
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);
@@ -248,7 +231,7 @@ export default function GpsCheckPage() {
 
       toast.success('Standort hinzugefügt');
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hinzufügen');
     }
   };

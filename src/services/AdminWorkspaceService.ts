@@ -1,7 +1,3 @@
-// Lambda API Endpoint für Admin Workspace Management
-const LAMBDA_API_BASE =
-  'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/prod/admin/workspaces';
-
 // AWS Realtime Service Integration
 import { awsRealtimeService } from './AWSRealtimeService';
 
@@ -159,7 +155,7 @@ export class AdminWorkspaceService {
 
         return mappedWorkspace;
       });
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -324,7 +320,7 @@ export class AdminWorkspaceService {
           deleteLevel: 'admin',
         },
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -371,7 +367,7 @@ export class AdminWorkspaceService {
         contentTitle: task.contentTitle,
         contentTitleLevel: task.contentTitleLevel,
       }));
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -498,7 +494,7 @@ export class AdminWorkspaceService {
         role: member.role,
         avatar: member.avatar,
       }));
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -536,7 +532,7 @@ export class AdminWorkspaceService {
     try {
       const result = await this.callLambdaAPI(`/${workspaceId}/activity`);
       return result.activities || [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -546,7 +542,7 @@ export class AdminWorkspaceService {
     try {
       const result = await this.callLambdaAPI(`/${workspaceId}/boards`);
       return result.boards || [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -631,12 +627,12 @@ export class AdminWorkspaceService {
     // Production: AWS WebSocket für Realtime Updates + Fallback Polling
     let unsubscribeWebSocket: (() => void) | null = null;
     let pollingInterval: NodeJS.Timeout | null = null;
-    let webSocketConnected = false;
+    let _webSocketConnected = false;
 
     // Versuche WebSocket-Verbindung
     awsRealtimeService
-      .subscribeToWorkspaceEvents(adminId, async event => {
-        webSocketConnected = true;
+      .subscribeToWorkspaceEvents(adminId, async _event => {
+        _webSocketConnected = true;
 
         // WebSocket funktioniert - deaktiviere Polling
         if (pollingInterval) {
@@ -647,22 +643,22 @@ export class AdminWorkspaceService {
         try {
           const workspaces = await this.getAllWorkspaces(adminId);
           callback(workspaces);
-        } catch (error) {}
+        } catch {}
       })
       .then(unsubscribe => {
         unsubscribeWebSocket = unsubscribe;
-        webSocketConnected = true;
+        _webSocketConnected = true;
       })
-      .catch(error => {
-        webSocketConnected = false;
+      .catch(_error => {
+        _webSocketConnected = false;
       });
 
     // Store callback for manual updates
-    this.subscriptions.set(subscriptionId, async (data: any) => {
+    this.subscriptions.set(subscriptionId, async (_data: any) => {
       try {
         const workspaces = await this.getAllWorkspaces(adminId);
         callback(workspaces);
-      } catch (error) {}
+      } catch {}
     });
 
     // Load initial data immediately

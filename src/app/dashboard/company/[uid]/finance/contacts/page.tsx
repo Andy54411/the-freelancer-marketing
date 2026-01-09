@@ -13,24 +13,16 @@ import {
   Users,
   Building2,
   UserCheck,
-  UserPlus,
   Search,
-  Filter,
   Download,
   Plus,
-  Check,
   Edit,
   Eye,
   Mail,
   Phone,
-  MapPin,
   Trash2,
   FileText,
   Receipt,
-  Archive,
-  History,
-  CheckCircle,
-  AlertCircle,
   User,
   FileIcon,
 } from 'lucide-react';
@@ -208,7 +200,14 @@ export default function ContactsPage({ params }: ContactsPageProps) {
           comparison = (a.totalAmount || 0) - (b.totalAmount || 0);
           break;
         case 'createdAt':
-          comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+          const getTime = (val: string | Date | { toDate: () => Date; seconds: number; nanoseconds: number } | undefined): number => {
+            if (!val) return 0;
+            if (typeof val === 'string') return new Date(val).getTime();
+            if (val instanceof Date) return val.getTime();
+            if (typeof val === 'object' && 'toDate' in val) return val.toDate().getTime();
+            return 0;
+          };
+          comparison = getTime(a.createdAt) - getTime(b.createdAt);
           break;
       }
 

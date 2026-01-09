@@ -37,21 +37,19 @@ import {
   MoreHorizontal,
   Filter,
   Search,
-  Calendar,
   DollarSign,
-  Tag,
 } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { TransactionLinkService } from '@/services/transaction-link.service';
 import StornoInvoice from './StornoInvoice';
 import { EmailDialog } from './EmailDialog';
 import { toast } from 'sonner';
 import SelectBankingTransactionModal from './SelectBankingTransactionModal';
 import { BookingAccount } from '@/services/bookingAccountService';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceStatusService } from '@/services/invoice-status.service';
+import { WhatsAppNotificationService } from '@/services/whatsapp-notifications.service';
 
 interface InvoiceListViewProps {
   invoices: InvoiceData[];
@@ -310,6 +308,43 @@ export function InvoiceListView({
         bankingTransaction.id,
         'Banküberweisung'
       );
+
+      // WhatsApp-Benachrichtigung für Zahlung eingegangen
+      try {
+        // Kundentelefon laden
+        let customerPhone = selectedInvoiceForLink.customerPhone || '';
+        let customerId = '';
+        
+        if (!customerPhone && selectedInvoiceForLink.customerEmail) {
+          const customersRef = collection(db, 'companies', companyId, 'customers');
+          const emailQuery = query(customersRef, where('email', '==', selectedInvoiceForLink.customerEmail));
+          const emailSnap = await getDocs(emailQuery);
+          if (!emailSnap.empty) {
+            const customerData = emailSnap.docs[0].data();
+            customerPhone = customerData.phone || '';
+            customerId = emailSnap.docs[0].id;
+          }
+        }
+        
+        if (customerPhone) {
+          // Firmennamen laden
+          const companyDoc = await getDoc(doc(db, 'companies', companyId));
+          const companyName = companyDoc.data()?.name || 'Taskilo';
+          
+          await WhatsAppNotificationService.notifyInvoicePaid(
+            companyId,
+            companyName,
+            customerId,
+            selectedInvoiceForLink.customerName || '',
+            customerPhone,
+            selectedInvoiceForLink.invoiceNumber || selectedInvoiceForLink.number || '',
+            selectedInvoiceForLink.total || 0,
+            selectedInvoiceForLink.id
+          );
+        }
+      } catch {
+        // WhatsApp-Fehler nicht kritisch
+      }
 
       toast.success('Rechnung wurde als bezahlt markiert und verknüpft');
 

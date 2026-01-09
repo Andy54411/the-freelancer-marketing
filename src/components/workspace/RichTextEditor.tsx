@@ -14,12 +14,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Link as LinkIcon,
-  Palette,
   Type,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   ImageIcon,
   Upload,
   User,
@@ -27,7 +22,6 @@ import {
   Clock,
   GripVertical,
   Plus,
-  Move,
   Trash2,
   Table as TableIcon,
   CheckSquare,
@@ -36,8 +30,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,7 +114,7 @@ interface DraggableHeadingProps {
 const DraggableHeading: React.FC<DraggableHeadingProps> = ({ option, editor, onSelect }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId }, drop] = useDrop<{ option: HeadingOption }, void, { handlerId: string | symbol | null }>({
     accept: 'heading',
     collect(monitor) {
       return {
@@ -193,11 +185,12 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
         handlerId: monitor.getHandlerId(),
       };
     },
-    hover(item: { index: number; id: string }, monitor) {
+    hover(item: unknown, monitor) {
+      const dragItem = item as { index: number; id: string };
       if (!ref.current) {
         return;
       }
-      const dragIndex = item.index;
+      const dragIndex = dragItem.index;
       const hoverIndex = index;
 
       // Don't replace items with themselves
@@ -238,11 +231,11 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
       // Generally it's better to avoid mutations,
       // but it's good here for the sake of performance
       // to avoid expensive index searches.
-      item.index = hoverIndex;
+      dragItem.index = hoverIndex;
     },
   });
 
-  const [{ isDragging }, drag, preview] = useDrag({
+  const [{ isDragging }, drag, _preview] = useDrag({
     type: 'section',
     item: () => {
       return { id: section.id, index };
@@ -431,7 +424,7 @@ export function RichTextEditor({
   updatedAt,
 }: RichTextEditorProps) {
   const [mounted, setMounted] = useState(false);
-  const [showCoverUpload, setShowCoverUpload] = useState(false);
+  const [_showCoverUpload, _setShowCoverUpload] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [showHeadingDropZone, setShowHeadingDropZone] = useState(false);
   const headingDropZoneRef = useRef<HTMLDivElement>(null);
@@ -716,7 +709,7 @@ export function RichTextEditor({
             </div>
           ) : (
             <div
-              className="h-32 bg-linear-to-r from-[#14ad9f] to-[#129488] cursor-pointer flex items-center justify-center group hover:from-[#129488] hover:to-[#0f8a7e] transition-all"
+              className="h-32 bg-linear-to-r from-[#14ad9f] to-taskilo-hover cursor-pointer flex items-center justify-center group hover:from-taskilo-hover hover:to-[#0f8a7e] transition-all"
               onClick={() => coverInputRef.current?.click()}
             >
               <div className="text-center text-white">

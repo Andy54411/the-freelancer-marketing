@@ -4,17 +4,11 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   Calendar,
-  User,
-  Clock,
   BarChart3,
   Tag,
   Edit,
   Settings,
-  Plus,
   ChevronRight,
-  CheckCircle,
-  Circle,
-  AlertCircle,
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,8 +20,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type {
   AdminWorkspace,
-  AdminWorkspaceBoardColumn,
-  AdminWorkspaceTask,
 } from '@/services/AdminWorkspaceService';
 
 interface AdminWorkspaceDetailSliderProps {
@@ -36,7 +28,7 @@ interface AdminWorkspaceDetailSliderProps {
   onClose: () => void;
   onEdit?: (workspace: AdminWorkspace) => void;
   onView?: (workspace: AdminWorkspace) => void;
-  onUpdateWorkspace?: (workspaceId: string, updates: Partial<AdminWorkspace>) => void;
+  _onUpdateWorkspace?: (workspaceId: string, updates: Partial<AdminWorkspace>) => void;
 }
 
 export function AdminWorkspaceDetailSlider({
@@ -45,7 +37,7 @@ export function AdminWorkspaceDetailSlider({
   onClose,
   onEdit,
   onView,
-  onUpdateWorkspace,
+  _onUpdateWorkspace,
 }: AdminWorkspaceDetailSliderProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
 

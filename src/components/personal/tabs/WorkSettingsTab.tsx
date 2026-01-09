@@ -49,7 +49,7 @@ export default function WorkSettingsTab({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [_hasChanges, setHasChanges] = useState(false);
 
   // Überstunden laden
   useEffect(() => {
@@ -127,7 +127,7 @@ export default function WorkSettingsTab({
       onSave();
       setHasChanges(false);
       toast.success('Arbeitszeiteinstellungen erfolgreich gespeichert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern der Arbeitszeiteinstellungen');
     } finally {
       setIsLoading(false);

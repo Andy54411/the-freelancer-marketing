@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatCurrency } from '@/lib/utils';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
@@ -9,7 +8,7 @@ interface TaxRulesInfoProps {
   language?: string;
 }
 
-export const TaxRulesInfo: React.FC<TaxRulesInfoProps> = ({ data, color, language = 'de' }) => {
+export const TaxRulesInfo: React.FC<TaxRulesInfoProps> = ({ data, color: _color, language = 'de' }) => {
   const { t } = useDocumentTranslation(language);
   if (!data.taxRule) return null;
 

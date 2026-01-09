@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { exportType, month, year, includeBookingData, includeDocumentImages, includeMasterData } = body;
+    const { exportType, month, year, includeBookingData, includeDocumentImages } = body;
 
     if (!db) {
       return NextResponse.json(

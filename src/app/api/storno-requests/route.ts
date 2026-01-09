@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       estimatedProcessingTime: '24-48 Stunden',
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Storno-Anfrage' },
       { status: 500 }
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       stornoRequests,
       total: stornoRequests.length,
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Abrufen der Storno-Anfragen' }, { status: 500 });
   }
 }
@@ -212,28 +212,16 @@ async function updateProviderStornoStats(providerId: string, auftragId: string) 
         }),
       });
     }
-  } catch (error) {}
+  } catch {}
 }
 
 /**
  * Erstelle AWS Admin Ticket für Cross-Platform Integration
  */
-async function createAdminTicketForStornoRequest(stornoRequestId: string, stornoData: any) {
+async function createAdminTicketForStornoRequest(_stornoRequestId: string, _stornoData: any) {
   try {
     // Diese Funktion wird später implementiert für AWS-Integration
     // Sendet Webhook an AWS Admin-System mit Storno-Details
-
-    const webhookData = {
-      type: 'storno_request_created',
-      stornoRequestId,
-      auftragId: stornoData.auftragId,
-      requestedBy: stornoData.requestedBy,
-      reason: stornoData.reason,
-      amount: stornoData.auftragDetails.totalAmount,
-      priority: stornoData.priority,
-      createdAt: stornoData.requestedAt,
-    };
-
     // TODO: Implementiere AWS Webhook Call
-  } catch (error) {}
+  } catch {}
 }

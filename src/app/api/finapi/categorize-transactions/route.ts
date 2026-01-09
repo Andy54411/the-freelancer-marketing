@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
 import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**

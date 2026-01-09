@@ -6,11 +6,8 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface BodenlegerFormProps {
   data: BodenlegerData;
@@ -24,7 +21,6 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
   onValidationChange,
 }) => {
   const [formData, setFormData] = useState<BodenlegerData>(data);
-  const router = useRouter();
 
   const handleInputChange = (field: keyof BodenlegerData, value: any) => {
     const updatedData = { ...formData, [field]: value };

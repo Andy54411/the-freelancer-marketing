@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 // Dynamic Firebase imports to prevent build-time issues
 let db: any;
 let admin: any;
 
-async function getFirebaseServices(companyId: string) {
+async function getFirebaseServices(_companyId: string) {
   if (!db || !admin) {
     try {
       // Try existing server config first
@@ -16,7 +15,7 @@ async function getFirebaseServices(companyId: string) {
         if (db && admin) {
           return { db, admin };
         }
-      } catch (importError) {}
+      } catch {}
 
       // Fallback to direct initialization
       const firebaseAdmin = await import('firebase-admin');
@@ -25,7 +24,7 @@ async function getFirebaseServices(companyId: string) {
       let app;
       try {
         app = firebaseAdmin.app();
-      } catch (appError) {
+      } catch {
         if (
           process.env.FIREBASE_PROJECT_ID &&
           process.env.FIREBASE_PRIVATE_KEY &&
@@ -63,8 +62,7 @@ async function getFirebaseServices(companyId: string) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   const { uid, quoteId } = await params;
 
@@ -84,7 +82,7 @@ export async function GET(
     let decodedToken;
     try {
       decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -120,7 +118,7 @@ export async function GET(
 
     // Get the specific quote where this company is the customer
 
-    const quoteRef = db!.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
+    const quoteRef = db!.collection('companies').doc(uid).collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
@@ -186,7 +184,7 @@ export async function GET(
       // Check subcollection for proposals (new structure)
       const proposalsSnapshot = await db
         .collection('companies')
-        .doc(companyId)
+        .doc(uid)
         .collection('quotes')
         .doc(quoteId)
         .collection('proposals')
@@ -224,7 +222,7 @@ export async function GET(
         responseDate = firstProposal.createdAt;
       } else {
       }
-    } catch (error) {}
+    } catch {}
 
     // Fallback: Check old response structure in quote document
     if (!hasResponse && quoteData?.response) {
@@ -280,7 +278,7 @@ export async function GET(
       success: true,
       quote,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Laden des Angebots' }, { status: 500 });
   }
 }
@@ -291,8 +289,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   const { uid, quoteId } = await params;
 
@@ -308,16 +305,16 @@ export async function POST(
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     // Inhaber ODER Mitarbeiter dieser Company dürfen zugreifen
-    const isOwnerPut = decodedToken.uid === uid;
-    const isEmployeePut = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === uid;
+    const isOwnerPost = decodedToken.uid === uid;
+    const isEmployeePost = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === uid;
     
-    if (!isOwnerPut && !isEmployeePut) {
+    if (!isOwnerPost && !isEmployeePost) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -340,7 +337,6 @@ export async function POST(
       .doc(quoteId)
       .get();
     let quoteData: any = null;
-    let isFromRequestsCollection = false;
 
     if (quoteDoc.exists) {
       quoteData = quoteDoc.data();
@@ -350,7 +346,6 @@ export async function POST(
       quoteDoc = await db!.collection('requests').doc(quoteId).get();
       if (quoteDoc.exists) {
         quoteData = quoteDoc.data();
-        isFromRequestsCollection = true;
       } else {
         return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
       }
@@ -358,7 +353,6 @@ export async function POST(
 
     if (action === 'accept') {
       // Find the accepted proposal
-      let proposalId: string | null = null;
       let proposalData: any = null;
 
       try {
@@ -373,12 +367,11 @@ export async function POST(
         if (!proposalsSnapshot.empty) {
           // Use the first proposal (in a real app, you might want to specify which proposal to accept)
           const firstProposal = proposalsSnapshot.docs[0];
-          proposalId = firstProposal.id;
           proposalData = firstProposal.data();
         } else {
           proposalData = quoteData?.response;
         }
-      } catch (error) {
+      } catch {
         proposalData = quoteData?.response;
       }
 
@@ -471,7 +464,7 @@ export async function POST(
 
       // Send notification to provider about the acceptance
       try {
-      } catch (notificationError) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,
@@ -501,7 +494,7 @@ export async function POST(
 
     // Fallback für nicht erkannte Aktion (sollte nicht erreicht werden)
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

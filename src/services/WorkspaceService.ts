@@ -1,16 +1,10 @@
 import {
   ref,
   push,
-  set,
   update,
   remove,
   onValue,
   off,
-  query,
-  orderByChild,
-  equalTo,
-  serverTimestamp,
-  DatabaseReference,
 } from 'firebase/database';
 import { realtimeDb as database } from '@/firebase/clients';
 
@@ -106,12 +100,12 @@ class WorkspaceServiceClass {
 
             resolve(workspaces);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get workspaces'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspaces');
     }
   }
@@ -170,7 +164,7 @@ class WorkspaceServiceClass {
         archivedTasks: workspace.archivedTasks || [],
         members: workspace.members || [],
       };
-    } catch (error) {
+    } catch {
       throw new Error('Failed to create workspace');
     }
   }
@@ -187,7 +181,7 @@ class WorkspaceServiceClass {
       });
 
       await update(workspaceRef, updateData);
-    } catch (error) {
+    } catch {
       throw new Error('Failed to update workspace');
     }
   }
@@ -197,7 +191,7 @@ class WorkspaceServiceClass {
     try {
       const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
       await remove(workspaceRef);
-    } catch (error) {
+    } catch {
       throw new Error('Failed to delete workspace');
     }
   }
@@ -227,12 +221,12 @@ class WorkspaceServiceClass {
 
             resolve(workspace);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get workspace'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspace');
     }
   }
@@ -297,12 +291,12 @@ class WorkspaceServiceClass {
 
             resolve(workspaces);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get workspaces by status'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspaces by status');
     }
   }
@@ -337,12 +331,12 @@ class WorkspaceServiceClass {
 
             resolve(workspaces);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get workspaces by priority'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspaces by priority');
     }
   }
@@ -380,12 +374,12 @@ class WorkspaceServiceClass {
 
             resolve(workspaces);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get workspaces assigned to user'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspaces assigned to user');
     }
   }
@@ -425,12 +419,12 @@ class WorkspaceServiceClass {
 
             resolve(workspaces);
           },
-          error => {
+          _error => {
             reject(new Error('Failed to get overdue workspaces'));
           }
         );
       });
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get overdue workspaces');
     }
   }
@@ -449,7 +443,7 @@ class WorkspaceServiceClass {
       }
 
       await update(workspaceRef, updateData);
-    } catch (error) {
+    } catch {
       throw new Error('Failed to update workspace progress');
     }
   }
@@ -474,7 +468,7 @@ class WorkspaceServiceClass {
       });
 
       await Promise.all(updatePromises);
-    } catch (error) {
+    } catch {
       throw new Error('Failed to bulk update workspaces');
     }
   }
@@ -525,7 +519,7 @@ class WorkspaceServiceClass {
       });
 
       return analytics;
-    } catch (error) {
+    } catch {
       throw new Error('Failed to get workspace analytics');
     }
   }

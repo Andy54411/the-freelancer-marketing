@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { categories } from '@/lib/categoriesData';
 
-const MODEL_NAME = 'gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
+const _MODEL_NAME = 'gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
 
 // Umfassende Kategorie-Datenbank für detaillierte KI-Fragen
 const CATEGORY_QUESTION_DATABASE = {
@@ -801,7 +801,7 @@ export async function POST(request: Request) {
       case 'findProviders':
         // Query companies collection directly - no legacy support needed
         try {
-          const { title, category, services } = data;
+          const { title: _title, category, services: _services } = data;
 
           // Query Firebase companies collection für Firmen/Dienstleister
           const companiesRef = db!.collection('companies');
@@ -973,7 +973,7 @@ export async function POST(request: Request) {
                     userData.companyLogo ||
                     null,
                 };
-              } catch (error) {
+              } catch {
                 // Fallback zu Basis-Daten bei Fehlern
                 return {
                   id: doc.id,
@@ -1030,7 +1030,7 @@ export async function POST(request: Request) {
             action: action,
             message: `${providers.length} passende Dienstleister gefunden`,
           });
-        } catch (error) {
+        } catch {
           return NextResponse.json(
             { error: 'Fehler beim Abrufen der Dienstleister aus der Datenbank' },
             { status: 500 }
@@ -1091,7 +1091,7 @@ export async function POST(request: Request) {
 
     // Fallback-Return (sollte nicht erreicht werden, da alle case-Blöcke return haben sollten)
     return NextResponse.json({ error: 'Unbekannte Aktion' }, { status: 400 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Ein unbekannter Fehler ist aufgetreten.' }, { status: 500 });
   }
 }

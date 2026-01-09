@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import CompanyCalendar from '@/components/CompanyCalendar';
 
 interface InteractiveCompanyCalendarProps {
@@ -18,7 +18,7 @@ export function InteractiveCompanyCalendar({
 }: InteractiveCompanyCalendarProps) {
   
   // Erweitere das CompanyCalendar mit Click-Handlern
-  const handleCalendarClick = (event: any) => {
+  const _handleCalendarClick = (event: any) => {
     // Prüfe ob es ein Datum oder Event-Click war
     if (event.dateStr && onDateClick) {
       // Datum wurde geklickt

@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import { toast } from 'sonner';
+import { Edit, Trash2 } from 'lucide-react';
 import type { ServiceItem } from '@/types/service';
 
 interface ServiceManageProps {

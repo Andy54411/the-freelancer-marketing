@@ -29,7 +29,6 @@ import {
   Trash2,
   Search,
   Filter,
-  Plus,
   Calendar,
   Folder,
   FolderPlus,
@@ -39,14 +38,12 @@ import {
   X,
   User,
   Clock,
-  Share2,
   HardDrive,
 } from 'lucide-react';
 import { Customer } from '../AddCustomerModal';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -100,7 +97,7 @@ export function CustomerDocumentsTab({
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderPath, setFolderPath] = useState<FolderItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, _setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -276,7 +273,6 @@ export function CustomerDocumentsTab({
       toast.error(
         `Nicht genügend Speicherplatz! Benötigt: ${formatFileSize(filesToUploadSize)}, Verfügbar: ${formatFileSize(remainingSpace)}`
       );
-      setShowUpgradeDialog(true);
       return;
     }
 
@@ -317,7 +313,7 @@ export function CustomerDocumentsTab({
             }
           }
 
-          setIsUploading(false);
+          setUploading(false);
           return; // Stop all uploads
         }
 
@@ -367,7 +363,7 @@ export function CustomerDocumentsTab({
 
         // Automatische Kategorisierung
         const category = categorizeDocument(file.name);
-        const description = generateDescription(file.name, category);
+        const _description = generateDescription(file.name, category);
 
         // Save document metadata to Firestore
         const documentsRef = collection(
@@ -592,7 +588,7 @@ export function CustomerDocumentsTab({
   };
 
   // Rekategorisierung bestehender Dokumente
-  const recategorizeDocument = async (document: DocumentItem) => {
+  const _recategorizeDocument = async (document: DocumentItem) => {
     const newCategory = categorizeDocument(document.originalName);
     const newDescription = generateDescription(document.originalName, newCategory);
 
@@ -781,7 +777,7 @@ export function CustomerDocumentsTab({
             <Home className="h-4 w-4" />
             <span>Alle Dokumente</span>
           </button>
-          {folderPath.map((folder, index) => (
+          {folderPath.map((folder, _index) => (
             <React.Fragment key={folder.id}>
               <ChevronRight className="h-4 w-4" />
               <button

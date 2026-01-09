@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +26,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Users,
   Search,
-  Plus,
   Edit,
   Trash2,
   Mail,
@@ -35,10 +33,9 @@ import {
   Shield,
   Eye,
   UserPlus,
-  Settings,
   Clock,
 } from 'lucide-react';
-import { AdminUser, AdminRole, DEFAULT_ADMIN_ROLES, getRoleById } from '@/lib/admin-roles';
+import { AdminUser, DEFAULT_ADMIN_ROLES } from '@/lib/admin-roles';
 import { toast } from 'sonner';
 
 interface CreateAdminUserFormData {
@@ -56,7 +53,6 @@ export default function AdminUserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
 
   const [newUser, setNewUser] = useState<CreateAdminUserFormData>({
     email: '',
@@ -87,7 +83,7 @@ export default function AdminUserManagement() {
         const errorData = await response.json();
         toast.error(errorData.error || 'Fehler beim Laden der Admin-Benutzer');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Admin-Benutzer');
     } finally {
       setLoading(false);
@@ -126,7 +122,7 @@ export default function AdminUserManagement() {
         const errorData = await response.json();
         toast.error(errorData.error || 'Fehler beim Erstellen des Admin-Benutzers');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Erstellen des Admin-Benutzers');
     }
   };
@@ -140,7 +136,7 @@ export default function AdminUserManagement() {
       setAdminUsers(prev => prev.map(u => (u.id === userId ? { ...u, isActive: !u.isActive } : u)));
 
       toast.success(`Benutzer ${user.isActive ? 'deaktiviert' : 'aktiviert'}`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Ändern des Benutzerstatus');
     }
   };
@@ -163,7 +159,7 @@ export default function AdminUserManagement() {
       setAdminUsers(prev => prev.filter(u => u.id !== userId));
 
       toast.success(`Admin-Benutzer ${user.name} gelöscht`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Benutzers');
     }
   };

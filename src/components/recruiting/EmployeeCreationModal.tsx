@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, MapPin, Briefcase, Calendar, AlertCircle, Check, FileText, Shield, Building2 } from 'lucide-react';
+import { X, User, MapPin, Briefcase, AlertCircle, Check, FileText, Shield, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ApplicantData {

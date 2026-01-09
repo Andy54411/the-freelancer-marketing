@@ -14,15 +14,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Calendar, Euro, FileText, Send, X } from 'lucide-react';
+import { AlertTriangle, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { addDoc, collection, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, updateDoc, doc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { WhatsAppNotificationService } from '@/services/whatsapp-notifications.service';
 
 interface OverdueInvoice {
   id: string;
@@ -136,9 +136,45 @@ Mit freundlichen Grüßen`,
         reminderCount: invoice.daysPastDue <= 14 ? 1 : invoice.daysPastDue <= 30 ? 2 : 3,
       });
 
+      // WhatsApp-Zahlungserinnerung senden
+      try {
+        // Kundentelefon aus Kunden-Dokument laden
+        let customerPhone = '';
+        let customerId = '';
+        
+        const customersRef = collection(db, 'companies', companyId, 'customers');
+        const nameQuery = query(customersRef, where('name', '==', invoice.customerName));
+        const customerSnap = await getDocs(nameQuery);
+        
+        if (!customerSnap.empty) {
+          const customerData = customerSnap.docs[0].data();
+          customerPhone = customerData.phone || '';
+          customerId = customerSnap.docs[0].id;
+        }
+        
+        if (customerPhone) {
+          const companyDoc = await getDoc(doc(db, 'companies', companyId));
+          const companyName = companyDoc.data()?.name || 'Taskilo';
+          
+          await WhatsAppNotificationService.sendInvoiceReminder(
+            companyId,
+            companyName,
+            customerId,
+            invoice.customerName,
+            customerPhone,
+            invoice.invoiceNumber,
+            invoice.total,
+            invoice.daysPastDue,
+            invoice.id
+          );
+        }
+      } catch {
+        // WhatsApp-Fehler nicht kritisch
+      }
+
       toast.success('Mahnung erfolgreich versendet!');
       onClose();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Versenden der Mahnung');
     } finally {
       setIsLoading(false);

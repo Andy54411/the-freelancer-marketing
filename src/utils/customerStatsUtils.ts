@@ -64,7 +64,7 @@ export async function calculateCustomerStats(
       totalAmount,
       totalInvoices: validInvoices.length,
     };
-  } catch (error) {
+  } catch {
     return { totalAmount: 0, totalInvoices: 0 };
   }
 }

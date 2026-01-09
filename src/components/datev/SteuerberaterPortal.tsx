@@ -14,15 +14,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
   FiUsers,
@@ -35,17 +26,8 @@ import {
   FiClock,
   FiAlertCircle,
   FiShield,
-  FiMessageCircle,
-  FiEye,
-  FiEdit,
-  FiTrash2,
-  FiUpload,
-  FiCalendar,
-  FiActivity,
-  FiSettings,
-  FiFilter,
 } from 'react-icons/fi';
-import { DatevService, DatevOrganization } from '@/services/datevService';
+import { DatevOrganization } from '@/services/datevService';
 import { toast } from 'sonner';
 
 interface SteuerberaterPortalProps {
@@ -113,28 +95,12 @@ interface CollaborationStats {
   monthlyReports: number;
 }
 
-interface CollaborationLog {
-  id: string;
-  action:
-    | 'invite_sent'
-    | 'invite_accepted'
-    | 'document_shared'
-    | 'document_accessed'
-    | 'report_generated'
-    | 'message_sent'
-    | 'permission_changed';
-  details: string;
-  timestamp: string;
-  performedBy: string;
-}
-
 export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   const [loading, setLoading] = useState(true);
-  const [organization, setOrganization] = useState<DatevOrganization | null>(null);
+  const [, setOrganization] = useState<DatevOrganization | null>(null);
   const [invites, setInvites] = useState<SteuerberaterInvite[]>([]);
   const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
   const [collaborationStats, setCollaborationStats] = useState<CollaborationStats | null>(null);
-  const [collaborationLogs, setCollaborationLogs] = useState<CollaborationLog[]>([]);
 
   // Form states
   const [newInviteEmail, setNewInviteEmail] = useState('');
@@ -148,13 +114,8 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   );
 
   // Modal states
-  const [showInviteDialog, setShowInviteDialog] = useState(false);
-  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [, setShowInviteDialog] = useState(false);
   const [selectedSteuerberater, setSelectedSteuerberater] = useState<string>('');
-
-  // Filter states
-  const [documentFilter, setDocumentFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     loadPortalData();
@@ -174,11 +135,10 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
         totalDownloads: 0,
         monthlyReports: 0,
       });
-      setCollaborationLogs([]);
 
       // DATEV is optional - don't block the portal
       setOrganization(null);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Portal-Daten');
     } finally {
       setLoading(false);
@@ -229,7 +189,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
       } else {
         toast.error(result.message || 'Fehler beim Senden der Einladung');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Einladung');
     }
   };
@@ -268,7 +228,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
       } else {
         toast.error(result.message || 'Fehler beim Erstellen des Berichts');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Erstellen des Berichts');
     }
   };
@@ -286,15 +246,6 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
     }
   };
 
-  const getAccessLevelBadge = (level: string) => {
-    const variants = {
-      basic: 'border-blue-500 text-blue-700 bg-blue-50',
-      advanced: 'border-orange-500 text-orange-700 bg-orange-50',
-      full: 'border-red-500 text-red-700 bg-red-50',
-    };
-    return variants[level as keyof typeof variants] || variants.basic;
-  };
-
   if (loading) {
     return (
       <Card>
@@ -310,7 +261,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   return (
     <div className="space-y-6">
       {/* Header mit Statistiken */}
-      <Card className="bg-linear-to-r from-[#14ad9f] to-[#129488] text-white">
+      <Card className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover text-white">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <FiShield className="text-white w-8 h-8 mt-1 shrink-0" />

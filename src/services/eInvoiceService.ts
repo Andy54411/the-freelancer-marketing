@@ -7,18 +7,14 @@ import {
   collection,
   addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   getDocs,
-  getDoc,
   query,
   where,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
-import * as xml2js from 'xml2js';
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 
 export interface EInvoiceData {
   id?: string;
@@ -334,7 +330,7 @@ export class EInvoiceService {
 </Invoice>`;
 
       return xmlTemplate;
-    } catch (error) {
+    } catch {
       throw new Error('XRechnung XML konnte nicht generiert werden');
     }
   }
@@ -445,7 +441,7 @@ export class EInvoiceService {
       
       // Sort in application (no orderBy in Firestore)
       return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
+    } catch {
       throw new Error('E-Rechnungen konnten nicht geladen werden');
     }
   }
@@ -506,7 +502,7 @@ export class EInvoiceService {
           updatedAt: new Date(),
         });
       }
-    } catch (error) {
+    } catch {
       throw new Error('E-Rechnungs-Einstellungen konnten nicht gespeichert werden');
     }
   }
@@ -744,7 +740,7 @@ export class EInvoiceService {
       });
 
       // PDF/A-3 Metadaten setzen
-      const metadata = `<?xml version="1.0" encoding="UTF-8"?>
+      const _metadata = `<?xml version="1.0" encoding="UTF-8"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
     <rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
@@ -810,13 +806,13 @@ export class EInvoiceService {
     }
   }
 
-  private static convertZUGFeRDToXRechnung(zugferdData: any): string {
+  private static convertZUGFeRDToXRechnung(_zugferdData: any): string {
     // Implementierung der ZUGFeRD zu XRechnung Konvertierung
     // Dies ist eine vereinfachte Version - in der Praxis wäre eine vollständige Feldmapping notwendig
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!-- XRechnung konvertiert aus ZUGFeRD -->';
   }
 
-  private static convertXRechnungToZUGFeRD(xrechnungData: any): string {
+  private static convertXRechnungToZUGFeRD(_xrechnungData: any): string {
     // Implementierung der XRechnung zu ZUGFeRD Konvertierung
     // Dies ist eine vereinfachte Version - in der Praxis wäre eine vollständige Feldmapping notwendig
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!-- ZUGFeRD konvertiert aus XRechnung -->';

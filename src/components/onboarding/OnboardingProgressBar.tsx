@@ -4,9 +4,7 @@ import React from 'react';
 import { Check, Clock } from 'lucide-react';
 import { OnboardingProgressProps } from '@/types/onboarding';
 
-interface OnboardingProgressBarProps extends OnboardingProgressProps {
-  // Extends OnboardingProgressProps with all required properties
-}
+type OnboardingProgressBarProps = OnboardingProgressProps;
 
 const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
   currentStep,

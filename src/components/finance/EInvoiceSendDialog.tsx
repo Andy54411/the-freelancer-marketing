@@ -51,7 +51,6 @@ import jsPDF from 'jspdf';
 import {
   EInvoiceTransmissionService,
   EInvoiceRecipientSettings,
-  EInvoiceTransmissionLog,
   EInvoiceComplianceCheck,
 } from '@/services/eInvoiceTransmissionService';
 
@@ -146,7 +145,7 @@ Mit freundlichen Grüßen`,
       } else {
         toast.error('E-Rechnung entspricht nicht UStG §14 Anforderungen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Compliance-Prüfung fehlgeschlagen');
     } finally {
       setIsChecking(false);
@@ -1155,7 +1154,7 @@ Mit freundlichen Grüßen`,
                 try {
                   generateTransmissionLogPDF();
                   toast.success('PDF wurde heruntergeladen');
-                } catch (error) {
+                } catch {
                   toast.error('PDF-Export fehlgeschlagen');
                 }
               }}

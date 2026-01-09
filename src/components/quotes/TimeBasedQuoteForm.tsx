@@ -6,8 +6,6 @@ import {
   Loader2 as FiLoader,
   Euro as FiEuro,
   Clock as FiClock,
-  Calendar as FiCalendar,
-  FileText as FiFileText,
   Plus as FiPlus,
   X as FiX,
 } from 'lucide-react';
@@ -204,7 +202,7 @@ export default function TimeBasedQuoteForm({
       newErrors.message = 'Nachricht ist erforderlich';
     }
 
-    formData.timeBasedProjects.forEach((project, index) => {
+    formData.timeBasedProjects.forEach((project, _index) => {
       if (!project.title.trim()) {
         newErrors[`${project.id}_title`] = 'Titel ist erforderlich';
       }
@@ -236,7 +234,7 @@ export default function TimeBasedQuoteForm({
 
     try {
       await onSubmit(formData);
-    } catch (error) {}
+    } catch {}
   };
 
   return (

@@ -142,7 +142,7 @@ export default function ContractAlertsCard() {
         });
 
         setAlerts(newAlerts);
-      } catch (error) {
+      } catch {
         // Error handling ohne console.log
       } finally {
         setIsLoading(false);

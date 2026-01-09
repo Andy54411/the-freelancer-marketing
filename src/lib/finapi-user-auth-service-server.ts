@@ -1,6 +1,6 @@
 import { FinAPISDKService, createFinAPIService, FinAPIUser } from './finapi-sdk-service';
 import { db } from '@/firebase/server';
-import { Timestamp } from 'firebase-admin/firestore';
+// Timestamp import entfernt - nicht verwendet
 
 // Lokaler User-Typ mit password für Rückgabe-Kompatibilität
 interface User extends FinAPIUser {
@@ -68,7 +68,7 @@ export class FinAPIUserAuthServiceServer {
               isAutoUpdateEnabled: true,
             } as User;
           }
-        } catch (error) {}
+        } catch {}
       }
 
       // 2. Erstelle neuen finAPI User
@@ -98,7 +98,7 @@ export class FinAPIUserAuthServiceServer {
         ...user,
         password: password,
       } as User;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -161,7 +161,7 @@ export class FinAPIUserAuthServiceServer {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -189,7 +189,7 @@ export class FinAPIUserAuthServiceServer {
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -211,7 +211,7 @@ export class FinAPIUserAuthServiceServer {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

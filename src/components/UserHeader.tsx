@@ -1,12 +1,11 @@
 // src/components/UserHeader.tsx with notification badge
 
 'use client';
-import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'; // Added memo
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Importiere Link
+import Link from 'next/link';
 import { User, getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
-import { app, storage, db } from '@/firebase/clients';
-import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Functions
+import { app, db } from '@/firebase/clients';
 import {
   doc,
   getDoc,
@@ -18,16 +17,13 @@ import {
   QuerySnapshot,
   orderBy,
   limit,
-  updateDoc,
   deleteDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { categories, Category } from '@/lib/categoriesData'; // Categories for search
-import { WorkspaceService } from '@/services/WorkspaceService'; // For Quick Note functionality
-import { Logo } from '@/components/logo';
+import { categories, Category } from '@/lib/categoriesData';
 import LoginPopup from '@/components/LoginPopup';
-import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
-import { QuickNoteDialog } from '@/components/workspace/QuickNoteDialog'; // Quick Note Dialog
+import AppHeaderNavigation from './AppHeaderNavigation';
+import { QuickNoteDialog } from '@/components/workspace/QuickNoteDialog';
 import {
   Search as FiSearch,
   Bell as FiBell,
@@ -81,7 +77,7 @@ interface UserHeaderProps {
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
-  const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
+  const { user: authUser, unreadMessagesCount, recentChats } = useAuth();
 
   // Update-Notification System
   const { unseenCount, unseenUpdates, setShowNotificationModal, dismissUpdate, markUpdateAsSeen } =
@@ -91,7 +87,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
     null
   );
-  const [profilePictureFromFirestore, setProfilePictureFromFirestore] = useState<string | null>(
+  const [_profilePictureFromFirestore, setProfilePictureFromFirestore] = useState<string | null>(
     null
   );
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
@@ -162,7 +158,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     getDocs(allNotificationsQuery)
       .then(snap => {
-        const allDocs = snap.docs.map(d => ({
+        snap.docs.map(d => ({
           id: d.id,
           isRead: d.data().isRead,
           type: d.data().type,
@@ -269,7 +265,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
       // Debug-Log entfernt
       setProfilePictureURLFromStorage(null);
-    } catch (error) {
+    } catch {
       setProfilePictureURLFromStorage(null);
     }
   }, []); // NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
@@ -301,7 +297,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       } else {
         setProfilePictureFromFirestore(null);
       }
-    } catch (error) {
+    } catch {
       setProfilePictureFromFirestore(null);
     }
   }, []);
@@ -328,10 +324,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     // Nur Debug-Logs beibehalten für Monitoring
     if (currentUser?.uid && authUser && currentUser.uid === currentUid) {
-      const user_type = authUser.user_type;
-      const currentPath = window.location.pathname;
-
-      // Debug-Log entfernt
+      // Variables unused but kept for future debugging
     }
   }, [currentUser?.uid, currentUid, authUser]);
 
@@ -357,9 +350,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     if (currentUser?.uid && authUser?.companyName) {
       const loadWorkspaces = async () => {
         try {
+          const { WorkspaceService } = await import('@/services/WorkspaceService');
           const workspaceData = await WorkspaceService.getWorkspaces(currentUser.uid);
           setWorkspaces(workspaceData);
-        } catch (error) {
+        } catch {
           setWorkspaces([]);
         }
       };
@@ -504,7 +498,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         // Auch aus lokalem State entfernen
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
       }
-    } catch (error) {}
+    } catch {
+      // Silent error handling
+    }
 
     // Navigate to the link
     if (link) {
@@ -535,8 +531,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         throw new Error(errorData.error || 'Fehler beim Markieren aller Benachrichtigungen');
       }
 
-      const result = await response.json();
-    } catch (error) {}
+      await response.json();
+    } catch {}
   };
 
   const handleLogout = useCallback(async () => {
@@ -545,7 +541,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       await signOut(auth);
       router.push('/');
       router.refresh();
-    } catch (error) {
+    } catch {
       // Fehler bei der Abmeldung - Seite trotzdem neu laden
       window.location.href = '/';
     }
@@ -1236,7 +1232,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       <LoginPopup 
         isOpen={showLoginPopup} 
         onClose={() => setShowLoginPopup(false)}
-        onLoginSuccess={(user) => {
+        onLoginSuccess={(_user) => {
           setShowLoginPopup(false);
           // Auth state wird automatisch durch onAuthStateChanged aktualisiert
           // Optional: Seite neu laden für volle Synchronisation

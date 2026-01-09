@@ -122,7 +122,7 @@ export function DatevDebugComponent() {
         const validationData = await validationResponse.json();
         setValidation(validationData);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Debug-Informationen');
     } finally {
       setLoading(false);
@@ -132,7 +132,6 @@ export function DatevDebugComponent() {
   const loadTokenInfo = () => {
     try {
       const token = DatevTokenManager.getUserToken();
-      const userData = DatevTokenManager.getUserData();
 
       if (token) {
         const now = Date.now();
@@ -155,7 +154,7 @@ export function DatevDebugComponent() {
           hasToken: false,
         });
       }
-    } catch (error) {
+    } catch {
       setTokenInfo({
         hasToken: false,
       });
@@ -190,7 +189,7 @@ export function DatevDebugComponent() {
       } else {
         toast.error(`Token ungültig: ${result.error}`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Testen des Tokens');
     } finally {
       setTesting(false);
@@ -202,7 +201,7 @@ export function DatevDebugComponent() {
       DatevTokenManager.clearUserToken();
       loadTokenInfo();
       toast.success('Token gelöscht');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Tokens');
     }
   };

@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { User as FiUser, ArrowRight, Star, Circle, MapPin, Globe, ShoppingCart, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { userPresence } from '@/lib/userPresence';
 import { db } from '@/firebase/clients';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
@@ -264,7 +263,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
             languages: customerLanguages,
           });
         }
-      } catch (error) {
+      } catch {
       } finally {
         setLoading(false);
       }

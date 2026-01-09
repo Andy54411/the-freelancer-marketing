@@ -12,7 +12,6 @@
  */
 
 import {
-  useDocumentTranslation,
   type DocumentTranslations,
 } from '@/hooks/pdf/useDocumentTranslation';
 

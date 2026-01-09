@@ -4,12 +4,12 @@
  * Compliant with GDPR/DSGVO requirements
  */
 
-import { db as firestore, app } from '@/firebase/clients';
+import { app } from '@/firebase/clients';
 import { getDatabase, ref, onValue, push, set, update, off, remove, child } from 'firebase/database';
 import SimplePeer from 'simple-peer';
 import { TaskiloCrypto } from '@/utils/crypto';
 import { videoDiagnostics } from '@/utils/video-diagnostics';
-import { hasAnalyticsConsent, hasFunctionalConsent } from '@/lib/gtm-dsgvo';
+import { hasFunctionalConsent } from '@/lib/gtm-dsgvo';
 
 // Get Firebase Realtime Database instance explicitly from the initialized app
 const rtdb = getDatabase(app);
@@ -152,27 +152,29 @@ export class TaskiloVideoService {
       if (activeVideoCallInstance.chatId === options.chatId) {
         console.log('🔄 [VIDEO_SERVICE] Same chat ID - upgrading existing instance role');
         
-      // If existing instance is waiting as RECEIVER, restart as INITIATOR
-      if (!activeVideoCallInstance.isInitiator && this.isInitiator) {
-        console.log('🔄 [CRITICAL_FIX] Restarting as INITIATOR for approved call');
-        
-        // End the existing RECEIVER instance cleanly
-        await activeVideoCallInstance.endCall();
-        activeVideoCallInstance = null;
-        
-        // Continue with INITIATOR initialization below
-        console.log('🚀 [CRITICAL_FIX] Proceeding to create new INITIATOR instance');
-      } else {
-        // Same role, reuse existing instance
-        console.log('🔄 [VIDEO_SERVICE] Same role, reusing existing instance');
-        return;
-      }        return;
+        // If existing instance is waiting as RECEIVER, restart as INITIATOR
+        if (!activeVideoCallInstance.isInitiator && this.isInitiator) {
+          console.log('🔄 [CRITICAL_FIX] Restarting as INITIATOR for approved call');
+          
+          // End the existing RECEIVER instance cleanly
+          await activeVideoCallInstance.endCall();
+          activeVideoCallInstance = null;
+          
+          // Continue with INITIATOR initialization below
+          console.log('🚀 [CRITICAL_FIX] Proceeding to create new INITIATOR instance');
+        } else {
+          // Same role, reuse existing instance
+          console.log('🔄 [VIDEO_SERVICE] Same role, reusing existing instance');
+          return;
+        }
       } else {
         console.log('🆕 [VIDEO_SERVICE] Different chat ID - ending existing call and creating new one');
         await activeVideoCallInstance.endCall();
         activeVideoCallInstance = null;
       }
     }
+    // Singleton pattern: Store reference to active instance
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     activeVideoCallInstance = this;
     
     // Set chat ID for instance tracking

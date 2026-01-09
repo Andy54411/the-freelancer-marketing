@@ -7,7 +7,7 @@ import { InvoiceListView } from '@/components/finance/InvoiceListView';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Download, Filter } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { ImportXRechnungDialog } from '@/components/finance/ImportXRechnungDialog';
 
@@ -19,7 +19,7 @@ export default function InvoicesPage() {
 
   // Get initial tab from URL parameters
   const initialTab = searchParams?.get('tab') || 'all';
-  const initialFilter = searchParams?.get('filter');
+  const _initialFilter = searchParams?.get('filter');
 
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function InvoicesPage() {
       setLoading(true);
       const companyInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
       setInvoices(companyInvoices);
-    } catch (err) {
+    } catch {
       setError('Fehler beim Laden der Rechnungen');
     } finally {
       setLoading(false);

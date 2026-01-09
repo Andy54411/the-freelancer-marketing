@@ -33,7 +33,7 @@ interface DrivePickerModalProps {
   multiple?: boolean;
 }
 
-const formatBytes = (bytes: number): string => {
+const _formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -225,7 +225,7 @@ export function DrivePickerModal({
     }
   };
 
-  const navigateBack = () => {
+  const _navigateBack = () => {
     const newPath = [...folderPath];
     newPath.pop();
     setFolderPath(newPath);

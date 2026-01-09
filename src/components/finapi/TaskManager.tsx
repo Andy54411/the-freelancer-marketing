@@ -12,7 +12,6 @@ import {
   RefreshCw,
   ExternalLink,
   Play,
-  Pause,
   Trash2,
 } from 'lucide-react';
 import {
@@ -33,7 +32,7 @@ export function FinApiTaskManager({
   showCreateActions = true,
   showStats = true,
 }: TaskManagerProps) {
-  const { tasks, loading, error, pagination, refetch, activeTasks, completedTasks, pendingTasks } =
+  const { tasks, loading, error, pagination: _pagination, refetch, activeTasks, completedTasks, pendingTasks: _pendingTasks } =
     useFinApiTasks({ credentialType });
 
   const { createTask, creating } = useCreateFinApiTask(credentialType);
@@ -59,7 +58,7 @@ export function FinApiTaskManager({
   };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
+    const _variants = {
       NOT_YET_STARTED: 'secondary',
       IN_PROGRESS: 'default',
       WEB_FORM_REQUIRED: 'outline',

@@ -13,18 +13,16 @@ const getDatevClientCookieName = (companyId: string) => {
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   FiExternalLink,
   FiCheck,
-  FiAlertCircle,
   FiRefreshCw,
   FiShield,
   FiDatabase,
   FiUsers,
   FiFileText,
 } from 'react-icons/fi';
-import { DatevService, DatevOrganization } from '@/services/datevService';
+import { DatevOrganization } from '@/services/datevService';
 import { toast } from 'sonner';
 
 interface DatevConnection {
@@ -195,7 +193,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           toast.error('Fehler beim Laden der DATEV-Organisationsdaten');
         }
       }
-    } catch (error) {
+    } catch {
       toast.error('Netzwerkfehler beim Laden der DATEV-Daten');
     }
   };
@@ -298,7 +296,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           },
         });
       }
-    } catch (error) {
+    } catch {
       setConnection({
         isConnected: false,
         features: {
@@ -323,10 +321,13 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     try {
       setConnecting(true);
 
-      // Redirect to OAuth authorization
+      // Redirect to OAuth authorization in a new tab
       const authUrl = `/api/datev/auth-cookie?company_id=${encodeURIComponent(companyId)}`;
-      window.location.href = authUrl;
-    } catch (error) {
+      window.open(authUrl, '_blank');
+      
+      // Reset connecting state after opening new tab
+      setTimeout(() => setConnecting(false), 1000);
+    } catch {
       toast.error('Fehler beim Verbinden mit DATEV');
       setConnecting(false);
     }
@@ -349,7 +350,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           },
           body: JSON.stringify({ companyId: companyId }),
         });
-      } catch (e) {}
+      } catch {}
 
       // Update UI
       setConnection({
@@ -363,7 +364,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       });
 
       toast.success('DATEV-Verbindung getrennt');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
@@ -380,7 +381,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       } else {
         toast.error('Verbindung nicht aktiv. Bitte erneut verbinden.');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren der Verbindung');
     } finally {
       setLoading(false);

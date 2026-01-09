@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           // PDF-Pfad parsen (gs://bucket-name/path)
           const pdfPathMatch = invoice.pdfPath.match(/gs:\/\/([^\/]+)\/(.+)/);
           if (pdfPathMatch) {
-            const [, bucketName, filePath] = pdfPathMatch;
+            const [, , filePath] = pdfPathMatch;
             const file = bucket.file(filePath);
 
             try {
@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
               disposition: 'attachment',
             };
           } else {
-            // JSON-Antwort (Fallback-Modus)
-            const result = await pdfResponse.json();
+            // JSON-Antwort (Fallback-Modus) - verarbeitet, aber nicht weiter verwendet
+            await pdfResponse.json();
           }
         }
       }
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
         .collection('invoices')
         .doc(invoiceId)
         .update({ status: 'sent' });
-    } catch (updateError) {}
+    } catch {}
 
     return NextResponse.json({
       success: true,

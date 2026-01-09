@@ -1,8 +1,6 @@
 // Google Ads Setup Validator - Prüft Systemkonfiguration
 // Wird verwendet um sicherzustellen, dass alle Komponenten korrekt konfiguriert sind
 
-import { GoogleAdsEnvironment } from '@/config/googleAdsEnvironment';
-
 export interface ValidationResult {
   valid: boolean;
   errors: string[];

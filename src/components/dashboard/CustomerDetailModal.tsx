@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Building2, Mail, Phone, MapPin, FileText, Euro, Calendar, TrendingUp } from 'lucide-react';
+import { X, Mail, Phone, MapPin, FileText, Euro, TrendingUp } from 'lucide-react';
 
 interface Invoice {
   id: string;

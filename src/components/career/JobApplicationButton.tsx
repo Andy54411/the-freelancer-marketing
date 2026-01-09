@@ -32,7 +32,7 @@ export function JobApplicationButton({ jobId, userId, hasApplied }: Props) {
       } else {
         toast.error(result.error || 'Fehler bei der Bewerbung');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein unerwarteter Fehler ist aufgetreten');
     } finally {
       setIsSubmitting(false);

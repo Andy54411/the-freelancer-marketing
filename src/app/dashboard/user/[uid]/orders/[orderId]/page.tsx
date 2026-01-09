@@ -1,22 +1,17 @@
 // src/app/dashboard/user/[uid]/orders/[orderId]/page.tsx
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useAuth, UserProfile } from '@/contexts/AuthContext';
-import { functions, db } from '@/firebase/clients';
-import { httpsCallable } from 'firebase/functions';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSingleOrder } from '@/app/api/getSingleOrder';
 import { getOrderParticipantDetails } from '@/app/api/getOrderParticipantDetails';
 
 // Icons für UI
 import {
-  FiLoader,
   FiAlertCircle,
   FiMessageSquare,
   FiArrowLeft,
-  FiUser,
   FiSlash,
   FiCheckCircle,
 } from 'react-icons/fi'; // FiUser hinzugefügt
@@ -35,12 +30,6 @@ import HoursBillingOverview from '@/components/HoursBillingOverview';
 import OrderCompletionModal from '@/components/orders/OrderCompletionModal';
 // Storno-Komponente
 import StornoButtonSection from '@/components/storno/StornoButtonSection';
-
-interface ParticipantDetails {
-  id: string;
-  name: string;
-  avatarUrl: string | null;
-}
 
 // Interface für ein Auftragsdokument (basierend auf Ihrem Firestore-Screenshot)
 interface OrderData {
@@ -111,7 +100,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false); // NEU: Ladezustand für Aktionen
+  const [_isUpdating, setIsUpdating] = useState(false); // NEU: Ladezustand für Aktionen
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // NEU: Success feedback
 
   // Payment Modal States (Escrow-System)
@@ -251,7 +240,7 @@ export default function OrderDetailPage() {
   };
 
   // NEU: Beispiel-Handler für den "Auftrag annehmen"-Button
-  const handleAcceptOrder = async () => {
+  const _handleAcceptOrder = async () => {
     if (!orderId) return;
     setIsUpdating(true);
     setError(null);
@@ -281,7 +270,7 @@ export default function OrderDetailPage() {
         throw new Error(errorData.error || 'HTTP Error');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
 
       // Real-Time-Listener aktualisiert die Daten automatisch
     } catch (err: any) {
@@ -292,7 +281,7 @@ export default function OrderDetailPage() {
   };
 
   // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden (Escrow-System)
-  const handlePaymentRequest = (_clientSecret: string, amount: number, hours: number) => {
+  const _handlePaymentRequest = (_clientSecret: string, amount: number, hours: number) => {
     // clientSecret wird nicht mehr benötigt für Escrow-System
     setPaymentAmount(amount);
     setPaymentHours(hours);
@@ -359,7 +348,7 @@ export default function OrderDetailPage() {
 
       if (billingPendingEntries.length > 0) {
         // Automatische Reparatur für billing_pending Einträge
-        const entryIds = billingPendingEntries.map((e: any) => e.id);
+        const _entryIds = billingPendingEntries.map((e: any) => e.id);
         const paymentIntentId = billingPendingEntries[0].paymentIntentId;
 
         try {
@@ -376,7 +365,7 @@ export default function OrderDetailPage() {
             setSuccessMessage('Zahlung erfolgreich! Daten werden automatisch korrigiert...');
             // Real-Time-Listener aktualisiert die Daten automatisch
           }
-        } catch (fixError) {
+        } catch {
           // Fehler beim Fix ignorieren - Real-Time-Listener wird trotzdem funktionieren
         }
       }
@@ -401,7 +390,7 @@ export default function OrderDetailPage() {
 
   if (overallLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
+      <div className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
         <div className="text-center">
           {/* Animated Logo */}
           <div className="relative w-24 h-24 mx-auto mb-6">
@@ -456,7 +445,7 @@ export default function OrderDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiAlertCircle className="h-8 w-8 text-red-600" />
@@ -473,7 +462,7 @@ export default function OrderDetailPage() {
 
   if (!order || !currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 flex flex-col justify-center items-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiAlertCircle className="h-8 w-8 text-amber-600" />
@@ -507,7 +496,7 @@ export default function OrderDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
+        <div className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 flex justify-center items-center">
           <div className="text-center">
             {/* Animated Logo */}
             <div className="relative w-24 h-24 mx-auto mb-6">
@@ -559,7 +548,7 @@ export default function OrderDetailPage() {
     >
       <main className="min-h-screen bg-gray-50">
         {/* Header mit Taskilo Gradient */}
-        <div className="bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700">
+        <div className="bg-linear-to-r from-teal-500 via-teal-600 to-teal-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -617,7 +606,7 @@ export default function OrderDetailPage() {
         {successMessage && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <FiCheckCircle className="h-5 w-5 flex-shrink-0" />
+              <FiCheckCircle className="h-5 w-5 shrink-0" />
               <span>{successMessage}</span>
             </div>
           </div>
@@ -632,7 +621,7 @@ export default function OrderDetailPage() {
               
               {/* Order Details Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-4">
                   <h2 className="text-lg font-semibold text-white">Auftragsdetails</h2>
                 </div>
                 <div className="p-6">
@@ -744,7 +733,7 @@ export default function OrderDetailPage() {
 
               {/* Chat Section */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-4">
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <FiMessageSquare className="h-5 w-5 text-white/80" />
                     Nachrichten
@@ -779,7 +768,7 @@ export default function OrderDetailPage() {
               <div className="sticky top-6 space-y-6">
                 {/* Provider/Customer Card - Taskilo Design */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                  <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-4">
                     <p className="text-white/80 text-sm font-medium">
                       {cardUser.role === 'provider' ? 'Ihr Dienstleister' : 'Auftraggeber'}
                     </p>
@@ -805,7 +794,7 @@ export default function OrderDetailPage() {
 
                 {/* Order Timeline */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3">
+                  <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-3">
                     <h3 className="font-semibold text-white">Bestellübersicht</h3>
                   </div>
                   <div className="p-6 space-y-4">
@@ -840,8 +829,8 @@ export default function OrderDetailPage() {
                     orderId={orderId}
                     userRole="customer"
                     orderStatus={order.status}
-                    providerId={order.providerId}
-                    customerId={order.customerId}
+                    _providerId={order.providerId}
+                    _customerId={order.customerId}
                   />
                 )}
               </div>
@@ -865,10 +854,10 @@ export default function OrderDetailPage() {
             }}
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
-            onSuccess={(escrowId: string) => {
+            onSuccess={(_escrowId: string) => {
               handlePaymentSuccess();
             }}
-            onError={(error: string) => {
+            onError={(_error: string) => {
               handlePaymentCancel();
             }}
           />

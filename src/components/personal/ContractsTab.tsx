@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, X, Download, Upload, Calendar, CheckCircle } from 'lucide-react';
+import { FileText, Plus, X } from 'lucide-react';
 import { Employee } from '@/services/personalService';
 
 interface ContractsTabProps {

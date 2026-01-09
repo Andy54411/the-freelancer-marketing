@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Shield, FileX, Plus, X, Calendar } from 'lucide-react';
+import { AlertTriangle, Shield, FileX, Plus, X } from 'lucide-react';
 import { Employee } from '@/services/personalService';
 
 interface DisciplinaryTabProps {

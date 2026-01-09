@@ -189,7 +189,7 @@ export class AutoEInvoiceService {
   /**
    * Überträgt E-Invoice (automatisch)
    */
-  private static async transmitEInvoice(eInvoiceId: string, xmlContent: string): Promise<void> {
+  private static async transmitEInvoice(_eInvoiceId: string, _xmlContent: string): Promise<void> {
     // Hier würde die tatsächliche Übertragung stattfinden:
     // - PEPPOL Network
     // - E-Mail mit PDF/A-3

@@ -23,12 +23,10 @@ import {
   TrendingUp,
   Shield,
   Settings,
-  Users,
   Calendar,
   Edit,
   Ban,
   CheckCircle,
-  ExternalLink,
   Eye,
   Download,
   Image,
@@ -39,6 +37,7 @@ import {
   Send,
   Loader2,
   AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
 
 interface CompanyDetails {
@@ -306,7 +305,7 @@ Ihr Taskilo Team`,
       } else {
         alert(`Sync fehlgeschlagen: ${result.error || 'Unbekannter Fehler'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Netzwerkfehler beim Sync');
     } finally {
       setIsSyncingProfile(false);
@@ -360,7 +359,7 @@ Ihr Taskilo Team`,
       } else {
         alert(`Fehler: ${result.error || 'Nachricht konnte nicht gesendet werden'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Netzwerkfehler beim Senden der Nachricht');
     } finally {
       setIsSendingMessage(false);
@@ -441,7 +440,7 @@ Ihr Taskilo Team`,
         const error = await response.json();
         alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Aktualisieren des Status');
     } finally {
       setIsUpdatingApproval(false);
@@ -464,7 +463,7 @@ Ihr Taskilo Team`,
         const error = await response.json();
         alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen des Unternehmens');
     } finally {
       setIsDeleting(false);
@@ -917,7 +916,7 @@ Ihr Taskilo Team`,
                 <div>
                   <label className="text-sm font-medium text-gray-500">Steuernummer</label>
                   <p className="font-medium">
-                    {company.taxNumber || company.taxNumberForBackend || 'Nicht angegeben'}
+                    {company.taxNumber || 'Nicht angegeben'}
                   </p>
                 </div>
                 <div>

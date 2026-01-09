@@ -395,6 +395,7 @@ export interface Employee {
   dashboardAccess?: {
     enabled: boolean; // Hat der Mitarbeiter Dashboard-Zugang?
     authUid?: string; // Firebase Auth UID des Mitarbeiter-Accounts
+    linkedUserId?: string; // Legacy-Feld für verknüpfte User-ID
     createdAt?: string; // Wann wurde der Zugang erstellt?
     lastLogin?: string;
     // Berechtigungen für Sidebar-Menüpunkte

@@ -34,7 +34,7 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       const data = await response.json();
       setProfile(prev => (prev ? { ...prev, publicDescription: data.description } : null));
       toast.success('Beschreibung erfolgreich generiert!');
-    } catch (error) {
+    } catch {
       toast.error('Fehler bei der Generierung der Beschreibung');
     } finally {
       setIsGeneratingDescription(false);

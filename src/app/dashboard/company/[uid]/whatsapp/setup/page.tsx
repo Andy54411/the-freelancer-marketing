@@ -69,8 +69,8 @@ export default function WhatsAppSetupPage() {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">📋 Nach dem Öffnen:</h4>
               <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                <li>Klicke auf "WhatsApp Accounts" → "Konto hinzufügen"</li>
-                <li>Wähle "Neue Nummer registrieren" oder "Bestehende Nummer verbinden"</li>
+                <li>Klicke auf &quot;WhatsApp Accounts&quot; → &quot;Konto hinzufügen&quot;</li>
+                <li>Wähle &quot;Neue Nummer registrieren&quot; oder &quot;Bestehende Nummer verbinden&quot;</li>
                 <li>Folge den Schritten zur Verifizierung</li>
                 <li>Kopiere dann deine <strong>Phone Number ID</strong> und <strong>Access Token</strong></li>
                 <li>Komme zurück zu Taskilo und füge sie in den manuellen Einstellungen ein</li>

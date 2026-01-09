@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Calendar, Shield, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle } from 'lucide-react';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 

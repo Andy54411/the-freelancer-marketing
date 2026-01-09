@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -14,18 +13,12 @@ import {
   Building,
   Database,
   Cloud,
-  Settings,
   CheckCircle,
   AlertTriangle,
   RefreshCw,
   Plus,
   Link as LinkIcon,
-  Download,
-  Upload,
   BarChart3,
-  Users,
-  ShoppingCart,
-  Utensils,
   Receipt,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -147,7 +140,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ uid: st
         dailySyncs: connectedIntegrations.reduce((sum, int) => sum + (int.dataPoints || 0), 0),
         lastFullSync: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Integrations-Daten');
     } finally {
       setLoading(false);
@@ -166,7 +159,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ uid: st
     );
   };
 
-  const handleSync = async (integrationId: string) => {
+  const handleSync = async (_integrationId: string) => {
     toast.success('Synchronisation gestartet...');
   };
 

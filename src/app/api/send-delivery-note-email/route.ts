@@ -173,7 +173,7 @@ Diese E-Mail wurde automatisch generiert.
       if (pdfResponse.ok) {
         pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
       }
-    } catch (error) {}
+    } catch {}
 
     // E-Mail-Optionen
     const mailOptions: any = {
@@ -208,7 +208,7 @@ Diese E-Mail wurde automatisch generiert.
         emailSentTo: recipientEmail,
         lastEmailId: info.messageId,
       });
-    } catch (updateError) {}
+    } catch {}
 
     return NextResponse.json({
       success: true,

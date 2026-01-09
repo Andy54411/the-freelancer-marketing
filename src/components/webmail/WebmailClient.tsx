@@ -59,7 +59,7 @@ import { EmailCompose as EmailComposeComponent } from '@/components/email-client
 import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessage } from '@/components/email-client/types';
 
 // Debug-Logging für Hydration
-const webmailClientLog = (step: string, data?: Record<string, unknown>) => {
+const webmailClientLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }
@@ -535,6 +535,8 @@ interface AttachmentInfo {
   contentType?: string;
   size?: number;
   partId?: string;
+  contentId?: string;
+  data?: string;
 }
 
 interface EmailViewerProps {

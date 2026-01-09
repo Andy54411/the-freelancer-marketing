@@ -1,5 +1,5 @@
 // Datum und Zeit Platzhalter - Zentrale Implementierung
-import { PlaceholderRegistry, PlaceholderContext } from '../types';
+import { PlaceholderRegistry } from '../types';
 
 // Hilfsfunktionen für erweiterte Datumsberechnungen
 function formatDateDE(date: Date): string {

@@ -103,7 +103,7 @@ export function AddTaskSlideOver({
       });
 
       onClose();
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

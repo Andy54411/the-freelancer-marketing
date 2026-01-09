@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { companyId, adGroupId, type, headlines, descriptions, finalUrls, displayUrl } = body;
+    const { companyId, adGroupId, type, headlines, descriptions, finalUrls, displayUrl: _displayUrl } = body;
 
     if (!companyId || !adGroupId || !headlines?.length || !descriptions?.length) {
       return NextResponse.json(

@@ -3,7 +3,7 @@
 
 import { useSearchParams, useParams } from 'next/navigation';
 import React, { useMemo } from 'react';
-import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
+import { AlertCircle as FiAlertCircle } from 'lucide-react';
 import AnbieterDetailsFetcher from './AnbieterDetailsFetcher';
 import { differenceInCalendarDays, parseISO, isValid as isValidDate } from 'date-fns';
 
@@ -62,7 +62,7 @@ export default function BestaetigungsContent({
     if (initialJobDurationString) {
       try {
         return decodeURIComponent(initialJobDurationString);
-      } catch (e) {
+      } catch {
         return undefined;
       }
     }
@@ -70,7 +70,7 @@ export default function BestaetigungsContent({
     if (auftragsDauerFromQuery) {
       try {
         return decodeURIComponent(auftragsDauerFromQuery);
-      } catch (e) {
+      } catch {
         return undefined;
       }
     }

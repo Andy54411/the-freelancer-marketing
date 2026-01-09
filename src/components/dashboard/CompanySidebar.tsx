@@ -759,7 +759,7 @@ export default function CompanySidebar({
           }
         }
       },
-      (error) => {
+      (_error) => {
         // Silent fail
       }
     );
@@ -1374,9 +1374,9 @@ export default function CompanySidebar({
                             : 'bg-orange-100 text-orange-800 border border-orange-200'
                         }`}>
                           {taskerStatus === 'banned' ? (
-                            <FiBan className="h-4 w-4 flex-shrink-0" />
+                            <FiBan className="h-4 w-4 shrink-0" />
                           ) : (
-                            <FiAlertTriangle className="h-4 w-4 flex-shrink-0" />
+                            <FiAlertTriangle className="h-4 w-4 shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">
@@ -1393,7 +1393,7 @@ export default function CompanySidebar({
                       {/* Tasker aktiv Badge */}
                       {item.value === 'tasker' && taskerStatus === 'active' && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm mb-2 bg-green-50 text-green-700 border border-green-200">
-                          <FiCheckCircle className="h-4 w-4 flex-shrink-0" />
+                          <FiCheckCircle className="h-4 w-4 shrink-0" />
                           <span className="font-medium">Tasker aktiv</span>
                         </div>
                       )}

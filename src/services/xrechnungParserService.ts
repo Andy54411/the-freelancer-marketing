@@ -297,8 +297,7 @@ export class XRechnungParserService {
    */
   static convertToInvoiceData(
     xrechnung: XRechnungData,
-    companyId: string,
-    customerId?: string
+    companyId: string
   ): Partial<InvoiceData> {
     const items = xrechnung.lineItems.map((item, index) => ({
       id: `item-${index + 1}`,
@@ -312,31 +311,34 @@ export class XRechnungParserService {
 
     return {
       companyId,
-      customerId: customerId || '',
       invoiceNumber: xrechnung.invoiceNumber,
-      invoiceDate: xrechnung.issueDate,
+      issueDate: xrechnung.issueDate,
       dueDate: xrechnung.dueDate || this.calculateDueDate(xrechnung.issueDate),
       status: 'draft',
       items,
-      subtotal: xrechnung.subtotal,
-      taxRate: xrechnung.taxRate,
-      taxAmount: xrechnung.taxAmount,
+      amount: xrechnung.subtotal, // Nettobetrag
+      vatRate: xrechnung.taxRate,
+      tax: xrechnung.taxAmount,
       total: xrechnung.total,
-      currency: xrechnung.currency || 'EUR',
       paymentTerms: xrechnung.paymentTerms || 'Zahlbar binnen 14 Tagen',
       notes: `Importiert aus E-Rechnung am ${new Date().toLocaleDateString('de-DE')}`,
       
       // Customer data from E-Invoice
-      customerName: xrechnung.buyerName,
-      customerEmail: xrechnung.buyerEmail,
+      customerName: xrechnung.buyerName || '',
+      customerEmail: xrechnung.buyerEmail || '',
       customerAddress: `${xrechnung.buyerAddress.street}\n${xrechnung.buyerAddress.postalCode} ${xrechnung.buyerAddress.city}`,
-      customerStreet: xrechnung.buyerAddress.street,
-      customerPostalCode: xrechnung.buyerAddress.postalCode,
-      customerCity: xrechnung.buyerAddress.city,
-      customerCountry: xrechnung.buyerAddress.country,
       
-      // Additional buyer info
-      buyerReference: xrechnung.buyerReference,
+      // Structured customer data for templates
+      customer: {
+        name: xrechnung.buyerName || '',
+        email: xrechnung.buyerEmail || '',
+        address: {
+          street: xrechnung.buyerAddress.street,
+          zipCode: xrechnung.buyerAddress.postalCode,
+          city: xrechnung.buyerAddress.city,
+          country: xrechnung.buyerAddress.country || 'Deutschland',
+        },
+      },
     };
   }
 

@@ -1,10 +1,9 @@
 'use client';
 
 import { type User as FirebaseUser, onAuthStateChanged, signOut } from '@/firebase/clients';
-import { createContext, useState, useEffect, useContext, ReactNode, useMemo, useRef } from 'react';
+import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { orderBy, limit } from 'firebase/firestore'; // NEU: orderBy und limit importieren
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase/clients';
 import { userPresence } from '@/lib/userPresence'; // NEU: User Presence importieren
 import { logEmployeeLogin } from '@/lib/employeeActivityLogger'; // NEU: Employee Activity Logger
@@ -102,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setFirebaseUser(null);
       // Optional: Leite den Benutzer nach dem Logout weiter
       window.location.href = '/';
-    } catch (error) {
+    } catch {
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
   };
@@ -340,7 +339,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                       window.location.href = targetPath;
                     }
                   }, 2000);
-                } catch (error) {
+                } catch {
                   window.location.href = targetPath;
                 }
                 return;
@@ -405,7 +404,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // NEU: Cleanup Presence wenn User sich abmeldet
           userPresence.cleanupPresence();
         }
-      } catch (error) {
+      } catch (err) {
+        console.error('[AuthContext] Error in auth state change:', err);
         setUser(null);
         setFirebaseUser(null);
       } finally {

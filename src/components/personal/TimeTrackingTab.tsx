@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Calendar,
   Clock,
-  Coffee,
   Plane,
   Plus,
   Edit2,
@@ -22,7 +21,6 @@ import {
   X,
   AlertTriangle,
   TrendingUp,
-  TrendingDown,
   Euro,
   FileWarning,
 } from 'lucide-react';
@@ -43,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface TimeEntry {
+interface _TimeEntry {
   id: string;
   date: string;
   type: 'work' | 'break' | 'vacation' | 'sick' | 'overtime';
@@ -149,7 +147,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
         endOfMonth
       );
       setPlanActualData(comparison);
-    } catch (error) {
+    } catch {
       // Fehler ignorieren
     }
   };
@@ -179,7 +177,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       setLoading(true);
       const entries = await PersonalService.getEmployeeTimeTracking(companyId, employeeId);
       setTimeEntries(entries);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Zeiteinträge');
     } finally {
       setLoading(false);
@@ -210,7 +208,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           description: `${todayShift.position} - ${todayShift.department}`,
         }));
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const calculateHours = (startTime: string, endTime: string) => {
@@ -278,7 +276,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       });
 
       toast.success('Zeiteintrag erfolgreich hinzugefügt');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hinzufügen des Zeiteintrags');
     } finally {
       setLoading(false);
@@ -290,7 +288,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       await PersonalService.deleteTimeTracking(companyId, entryId);
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
       toast.success('Zeiteintrag gelöscht');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };
@@ -340,7 +338,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       
       setEditingEntry(null);
       toast.success('Zeiteintrag aktualisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren des Zeiteintrags');
     } finally {
       setLoading(false);
@@ -374,7 +372,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
 
   // Statistiken berechnen
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const currentYear = new Date().getFullYear();
+  const _currentYear = new Date().getFullYear();
   const monthlyEntries = timeEntries.filter(entry => entry.date.startsWith(currentMonth));
   const totalHours = monthlyEntries.reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
   const workHours = monthlyEntries
@@ -392,7 +390,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     .reduce((sum, req) => sum + req.days, 0);
   
   // Ausstehende Urlaubstage aus AbsenceRequests (PENDING Vacation)
-  const pendingVacationDays = absenceRequests
+  const _pendingVacationDays = absenceRequests
     .filter(req => req.status === 'PENDING' && req.type === 'VACATION')
     .reduce((sum, req) => sum + req.days, 0);
   

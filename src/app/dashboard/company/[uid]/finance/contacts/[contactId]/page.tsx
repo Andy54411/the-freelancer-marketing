@@ -27,14 +27,9 @@ import {
   FolderOpen,
   ShoppingCart,
   Ticket,
-  Mail,
-  Phone,
-  UserPlus,
-  FileEdit,
   MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { updateCustomerStats } from '@/utils/customerStatsUtils';
 import { Button } from '@/components/ui/button';
 import { CustomerInfoCard } from '@/components/finance/customer-detail/CustomerInfoCard';
 import { CustomerInvoiceCard } from '@/components/finance/customer-detail/CustomerInvoiceCard';
@@ -74,7 +69,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
-  const [syncingStats, setSyncingStats] = useState(false);
+  const [, setSyncingStats] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
   const [calculatedStats, setCalculatedStats] = useState<{
@@ -170,7 +165,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
       await reloadCustomerData();
 
       toast.success('Statistiken erfolgreich synchronisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Synchronisieren der Statistiken');
     } finally {
       setSyncingStats(false);
@@ -252,8 +247,8 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
               description: data.description || data.title || 'Ausgabe',
             } as any);
           });
-        } catch (expenseError) {
-          console.error('Fehler beim Laden der Ausgaben:', expenseError);
+        } catch (_expenseError) {
+          console.error('Fehler beim Laden der Ausgaben:', _expenseError);
         }
       }
 
@@ -272,14 +267,14 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
             ...doc.data(),
           });
         });
-      } catch (calendarError) {
-        console.error('Fehler beim Laden der Calendar Events:', calendarError);
+      } catch (_calendarError) {
+        console.error('Fehler beim Laden der Calendar Events:', _calendarError);
       }
 
       setInvoices(loadedInvoices);
       setCalendarEvents(loadedCalendarEvents);
       calculateCustomerStats(loadedInvoices, loadedCalendarEvents);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Rechnungshistorie');
     } finally {
       setInvoicesLoading(false);
@@ -480,8 +475,8 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
 function CustomerDetailPageContent({
   customer,
   invoices = [],
-  calendarEvents = [],
-  loading = false,
+  calendarEvents: _calendarEvents = [],
+  loading: _loading = false,
   calculatedStats = { totalAmount: 0, totalInvoices: 0, totalMeetings: 0 },
   onEditContact,
   companyId,

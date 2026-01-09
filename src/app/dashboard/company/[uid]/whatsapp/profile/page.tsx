@@ -12,7 +12,8 @@ import {
   Upload,
   Check,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,17 +167,13 @@ export default function WhatsAppProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#111b21]">
+      <div className="flex items-center justify-center h-full bg-linear-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <Image
-            src="/images/whatsapp-logo.svg"
-            alt="WhatsApp"
-            width={60}
-            height={60}
-            className="mx-auto mb-4 animate-pulse"
-          />
-          <Loader2 className="h-8 w-8 animate-spin text-[#00a884] mx-auto mb-3" />
-          <p className="text-sm text-[#8696a0]">Profil laden...</p>
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <User className="h-8 w-8 text-white" />
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-[#25D366] mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-600">Profil wird geladen...</p>
         </div>
       </div>
     );
@@ -246,29 +243,21 @@ export default function WhatsAppProfilePage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#efeae2]">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="bg-[#008069] px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/images/whatsapp-logo.svg"
-              alt="WhatsApp"
-              width={36}
-              height={36}
-            />
-            <div>
-              <h1 className="text-xl font-semibold text-white">Business-Profil</h1>
-              <p className="text-sm text-white/70">
-                Bearbeite dein WhatsApp Business Profil
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Business-Profil</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Bearbeite dein WhatsApp Business Profil
+            </p>
           </div>
           {hasChanges && (
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="bg-white text-[#008069] hover:bg-white/90"
+              className="bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm"
             >
               {isSaving ? (
                 <>

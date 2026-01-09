@@ -5,7 +5,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getDatevConfig } from '@/lib/datev-config';
 import { getDatevCookieName } from '@/lib/datev-server-utils';
 

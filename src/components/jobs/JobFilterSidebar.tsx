@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { JobPosting } from '@/types/career';
 import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import { Slider } from '@/components/ui/slider';
@@ -213,7 +213,7 @@ export function JobFilterSidebar({
       let industry = job.industry;
 
       if (!industry) {
-        industry = findCategoryBySubcategory(job.title);
+        industry = findCategoryBySubcategory(job.title) ?? undefined;
       }
 
       if (!industry) {
@@ -248,7 +248,7 @@ export function JobFilterSidebar({
           else if (diffDays <= 14) dates['7 - 14 Tage']++;
           else if (diffDays <= 28) dates['2 - 4 Wochen']++;
           else dates['> 4 Wochen']++;
-        } catch (e) {
+        } catch {
           // ignore invalid dates
         }
       }

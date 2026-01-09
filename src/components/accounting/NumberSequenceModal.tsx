@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NumberSequence } from '@/services/numberSequenceService';
 
@@ -29,7 +29,7 @@ export default function NumberSequenceModal({
   onClose,
   onSave,
   sequence,
-  companyId,
+  companyId: _companyId,
 }: NumberSequenceModalProps) {
   const [format, setFormat] = useState('');
   const [nextNumber, setNextNumber] = useState(0);

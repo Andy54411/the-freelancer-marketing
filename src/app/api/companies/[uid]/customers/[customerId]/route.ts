@@ -14,7 +14,7 @@ async function getFirebaseDb(): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -67,7 +67,7 @@ export async function PUT(
       message: 'Kunde erfolgreich aktualisiert',
       customerId,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Fehler beim Aktualisieren des Kunden:', error);
     return NextResponse.json(
       {
@@ -126,7 +126,7 @@ export async function GET(
         updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Fehler beim Laden des Kunden:', error);
     return NextResponse.json(
       {

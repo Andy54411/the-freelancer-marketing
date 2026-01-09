@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   CheckCircle,
@@ -113,7 +112,7 @@ export default function BankingReconciliationPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const _errorText = await response.text();
 
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -127,7 +126,7 @@ export default function BankingReconciliationPage() {
         setInvoices(data.invoices);
 
         // Debug: Log each invoice
-        data.invoices.forEach((invoice: Invoice, index: number) => {});
+        data.invoices.forEach((_invoice: Invoice, _index: number) => {});
       } else {
         setError(data.error || 'Fehler beim Laden der Rechnungen');
         setInvoices([]); // Ensure invoices array is empty on error
@@ -172,7 +171,7 @@ export default function BankingReconciliationPage() {
       } else {
         setTransactions([]);
       }
-    } catch (err: unknown) {
+    } catch {
       setTransactions([]);
     } finally {
       setLoadingTransactions(false);

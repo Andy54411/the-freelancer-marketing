@@ -30,8 +30,7 @@ import {
   saveWebmailCredentials, 
   hasWebmailCredentials,
   clearWebmailCredentials,
-  setWebmailSessionCookie,
-  clearWebmailSessionCookie
+  setWebmailSessionCookie
 } from '@/lib/webmail-session';
 
 interface WebmailConfig {

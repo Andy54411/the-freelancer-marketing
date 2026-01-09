@@ -226,7 +226,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         <TicketDetailView
           ticketId={selectedTicket.id}
           onBack={handleBackToList}
-          user_type="kunde"
+          userType="customer"
         />
       ) : (
         <>

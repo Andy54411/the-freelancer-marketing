@@ -9,15 +9,9 @@ import {
   FiMapPin,
   FiMessageSquare,
   FiStar,
-  FiBriefcase,
-  FiClock,
-  FiCheckCircle,
-  FiUser,
   FiLoader,
   FiAlertCircle,
   FiArrowLeft,
-  FiPhone,
-  FiMail,
 } from 'react-icons/fi';
 
 interface ProviderProfile {
@@ -69,11 +63,11 @@ interface Review {
 }
 
 export default function UserProviderProfilePage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const params = useParams();
   const router = useRouter();
   const providerId = (params?.id as string) || '';
-  const userUid = (params?.uid as string) || '';
+  const _userUid = (params?.uid as string) || '';
 
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -151,10 +145,10 @@ export default function UserProviderProfilePage() {
           );
           const reviewsSnapshot = await getDocs(reviewsQuery);
           setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
-        } catch (reviewError) {
+        } catch {
           setReviews([]);
         }
-      } catch (err) {
+      } catch {
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);

@@ -1,6 +1,6 @@
 // Intelligente Zuordnung von DATEV-Konten zu Expense-Kategorien
 // Basiert auf dem deutschen DATEV SKR03/SKR04 Kontenrahmen
-import { DatevCard } from '@/services/datevCardService';
+import { DatevCard, DatevCardService } from '@/services/datevCardService';
 
 interface CategoryMapping {
   id: string;
@@ -427,7 +427,6 @@ export class DatevCategoryMapper {
    * Debug-Funktion: Findet alle nicht kategorisierten DATEV-Konten
    */
   static findUncategorizedAccounts(): DatevCard[] {
-    const { DatevCardService } = require('@/services/datevCardService');
     const allCards = DatevCardService.getAllCards();
     
     return allCards.filter(card => {
@@ -440,7 +439,6 @@ export class DatevCategoryMapper {
    * Debug-Funktion: Analysiert Kategorisierungs-Verteilung
    */
   static analyzeCategoryDistribution(): Record<string, number> {
-    const { DatevCardService } = require('@/services/datevCardService');
     const allCards = DatevCardService.getAllCards();
     const distribution: Record<string, number> = {};
     

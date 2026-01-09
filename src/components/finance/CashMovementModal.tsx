@@ -108,11 +108,10 @@ export function CashMovementModal({
       setIsSubmitting(true);
 
       // Import Firestore functions
-      const { collection, addDoc, serverTimestamp, Timestamp } = await import('firebase/firestore');
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
       const movementAmount = parseFloat(fromAmount);
-      const currentDate = new Date().toISOString();
 
       // Create movement in accountMovements collection
       const accountMovementsRef = collection(db, 'companies', companyId, 'accountMovements');

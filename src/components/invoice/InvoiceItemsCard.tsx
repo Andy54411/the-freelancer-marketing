@@ -1,4 +1,4 @@
-import { Calculator, Package, Plus, Info } from 'lucide-react';
+import { Calculator, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { QuickAddService } from '@/components/QuickAddService';

@@ -1,5 +1,5 @@
 import { auth } from '@/firebase/clients';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+// getFunctions, httpsCallable imports entfernt - nicht verwendet
 
 export async function callHttpsFunction(
   functionName: string,

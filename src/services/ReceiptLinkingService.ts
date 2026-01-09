@@ -2,12 +2,7 @@ import {
   collection,
   addDoc,
   doc,
-  updateDoc,
   getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -293,7 +288,7 @@ export class ReceiptLinkingService {
       }
 
       // Matching-Kriterien für zukünftige echte Implementation
-      const matchingCriteria = [
+      const _matchingCriteria = [
         // 1. Exakter Betrag + ähnlicher Name + ähnliches Datum (±3 Tage)
         {
           weight: 100,
@@ -413,7 +408,7 @@ export class ReceiptLinkingService {
    * Hilfsfunktionen für Matching
    */
 
-  private static generateReceiptNumber(companyId: string): Promise<string> {
+  private static generateReceiptNumber(_companyId: string): Promise<string> {
     // Generiere fortlaufende Belegnummer
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000)

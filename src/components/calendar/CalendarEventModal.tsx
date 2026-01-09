@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,26 +24,18 @@ import {
 '@/components/ui/select';
 import {
   Calendar,
-  Clock,
-  MapPin,
-  Users,
   FileText,
   Upload,
   Download,
   Trash2,
   Plus,
   Save,
-  X,
-  Image,
   File,
   FileImage,
   FileVideo,
   Loader2,
   MessageSquare,
-  User,
-  Building2,
-  Phone,
-  Mail } from
+  User } from
 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,15 +48,13 @@ import {
   serverTimestamp,
   onSnapshot,
   query,
-  orderBy,
-  where } from
+  orderBy } from
 'firebase/firestore';
 import {
   ref,
   uploadBytes,
   getDownloadURL,
-  deleteObject,
-  listAll } from
+  deleteObject } from
 'firebase/storage';
 import { db, storage } from '@/firebase/clients';
 
@@ -614,7 +603,7 @@ export function CalendarEventModal({
   };
 
   // Get event type color
-  const getEventTypeColor = (type: string) => {
+  const _getEventTypeColor = (type: string) => {
     switch (type) {
       case 'meeting':return 'bg-blue-500';
       case 'appointment':return 'bg-green-500';

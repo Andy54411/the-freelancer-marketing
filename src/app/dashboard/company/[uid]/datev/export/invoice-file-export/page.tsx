@@ -61,7 +61,7 @@ export default function DatevInvoiceFileExportPage() {
       setIsExporting(true);
 
       const startDate = new Date(formData.periodStart);
-      const endDate = new Date(formData.periodEnd);
+      new Date(formData.periodEnd);
 
       // Firebase Auth Token holen
       const auth = (await import('firebase/auth')).getAuth();

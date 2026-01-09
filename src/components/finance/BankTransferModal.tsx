@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Info, Plus, Search } from 'lucide-react';
+import { X, Info, Plus, Search } from 'lucide-react';
 import { BankAccount } from '@/types/banking';
 import NewCustomerModal from './NewCustomerModal';
 
@@ -83,7 +83,7 @@ const BankTransferModal: React.FC<BankTransferModalProps> = ({
   accounts,
   onSubmit,
   companyId,
-  onCreateContact,
+  onCreateContact: _onCreateContact,
 }) => {
   const [formData, setFormData] = useState<BankTransferData>({
     selectedAccount: null,
@@ -234,7 +234,7 @@ const BankTransferModal: React.FC<BankTransferModalProps> = ({
 
     setLoadingInvoices(true); // Reuse loading state
     try {
-      const { collection, getDocs, query, where } = await import('firebase/firestore');
+      const { collection, getDocs } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
       // Load transaction links that represent expenses/belege
@@ -441,7 +441,7 @@ const BankTransferModal: React.FC<BankTransferModalProps> = ({
   };
 
   // Handle customer creation success
-  const handleCustomerCreated = (customerId: string) => {
+  const handleCustomerCreated = (_customerId: string) => {
     // Modal schließen
     setShowNewCustomerModal(false);
 

@@ -10,7 +10,6 @@ import {
   StandardTemplate,
   TotalsDisplay,
   usePDFTemplateData,
-  type PDFTemplateProps,
   type ProcessedPDFData,
 } from '@/components/finance/pdf-templates';
 

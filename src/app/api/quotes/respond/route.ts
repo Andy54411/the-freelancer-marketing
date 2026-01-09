@@ -204,7 +204,7 @@ async function handleNewQuoteResponse(
 /**
  * Behandelt Ablehnung einer Quote (action: "decline")
  */
-async function handleQuoteDecline(quoteId: string, companyId: string) {
+async function handleQuoteDecline(_quoteId: string, _companyId: string) {
   // TODO: Implement quote decline logic
   // This could involve creating a decline record, updating quote status, etc.
 

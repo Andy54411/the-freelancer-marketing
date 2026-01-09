@@ -47,10 +47,10 @@ export async function getOrCreateFinAPIUser(
         error: 'Failed to create or get finAPI user',
       };
     }
-  } catch (error: any) {
+  } catch (error) {
     return {
       success: false,
-      error: error.message || 'Unknown authentication error',
+      error: error instanceof Error ? error.message : 'Unknown authentication error',
     };
   }
 }
@@ -62,7 +62,7 @@ export async function getOrCreateFinAPIUser(
 export async function getFinAPIUserToken(firebaseUid: string): Promise<string | null> {
   try {
     return await finapiUserAuthServer.getUserAccessToken(firebaseUid);
-  } catch (error: any) {
+  } catch {
     return null;
   }
 }
@@ -75,7 +75,7 @@ export async function validateFinAPIUserExists(firebaseUid: string): Promise<boo
   try {
     const userToken = await getFinAPIUserToken(firebaseUid);
     return userToken !== null;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

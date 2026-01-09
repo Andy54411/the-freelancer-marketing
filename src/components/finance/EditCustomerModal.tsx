@@ -216,7 +216,7 @@ export function EditCustomerModal({
       await onUpdateCustomer(cleanedCustomer);
       onClose();
       toast.success('Kunde erfolgreich aktualisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren des Kunden');
     } finally {
       setLoading(false);

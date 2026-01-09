@@ -26,7 +26,7 @@ interface StornoRisk {
   riskLevel: 'none' | 'warning' | 'critical';
 }
 
-export default function ProviderStornoWarning({ order, companyUid }: ProviderStornoWarningProps) {
+export default function ProviderStornoWarning({ order, companyUid: _companyUid }: ProviderStornoWarningProps) {
   const [stornoRisk, setStornoRisk] = useState<StornoRisk | null>(null);
   const [loading, setLoading] = useState(true);
 

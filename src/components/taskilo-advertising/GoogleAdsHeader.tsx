@@ -9,7 +9,7 @@ interface GoogleAdsHeaderProps {
   companyId: string;
 }
 
-export default function GoogleAdsHeader({ companyId }: GoogleAdsHeaderProps) {
+export default function GoogleAdsHeader({ companyId: _companyId }: GoogleAdsHeaderProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);

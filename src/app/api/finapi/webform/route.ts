@@ -10,7 +10,7 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bankId, userId, credentialType, bankName, companyId } = body;
+    const { bankId, userId, bankName, companyId } = body;
 
     if (!bankId || !userId) {
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           const companyData = companyDoc.data();
           companyEmail = companyData?.email || userId;
         }
-      } catch (error) {}
+      } catch {}
     }
 
     if (!companyEmail) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       // WICHTIG: Erstelle und speichere zuerst den finAPI User
 
       const consistentPassword = `Taskilo_${actualCompanyId}_2024!`;
-      const finapiUser = await finapiService.getOrCreateUser(
+      await finapiService.getOrCreateUser(
         companyEmail,
         consistentPassword,
         actualCompanyId,

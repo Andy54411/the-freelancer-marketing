@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, Timestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function ActivityHistoryCard({
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [activitySource, setActivitySource] = useState<'all' | 'customers' | 'employees'>('all');
+  const [_activitySource, _setActivitySource] = useState<'all' | 'customers' | 'employees'>('all');
 
   // Use companyId from props or fall back to user's uid (companies are stored with user's uid as id)
   const activeCompanyId = companyId || user?.uid;
@@ -430,7 +430,7 @@ export default function ActivityHistoryCard({
     }
   };
 
-  const parseTargetFromDescription = (description: string, type: string): string => {
+  const parseTargetFromDescription = (description: string, _type: string): string => {
     // Versuche spezifische Entitäten zu extrahieren
     const invoiceMatch = description.match(/Rechnung\s+(RE-\d+)/i);
     if (invoiceMatch) return invoiceMatch[0];
@@ -446,7 +446,7 @@ export default function ActivityHistoryCard({
     return words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
   };
 
-  const generateTargetLink = (targetType?: string, targetId?: string, metadata?: any): string | undefined => {
+  const generateTargetLink = (targetType?: string, targetId?: string, _metadata?: any): string | undefined => {
     if (!targetType || !targetId) return undefined;
 
     const companyId = activeCompanyId;

@@ -69,7 +69,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
 
       onEmployeeUpdated(updatedEmployee);
       toast.success('Berechtigung aktualisiert');
-    } catch (error) {
+    } catch {
       setPermissions(permissions); // Rollback
       toast.error('Fehler beim Aktualisieren der Berechtigung');
     } finally {
@@ -135,7 +135,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
         toast.warning('E-Mail konnte nicht gesendet werden. Firmencode wurde in die Zwischenablage kopiert.');
       }
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Einladung');
     } finally {
       setSendingInvite(false);
@@ -175,7 +175,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
         description: 'Die PIN wurde generiert und gespeichert',
         duration: 10000,
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Generieren der PIN');
     } finally {
       setGeneratingPin(false);
@@ -227,7 +227,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
         documents: false,
       });
       toast.success('App-Zugang wurde widerrufen');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Widerrufen des Zugangs');
     } finally {
       setLoading(false);
@@ -266,7 +266,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
       } else {
         toast.error(result.error || 'Fehler beim Synchronisieren der E-Mail');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Synchronisieren der E-Mail');
     } finally {
       setSyncingEmail(false);

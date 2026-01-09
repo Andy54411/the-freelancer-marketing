@@ -2,10 +2,10 @@
 
 import { initializeApp, getApps, FirebaseApp, getApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator, Functions } from 'firebase/functions';
-import { getDatabase, connectDatabaseEmulator, Database } from 'firebase/database'; // NEU: Realtime Database
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getDatabase, connectDatabaseEmulator } from 'firebase/database'; // NEU: Realtime Database
 
 // Import error handler
 import { setupFirestoreErrorHandler } from '@/lib/firestoreErrorHandler';
@@ -56,7 +56,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // PERFORMANCE-OPTIMIERUNG: Firestore Settings für bessere Performance
-import { enableNetwork, disableNetwork } from 'firebase/firestore';
 
 // Hinweis: enableMultiTabIndexedDbPersistence() ist deprecated und wurde entfernt
 // Firebase verwendet automatisch lokalen Cache, wenn verfügbar

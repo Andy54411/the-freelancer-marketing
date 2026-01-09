@@ -80,7 +80,7 @@ export async function GET(
       success: true,
       quotes: finalQuotes,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebote' }, { status: 500 });
   }
 }

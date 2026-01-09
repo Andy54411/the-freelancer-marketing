@@ -84,6 +84,10 @@ export function useCompanyDashboard() {
     setIsAuthorized(true);
 
     const fetchCompanyData = async () => {
+      if (!uid) {
+        setIsChecking(false);
+        return;
+      }
       setIsChecking(true);
       try {
         // Lade Benutzer- und Firmendaten gleichzeitig, um die Ladezeit zu optimieren
@@ -177,7 +181,7 @@ export function useCompanyDashboard() {
           setShowPopup(true);
           setView('settings');
         }
-      } catch (error) {
+      } catch {
         // Optional: Einen Fehlerstatus setzen, um ihn in der UI anzuzeigen.
       } finally {
         setIsChecking(false);

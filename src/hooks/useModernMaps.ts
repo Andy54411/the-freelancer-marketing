@@ -88,7 +88,7 @@ export const useModernMaps = (): UseModernMapsResult => {
     ) => {
       if (!isLoaded || !google || !input) return;
 
-      const { countries = ['de', 'at', 'ch'], onPlaceSelected } = options;
+      const { countries: _countries = ['de', 'at', 'ch'], onPlaceSelected } = options;
 
       // DEAKTIVIERT: Modernes PlaceAutocompleteElement verursacht Probleme mit API-Keys und Duplikaten
       // Wir verwenden stattdessen das bewährte Autocomplete
@@ -132,7 +132,7 @@ export const useModernMaps = (): UseModernMapsResult => {
           const observers = document.querySelectorAll('.pac-container') || [];
           observers.forEach(el => el.remove());
         };
-      } catch (error) {}
+      } catch {}
 
       return undefined;
     },
@@ -153,7 +153,7 @@ export const useModernMaps = (): UseModernMapsResult => {
             map,
             title,
           });
-        } catch (error) {}
+        } catch {}
       }
 
       // Fallback auf traditionellen Marker
@@ -163,7 +163,7 @@ export const useModernMaps = (): UseModernMapsResult => {
           map,
           title,
         });
-      } catch (error) {
+      } catch {
         return null;
       }
     },

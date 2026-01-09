@@ -30,7 +30,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
   // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
-  const config = getDocumentTypeConfig(detectedType, color);
+  const _config = getDocumentTypeConfig(detectedType, color);
 
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');

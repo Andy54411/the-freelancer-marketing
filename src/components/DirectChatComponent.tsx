@@ -47,7 +47,7 @@ interface DirectChatComponentProps {
 
 export default function DirectChatComponent({
   chatId,
-  otherUserId,
+  otherUserId: _otherUserId,
   otherUserName,
 }: DirectChatComponentProps) {
   const { user: currentUser } = useAuth();
@@ -106,7 +106,7 @@ export default function DirectChatComponent({
       const fallbackProfile = { name: 'Unbekannter User', avatar: null };
       setUserProfiles(prev => ({ ...prev, [userId]: fallbackProfile }));
       return fallbackProfile;
-    } catch (error) {
+    } catch {
       const fallbackProfile = { name: 'Unbekannter User', avatar: null };
       setUserProfiles(prev => ({ ...prev, [userId]: fallbackProfile }));
       return fallbackProfile;
@@ -143,7 +143,7 @@ export default function DirectChatComponent({
         setMessages(messagesList);
         setLoading(false);
       },
-      error => {
+      () => {
         setLoading(false);
       }
     );
@@ -210,7 +210,7 @@ export default function DirectChatComponent({
       );
 
       setNewMessage('');
-    } catch (error) {
+    } catch {
     } finally {
       setSending(false);
     }

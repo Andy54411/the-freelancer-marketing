@@ -93,7 +93,7 @@ export async function checkAdminApproval(companyId: string): Promise<AdminApprov
       error: 'Firma noch nicht von Admin freigegeben. Bitte warten Sie auf die Freigabe.',
       errorCode: 'PENDING_ADMIN_APPROVAL',
     };
-  } catch (error) {
+  } catch {
     return {
       isApproved: false,
       error: 'Fehler bei der Überprüfung der Admin-Freigabe',
@@ -105,7 +105,7 @@ export async function checkAdminApproval(companyId: string): Promise<AdminApprov
 /**
  * Standard-Antwort für nicht freigegebene Firmen
  */
-export function createApprovalErrorResponse(result: AdminApprovalResult, status: number = 403) {
+export function createApprovalErrorResponse(result: AdminApprovalResult, _status: number = 403) {
   return {
     error: result.error || 'Firma nicht freigegeben',
     errorCode: result.errorCode,

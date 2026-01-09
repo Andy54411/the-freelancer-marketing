@@ -10,7 +10,7 @@ import { ArrowLeft, FileText, CreditCard, Ban, ExternalLink, AlertTriangle } fro
 export default function BankingImportPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   const [error, setError] = useState<string | null>(null);

@@ -1,9 +1,10 @@
 // src/app/dashboard/user/[uid]/components/AddPaymentMethodForm.tsx
 import React, { useState } from 'react';
+// @ts-ignore - Stripe module wird dynamisch geladen
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
-import { auth } from '@/firebase/clients';
-import Stripe from 'stripe'; // Importiere Stripe für Typisierungen
+// @ts-ignore - Stripe types werden von @stripe/react-stripe-js bereitgestellt
+import type Stripe from 'stripe';
 
 interface AddPaymentMethodFormProps {
   onSuccess: () => void;

@@ -43,7 +43,7 @@ export function DatevAccountCards({
   onAccountSelect,
   selectedAccountId,
   showSelectionOnly = false,
-  companyUid,
+  companyUid: _companyUid,
 }: DatevAccountCardsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ArrowLeft,
-  Send,
   CheckCircle,
   Clock,
   AlertCircle,
@@ -15,7 +14,6 @@ import {
   User,
   Calendar,
   MessageSquare,
-  Globe,
   Trash2,
 } from 'lucide-react';
 import { SentEmail } from '@/types/email';
@@ -49,7 +47,7 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
 
       alert('E-Mail wurde erfolgreich gelöscht.');
       onDelete?.(); // Trigger parent refresh
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen der E-Mail.');
     } finally {
       setIsDeleting(false);

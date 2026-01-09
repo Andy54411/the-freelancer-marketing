@@ -7,11 +7,11 @@ import { CheckCircle, Clock, Users, Shield, TrendingUp, Zap } from 'lucide-react
 import { useEffect } from 'react';
 
 interface OnboardingWelcomeProps {
-  companyUid: string;
+  companyUid?: string;
   onStartOnboarding: () => void;
 }
 
-function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeProps) {
+function OnboardingWelcome({ companyUid: _companyUid, onStartOnboarding }: OnboardingWelcomeProps) {
   const { onboardingStatus } = useOnboarding();
 
   // Prüfe Onboarding Status beim Laden

@@ -58,7 +58,7 @@ export async function POST(
       message: 'View erfolgreich gezählt',
       viewCount: newViewCount,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Zählen des Views' }, { status: 500 });
   }
 }

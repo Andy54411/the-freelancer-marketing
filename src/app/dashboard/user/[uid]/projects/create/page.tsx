@@ -265,7 +265,7 @@ export default function CreateProjectRequestPage() {
         throw new Error(errorData.error || 'Fehler beim Erstellen der Projektanfrage');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
 
       toast.success('Projektanfrage erfolgreich erstellt!');
       router.push(`/dashboard/user/${uid}/projects`);
@@ -468,7 +468,7 @@ export default function CreateProjectRequestPage() {
     );
   };
 
-  const renderStep2 = () => (
+  const _renderStep2 = () => (
     <div className="space-y-8">
       {/* Budget Sektion */}
       <div className="space-y-4">

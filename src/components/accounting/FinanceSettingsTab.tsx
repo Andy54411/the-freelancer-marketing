@@ -10,7 +10,7 @@ import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
-import { Loader2, Bell, Clock, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
+import { Loader2, Bell, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
 
 interface FinanceSettingsTabProps {
   companyUid: string;

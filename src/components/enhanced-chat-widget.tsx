@@ -44,7 +44,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
     sessionType: 'ai_only',
     isHumanActive: false,
   });
-  const [isEscalating, setIsEscalating] = useState(false);
+  const [_isEscalating, setIsEscalating] = useState(false);
   const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
 
   // Hole Session-Status
@@ -72,7 +72,9 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
             isHumanActive: data.isHumanActive,
           });
         }
-      } catch (error) {}
+      } catch {
+        // Fehler beim Abrufen des Session-Status ignorieren
+      }
     };
 
     fetchSessionStatus();
@@ -168,7 +170,8 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
 
         onMessageSent?.(newMessage);
       }
-    } catch (error) {
+    } catch {
+      // Fehler beim Senden der Nachricht ignorieren
     } finally {
       setIsLoading(false);
     }

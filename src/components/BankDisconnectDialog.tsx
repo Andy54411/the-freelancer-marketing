@@ -32,7 +32,7 @@ export default function BankDisconnectDialog({
     try {
       await onConfirm();
       onClose();
-    } catch (error) {
+    } catch {
     } finally {
       setIsDisconnecting(false);
     }

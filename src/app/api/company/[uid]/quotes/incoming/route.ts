@@ -87,7 +87,7 @@ export async function GET(
                 };
               }
             }
-          } catch (_e) { /* ignore */ }
+          } catch { /* ignore */ }
         }
 
         // Prüfe ob Company bereits geantwortet hat
@@ -108,7 +108,7 @@ export async function GET(
             responseData = proposalsSnapshot.docs[0].data();
             proposalStatus = (responseData as { status?: string })?.status || null;
           }
-        } catch (_e) { /* ignore */ }
+        } catch { /* ignore */ }
 
         // Status bestimmen
         let actualStatus = data.status || 'open';
@@ -146,7 +146,7 @@ export async function GET(
           createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt || Date.now()),
         });
       }
-    } catch (_e) { 
+    } catch { 
       // Direkt-Anfragen Fehler ignorieren
     }
 
@@ -170,7 +170,7 @@ export async function GET(
           const data = docSnap.data();
 
           // Lade Customer-Info
-          let customerInfo: Record<string, unknown> = {
+          const customerInfo: Record<string, unknown> = {
             name: data.customerName || 'Unbekannter Kunde',
             type: data.customerType || 'user',
             email: '', // Email erst nach Escrow sichtbar
@@ -197,7 +197,7 @@ export async function GET(
               responseData = proposalsSnapshot.docs[0].data();
               proposalStatus = (responseData as { status?: string })?.status || null;
             }
-          } catch (_e) { /* ignore */ }
+          } catch { /* ignore */ }
 
           let actualStatus = data.status || 'open';
           if (proposalStatus === 'accepted') {
@@ -234,7 +234,7 @@ export async function GET(
           });
         }
       }
-    } catch (_e) {
+    } catch {
       // Marktplatz-Fehler ignorieren
     }
 

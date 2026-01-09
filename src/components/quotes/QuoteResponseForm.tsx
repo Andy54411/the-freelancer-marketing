@@ -7,7 +7,6 @@ import {
   Euro as FiEuro,
   Clock as FiClock,
   Calendar as FiCalendar,
-  FileText as FiFileText,
   Plus as FiPlus,
   X as FiX,
 } from 'lucide-react';
@@ -337,7 +336,7 @@ export default function QuoteResponseForm({
       };
 
       await onSubmit(dataToSubmit);
-    } catch (error) {
+    } catch {
       // TODO: Benutzer über Fehler informieren
       alert('Fehler beim Reservieren der Artikel. Bitte versuchen Sie es erneut.');
     }

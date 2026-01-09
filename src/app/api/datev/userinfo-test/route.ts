@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getDatevConfig } from '@/lib/datev-config';
 
 interface DatevTokenData {
   access_token: string;
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token data' }, { status: 401 });
     }
 
@@ -85,7 +84,7 @@ export async function GET(request: NextRequest) {
     let userData;
     try {
       userData = JSON.parse(responseText);
-    } catch (error) {
+    } catch {
       userData = responseText;
     }
 
@@ -95,11 +94,11 @@ export async function GET(request: NextRequest) {
       apiUrl,
       tokenEnvironment: tokenData.environment,
     });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: err instanceof Error ? err.message : 'Unknown error',
       },
       { status: 500 }
     );

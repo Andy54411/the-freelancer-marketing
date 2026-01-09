@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { companyId, adGroupId, keyword, matchType, cpc, finalUrl } = body;
+    const { companyId, adGroupId, keyword, matchType: _matchType, cpc: _cpc, finalUrl: _finalUrl } = body;
 
     if (!companyId || !adGroupId || !keyword) {
       return NextResponse.json(

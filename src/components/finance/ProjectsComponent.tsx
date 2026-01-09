@@ -64,7 +64,7 @@ interface Project {
   name: string;
   description: string;
   client: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'paused';
   budget: number;
   spent: number;
   hourlyRate: number;
@@ -77,7 +77,7 @@ interface Project {
   tags: string[];
   companyId: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 interface ProjectsComponentProps {
@@ -85,7 +85,7 @@ interface ProjectsComponentProps {
 }
 
 export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +178,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
           setLoading(false);
         }
       },
-      error => {
+      () => {
         setLoading(false);
       }
     );
@@ -194,12 +194,12 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
     const timeEntriesUnsub = onSnapshot(
       timeEntriesQuery,
-      snapshot => {
+      () => {
         // Aktualisiere tracked hours für alle betroffenen Projekte
         const currentProjectsData = [...projects];
         loadTrackedHoursForProjects(currentProjectsData);
       },
-      error => {}
+      () => {}
     );
 
     timeEntriesUnsubscribeRef.current = timeEntriesUnsub;
@@ -226,7 +226,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setProjects(updatedProjects);
       // Debug-Log entfernt
-    } catch (error) {}
+    } catch {}
   };
 
   const loadProjects = async () => {
@@ -286,7 +286,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       setTimeout(() => {
         // Debug-Log entfernt
       }, 100);
-    } catch (error) {
+    } catch {
       toast.error('Projekte konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -314,7 +314,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       // Debug-Logs entfernt
 
       return data.totalHours || 0;
-    } catch (error) {
+    } catch {
       return 0;
     }
   };
@@ -354,7 +354,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       setProjects(prev => prev.filter(p => p.id !== projectId));
 
       toast.success('Projekt erfolgreich gelöscht');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Projekts');
     }
   };
@@ -396,7 +396,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       });
 
       setCustomers(loadedCustomers);
-    } catch (error) {
+    } catch {
       toast.error('Kunden konnten nicht geladen werden');
     } finally {
       setLoadingCustomers(false);
@@ -421,13 +421,13 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
     setSelectedProjectForDetail(null);
   };
 
-  const handleProjectUpdate = async (updatedProject: Project) => {
+  const handleProjectUpdate = (updatedProject: Project) => {
     // Lokale Aktualisierung des Projekts im State
     setProjects(prev => prev.map(p => (p.id === updatedProject.id ? updatedProject : p)));
     setSelectedProjectForDetail(updatedProject);
 
     // Lade alle Projekte neu, um sicherzustellen, dass trackedHours korrekt berechnet werden
-    await refreshProjects();
+    void refreshProjects();
   };
 
   const getStatusBadge = (status: Project['status']) => {
@@ -480,7 +480,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       // Check auth token and role using Firebase Auth
       const currentUser = auth.currentUser;
       if (currentUser) {
-        const token = await currentUser.getIdTokenResult();
+        const _token = await currentUser.getIdTokenResult();
         // Debug-Log entfernt
       }
 
@@ -596,7 +596,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       }
 
       toast.success(`Projektstatus wurde auf "${getStatusLabel(newStatus)}" geändert`);
-    } catch (error) {
+    } catch {
       toast.error('Projektstatus konnte nicht geändert werden');
     }
   };

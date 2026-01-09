@@ -15,7 +15,7 @@ async function getFirebaseDb(): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           ...companyDoc.data(),
         };
       }
-    } catch (error) {}
+    } catch {}
 
     // Auch stripe_accounts collection checken
     let stripeAccountData: any = null;
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       if (stripeAccountDoc.exists) {
         stripeAccountData = stripeAccountDoc.data();
       }
-    } catch (error) {}
+    } catch {}
 
     const response = {
       firebaseUserId,
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Laden der User-Informationen.' },
       { status: 500 }
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Laden der User-Informationen.' },
       { status: 500 }

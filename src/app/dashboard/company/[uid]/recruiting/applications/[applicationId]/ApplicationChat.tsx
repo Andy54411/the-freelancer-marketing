@@ -19,6 +19,8 @@ interface Message {
 interface ApplicationChatProps {
   applicationId: string;
   companyId: string;
+  applicantId?: string;
+  applicantName?: string;
 }
 
 export function ApplicationChat({ applicationId, companyId }: ApplicationChatProps) {

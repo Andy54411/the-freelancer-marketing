@@ -117,7 +117,7 @@ export default function ExpenseDetailPage() {
           } else {
             originalUrl = storageUrl;
           }
-        } catch (err) {
+        } catch {
           originalUrl = storageUrl;
         }
       }
@@ -136,11 +136,11 @@ export default function ExpenseDetailPage() {
               const storageRef = ref(storage, path);
               originalUrl = await getDownloadURL(storageRef);
               break;
-            } catch (pathErr) {
+            } catch {
               // Continue to next path
             }
           }
-        } catch (err) {
+        } catch {
           // Path construction failed
         }
       }
@@ -161,7 +161,7 @@ export default function ExpenseDetailPage() {
         } else {
           setPdfUrl(secureUrl); // Fallback
         }
-      } catch (err) {
+      } catch {
         setPdfUrl(secureUrl); // Fallback
       }
     } catch (err: any) {

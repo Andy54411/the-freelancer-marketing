@@ -11,7 +11,7 @@ interface PageWithFooterProps {
 export const PageWithFooter: React.FC<PageWithFooterProps> = ({
   data,
   children,
-  pageNumber = 1,
+  pageNumber: _pageNumber = 1,
 }) => {
   // Footer-Daten
   const footerData = {

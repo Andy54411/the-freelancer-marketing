@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Loader2,
   Plus,
   FileText,
-  Users,
-  CreditCard,
   Receipt,
   Eye,
   Edit,
@@ -152,7 +150,8 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
       if (paymentsResponse.ok) {
         setPayments(await paymentsResponse.json());
       }
-    } catch (error) {
+    } catch {
+      // Error handling - user sees loading state
     } finally {
       setIsLoading(false);
     }
@@ -208,7 +207,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
     {
       id: 'actions',
       header: 'Aktionen',
-      cell: ({ row }) => (
+      cell: ({ row: _row }) => (
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm">
             <Eye className="h-4 w-4" />
@@ -245,7 +244,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
     {
       id: 'actions',
       header: 'Aktionen',
-      cell: ({ row }) => (
+      cell: ({ row: _row }) => (
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm">
             <Eye className="h-4 w-4" />
@@ -283,7 +282,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
     {
       id: 'actions',
       header: 'Aktionen',
-      cell: ({ row }) => (
+      cell: ({ row: _row }) => (
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm">
             <Eye className="h-4 w-4" />

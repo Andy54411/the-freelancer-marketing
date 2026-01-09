@@ -59,7 +59,7 @@ export default function TimeTrackingOverview({
       // TODO: Anpassung an neue integrierte Struktur erforderlich
       // Temporär deaktiviert für Build-Erfolg
       setOrders([]);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -101,13 +101,13 @@ export default function TimeTrackingOverview({
       if (onRequestsUpdated) {
         onRequestsUpdated();
       }
-    } catch (error) {
+    } catch {
     } finally {
       setProcessing(false);
     }
   };
 
-  const toggleEntrySelection = (entryId: string) => {
+  const _toggleEntrySelection = (entryId: string) => {
     const newSelection = new Set(selectedEntries);
     if (newSelection.has(entryId)) {
       newSelection.delete(entryId);

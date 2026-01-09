@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase/clients';
-import { FiStar, FiMessageSquare, FiUser, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiMessageSquare, FiUser, FiLoader, FiAlertCircle } from 'react-icons/fi';
 import Image from 'next/image';
 import ReviewReplyForm from './ReviewReplyForm';
 
@@ -95,7 +93,7 @@ export default function CompanyReviewManagement({
       }
 
       setReviews(data);
-    } catch (err: unknown) {
+    } catch {
       setError('Fehler beim Laden der Bewertungen. Bitte versuchen Sie es später noch einmal.');
     } finally {
       setIsLoading(false);

@@ -22,7 +22,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   FileText,
@@ -51,7 +50,6 @@ import { EInvoiceTransmissionLogs } from './EInvoiceTransmissionLogs';
 import { EInvoiceComplianceOverview } from './EInvoiceComplianceOverview';
 import { EInvoiceStatsDashboard } from './EInvoiceStatsDashboard';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceData } from '@/types/invoiceTypes';
 
 interface EInvoiceComponentProps {
   companyId: string;
@@ -59,7 +57,7 @@ interface EInvoiceComponentProps {
 
 export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
   const [eInvoices, setEInvoices] = useState<EInvoiceData[]>([]);
-  const [settings, setSettings] = useState<EInvoiceSettings | null>(null);
+  const [_settings, _setSettings] = useState<EInvoiceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showSettings, setShowSettings] = useState(false);
@@ -71,7 +69,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
   const [selectedInvoiceData, setSelectedInvoiceData] = useState<any>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [sendingEInvoice, setSendingEInvoice] = useState<EInvoiceData | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [_uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<any>(null);
   const [isValidatingUpload, setIsValidatingUpload] = useState(false);
 
@@ -111,7 +109,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       setLoading(true);
       const invoices = await EInvoiceService.getEInvoicesByCompany(companyId);
       setEInvoices(invoices);
-    } catch (error) {
+    } catch {
       toast.error('E-Rechnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -122,7 +120,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
     try {
       // Implementierung zum Laden der Einstellungen
       // Hier würden die gespeicherten Einstellungen geladen werden
-    } catch (error) {}
+    } catch { }
   };
 
   const loadInvoiceByNumber = async (invoiceNumber: string) => {
@@ -149,7 +147,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
         setSelectedInvoiceData(null);
         toast.error(`Rechnung ${invoiceNumber} nicht gefunden`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Rechnung');
       setSelectedInvoiceData(null);
     } finally {
@@ -249,7 +247,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       const validation = await EInvoiceService.validateEInvoice(xmlContent, newEInvoiceForm.format);
 
       // E-Rechnung speichern
-      const eInvoiceId = await EInvoiceService.createEInvoice({
+      const _eInvoiceId = await EInvoiceService.createEInvoice({
         invoiceId: finalInvoiceData.invoiceNumber || newEInvoiceForm.invoiceId,
         companyId,
         format: newEInvoiceForm.format,
@@ -263,7 +261,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       toast.success('E-Rechnung erfolgreich generiert');
       setPreviewXML(xmlContent);
       await loadEInvoices();
-    } catch (error) {
+    } catch {
       toast.error('E-Rechnung konnte nicht generiert werden');
     } finally {
       setGenerating(false);
@@ -280,7 +278,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       } else {
         toast.error(`Validierung fehlgeschlagen: ${validation.errors.join(', ')}`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Validierung fehlgeschlagen');
     } finally {
       setValidating(false);
@@ -324,7 +322,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       } else {
         toast.error(`Validierung fehlgeschlagen: ${validation.errors.length} Fehler gefunden`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Validieren der Datei');
       setValidationResult({
         isValid: false,
@@ -358,7 +356,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
 
       toast.success('Einstellungen gespeichert');
       setShowSettings(false);
-    } catch (error) {
+    } catch {
       toast.error('Einstellungen konnten nicht gespeichert werden');
     }
   };
@@ -913,7 +911,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       {/* E-Rechnung Vorschau Modal */}
       {selectedInvoice && (
         <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
-          <DialogContent className="!max-w-4xl max-h-[85vh] overflow-auto w-full sm:!max-w-4xl">
+          <DialogContent className="max-w-4xl! max-h-[85vh] overflow-auto w-full sm:max-w-4xl!">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -934,7 +932,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
             </DialogHeader>
 
             <div className="mt-6">
-              <EInvoicePreview invoice={selectedInvoice} />
+              <EInvoicePreview data={selectedInvoice} />
             </div>
 
             {/* Zusätzliche Aktionen */}

@@ -9,7 +9,7 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage'; // NEU: Firebase Storage Imports
-import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin, FiMail } from 'react-icons/fi';
+import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { RawFirestoreUserData } from '@/types/settings'; // Wiederverwenden des Typs
 import { Eye, EyeOff, Mail, Send, CheckCircle, Clock } from 'lucide-react';
@@ -31,7 +31,6 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
-  User,
 } from 'firebase/auth';
 interface UserSettingsFormData {
   uid: string;
@@ -159,7 +158,7 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
       } else {
         toast.error(result.error || 'Fehler beim Senden der Bestätigungs-E-Mail');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     } finally {
       setSendingEmailChange(false);

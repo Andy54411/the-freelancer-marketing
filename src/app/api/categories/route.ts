@@ -18,7 +18,7 @@ async function getFirebaseDb(): Promise<FirebaseFirestore.Firestore> {
     }
 
     return firebaseModule.db;
-  } catch (_error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }

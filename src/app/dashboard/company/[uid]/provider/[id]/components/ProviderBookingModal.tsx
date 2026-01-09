@@ -42,7 +42,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   isOpen,
   onClose,
   provider,
-  onConfirm,
+  onConfirm: _onConfirm,
 }) => {
   const { user } = useAuth(); // Hole aktuellen User für B2B Payment
   const [currentStep, setCurrentStep] = useState<
@@ -142,7 +142,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     }
   };
 
-  const handleStripePaymentSuccess = async (escrowId: string) => {
+  const handleStripePaymentSuccess = async (_escrowId: string) => {
     // Escrow wurde erstellt - Buchung erfolgreich
 
     alert(

@@ -23,7 +23,7 @@ export const OrdersOverviewCard: React.FC<OrdersOverviewCardProps> = ({
   ordersError,
   onCreateNewOrder,
   onViewAllOrders,
-  currentUserId,
+  currentUserId: _currentUserId,
 }) => {
   return (
     <DashboardCard>

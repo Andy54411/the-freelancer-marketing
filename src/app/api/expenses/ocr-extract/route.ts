@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { extractWithHetznerOCR } from '@/lib/hetzner-ocr-client';
 
 /**
  * 💰 EXPENSE-SPEZIFISCHE OCR-EXTRAKTION
@@ -9,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * - NICHT: invoiceNumber, companyName, companyAddress (das ist Invoice-Zeug)
  * - Intelligente Kategorie-Erkennung für deutsche Ausgaben
  * - Fallback mit Dateinamen-Parsing
+ *
+ * 🔒 DSGVO-KONFORM: Nutzt Hetzner OCR (Januar 2026)
  */
 
 interface LineItem {
@@ -291,21 +294,21 @@ async function extractExpenseFromFile(file: File, filename: string): Promise<Ext
 }
 
 /**
- * GOOGLE CLOUD VISION OCR - Single File Processing
- * Calls Firebase Cloud Function with Google Cloud Vision
+ * 🔒 HETZNER OCR - Single File Processing
+ * DSGVO-konform auf eigenem Hetzner-Server (Januar 2026)
  */
-async function processFileWithGoogleVision(
+async function processFileWithHetznerOCR(
   file: File,
-  companyId: string
+  _companyId: string
 ): Promise<Partial<ExtractedExpenseData>> {
-  console.log(`[Google Vision OCR] Processing file: ${file.name}`);
+  console.log(`[Hetzner OCR] Processing file: ${file.name}`);
 
-  // Convert file to base64
+  // Convert file to buffer
   const fileBuffer = await file.arrayBuffer();
   let buffer = Buffer.from(fileBuffer);
   let mimeType = file.type;
 
-  // Image validation and conversion for Google Vision compatibility
+  // Image validation and conversion for OCR compatibility
   if (file.type.includes('image')) {
     console.log('[Image Processing] Validating and converting image...');
 
@@ -326,13 +329,14 @@ async function processFileWithGoogleVision(
         );
       }
 
+      // Convert to high-quality JPEG for better OCR
       const processedBuffer = await sharp(buffer)
-        .resize(10000, 10000, {
+        .resize(4000, 4000, {
           fit: 'inside',
           withoutEnlargement: true,
         })
         .jpeg({
-          quality: 92,
+          quality: 95,
           progressive: false,
         })
         .toBuffer();
@@ -358,67 +362,31 @@ async function processFileWithGoogleVision(
     }
   }
 
-  // Call Firebase Cloud Function with Google Vision
-  const firebaseUrl =
-    process.env.FIREBASE_FUNCTION_URL ||
-    'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
-  const ocrEndpoint = `${firebaseUrl}/ocr/extract-receipt`;
-
-  console.log('[Google Vision OCR] Calling Firebase function:', ocrEndpoint);
-
-  // Convert buffer to base64 for transmission
-  const base64Content = buffer.toString('base64');
-
-  const response = await fetch(ocrEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-id': companyId,
-      'x-company-id': companyId,
-    },
-    body: JSON.stringify({
-      fileContent: base64Content,
-      fileName: file.name,
-      mimeType,
-      companyId,
-      enhancedMode: true,
-      germanCompliance: true,
-      extractVatDetails: true,
-      detectInvoiceFields: true,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Google Vision OCR] Firebase error:', errorText);
-    throw new Error(`OCR-Verarbeitung fehlgeschlagen: ${response.status}`);
-  }
-
-  const result = await response.json();
-  console.log('[Google Vision OCR] Response:', result);
-
-  const data = result.data || result;
+  // Call Hetzner OCR Service (DSGVO-konform)
+  const result = await extractWithHetznerOCR(buffer, file.name, mimeType);
+  
+  console.log('[Hetzner OCR] Response:', result);
 
   return {
-    vendor: data.vendorName || data.vendor || data.companyName,
-    amount: data.totalGrossAmount || data.amount,
-    date: data.invoiceDate || data.date,
-    invoiceNumber: data.invoiceNumber,
-    vatAmount: data.totalVatAmount || data.vatAmount,
-    netAmount: data.totalNetAmount || data.netAmount,
-    vatRate: data.taxRate || data.vatRate || 19,
-    companyName: data.vendorName || data.companyName,
-    companyAddress: data.companyAddress,
-    companyCity: data.companyCity,
-    companyZip: data.companyZip,
-    companyCountry: data.companyCountry,
-    companyVatNumber: data.vendorVatId || data.companyVatNumber,
+    vendor: result.vendor,
+    amount: result.amount,
+    date: result.date,
+    invoiceNumber: result.invoiceNumber,
+    vatAmount: result.vatAmount,
+    netAmount: result.netAmount,
+    vatRate: result.vatRate,
+    companyName: result.companyName,
+    companyAddress: result.companyAddress,
+    companyCity: result.companyCity,
+    companyZip: result.companyZip,
+    companyCountry: result.companyCountry,
+    companyVatNumber: result.companyVatNumber,
   };
 }
 
 /**
  * MULTI-PAGE OCR ENHANCEMENT
- * Process multiple files as ONE document using Google Cloud Vision
+ * Process multiple files as ONE document using Hetzner OCR
  */
 async function tryMultiPageOCREnhancement(
   files: File[],
@@ -434,7 +402,7 @@ async function tryMultiPageOCREnhancement(
   const summaryFile = files[0];
   console.log(`[Multi-Page OCR] Processing file 1 (${summaryFile.name}) for amounts`);
 
-  const summaryPageData = await processFileWithGoogleVision(summaryFile, companyId);
+  const summaryPageData = await processFileWithHetznerOCR(summaryFile, companyId);
 
   console.log('[Multi-Page OCR] Summary page data:', {
     amount: summaryPageData.amount,
@@ -448,7 +416,7 @@ async function tryMultiPageOCREnhancement(
   const headerFile = files[files.length - 1];
   console.log(`[Multi-Page OCR] Processing file ${files.length} (${headerFile.name}) for vendor`);
 
-  const headerPageData = await processFileWithGoogleVision(headerFile, companyId);
+  const headerPageData = await processFileWithHetznerOCR(headerFile, companyId);
 
   console.log('[Multi-Page OCR] Header page data:', {
     vendor: headerPageData.vendor,
@@ -490,18 +458,18 @@ async function tryMultiPageOCREnhancement(
 }
 
 /**
- * OCR MIT GOOGLE CLOUD VISION (Single File)
+ * 🔒 OCR MIT HETZNER SERVICE (DSGVO-konform)
  */
 async function tryOCREnhancement(
   file: File,
   companyId: string,
   _filename: string
 ): Promise<Partial<ExtractedExpenseData>> {
-  console.log('[Expense OCR] Starting Google Cloud Vision extraction...');
+  console.log('[Expense OCR] Starting Hetzner OCR extraction (DSGVO-konform)...');
 
-  const result = await processFileWithGoogleVision(file, companyId);
+  const result = await processFileWithHetznerOCR(file, companyId);
 
-  console.log('[Expense OCR] Google Vision response:', {
+  console.log('[Expense OCR] Hetzner OCR response:', {
     vendor: result.vendor,
     amount: result.amount,
     invoiceNumber: result.invoiceNumber,

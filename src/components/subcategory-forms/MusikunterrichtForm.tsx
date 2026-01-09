@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { MusikunterrichtData } from '@/types/subcategory-forms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,7 +11,6 @@ import {
   FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
-import { useRouter } from 'next/navigation';
 
 interface MusikunterrichtFormProps {
   data: MusikunterrichtData;

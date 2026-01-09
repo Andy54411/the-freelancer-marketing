@@ -93,7 +93,7 @@ export const stepValidationRules: Record<number, ValidationRule> = {
       website: (value: string) => !value || /^https?:\/\/.+/.test(value), // Optional aber wenn gesetzt, dann URL
     },
     conditional: {
-      managerData: (data: any) => {
+      managerData: (_data: any) => {
         // Manager data ist nur bei bestimmten Rechtsformen required
         // Wird nur gesetzt wenn es nicht bereits aus Registration kommt
         return true; // Für jetzt optional, da es aus Registration kommen könnte

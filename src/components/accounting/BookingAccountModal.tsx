@@ -44,7 +44,7 @@ function BookingAccountModal({
   onClose,
   onSave,
   account,
-  companyUid,
+  companyUid: _companyUid,
 }: BookingAccountModalProps) {
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [customName, setCustomName] = useState<string>('');

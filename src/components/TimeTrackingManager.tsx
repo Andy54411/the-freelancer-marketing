@@ -10,11 +10,9 @@ import {
   FiClock,
   FiCalendar,
   FiUser,
-  FiRefreshCw,
 } from 'react-icons/fi';
-import { db } from '@/firebase/clients';
+import { db, auth } from '@/firebase/clients';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useAlertHelpers } from '@/components/ui/AlertProvider';
 
@@ -44,13 +42,13 @@ interface TimeTrackingManagerProps {
 
 export default function TimeTrackingManager({
   orderId,
-  customerName,
+  customerName: _customerName,
   originalPlannedHours,
   hourlyRate,
   onTimeSubmitted,
-  isCustomerView = false, // NEU: Default ist Anbieter-Ansicht
+  isCustomerView: _isCustomerView = false,
 }: TimeTrackingManagerProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [_user, setUser] = useState<User | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -58,9 +56,9 @@ export default function TimeTrackingManager({
   const [showAllEntries, setShowAllEntries] = useState(false);
   const [providerName, setProviderName] = useState<string>('Lädt...');
   const [userRole, setUserRole] = useState<'customer' | 'provider' | null>(null);
-  const [orderData, setOrderData] = useState<any>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const { showSuccess, showError, showWarning } = useAlertHelpers();
+  const [_orderData, setOrderData] = useState<any>(null);
+  const [_submitting, _setSubmitting] = useState(false);
+  const { showSuccess, showError } = useAlertHelpers();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -109,7 +107,7 @@ export default function TimeTrackingManager({
       }
 
       setProviderName('Unbekannter Nutzer');
-    } catch (error) {
+    } catch {
       setProviderName('Fehler beim Laden');
     }
   };
@@ -177,7 +175,7 @@ export default function TimeTrackingManager({
       }
 
       return false; // Default: B2C
-    } catch (error) {
+    } catch {
       return false; // Fallback zu B2C bei Fehlern
     }
   };
@@ -202,7 +200,7 @@ export default function TimeTrackingManager({
         setUserRole(null);
         return null;
       }
-    } catch (error) {
+    } catch {
       setUserRole(null);
       return null;
     }
@@ -267,13 +265,14 @@ export default function TimeTrackingManager({
         setTimeEntries(entries);
       } else {
       }
-    } catch (error) {
+    } catch {
+      // Silent error handling
     } finally {
       setLoading(false);
     }
   };
 
-  const fixExistingTimeEntries = async () => {
+  const _fixExistingTimeEntries = async () => {
     try {
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (!orderDoc.exists()) return;
@@ -292,7 +291,7 @@ export default function TimeTrackingManager({
           new Date(b.createdAt?.toDate() || b.createdAt).getTime()
       );
 
-      sortedEntries.forEach((entry, index) => {
+      sortedEntries.forEach((entry, _index) => {
         const previousCategory = entry.category;
         const entryHours = entry.hours || 0;
 
@@ -328,7 +327,7 @@ export default function TimeTrackingManager({
       } else {
         showSuccess('Kategorien überprüft', 'Alle Einträge sind bereits korrekt kategorisiert');
       }
-    } catch (error) {
+    } catch {
       showError('Fehler beim Korrigieren', 'Kategorien konnten nicht aktualisiert werden');
     }
   };
@@ -352,7 +351,7 @@ export default function TimeTrackingManager({
   const handleSubmitTimeEntry = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user) return;
+    if (!_user) return;
 
     try {
       // Dynamischer Import des TimeTracker
@@ -392,7 +391,7 @@ export default function TimeTrackingManager({
         additionalHours = formData.hours;
       }
 
-      const orderType = isB2BOrder ? 'B2B' : 'B2C';
+      const _orderType = isB2BOrder ? 'B2B' : 'B2C';
 
       // Erstelle Zeiteintrag-Objekt
       const timeEntry = {
@@ -476,10 +475,10 @@ export default function TimeTrackingManager({
           onTimeSubmitted();
         }
       }, 500);
-    } catch (error) {
+    } catch (err) {
       showError(
         'Fehler beim Speichern',
-        error instanceof Error ? error.message : 'Unbekannter Fehler'
+        err instanceof Error ? err.message : 'Unbekannter Fehler'
       );
     }
   };
@@ -543,7 +542,9 @@ export default function TimeTrackingManager({
       if (loadTimeTracking) {
         loadTimeTracking();
       }
-    } catch (error) {}
+    } catch {
+      // Silent error handling
+    }
   };
 
   // Berechne einfache Zusammenfassung

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userData = userSnap.data();
-    let linkedCompanies = userData?.linkedCompanies ?? [];
+    const linkedCompanies = userData?.linkedCompanies ?? [];
     const existingCompanyIds = new Set(linkedCompanies.map((c: { companyId: string }) => c.companyId));
 
     // Suche nach allen Companies die diesen User als Mitarbeiter mit pending dashboardAccess haben

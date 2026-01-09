@@ -47,8 +47,8 @@ export default function GoogleAdsIntegrationRequest({ companyId }: GoogleAdsInte
         setHasRequest(false);
         setRequest(null);
       }
-    } catch (error) {
-      console.error('Fehler beim Laden der Google Ads Anfrage:', error);
+    } catch {
+      // Silently handle errors
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function GoogleAdsIntegrationRequest({ companyId }: GoogleAdsInte
       } else {
         alert(`Fehler: ${data.error || 'Unbekannter Fehler'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Versenden der Einladung');
     } finally {
       setSendingInvitation(false);

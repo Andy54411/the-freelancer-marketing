@@ -109,7 +109,7 @@ const formatStatus = (status: string | null | undefined): string => {
 const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, orderStatus }) => {
   const authContext = useAuth();
   const currentUser = authContext?.user || null;
-  const firebaseUser = authContext?.firebaseUser || null;
+  const _firebaseUser = authContext?.firebaseUser || null;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userProfiles, setUserProfiles] = useState<{ [key: string]: UserProfile }>({});
@@ -232,7 +232,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               });
             }
           }
-        } catch (error) {
+        } catch {
           // Set basic profile instead of showing error
           setLoggedInUserProfile({
             firstName: 'Benutzer',
@@ -288,12 +288,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
           setMessages(fetchedMessages);
           setChatLoading(false);
-        } catch (error) {
+        } catch {
           setChatError('Fehler beim Laden der Nachrichten');
           setChatLoading(false);
         }
       },
-      error => {
+      () => {
         setChatError('Fehler beim Laden der Nachrichten');
         setChatLoading(false);
       }
@@ -423,9 +423,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       });
 
       // Send a chat message about the video call request
-      const videoRequestMessage = '🎥 Einladung zum Taskilo Video-Call';
+      const videoRequestMessage = 'Einladung zum Taskilo Video-Call';
       setNewMessageText(videoRequestMessage);
-      await sendMessage(new Event('submit') as FormEvent<HTMLFormElement>);
+      await handleSendMessage(new Event('submit') as unknown as FormEvent<HTMLFormElement>);
       setNewMessageText('');
 
     } catch (error) {
@@ -441,9 +441,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     try {
       await videoService.approveCallRequest(requestId, currentUser.uid);
       // Optional: Send confirmation message
-      const approvalMessage = '✅ Video-Call wurde genehmigt';
+      const approvalMessage = 'Video-Call wurde genehmigt';
       setNewMessageText(approvalMessage);
-      await sendMessage(new Event('submit') as FormEvent<HTMLFormElement>);
+      await handleSendMessage(new Event('submit') as unknown as FormEvent<HTMLFormElement>);
       setNewMessageText('');
     } catch (error) {
       setChatError(`Fehler beim Genehmigen der Video-Call-Anfrage: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
@@ -523,7 +523,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
                       width={40}
                       height={40}
                       className="rounded-full object-cover w-10 h-10"
-                      onError={e => {}}
+                      onError={_e => {}}
                     />
                   ) : (
                     <>

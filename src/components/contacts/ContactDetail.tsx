@@ -82,10 +82,22 @@ export default function ContactDetail({
     toast.success(`${label} kopiert`);
   };
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return null;
+  const formatDate = (date: string | Date | { seconds: number } | { toDate: () => Date } | undefined) => {
+    if (!date) return null;
     try {
-      return new Date(dateString).toLocaleDateString('de-DE', {
+      let dateObj: Date;
+      if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof (date as { toDate: () => Date }).toDate === 'function') {
+        dateObj = (date as { toDate: () => Date }).toDate();
+      } else if ('seconds' in date) {
+        dateObj = new Date(date.seconds * 1000);
+      } else {
+        return null;
+      }
+      return dateObj.toLocaleDateString('de-DE', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',

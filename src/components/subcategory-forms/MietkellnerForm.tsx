@@ -5,8 +5,6 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
 
@@ -71,7 +69,7 @@ const MietkellnerForm: React.FC<MietkellnerFormProps> = ({
     { value: 'spezialist', label: 'Spezialist' },
   ];
 
-  const additionalServicesOptions = [
+  const _additionalServicesOptions = [
     { value: 'setup', label: 'Tisch-Setup' },
     { value: 'decoration', label: 'Dekoration' },
     { value: 'geschirr', label: 'Geschirr-Service' },

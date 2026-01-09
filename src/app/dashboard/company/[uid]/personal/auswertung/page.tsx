@@ -18,10 +18,7 @@ import {
   Users,
   AlertTriangle,
   CheckCircle,
-  TrendingUp,
-  TrendingDown,
   Euro,
-  Calendar,
   FileText,
   Download,
   RefreshCw,
@@ -64,7 +61,7 @@ export default function AuswertungPage({ params }: PageProps) {
       setLoading(true);
       const employeeList = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeList);
-    } catch (error) {
+    } catch {
       // Fehler ignorieren
     } finally {
       setLoading(false);
@@ -87,7 +84,7 @@ export default function AuswertungPage({ params }: PageProps) {
         if (evaluation) {
           newEvaluations.set(emp.id, evaluation);
         }
-      } catch (error) {
+      } catch {
         // Fehler ignorieren
       }
     }

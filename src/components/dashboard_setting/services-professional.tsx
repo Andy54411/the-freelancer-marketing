@@ -3,16 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Plus, Package, Edit, Save, Trash2 } from 'lucide-react';
+import { Package, Trash2, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
 import { ServiceCreate } from '@/components/service/ServiceCreate';
 import { ServiceEdit } from '@/components/service/ServiceEdit';
-import { categories } from '@/lib/categoriesData';
 
 // Simple test service interface
 interface AdditionalService {
@@ -40,7 +37,7 @@ interface TestService {
 }
 
 // Main Component
-const ServicesWorkingForm = ({ formData, setFormData }: any) => {
+const ServicesWorkingForm = ({ formData: _formData, setFormData: _setFormData }: any) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('manage');
   const [services, setServices] = useState<TestService[]>([]);
@@ -139,7 +136,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
     setActiveTab('edit');
   };
 
-  const handleSaveEdit = async () => {
+  const _handleSaveEdit = async () => {
     if (!editingService || !user?.uid) return;
 
     try {
@@ -210,7 +207,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
           });
         });
         setServices(servicesList);
-      } catch (error) {
+      } catch {
         toast.error('Fehler beim Neuladen der Services');
       } finally {
         setIsLoading(false);

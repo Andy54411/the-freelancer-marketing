@@ -48,7 +48,7 @@ const FotografForm: React.FC<FotografFormProps> = ({
     { value: 'nach_absprache', label: 'Nach Absprache' },
   ];
 
-  const editingOptions = [
+  const _editingOptions = [
     { value: 'basic', label: 'Basic-Bearbeitung' },
     { value: 'erweitert', label: 'Erweiterte Bearbeitung' },
     { value: 'keine', label: 'Keine Bearbeitung' },

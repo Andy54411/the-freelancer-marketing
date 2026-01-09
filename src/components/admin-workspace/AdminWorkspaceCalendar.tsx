@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, User } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,8 +9,8 @@ import type { AdminWorkspace } from '@/services/AdminWorkspaceService';
 
 interface AdminWorkspaceCalendarProps {
   workspaces: AdminWorkspace[];
-  onUpdateWorkspace: (workspaceId: string, updates: Partial<AdminWorkspace>) => void;
-  onDeleteWorkspace: (workspaceId: string) => void;
+  _onUpdateWorkspace: (workspaceId: string, updates: Partial<AdminWorkspace>) => void;
+  _onDeleteWorkspace: (workspaceId: string) => void;
   onWorkspaceClick?: (workspace: AdminWorkspace) => void;
 }
 
@@ -18,8 +18,8 @@ type CalendarView = 'month' | 'week' | 'day';
 
 export function AdminWorkspaceCalendar({
   workspaces,
-  onUpdateWorkspace,
-  onDeleteWorkspace,
+  _onUpdateWorkspace,
+  _onDeleteWorkspace,
   onWorkspaceClick,
 }: AdminWorkspaceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -97,15 +97,19 @@ export function AdminWorkspaceCalendar({
     setCurrentDate(newDate);
   };
 
-  const getDaysInMonth = (date: Date) => {
+  const getDaysInMonth = (date: Date): (Date | null)[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
+    return getCalendarDays(year, month);
+  };
+
+  const getCalendarDays = (year: number, month: number): (Date | null)[] => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: (Date | null)[] = [];
 
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
@@ -120,13 +124,13 @@ export function AdminWorkspaceCalendar({
     return days;
   };
 
-  const getWeekDays = (date: Date) => {
+  const getWeekDays = (date: Date): Date[] => {
     const startOfWeek = new Date(date);
     const day = startOfWeek.getDay();
     const diff = startOfWeek.getDate() - day;
     startOfWeek.setDate(diff);
 
-    const days = [];
+    const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const weekDay = new Date(startOfWeek);
       weekDay.setDate(startOfWeek.getDate() + i);

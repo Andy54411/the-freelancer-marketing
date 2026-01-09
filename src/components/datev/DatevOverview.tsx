@@ -33,7 +33,7 @@ interface OverviewStats {
 
 export function DatevOverview({ companyId }: DatevOverviewProps) {
   const [loading, setLoading] = useState(true);
-  const [organization, setOrganization] = useState<DatevOrganization | null>(null);
+  const [organization] = useState<DatevOrganization | null>(null);
   const [stats, setStats] = useState<OverviewStats>({
     totalRevenue: 0,
     totalExpenses: 0,
@@ -87,7 +87,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         monthlyGrowth: 12.5, // Mock data - in production calculate from historical data
         accountBalance,
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Übersichtsdaten');
     } finally {
       setLoading(false);

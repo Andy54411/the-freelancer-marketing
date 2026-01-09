@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import {
   TrendingUp,
   TrendingDown,
@@ -29,7 +28,6 @@ import {
   PlatformConnection,
   UnifiedCampaign,
   UnifiedAnalytics,
-  UnifiedMetrics,
 } from '@/types/advertising';
 
 // Platform Icons Component
@@ -194,7 +192,7 @@ export default function MultiPlatformAdvertisingDashboard({
           setAnalytics(analyticsData.data);
         }
       }
-    } catch (err: unknown) {
+    } catch {
       setError('Fehler beim Laden der Dashboard-Daten');
     } finally {
       setIsLoading(false);
@@ -205,7 +203,7 @@ export default function MultiPlatformAdvertisingDashboard({
     try {
       // Redirect direkt zur OAuth-Route (die Route macht selbst den Redirect zu Google/LinkedIn/etc.)
       window.location.href = `/api/multi-platform-advertising/auth/${platform}?companyId=${companyId}`;
-    } catch (error: unknown) {
+    } catch {
       setError(`Fehler beim Verbinden mit ${platform}`);
     }
   };

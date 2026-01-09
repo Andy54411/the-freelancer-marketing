@@ -1,6 +1,5 @@
 import React from 'react';
-import { MapPin, Clock, Calendar, Heart, Sparkles, Send } from 'lucide-react';
-import Image from 'next/image';
+import { MapPin, Clock, Calendar, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { JobPosting } from '@/types/career';

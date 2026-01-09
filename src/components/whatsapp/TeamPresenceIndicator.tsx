@@ -30,8 +30,8 @@ interface TeamPresenceIndicatorProps {
  * - Typing Indicator (später)
  */
 export function TeamPresenceIndicator({
-  companyId,
-  customerId,
+  companyId: _companyId,
+  customerId: _customerId,
   teamMembers,
 }: TeamPresenceIndicatorProps) {
   const [onlineMembers, setOnlineMembers] = useState<TeamMember[]>([]);

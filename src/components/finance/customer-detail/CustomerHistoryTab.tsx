@@ -36,7 +36,6 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
-  where,
   getDocs,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -168,7 +167,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         setActivities(loadedActivities);
         setLoading(false);
       },
-      error => {
+      _error => {
         toast.error('Fehler beim Laden des Aktivitätsverlaufs');
         setLoading(false);
       }
@@ -211,7 +210,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         setCalendarEvents(loadedEvents);
         setLoading(false);
       },
-      error => {
+      _error => {
         toast.error('Fehler beim Laden der Kalender-Events');
         setLoading(false);
       }
@@ -284,7 +283,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
     setCalendarModalOpen(true);
   };
 
-  const handleCalendarEventSaved = (event: any) => {
+  const handleCalendarEventSaved = (_event: any) => {
     setCalendarModalOpen(false);
     toast.success('Termin wurde erfolgreich gespeichert');
     // Refresh calendar to show new/updated event
@@ -293,7 +292,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
     }
   };
 
-  const handleCalendarEventDeleted = (eventId: string) => {
+  const handleCalendarEventDeleted = (_eventId: string) => {
     setCalendarModalOpen(false);
     toast.success('Termin wurde gelöscht');
     // Refresh calendar to remove deleted event
@@ -833,7 +832,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
                         <div className="space-y-6 pb-4">
-                          {combinedTimeline.map((item, index) => (
+                          {combinedTimeline.map((item, _index) => (
                             <div
                               key={`${item.source}-${item.id}`}
                               className="relative flex items-start gap-4"

@@ -299,8 +299,16 @@ export class WhatsAppService {
           unreadCount: chat.messages.filter(m => m.direction === 'inbound' && m.status !== 'read').length,
         }))
         .sort((a, b) => {
-          const dateA = a.lastMessage.createdAt instanceof Date ? a.lastMessage.createdAt : new Date(a.lastMessage.createdAt);
-          const dateB = b.lastMessage.createdAt instanceof Date ? b.lastMessage.createdAt : new Date(b.lastMessage.createdAt);
+          const dateA = a.lastMessage.createdAt instanceof Date 
+            ? a.lastMessage.createdAt 
+            : typeof a.lastMessage.createdAt === 'string' 
+              ? new Date(a.lastMessage.createdAt) 
+              : new Date((a.lastMessage.createdAt as { seconds: number }).seconds * 1000);
+          const dateB = b.lastMessage.createdAt instanceof Date 
+            ? b.lastMessage.createdAt 
+            : typeof b.lastMessage.createdAt === 'string' 
+              ? new Date(b.lastMessage.createdAt) 
+              : new Date((b.lastMessage.createdAt as { seconds: number }).seconds * 1000);
           return dateB.getTime() - dateA.getTime();
         });
     } catch {
@@ -329,8 +337,16 @@ export class WhatsAppService {
                msgPhone.endsWith(normalizedSearch.slice(-10)) || 
                normalizedSearch.endsWith(msgPhone.slice(-10));
       }).sort((a, b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        const dateA = a.createdAt instanceof Date 
+          ? a.createdAt 
+          : typeof a.createdAt === 'string' 
+            ? new Date(a.createdAt) 
+            : new Date((a.createdAt as { seconds: number }).seconds * 1000);
+        const dateB = b.createdAt instanceof Date 
+          ? b.createdAt 
+          : typeof b.createdAt === 'string' 
+            ? new Date(b.createdAt) 
+            : new Date((b.createdAt as { seconds: number }).seconds * 1000);
         return dateA.getTime() - dateB.getTime(); // Älteste zuerst für Chat-Ansicht
       });
     } catch {

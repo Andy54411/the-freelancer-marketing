@@ -18,18 +18,13 @@ import {
   ArrowUp,
   ArrowDown,
   MoreHorizontal,
-  Eye,
-  EyeOff,
-  Check,
   X,
   Plus,
   Link,
   FileText,
-  Archive,
   Euro,
-  Calendar,
-  Tag,
   Send,
+  Calendar,
 } from 'lucide-react';
 
 // FinAPI Transaction interface - ERWEITERT
@@ -301,7 +296,7 @@ export default function BankingAccountsPage() {
   );
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [_loadingTransactions, setLoadingTransactions] = useState(false);
 
   // UI States
   const [activeAccountTab, setActiveAccountTab] = useState('all');
@@ -409,8 +404,8 @@ export default function BankingAccountsPage() {
       const { collection, getDocs } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
-      const transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
-      const snapshot = await getDocs(transactionLinksRef);
+      const _transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
+      const snapshot = await getDocs(_transactionLinksRef);
 
       const links = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -483,7 +478,7 @@ export default function BankingAccountsPage() {
   }, [transactions.length, loadTransactionLinks]);
 
   // Load transaction links ONLY when transaction is linked
-  const loadTransactionLinksForTransaction = useCallback(
+  const _loadTransactionLinksForTransaction = useCallback(
     async (transactionId: string) => {
       try {
         if (!uid) return;
@@ -593,16 +588,8 @@ export default function BankingAccountsPage() {
   };
 
   // Handle receipt creation - navigate to dedicated page
-  const handleCreateReceipt = (transaction: Transaction) => {
-    const params = new URLSearchParams({
-      beschreibung: transaction.verwendungszweck,
-      betrag: Math.abs(transaction.betrag).toFixed(2).replace('.', ','),
-      belegdatum: transaction.buchungstag,
-      kunde: transaction.name,
-      transactionId: transaction.id,
-    });
-
-    router.push(`/dashboard/company/${uid}/banking/receipt?${params.toString()}`);
+  const _handleCreateReceipt = (_transaction: Transaction) => {
+    // Unused - receipt creation is handled inline in the table
   };
 
   // Update Invoice Status using the service
@@ -720,7 +707,7 @@ export default function BankingAccountsPage() {
       const { db } = await import('@/firebase/clients');
 
       // Finde den entsprechenden Link
-      const transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
+      const _transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
       const linkToDelete = transactionLinks.find(
         link => link.transactionId === transactionId && link.documentId === documentId
       );
@@ -1117,14 +1104,14 @@ export default function BankingAccountsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [accountDropdownOpen, selectedTransactions]);
 
-  const formatCurrency = (amount: number) => {
+  const _formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
+  const _getStatusBadge = (status: string) => {
     const statusConfig = {
       processed: { color: 'bg-green-100 text-green-800', label: 'Verbucht', icon: '✓' },
       pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Ausstehend', icon: '⏳' },
@@ -1677,7 +1664,7 @@ export default function BankingAccountsPage() {
                             const date = new Date(transaction.buchungstag);
                             if (isNaN(date.getTime())) return '---';
                             return date.toLocaleDateString('de-DE');
-                          } catch (error) {
+                          } catch {
                             return '---';
                           }
                         })()}
@@ -1985,7 +1972,7 @@ export default function BankingAccountsPage() {
                                         if (isNaN(date.getTime()))
                                           return new Date().toLocaleDateString('de-DE');
                                         return date.toLocaleDateString('de-DE');
-                                      } catch (error) {
+                                      } catch {
                                         return new Date().toLocaleDateString('de-DE');
                                       }
                                     })(),

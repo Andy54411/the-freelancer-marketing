@@ -38,7 +38,7 @@ export async function GET(
       success: true,
       quote,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebotsanfrage' }, { status: 500 });
   }
 }

@@ -10,13 +10,11 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  ThumbsUp,
   Building2,
   Package,
   Briefcase,
   Car,
   Home,
-  Utensils,
   Users,
   Building,
   Plane,
@@ -36,11 +34,9 @@ import {
 'lucide-react';
 import { BookingAccountService, BookingAccount } from '@/services/bookingAccountService';
 import { DatevCardService, DatevCard } from '@/services/datevCardService';
-import { DATEV_CATEGORY_MAPPINGS, findMappingByAccountNumber, getMappingsByCategory } from '@/data/datev-category-mapping-complete';
+import { findMappingByAccountNumber, getMappingsByCategory } from '@/data/datev-category-mapping-complete';
 import {
-  getAllIncomeMappings,
   findIncomeMappingByAccountNumber,
-  getIncomeMappingsByCategory,
   incomeKategorienBeschreibungen,
   getAllIncomeCategories } from
 '@/data/datev-income-mapping-complete';
@@ -86,7 +82,7 @@ export default function CategorySelectionModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(selectedCategory?.id || null);
   const [bookingAccounts, setBookingAccounts] = useState<BookingAccount[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [datevCards, setDatevCards] = useState<DatevCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDatevType, setSelectedDatevType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'>('ALL');
@@ -435,7 +431,7 @@ export default function CategorySelectionModal({
           // Debug: Logge Kategorie-Zuweisungen für banken-finanzen und sonstiges
           if (categoryId === 'banken-finanzen' || categoryId === 'sonstiges') {
 
-            cards.forEach((card) => {});
+            cards.forEach((_card) => {});
           }
         }
       });
@@ -480,7 +476,7 @@ export default function CategorySelectionModal({
 
           // Debug: Logge Kategorie-Zuweisungen
 
-          cards.forEach((card) => {});
+          cards.forEach((_card) => {});
         }
       });
     }

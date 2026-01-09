@@ -2250,6 +2250,313 @@ class GoogleAdsClientService {
       };
     }
   }
+
+  /**
+   * Holt Anzeigen für eine Ad Group (oder alle)
+   */
+  async getAds(
+    refreshToken: string,
+    customerId: string,
+    adGroupId?: string
+  ): Promise<GoogleAdsApiResponse<{ ads: Array<{
+    id: string;
+    name: string;
+    status: string;
+    adGroupId: string;
+    headlines: string[];
+    descriptions: string[];
+    finalUrls: string[];
+    metrics?: GoogleAdsMetrics;
+  }> }>> {
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      const whereClause = adGroupId 
+        ? `WHERE ad_group.id = ${adGroupId} AND ad_group_ad.status != 'REMOVED'`
+        : `WHERE ad_group_ad.status != 'REMOVED'`;
+
+      const results = await customer.query(`
+        SELECT
+          ad_group_ad.ad.id,
+          ad_group_ad.ad.name,
+          ad_group_ad.status,
+          ad_group.id,
+          ad_group_ad.ad.responsive_search_ad.headlines,
+          ad_group_ad.ad.responsive_search_ad.descriptions,
+          ad_group_ad.ad.final_urls,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions
+        FROM ad_group_ad
+        ${whereClause}
+      `);
+
+      const ads = results.map((row: any) => ({
+        id: row.ad_group_ad?.ad?.id || '',
+        name: row.ad_group_ad?.ad?.name || `Ad ${row.ad_group_ad?.ad?.id}`,
+        status: row.ad_group_ad?.status || 'UNKNOWN',
+        adGroupId: row.ad_group?.id || '',
+        headlines: (row.ad_group_ad?.ad?.responsive_search_ad?.headlines || []).map((h: any) => h.text || ''),
+        descriptions: (row.ad_group_ad?.ad?.responsive_search_ad?.descriptions || []).map((d: any) => d.text || ''),
+        finalUrls: row.ad_group_ad?.ad?.final_urls || [],
+        metrics: {
+          impressions: row.metrics?.impressions || 0,
+          clicks: row.metrics?.clicks || 0,
+          cost: Math.round((row.metrics?.cost_micros || 0) / 1000000),
+          conversions: row.metrics?.conversions || 0,
+          conversionValue: 0,
+          ctr: row.metrics?.impressions > 0 ? (row.metrics?.clicks / row.metrics?.impressions) * 100 : 0,
+          cpc: row.metrics?.clicks > 0 ? Math.round((row.metrics?.cost_micros || 0) / 1000000 / row.metrics?.clicks) : 0,
+          cpa: row.metrics?.conversions > 0 ? Math.round((row.metrics?.cost_micros || 0) / 1000000 / row.metrics?.conversions) : 0,
+          roas: 0,
+        },
+      }));
+
+      return {
+        success: true,
+        data: { ads },
+      };
+    } catch (error: any) {
+      console.error('Get Ads Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'ADS_ERROR',
+          message: error.message || 'Failed to fetch ads',
+        },
+      };
+    }
+  }
+
+  /**
+   * Holt Keywords für eine Ad Group (oder alle)
+   */
+  async getKeywords(
+    refreshToken: string,
+    customerId: string,
+    adGroupId?: string
+  ): Promise<GoogleAdsApiResponse<{ keywords: Array<{
+    id: string;
+    text: string;
+    matchType: string;
+    status: string;
+    adGroupId: string;
+    metrics?: GoogleAdsMetrics;
+  }> }>> {
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      const whereClause = adGroupId 
+        ? `WHERE ad_group.id = ${adGroupId} AND ad_group_criterion.status != 'REMOVED'`
+        : `WHERE ad_group_criterion.status != 'REMOVED' AND ad_group_criterion.type = 'KEYWORD'`;
+
+      const results = await customer.query(`
+        SELECT
+          ad_group_criterion.criterion_id,
+          ad_group_criterion.keyword.text,
+          ad_group_criterion.keyword.match_type,
+          ad_group_criterion.status,
+          ad_group.id,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions
+        FROM ad_group_criterion
+        ${whereClause}
+      `);
+
+      const keywords = results.map((row: any) => ({
+        id: row.ad_group_criterion?.criterion_id || '',
+        text: row.ad_group_criterion?.keyword?.text || '',
+        matchType: row.ad_group_criterion?.keyword?.match_type || 'BROAD',
+        status: row.ad_group_criterion?.status || 'UNKNOWN',
+        adGroupId: row.ad_group?.id || '',
+        metrics: {
+          impressions: row.metrics?.impressions || 0,
+          clicks: row.metrics?.clicks || 0,
+          cost: Math.round((row.metrics?.cost_micros || 0) / 1000000),
+          conversions: row.metrics?.conversions || 0,
+          conversionValue: 0,
+          ctr: row.metrics?.impressions > 0 ? (row.metrics?.clicks / row.metrics?.impressions) * 100 : 0,
+          cpc: row.metrics?.clicks > 0 ? Math.round((row.metrics?.cost_micros || 0) / 1000000 / row.metrics?.clicks) : 0,
+          cpa: row.metrics?.conversions > 0 ? Math.round((row.metrics?.cost_micros || 0) / 1000000 / row.metrics?.conversions) : 0,
+          roas: 0,
+        },
+      }));
+
+      return {
+        success: true,
+        data: { keywords },
+      };
+    } catch (error: any) {
+      console.error('Get Keywords Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'KEYWORDS_ERROR',
+          message: error.message || 'Failed to fetch keywords',
+        },
+      };
+    }
+  }
+
+  /**
+   * Holt Performance Analytics für einen Zeitraum
+   */
+  async getPerformanceAnalytics(
+    refreshToken: string,
+    customerId: string,
+    dateRange: { startDate: string; endDate: string }
+  ): Promise<GoogleAdsApiResponse<{
+    summary: GoogleAdsMetrics;
+    dailyData: Array<{
+      date: string;
+      metrics: GoogleAdsMetrics;
+    }>;
+    campaignPerformance: Array<{
+      campaignId: string;
+      campaignName: string;
+      metrics: GoogleAdsMetrics;
+    }>;
+  }>> {
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      // Tägliche Daten
+      const dailyResults = await customer.query(`
+        SELECT
+          segments.date,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversions_value
+        FROM customer
+        WHERE segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'
+        ORDER BY segments.date
+      `);
+
+      // Kampagnen-Performance
+      const campaignResults = await customer.query(`
+        SELECT
+          campaign.id,
+          campaign.name,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversions_value
+        FROM campaign
+        WHERE segments.date BETWEEN '${dateRange.startDate}' AND '${dateRange.endDate}'
+          AND campaign.status != 'REMOVED'
+      `);
+
+      // Zusammenfassung berechnen
+      let totalImpressions = 0;
+      let totalClicks = 0;
+      let totalCostMicros = 0;
+      let totalConversions = 0;
+      let totalConversionValue = 0;
+
+      const dailyData = dailyResults.map((row: any) => {
+        const impressions = row.metrics?.impressions || 0;
+        const clicks = row.metrics?.clicks || 0;
+        const costMicros = row.metrics?.cost_micros || 0;
+        const conversions = row.metrics?.conversions || 0;
+        const conversionValue = row.metrics?.conversions_value || 0;
+
+        totalImpressions += impressions;
+        totalClicks += clicks;
+        totalCostMicros += costMicros;
+        totalConversions += conversions;
+        totalConversionValue += conversionValue;
+
+        const cost = Math.round(costMicros / 1000000);
+
+        return {
+          date: row.segments?.date || '',
+          metrics: {
+            impressions,
+            clicks,
+            cost,
+            conversions,
+            conversionValue: Math.round(conversionValue / 1000000),
+            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+            cpc: clicks > 0 ? cost / clicks : 0,
+            cpa: conversions > 0 ? cost / conversions : 0,
+            roas: costMicros > 0 ? conversionValue / costMicros : 0,
+          },
+        };
+      });
+
+      const totalCost = Math.round(totalCostMicros / 1000000);
+
+      const summary: GoogleAdsMetrics = {
+        impressions: totalImpressions,
+        clicks: totalClicks,
+        cost: totalCost,
+        conversions: totalConversions,
+        conversionValue: Math.round(totalConversionValue / 1000000),
+        ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
+        cpc: totalClicks > 0 ? totalCost / totalClicks : 0,
+        cpa: totalConversions > 0 ? totalCost / totalConversions : 0,
+        roas: totalCostMicros > 0 ? totalConversionValue / totalCostMicros : 0,
+      };
+
+      const campaignPerformance = campaignResults.map((row: any) => {
+        const impressions = row.metrics?.impressions || 0;
+        const clicks = row.metrics?.clicks || 0;
+        const costMicros = row.metrics?.cost_micros || 0;
+        const conversions = row.metrics?.conversions || 0;
+        const conversionValue = row.metrics?.conversions_value || 0;
+        const cost = Math.round(costMicros / 1000000);
+
+        return {
+          campaignId: row.campaign?.id || '',
+          campaignName: row.campaign?.name || '',
+          metrics: {
+            impressions,
+            clicks,
+            cost,
+            conversions,
+            conversionValue: Math.round(conversionValue / 1000000),
+            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+            cpc: clicks > 0 ? cost / clicks : 0,
+            cpa: conversions > 0 ? cost / conversions : 0,
+            roas: costMicros > 0 ? conversionValue / costMicros : 0,
+          },
+        };
+      });
+
+      return {
+        success: true,
+        data: {
+          summary,
+          dailyData,
+          campaignPerformance,
+        },
+      };
+    } catch (error: any) {
+      console.error('Get Performance Analytics Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'ANALYTICS_ERROR',
+          message: error.message || 'Failed to fetch performance analytics',
+        },
+      };
+    }
+  }
 }
 
 // Singleton-Instanz exportieren

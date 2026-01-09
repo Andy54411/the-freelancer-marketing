@@ -431,9 +431,9 @@ export default function DatevBDSTransferPage() {
           <h3 className="text-sm font-medium text-blue-900 mb-2">Hinweis zur Übertragung</h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
             <li>Die Übertragung kann je nach Datenmenge einige Minuten dauern</li>
-            <li>Sie können den Übertragungsstatus in DATEV unter "Bestand → Daten holen" überprüfen</li>
+            <li>Sie können den Übertragungsstatus in DATEV unter &quot;Bestand → Daten holen&quot; überprüfen</li>
             <li>Nach erfolgreicher Übertragung müssen Sie die Daten in DATEV importieren</li>
-            <li>Gehen Sie dazu zu "Bestand → Importieren → Stapelverarbeitung"</li>
+            <li>Gehen Sie dazu zu &quot;Bestand → Importieren → Stapelverarbeitung&quot;</li>
           </ul>
         </div>
       </div>

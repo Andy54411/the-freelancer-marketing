@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         filters: { limit, minScore, includeBlocked },
       });
     }
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Provider-Bewertungen' },
       { status: 500 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       message: result.message,
       updatedScore: result.updatedScore,
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Fehler bei der Provider-Aktion' }, { status: 500 });
   }
 }
@@ -134,8 +134,8 @@ async function getProviderScore(providerId: string) {
         blockType: providerData?.account?.blockType || null,
       },
     };
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw err;
   }
 }
 
@@ -203,8 +203,8 @@ async function getAllProviderScores(limit: number, minScore: number, includeBloc
     providers.sort((a, b) => a.overallScore - b.overallScore);
 
     return providers;
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw err;
   }
 }
 
@@ -282,7 +282,7 @@ async function getProviderOrderStats(providerId: string) {
       completedOrders,
       completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
     };
-  } catch (error) {
+  } catch {
     return {
       totalOrders: 0,
       completedOrders: 0,
@@ -314,7 +314,7 @@ async function initializeProviderScore(providerId: string) {
     await adminDb.collection('users').doc(providerId).update({
       providerScore: defaultScore,
     });
-  } catch (error) {}
+  } catch {}
 
   return defaultScore;
 }

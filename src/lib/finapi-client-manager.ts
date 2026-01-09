@@ -201,7 +201,7 @@ export class FinAPIClientManager {
     try {
       await this.users.getAuthorizedUser();
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

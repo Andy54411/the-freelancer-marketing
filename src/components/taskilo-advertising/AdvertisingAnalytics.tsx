@@ -20,7 +20,7 @@ interface AdvertisingAnalyticsProps {
   companyId: string;
 }
 
-export default function AdvertisingAnalytics({ companyId }: AdvertisingAnalyticsProps) {
+export default function AdvertisingAnalytics({ companyId: _companyId }: AdvertisingAnalyticsProps) {
   const [analytics, setAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 

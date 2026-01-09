@@ -8,9 +8,7 @@ import {
   limit,
   onSnapshot,
   collectionGroup,
-  where,
   Timestamp,
-  startAfter,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Badge } from '@/components/ui/badge';

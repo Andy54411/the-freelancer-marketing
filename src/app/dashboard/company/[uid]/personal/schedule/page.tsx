@@ -209,7 +209,7 @@ function calculateHoursFromShift(shift: Shift): number {
 }
 
 export default function SchedulePage({ params }: SchedulePageProps) {
-  const { user, userRole } = useAuth();
+  const { user: _user, userRole } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{ uid: string } | null>(null);
 
   // State
@@ -502,11 +502,11 @@ export default function SchedulePage({ params }: SchedulePageProps) {
   };
 
   // Woche kopieren für eine Abteilung
-  const handleCopyWeek = (department: string) => {
+  const handleCopyWeek = (_department: string) => {
     const weekStart = formatDate(weekDates[0]);
     const weekEnd = formatDate(weekDates[6]);
     const deptShifts = shifts.filter(s => 
-      s.department === department && 
+      s.department === _department && 
       s.date >= weekStart && 
       s.date <= weekEnd
     );

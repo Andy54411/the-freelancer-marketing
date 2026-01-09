@@ -16,14 +16,12 @@ import {
   Underline as UnderlineIcon,
   List,
   ListOrdered,
-  ChevronDown,
   Strikethrough,
   Palette,
   AlignLeft,
   AlignCenter,
   AlignRight,
   Link as LinkIcon,
-  Type,
   Heading1,
   Heading2,
   Heading3,
@@ -48,7 +46,7 @@ export default function UpdateTextEditor({
   value,
   onChange,
   className,
-  placeholder = 'Detaillierte Beschreibung des Updates...',
+  placeholder: _placeholder = 'Detaillierte Beschreibung des Updates...',
 }: UpdateTextEditorProps) {
   const [mounted, setMounted] = useState(false);
 

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
 import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
@@ -9,7 +8,7 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, connectionId, credentialType = 'sandbox' } = body;
+    const { userId, connectionId } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });

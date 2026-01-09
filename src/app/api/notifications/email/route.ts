@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // E-Mail-Template für Quote Request
-    const emailTemplate = {
+    const _emailTemplate = {
       to: providerEmail,
       subject: `Neue Angebots-Anfrage auf Taskilo - ${quoteData.projectTitle}`,
       html: `
@@ -131,7 +131,7 @@ Diese E-Mail wurde automatisch von Taskilo gesendet.
       message: 'E-Mail-Benachrichtigung gesendet',
       recipient: providerEmail,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Senden der E-Mail-Benachrichtigung' },
       { status: 500 }

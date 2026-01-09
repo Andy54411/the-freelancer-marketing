@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
-import { JobPostingSchema } from '@/types/career';
-import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {

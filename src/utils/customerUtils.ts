@@ -2,12 +2,10 @@
 
 import {
   collection,
-  addDoc,
   getDocs,
   query,
   where,
   orderBy,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
@@ -135,7 +133,7 @@ export const loadCustomers = async (companyId: string): Promise<Customer[]> => {
 export const findOrCreateCustomer = async (
   customerName: string,
   companyId: string,
-  userUid: string
+  _userUid: string
 ): Promise<Customer> => {
   try {
     // Load all existing customers

@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
-  TrendingUp as IconTrendingUp,
   Package as IconPackage,
   CreditCard as IconCreditCard,
   Euro as IconCurrencyEuro,
@@ -15,7 +14,6 @@ import {
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAlertHelpers } from '@/components/ui/AlertProvider';
 import {
   Card,
   CardAction,
@@ -37,8 +35,7 @@ interface DashboardStats {
 }
 
 export function SectionCards() {
-  const { showSuccess, showError, showWarning } = useAlertHelpers();
-  const { user: currentUser, unreadMessagesCount } = useAuth();
+  const { user: currentUser } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     monthlyRevenue: 0,
     newOrders: 0,
@@ -70,8 +67,8 @@ export function SectionCards() {
         let monthlyRevenue = 0;
         let newOrders = 0;
         let activeOrders = 0;
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
+        const _currentMonth = new Date().getMonth();
+        const _currentYear = new Date().getFullYear();
 
         querySnapshot.forEach(doc => {
           const order = doc.data();
@@ -177,7 +174,9 @@ export function SectionCards() {
               pendingBalance = escrowData.pendingPayouts || 0;
             }
           }
-        } catch (balanceError) {}
+        } catch {
+          // Silent error handling
+        }
 
         // Stats aktualisieren (ohne totalExpenses hier, das wird per Real-time aktualisiert)
         setStats(prevStats => ({
@@ -190,7 +189,7 @@ export function SectionCards() {
           hasActiveOrders,
           pendingApprovals,
         }));
-      } catch (error) {
+      } catch {
         setStats(prevStats => ({
           ...prevStats,
           monthlyRevenue: 0,
@@ -246,7 +245,7 @@ export function SectionCards() {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
   };
 
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isWithdrawing, _setIsWithdrawing] = useState(false);
 
   const handleWithdraw = async () => {
     if (!currentUser) return;
@@ -278,7 +277,7 @@ export function SectionCards() {
             {formatCurrency(stats.availableBalance)}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 pb-1 flex flex-col flex-grow justify-end">
+        <CardContent className="pt-0 pb-1 flex flex-col grow justify-end">
           <div className="flex flex-col gap-0.5">
             <Badge
               variant="outline"
@@ -320,7 +319,7 @@ export function SectionCards() {
 
       {/* Monatlicher Umsatz Card */}
       <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 border-blue-200 dark:border-blue-800">
-        <CardHeader className="pb-2 flex-grow">
+        <CardHeader className="pb-2 grow">
           <CardDescription className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-medium">
             <IconCurrencyEuro size={14} className="shrink-0" />
             <span className="truncate">Umsatz</span>
@@ -335,7 +334,7 @@ export function SectionCards() {
       {/* Neue Bestellungen Card */}
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-orange-200 dark:border-orange-800 cursor-pointer">
-          <CardHeader className="pb-2 flex-grow">
+          <CardHeader className="pb-2 grow">
             <CardDescription className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-xs font-medium">
               <IconPackage size={14} className="shrink-0" />
               <span className="truncate">Bestellungen</span>
@@ -358,7 +357,7 @@ export function SectionCards() {
       {/* Aktive Aufträge Card */}
       <Link href={`/dashboard/company/${currentUser?.uid}/orders/overview`} className="block group">
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-purple-200 dark:border-purple-800 cursor-pointer">
-          <CardHeader className="pb-2 flex-grow">
+          <CardHeader className="pb-2 grow">
             <CardDescription className="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-medium">
               <IconPackage size={14} className="shrink-0" />
               <span className="truncate">Aufträge</span>
@@ -384,7 +383,7 @@ export function SectionCards() {
         className="block group"
       >
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-red-200 dark:border-red-800 cursor-pointer">
-          <CardHeader className="pb-2 flex-grow">
+          <CardHeader className="pb-2 grow">
             <CardDescription className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-medium">
               <IconCreditCard size={14} className="shrink-0" />
               <span className="truncate">Ausgaben</span>

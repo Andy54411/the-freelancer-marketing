@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/firebase/clients';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 import Link from 'next/link';
@@ -98,7 +98,7 @@ export default function EditExpensePage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
+  const [currentReceipt, _setCurrentReceipt] = useState<File | null>(null);
   const [currentReceipts, setCurrentReceipts] = useState<string[]>([]);
   const [extractedLineItems, setExtractedLineItems] = useState<LineItem[]>([]);
 
@@ -199,8 +199,8 @@ export default function EditExpensePage() {
         } else if (expense.receipt?.downloadURL) {
           setCurrentReceipts([expense.receipt.downloadURL]);
         }
-      } catch (error) {
-        console.error('Fehler beim Laden der Ausgabe:', error);
+      } catch {
+        console.error('Fehler beim Laden der Ausgabe:');
         toast.error('Ausgabe konnte nicht geladen werden');
         router.push(`/dashboard/company/${uid}/finance/expenses`);
       } finally {

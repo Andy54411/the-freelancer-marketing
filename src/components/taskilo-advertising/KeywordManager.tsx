@@ -13,15 +13,14 @@ import {
   Plus, 
   TrendingUp,
   TrendingDown,
-  Target,
-  AlertTriangle
+  Target
 } from 'lucide-react';
 
 interface KeywordManagerProps {
   companyId: string;
 }
 
-export default function KeywordManager({ companyId }: KeywordManagerProps) {
+export default function KeywordManager({ companyId: _companyId }: KeywordManagerProps) {
   const [keywords, setKeywords] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);

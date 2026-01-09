@@ -4,9 +4,12 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, momentLocalizer, Views, View, Event } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+// @ts-expect-error CSS import ohne Typdeklaration
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import moment from 'moment';
+// @ts-expect-error Locale import ohne Typdeklaration
 import 'moment/locale/de';
+// @ts-expect-error CSS import ohne Typdeklaration
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +35,6 @@ import {
   Calendar as CalendarIcon,
   Clock,
   Users,
-  Plus,
   ChevronLeft,
   ChevronRight,
   Grid3X3,

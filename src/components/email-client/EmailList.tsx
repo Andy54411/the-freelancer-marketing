@@ -30,8 +30,16 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { formatEmailBody } from '@/lib/emailUtils';
 
+// Helper function to parse timestamp from different formats
+const parseTimestamp = (timestamp: string | { _seconds: number }): Date => {
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+  return new Date(timestamp._seconds * 1000);
+};
+
 // Helper function to extract sender name/email from different formats
-const getSenderDisplay = (from: any): string => {
+const getSenderDisplay = (from: string | { email: string; name?: string } | Array<{ email: string; name?: string } | string> | null | undefined): string => {
   if (!from) return 'Unbekannt';
 
   // Direct object with name/email
@@ -129,7 +137,7 @@ const EmailItem = memo(
         const absolute = format(date, 'd. MMM yyyy, HH:mm', { locale: de });
 
         return { relative, absolute };
-      } catch (error) {
+      } catch {
         return { relative: 'Unbekannt', absolute: '' };
       }
     };
@@ -333,8 +341,8 @@ export function EmailList({
   onDeleteEmails,
   onMarkAsRead,
   onMarkAsSpam,
-  filter,
-  onFilterChange,
+  filter: _filter,
+  onFilterChange: _onFilterChange,
   onSync,
   isLoading = false,
   realtimeStatus,
@@ -357,7 +365,7 @@ export function EmailList({
   // DEBUG: Log wenn die komplette Liste neu rendert
 
   const allSelected = emails.length > 0 && selectedEmails.length === emails.length;
-  const someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
+  const _someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
 
   // Prüfe ob alle ausgewählten Emails gelesen/ungelesen sind
   const selectedEmailsObjects = emails.filter(e => selectedEmails.includes(e.id));
@@ -374,7 +382,7 @@ export function EmailList({
     onSelectAll(!allSelected);
   };
 
-  const formatEmailDate = (timestamp: any): { relative: string; absolute: string } => {
+  const _formatEmailDate = (timestamp: any): { relative: string; absolute: string } => {
     try {
       let date: Date;
 
@@ -439,13 +447,13 @@ export function EmailList({
   };
 
   const sortedEmails = [...emails].sort((a, b) => {
-    let aValue: string | Date;
-    let bValue: string | Date;
+    let aValue: string | number;
+    let bValue: string | number;
 
     switch (sortBy) {
       case 'date':
-        aValue = new Date(a.timestamp);
-        bValue = new Date(b.timestamp);
+        aValue = parseTimestamp(a.timestamp).getTime();
+        bValue = parseTimestamp(b.timestamp).getTime();
         break;
       case 'subject':
         aValue = a.subject.toLowerCase();
@@ -456,8 +464,8 @@ export function EmailList({
         bValue = getSenderDisplay(b.from).toLowerCase();
         break;
       default:
-        aValue = new Date(a.timestamp);
-        bValue = new Date(b.timestamp);
+        aValue = parseTimestamp(a.timestamp).getTime();
+        bValue = parseTimestamp(b.timestamp).getTime();
     }
 
     if (sortOrder === 'asc') {

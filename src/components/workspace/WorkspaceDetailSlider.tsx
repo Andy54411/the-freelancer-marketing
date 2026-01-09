@@ -4,17 +4,11 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   Calendar,
-  User,
-  Clock,
   BarChart3,
   Tag,
   Edit,
   Settings,
-  Plus,
   ChevronRight,
-  CheckCircle,
-  Circle,
-  AlertCircle,
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
+import type { Workspace } from '@/services/WorkspaceService';
 
 interface WorkspaceDetailSliderProps {
   workspace: Workspace | null;
@@ -41,7 +35,7 @@ export function WorkspaceDetailSlider({
   onClose,
   onEdit,
   onView,
-  onUpdateWorkspace,
+  onUpdateWorkspace: _onUpdateWorkspace,
 }: WorkspaceDetailSliderProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
 

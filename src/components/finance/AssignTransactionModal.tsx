@@ -5,7 +5,6 @@ import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -53,7 +52,7 @@ export default function AssignTransactionModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="!max-w-[500px]" 
+        className="max-w-[500px]!" 
         style={{ width: '500px', maxWidth: '500px' }}>
         <DialogHeader>
           <DialogTitle className="text-base font-semibold text-gray-900">

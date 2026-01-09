@@ -25,7 +25,7 @@ interface ConnectedDocumentsModalProps {
 
 const ConnectedDocumentsModal: React.FC<ConnectedDocumentsModalProps> = ({
   isOpen,
-  transactionId,
+  transactionId: _transactionId,
   connectedDocuments,
   onClose,
   onUnlinkDocuments,

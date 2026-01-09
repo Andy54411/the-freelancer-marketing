@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -18,11 +16,8 @@ import {
   ArrowLeft,
   Download,
   Edit,
-  Send,
   X,
   FileText,
-  ZoomIn,
-  ZoomOut,
   MoreHorizontal,
   Mail,
   CheckCircle,
@@ -34,14 +29,13 @@ import {
 } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import EmailSendModalNormal from '@/components/finance/EmailsendModalnormal';
 import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
 import { InlinePreview } from '@/components/finance/InlinePreview';
 import { CancelInvoiceModal } from '@/components/finance/CancelInvoiceModal';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/firebase/clients';
-import { ref, getDownloadURL, listAll } from 'firebase/storage';
+import { ref, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';
 
 export default function InvoiceDetailPage() {
@@ -55,8 +49,8 @@ export default function InvoiceDetailPage() {
   const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null);
 
   // Dokumenttyp-Erkennung: normale Rechnung oder Stornorechnung
-  const [documentType, setDocumentType] = useState<'invoice' | 'storno'>('invoice');
-  const [isStornoDocument, setIsStornoDocument] = useState(false);
+  const [_documentType, _setDocumentType] = useState<'invoice' | 'storno'>('invoice');
+  const [isStornoDocument, _setIsStornoDocument] = useState(false);
 
   useEffect(() => {
     // Lade URL-Parameter beim Mount
@@ -82,14 +76,14 @@ export default function InvoiceDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.0);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
-  const [availablePdfs, setAvailablePdfs] = useState<{ name: string; url: string }[]>([]);
+  const [_pageNumber, setPageNumber] = useState(1);
+  const [_scale, setScale] = useState(1.0);
+  const [_pdfLoading, setPdfLoading] = useState(false);
+  const [_pdfError, setPdfError] = useState<string | null>(null);
+  const [availablePdfs, _setAvailablePdfs] = useState<{ name: string; url: string }[]>([]);
   const [showPdfSelector, setShowPdfSelector] = useState(false);
-  const [useIframeViewer, setUseIframeViewer] = useState(false);
-  const [shouldUsePdfJs, setShouldUsePdfJs] = useState(true);
+  const [_useIframeViewer, setUseIframeViewer] = useState(false);
+  const [_shouldUsePdfJs, setShouldUsePdfJs] = useState(true);
   const [newTag, setNewTag] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(false);
@@ -109,20 +103,19 @@ export default function InvoiceDetailPage() {
 
   // Diese Funktion wird nicht mehr benötigt - PDFs werden beim Erstellen/Versenden in Storage gespeichert
 
-  const refreshPdfUrl = async (storagePath: string) => {
+  const _refreshPdfUrl = async (storagePath: string) => {
     try {
       const pdfRef = ref(storage, storagePath);
       const freshUrl = await getDownloadURL(pdfRef);
 
       return freshUrl;
-    } catch (error) {
-      console.error('Error refreshing PDF URL:', error);
+    } catch {
       return null;
     }
   };
 
   // Funktion zur URL-Validierung - vereinfacht für bessere Kompatibilität
-  const validatePdfUrl = async (url: string): Promise<boolean> => {
+  const _validatePdfUrl = async (url: string): Promise<boolean> => {
     try {
       // Für Firebase Storage URLs, versuche einen einfacheren Ansatz
       if (
@@ -148,8 +141,7 @@ export default function InvoiceDetailPage() {
       }
 
       return true;
-    } catch (error) {
-      console.error('Error validating PDF URL:', error);
+    } catch {
       return false;
     }
   };
@@ -274,7 +266,7 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const invoiceTotals = invoice
+  const _invoiceTotals = invoice
     ? calculateInvoiceTotals(invoice)
     : { subtotal: 0, taxAmount: 0, total: 0 };
 
@@ -282,14 +274,14 @@ export default function InvoiceDetailPage() {
   const currentDocument = showingStorno && stornoInvoice ? stornoInvoice : invoice;
   const isDisplayingStorno = showingStorno && stornoInvoice;
 
-  const formatCurrency = (amount: number) => {
+  const _formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
+  const _getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: {
         label: 'Entwurf',
@@ -327,12 +319,12 @@ export default function InvoiceDetailPage() {
     );
   };
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+  const _onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setPageNumber(1);
   };
 
-  const onDocumentLoadError = (error: any) => {
+  const _onDocumentLoadError = (error: any) => {
     // Stille Behandlung für erwartete Fetch-Fehler
     const isFetchError =
       error?.message?.includes('Failed to fetch') ||
@@ -364,23 +356,23 @@ export default function InvoiceDetailPage() {
     // PDF URL nur bei echten Fehlern zurücksetzen
     setPdfUrl(null);
   };
-  const goToPrevPage = () => {
+  const _goToPrevPage = () => {
     setPageNumber(prev => Math.max(prev - 1, 1));
   };
 
-  const goToNextPage = () => {
+  const _goToNextPage = () => {
     setPageNumber(prev => Math.min(prev + 1, numPages || 1));
   };
 
-  const handleZoomIn = () => {
+  const _handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3.0));
   };
 
-  const handleZoomOut = () => {
+  const _handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.25, 0.5));
   };
 
-  const loadPdfForViewing = () => {
+  const _loadPdfForViewing = () => {
     loadPdfFromStorage();
   };
 
@@ -442,7 +434,7 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const handleFinalizeInvoice = async () => {
+  const _handleFinalizeInvoice = async () => {
     if (!invoice || invoice.status !== 'draft') return;
 
     setUpdating(true);
@@ -456,7 +448,7 @@ export default function InvoiceDetailPage() {
           const result = await FirestoreInvoiceService.getNextInvoiceNumber(uid);
           invoiceNumber = result.formattedNumber;
           sequentialNumber = result.sequentialNumber;
-        } catch (error) {
+        } catch {
           toast.error('Fehler beim Generieren der Rechnungsnummer');
           return;
         }
@@ -487,7 +479,7 @@ export default function InvoiceDetailPage() {
       );
 
       toast.success(`Rechnung ${invoiceNumber} wurde finalisiert!`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Finalisieren der Rechnung');
     } finally {
       setUpdating(false);
@@ -540,7 +532,7 @@ export default function InvoiceDetailPage() {
       // 2. Erstelle Storno-Rechnung in separater Collection
       // Entferne undefined Werte aus der Original-Rechnung
       const cleanInvoiceData = Object.fromEntries(
-        Object.entries(invoice).filter(([_, value]) => value !== undefined)
+        Object.entries(invoice).filter(([, value]) => value !== undefined)
       );
 
       const stornoData = {
@@ -643,7 +635,7 @@ export default function InvoiceDetailPage() {
     router.push(`/dashboard/company/${uid}/finance/invoices/${invoiceId}/edit`);
   };
 
-  const handleViewPdf = async () => {
+  const _handleViewPdf = async () => {
     if (!invoice) return;
 
     setDownloadingPdf(true);
@@ -793,7 +785,7 @@ export default function InvoiceDetailPage() {
             }
             allStyles.push(css);
           }
-        } catch (e) {
+        } catch {
           // Ignore CORS errors for external stylesheets
         }
       });
@@ -1107,7 +1099,7 @@ export default function InvoiceDetailPage() {
                           toast.info('Lieferschein wird erstellt...', { duration: 2000 });
 
                           // Erstelle Lieferschein basierend auf Rechnung
-                          const deliveryNoteData = {
+                          const _deliveryNoteData = {
                             invoiceId: invoice.id,
                             invoiceNumber: invoice.invoiceNumber || invoice.number,
                             customerName: invoice.customerName,
@@ -1696,7 +1688,7 @@ export default function InvoiceDetailPage() {
               signature: (invoice as any).companySignature || undefined,
             }}
             defaultRecipients={[(invoice as any).customerEmail || ''].filter(Boolean)}
-            onSend={async (method, options) => {
+            onSend={async (method, _options) => {
               toast.success(`${method} Aktion ausgeführt`);
 
               // Rechnung nach dem Versand neu laden (um GoBD-Status zu aktualisieren)
@@ -1742,7 +1734,7 @@ export default function InvoiceDetailPage() {
             }}
             documentType={showingStorno ? 'cancellation' : 'invoice'}
             companyId={uid}
-            onSend={async (method, options) => {
+            onSend={async (method, _options) => {
               // Handle send actions if needed
               toast.success(`${method} Aktion ausgeführt`);
             }}

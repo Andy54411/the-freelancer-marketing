@@ -208,8 +208,8 @@ export class ModuleSubscriptionService {
     }
 
     try {
-      const module = PREMIUM_MODULES[data.moduleId];
-      if (!module) {
+      const moduleConfig = PREMIUM_MODULES[data.moduleId];
+      if (!moduleConfig) {
         return { success: false, error: 'Modul nicht gefunden' };
       }
 
@@ -221,19 +221,19 @@ export class ModuleSubscriptionService {
 
       // Prüfe ob Trial bereits genutzt wurde
       const trialUsed = existingSub?.trialUsed ?? false;
-      const startTrial = data.startTrial !== false && !trialUsed && module.trialDays > 0;
+      const startTrial = data.startTrial !== false && !trialUsed && moduleConfig.trialDays > 0;
 
       const now = new Date();
       const subscriptionId = this.generateId();
       
       // Trial oder sofort aktiv
-      let status: ModuleSubscriptionStatus = startTrial ? 'trialing' : 'pending';
+      const status: ModuleSubscriptionStatus = startTrial ? 'trialing' : 'pending';
       let trialEndDate: Date | undefined;
       let periodEnd: Date;
       
       if (startTrial) {
         trialEndDate = new Date(now);
-        trialEndDate.setDate(trialEndDate.getDate() + module.trialDays);
+        trialEndDate.setDate(trialEndDate.getDate() + moduleConfig.trialDays);
         periodEnd = trialEndDate;
       } else {
         periodEnd = new Date(now);
@@ -244,15 +244,15 @@ export class ModuleSubscriptionService {
         }
       }
 
-      const priceGross = module.price[data.billingInterval];
-      const priceNet = module.priceNet[data.billingInterval];
+      const priceGross = moduleConfig.price[data.billingInterval];
+      const priceNet = moduleConfig.priceNet[data.billingInterval];
 
       // Subscription in Firestore speichern
       const subscriptionData = {
         id: subscriptionId,
         companyId: data.companyId,
         moduleId: data.moduleId,
-        moduleName: module.name,
+        moduleName: moduleConfig.name,
         priceNet,
         priceGross,
         vatRate: 19,
@@ -507,8 +507,8 @@ export class ModuleSubscriptionService {
     try {
       // Buche jedes Modul mit anteiligem rabattierten Preis
       for (const moduleId of uniqueModules) {
-        const module = PREMIUM_MODULES[moduleId];
-        const originalModulePrice = module.price[billingInterval];
+        const moduleConfig = PREMIUM_MODULES[moduleId];
+        const originalModulePrice = moduleConfig.price[billingInterval];
         
         // Berechne den anteiligen rabattierten Preis
         const discountMultiplier = 1 - (pricing.discountPercent / 100);
@@ -520,14 +520,14 @@ export class ModuleSubscriptionService {
         
         // Trial oder sofort aktiv
         const trialUsed = false; // Prüfe später
-        const usesTrial = startTrial !== false && !trialUsed && module.trialDays > 0;
-        let status: ModuleSubscriptionStatus = usesTrial ? 'trialing' : 'pending';
+        const usesTrial = startTrial !== false && !trialUsed && moduleConfig.trialDays > 0;
+        const status: ModuleSubscriptionStatus = usesTrial ? 'trialing' : 'pending';
         let trialEndDate: Date | undefined;
         let periodEnd: Date;
         
         if (usesTrial) {
           trialEndDate = new Date(now);
-          trialEndDate.setDate(trialEndDate.getDate() + module.trialDays);
+          trialEndDate.setDate(trialEndDate.getDate() + moduleConfig.trialDays);
           periodEnd = trialEndDate;
         } else {
           periodEnd = new Date(now);
@@ -542,7 +542,7 @@ export class ModuleSubscriptionService {
           id: subscriptionId,
           companyId,
           moduleId,
-          moduleName: module.name,
+          moduleName: moduleConfig.name,
           priceNet: discountedPriceNet,
           priceGross: discountedPrice,
           originalPrice: originalModulePrice,

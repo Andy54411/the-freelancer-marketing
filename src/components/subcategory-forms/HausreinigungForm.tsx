@@ -35,7 +35,7 @@ const HausreinigungForm: React.FC<HausreinigungFormProps> = ({
     { value: 'bereitstellen', label: 'Soll bereitgestellt werden' },
   ];
 
-  const chemicalsOptions = [
+  const _chemicalsOptions = [
     { value: 'standard', label: 'Standard Reinigungsmittel' },
     { value: 'umweltfreundlich', label: 'Umweltfreundliche Mittel' },
     { value: 'allergikerfreundlich', label: 'Allergikerfreundliche Mittel' },

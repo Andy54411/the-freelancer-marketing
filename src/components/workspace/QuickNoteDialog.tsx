@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { StickyNote, Plus, Check, X } from 'lucide-react';
+import { StickyNote, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { WorkspaceService } from '@/services/WorkspaceService';
-import type { Workspace, WorkspaceTask, WorkspaceBoardColumn } from '@/services/WorkspaceService';
+import type { Workspace } from '@/services/WorkspaceService';
 
 interface QuickNoteDialogProps {
   workspaces: Workspace[];
@@ -99,7 +99,7 @@ export function QuickNoteDialog({
       if (onNoteAdded) {
         onNoteAdded();
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

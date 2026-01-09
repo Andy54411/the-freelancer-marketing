@@ -7,7 +7,6 @@ import { db } from '@/firebase/clients';
 import {
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   addDoc,
@@ -112,8 +111,8 @@ export default function DirectChatModal({
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
       }
-    } catch (error) {
-      console.error('Fehler beim Laden des Benutzerprofils:', error);
+    } catch {
+      // Fehler beim Laden ignorieren
     }
 
     return null;
@@ -247,7 +246,7 @@ export default function DirectChatModal({
           const userData = userDoc.data();
           guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
         }
-      } catch (error) {}
+      } catch {}
 
       // Starte Response Time Tracking
       await ResponseTimeTracker.startTracking(providerId, chatId, messageDoc.id, guaranteeHours);
@@ -269,7 +268,7 @@ export default function DirectChatModal({
       );
 
       setNewMessage('');
-    } catch (error) {
+    } catch {
     } finally {
       setSending(false);
     }

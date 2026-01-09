@@ -5,7 +5,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,7 +22,6 @@ import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
 } from '@/components/ui/chart';
 import {
   Select,
@@ -107,7 +106,7 @@ type InvoiceData = {
   vatRate?: number; // Deutsche Umsatzsteuersatz (0%, 7%, 19%)
 };
 
-const chartConfigStatic = {
+const _chartConfigStatic = {
   umsatz: {
     label: 'Umsatz (Aufträge)',
     color: 'var(--primary)',
@@ -614,7 +613,7 @@ export function ChartAreaInteractive({
 
         if (order.totalAmountPaidByBuyer < 0) {
           // orderDate ist hier noch nicht verfügbar - muss später verarbeitet werden
-          const refundAmount = Math.abs(order.totalAmountPaidByBuyer / 100); // Positiver Betrag für Rückerstattungen
+          const _refundAmount = Math.abs(order.totalAmountPaidByBuyer / 100); // Positiver Betrag für Rückerstattungen
           // Rückerstattung - wird später nach orderDate-Verarbeitung behandelt
           return;
         }
@@ -637,29 +636,28 @@ export function ChartAreaInteractive({
           } else {
             throw new Error('Invalid orderDate');
           }
-        } catch (err) {
-          return;
-        }
 
-        if (orderDate >= startDate) {
-          const dateString = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
-          const euroAmount = order.totalAmountPaidByBuyer / 100; // In Euro umrechnen
+          if (orderDate >= startDate) {
+            const dateString = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            const euroAmount = order.totalAmountPaidByBuyer / 100; // In Euro umrechnen
 
-          if (euroAmount < 0) {
-            // NEGATIVE WERTE = RÜCKERSTATTUNGEN
-            if (!dailyRefunds[dateString]) {
-              dailyRefunds[dateString] = 0;
+            if (euroAmount < 0) {
+              // NEGATIVE WERTE = RÜCKERSTATTUNGEN
+              if (!dailyRefunds[dateString]) {
+                dailyRefunds[dateString] = 0;
+              }
+              dailyRefunds[dateString] += Math.abs(euroAmount); // Als positive Rückerstattung
+            } else {
+              // POSITIVE WERTE = UMSATZ
+              if (!dailyRevenue[dateString]) {
+                dailyRevenue[dateString] = 0;
+              }
+              dailyRevenue[dateString] += euroAmount;
+              currentTotalRevenue += euroAmount;
             }
-            dailyRefunds[dateString] += Math.abs(euroAmount); // Als positive Rückerstattung
-          } else {
-            // POSITIVE WERTE = UMSATZ
-            if (!dailyRevenue[dateString]) {
-              dailyRevenue[dateString] = 0;
-            }
-            dailyRevenue[dateString] += euroAmount;
-            currentTotalRevenue += euroAmount;
           }
-        } else {
+        } catch {
+          // Skip invalid dates
         }
       });
 
@@ -727,7 +725,7 @@ export function ChartAreaInteractive({
           } else {
             throw new Error('Invalid createdAt');
           }
-        } catch (err) {
+        } catch {
           return; // Skip quote mit ungültigem Datum
         }
 
@@ -934,7 +932,7 @@ export function ChartAreaInteractive({
 
       // Kompakte Debug-Info für finale Chart-Daten
       if (finalChartData.length > 0) {
-        const totalInvoices = Object.keys(dailyInvoices).reduce(
+        const _totalInvoices = Object.keys(dailyInvoices).reduce(
           (sum, date) => sum + dailyInvoices[date],
           0
         );

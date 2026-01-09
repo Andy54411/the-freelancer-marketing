@@ -41,14 +41,10 @@ import {
   LineChart,
   Lightbulb,
   Search,
-  Trash2,
-  Check,
-  Filter,
   Info
 } from 'lucide-react';
 import {
   HoverCard,
-  HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { AudienceHoverCardContent } from './AudienceHoverCardContent';
@@ -136,7 +132,7 @@ interface ExpansionPanelProps {
 }
 
 const ExpansionPanel = ({ 
-  id, 
+  id: _id, 
   title, 
   summary, 
   children, 
@@ -185,7 +181,7 @@ export default function CampaignCreationForm({ companyId }: CampaignCreationForm
     if (codeOrName.length === 2) {
       try {
         return new Intl.DisplayNames(['de'], { type: 'region' }).of(codeOrName) || codeOrName;
-      } catch (e) {
+      } catch {
         return codeOrName;
       }
     }
@@ -500,7 +496,7 @@ export default function CampaignCreationForm({ companyId }: CampaignCreationForm
         </div>
 
         <div className="py-4 space-y-1">
-          {steps.map((step, index) => {
+          {steps.map((step, _index) => {
             const isActive = activeStep === step.id;
             const Icon = step.icon;
 
@@ -1860,7 +1856,7 @@ export default function CampaignCreationForm({ companyId }: CampaignCreationForm
                                 type="number" 
                                 className="text-right px-2"
                                 defaultValue={200}
-                                onChange={(e) => {
+                                onChange={() => {
                                   // Optional: Handle ROAS value change if needed for state
                                 }}
                               />

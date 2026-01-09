@@ -24,7 +24,7 @@ interface Employee {
   email: string;
   position: string;
   department: string;
-  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN';
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN' | 'MINIJOB' | 'WERKSTUDENT' | 'AUSHILFE';
   isActive: boolean;
   avatar?: string;
   hourlyRate?: number;
@@ -88,7 +88,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
             hourlyRate: emp.hourlyRate,
           }));
         setEmployees(mappedEmployees);
-      } catch (error) {
+      } catch {
         // Fallback auf direkte Firestore-Abfrage (korrigierter Pfad)
 
         const employeesQuery = query(
@@ -117,7 +117,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
         setEmployees(employeeData);
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
       setLoading(false);
@@ -160,7 +160,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde zum Team hinzugefügt`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hinzufügen des Teammitglieds');
     }
   };
@@ -184,7 +184,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde aus dem Team entfernt`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Entfernen des Teammitglieds');
     }
   };

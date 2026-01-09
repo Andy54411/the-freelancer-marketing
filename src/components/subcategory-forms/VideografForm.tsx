@@ -48,7 +48,7 @@ const VideografForm: React.FC<VideografFormProps> = ({
     { value: 'nach_absprache', label: 'Nach Absprache' },
   ];
 
-  const equipmentOptions = [
+  const _equipmentOptions = [
     { value: 'basic', label: 'Basic-Ausstattung' },
     { value: 'standard', label: 'Standard-Ausstattung' },
     { value: 'professionell', label: 'Professionelle Ausstattung' },

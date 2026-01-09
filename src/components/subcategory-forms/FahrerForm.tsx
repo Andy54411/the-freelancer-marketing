@@ -6,7 +6,6 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
   FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
@@ -55,15 +54,6 @@ const FahrerForm: React.FC<FahrerFormProps> = ({ data, onDataChange, onValidatio
     { value: 'regional', label: 'Regional (50-200 km)' },
     { value: 'national', label: 'National (über 200 km)' },
     { value: 'international', label: 'International' },
-  ];
-
-  const specialRequirementsOptions = [
-    { value: 'kindersitze', label: 'Kindersitze erforderlich' },
-    { value: 'rollstuhl', label: 'Rollstuhlgerecht' },
-    { value: 'gepäckraum', label: 'Großer Gepäckraum' },
-    { value: 'luxus', label: 'Luxusausstattung' },
-    { value: 'diskret', label: 'Diskretion erforderlich' },
-    { value: 'pünktlichkeit', label: 'Höchste Pünktlichkeit' },
   ];
 
   const handleInputChange = (field: keyof FahrerData, value: any) => {

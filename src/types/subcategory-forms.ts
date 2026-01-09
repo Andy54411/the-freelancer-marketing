@@ -1684,7 +1684,7 @@ export function getSubcategoryType(subcategory: string): string {
 }
 
 // Kategorie-spezifische Validierung - DEAKTIVIERT (Lokale Validierung in Formularen)
-export function validateSubcategoryData(data: SubcategoryData): string[] {
+export function validateSubcategoryData(_data: SubcategoryData): string[] {
   // Keine zentrale Validierung mehr - alle Formulare verwenden lokale Validierung
   return [];
 }

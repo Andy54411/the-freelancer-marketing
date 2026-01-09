@@ -1,7 +1,7 @@
 'use client';
 
 import { db } from '@/firebase/clients';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export interface GoogleBusinessLocation {
   id: string;

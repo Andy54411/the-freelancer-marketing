@@ -19,16 +19,11 @@ import {
   Download,
   Upload,
   Filter,
-  Search,
   RefreshCw,
   CheckCircle,
   XCircle,
-  Clock,
-  FileText,
-  Settings,
   Mail,
   Phone,
-  MapPin,
 } from 'lucide-react';
 import { type Employee, type AbsenceRequest } from '@/services/personalService';
 import { CreateAbsenceRequestModal } from './CreateAbsenceRequestModal';
@@ -60,8 +55,8 @@ export function PersonalActions({
   filterDepartment = 'all',
   onFilterChange,
   onRefresh,
-  onEmployeeAdded,
-  onEmployeeUpdated,
+  onEmployeeAdded: _onEmployeeAdded,
+  onEmployeeUpdated: _onEmployeeUpdated,
   onEmployeeDeleted,
   onAbsenceRequestCreated,
   onAbsenceRequestProcessed,
@@ -76,7 +71,7 @@ export function PersonalActions({
   const [selectedAbsenceRequest, setSelectedAbsenceRequest] = useState<AbsenceRequest | null>(null);
 
   // Employee Actions - verwende jetzt Links statt Modals
-  const handleEditEmployee = (employee: Employee) => {
+  const handleEditEmployee = (_employee: Employee) => {
     // Navigation wird über Link gemacht
   };
 
@@ -85,7 +80,7 @@ export function PersonalActions({
     setShowDeleteEmployee(true);
   };
 
-  const handleViewEmployee = (employee: Employee) => {
+  const handleViewEmployee = (_employee: Employee) => {
     // Navigation wird über Link gemacht
   };
   // Absence Actions
@@ -132,7 +127,7 @@ export function PersonalActions({
       if (file) {
         const reader = new FileReader();
         reader.onload = e => {
-          const csv = e.target?.result as string;
+          const _csv = e.target?.result as string;
           // Hier würde die CSV-Import-Logik implementiert werden
         };
         reader.readAsText(file);
@@ -142,7 +137,7 @@ export function PersonalActions({
   };
 
   // Utility Components
-  const EmployeeDropdownActions = ({ employee }: { employee: Employee }) => (
+  const _EmployeeDropdownActions = ({ employee }: { employee: Employee }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
@@ -174,7 +169,7 @@ export function PersonalActions({
     </DropdownMenu>
   );
 
-  const AbsenceRequestActions = ({ request }: { request: AbsenceRequest }) => (
+  const _AbsenceRequestActions = ({ request }: { request: AbsenceRequest }) => (
     <div className="flex gap-1">
       {request.status === 'PENDING' && (
         <>

@@ -42,8 +42,8 @@ class AWSRealtimeService {
         throw new Error(`API call failed: ${response.status}`);
       }
 
-      const result = await response.json();
-    } catch (error) {}
+      const _result = await response.json();
+    } catch {}
   }
 
   // WebSocket Connection Management (Client-Side)
@@ -98,10 +98,10 @@ class AWSRealtimeService {
         try {
           const data = JSON.parse(event.data);
           callback(data);
-        } catch (error) {}
+        } catch {}
       };
 
-      ws.onerror = error => {};
+      ws.onerror = () => {};
 
       ws.onclose = () => {};
 
@@ -109,7 +109,7 @@ class AWSRealtimeService {
       return () => {
         ws.close();
       };
-    } catch (error) {
+    } catch {
       return () => {};
     }
   }
@@ -123,7 +123,7 @@ class AWSRealtimeService {
   ): Promise<void> {
     try {
       await this.publishWorkspaceUpdate(workspaceId, adminId, eventType, data);
-    } catch (error) {}
+    } catch {}
   }
 
   // Initialize WebSocket (for compatibility)

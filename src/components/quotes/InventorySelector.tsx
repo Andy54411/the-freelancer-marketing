@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Package, Plus, Check, X, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Package, Plus, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -55,7 +55,7 @@ export default function InventorySelector({
       // Debug-Log
       setInventoryItems(availableItems);
       setFilteredItems(availableItems);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

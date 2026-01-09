@@ -12,9 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { MailHeader } from '@/components/webmail/MailHeader';
-import { CalendarToolbar } from '@/components/webmail/calendar/CalendarToolbar';
-import { CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
+import { CalendarToolbar, CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
 
 interface CalendarEvent {
   id: string;
@@ -177,19 +175,18 @@ export function AdminFullCalendar() {
   return (
     <div className="flex flex-col h-[700px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Calendar Header */}
-      <CalendarHeader
-        currentDate={currentDate}
-        viewMode={viewMode}
-        onViewChange={setViewMode}
-        onPrev={() => handleNavigate('prev')}
-        onNext={() => handleNavigate('next')}
-        onToday={() => handleNavigate('today')}
-        onMenuToggle={() => {}}
-        showWeekends={showWeekends}
-        onShowWeekendsChange={setShowWeekends}
-        userEmail={adminEmail}
-        onLogout={() => {}}
-      />
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <CalendarToolbar
+          currentDate={currentDate}
+          viewMode={viewMode}
+          onViewChange={setViewMode}
+          onPrev={() => handleNavigate('prev')}
+          onNext={() => handleNavigate('next')}
+          onToday={() => handleNavigate('today')}
+          showWeekends={showWeekends}
+          onShowWeekendsChange={setShowWeekends}
+        />
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Calendar Grid - Full Width */}

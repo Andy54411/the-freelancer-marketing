@@ -2,19 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-// Entfernt: Tabs Import - verwenden jetzt custom Tab-Leiste
-import { Button } from '@/components/ui/button';
 import {
-  Calculator,
-  Hash,
-  CreditCard,
-  Wallet,
-  ArrowLeftRight,
-  Building2,
-  Shield,
-  DollarSign,
   MoreHorizontal,
-  ChevronDown,
 } from 'lucide-react';
 
 // Import Tab Components
@@ -40,11 +29,11 @@ export default function AccountingPage() {
 
   // State für Nummerkreise - wird aus der Datenbank geladen
   const [numberSequences, setNumberSequences] = useState<NumberSequence[]>([]);
-  const [loadingSequences, setLoadingSequences] = useState(true);
+  const [, setLoadingSequences] = useState(true);
 
   // State für Zahlungskonten - wird aus der Datenbank geladen
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
-  const [loadingPaymentAccounts, setLoadingPaymentAccounts] = useState(true);
+  const [, setLoadingPaymentAccounts] = useState(true);
 
   // Lade Nummerkreise aus der Datenbank
   useEffect(() => {
@@ -144,9 +133,9 @@ export default function AccountingPage() {
   ]);
 
   // Event handlers
-  const handleEditNumberSequence = (sequence: NumberSequence) => {};
+  const handleEditNumberSequence = (_sequence: NumberSequence) => {};
 
-  const handleDeleteNumberSequence = (sequence: NumberSequence) => {};
+  const handleDeleteNumberSequence = (_sequence: NumberSequence) => {};
 
   const handleUpdateNumberSequence = async (updates: Partial<NumberSequence> & { id: string }) => {
     try {
@@ -165,7 +154,7 @@ export default function AccountingPage() {
     }
   };
 
-  const handleEditPaymentMethod = (method: PaymentMethod) => {};
+  const handleEditPaymentMethod = (_method: PaymentMethod) => {};
 
   const handleTogglePaymentMethod = (method: PaymentMethod) => {
     setPaymentMethods(prev =>
@@ -173,7 +162,7 @@ export default function AccountingPage() {
     );
   };
 
-  const handleEditPaymentAccount = (account: PaymentAccount) => {};
+  const handleEditPaymentAccount = (_account: PaymentAccount) => {};
 
   const handleDeletePaymentAccount = async (account: PaymentAccount) => {
     try {
@@ -186,7 +175,7 @@ export default function AccountingPage() {
 
   const handleAddPaymentAccount = async (account: Omit<PaymentAccount, 'id'>) => {
     try {
-      const newId = await PaymentAccountService.createPaymentAccount(uid, account);
+      await PaymentAccountService.createPaymentAccount(uid, account);
       // Reload accounts from database to get the complete data
       const accounts = await PaymentAccountService.getPaymentAccounts(uid);
       setPaymentAccounts(accounts);
@@ -198,9 +187,9 @@ export default function AccountingPage() {
 
   const handleCreateTransactionRule = () => {};
 
-  const handleEditCostCenter = (center: CostCenter) => {};
+  const handleEditCostCenter = (_center: CostCenter) => {};
 
-  const handleDeleteCostCenter = (center: CostCenter) => {};
+  const handleDeleteCostCenter = (_center: CostCenter) => {};
 
   const handleToggleCostCenter = (center: CostCenter) => {
     setCostCenters(prev => prev.map(c => (c.id === center.id ? { ...c, active: !c.active } : c)));

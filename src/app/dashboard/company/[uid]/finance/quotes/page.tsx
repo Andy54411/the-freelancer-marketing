@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuoteListView } from '@/components/finance/QuoteListView';
 import { QuoteService, Quote } from '@/services/quoteService';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Download, Filter } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function QuotesPage() {
@@ -31,7 +31,7 @@ export default function QuotesPage() {
       setLoading(true);
       const companyQuotes = await QuoteService.getQuotes(uid);
       setQuotes(companyQuotes);
-    } catch (err) {
+    } catch {
       setError('Fehler beim Laden der Angebote');
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@ import { db, auth } from '@/firebase/server';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  _companyId: string
 ) {
   const { uid } = await params;
 
@@ -37,7 +37,7 @@ export async function GET(
 
     try {
       decodedToken = await auth.verifyIdToken(token);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -82,16 +82,16 @@ export async function GET(
       // First try to find by customerUid (more reliable)
       quotesSnapshot = await db
         .collection('companies')
-        .doc(companyId)
+        .doc(uid)
         .collection('quotes')
         .where('customerUid', '==', uid)
         .orderBy('createdAt', 'desc')
         .get();
-    } catch (error) {
+    } catch {
       // Fallback to customerEmail query
       quotesSnapshot = await db
         .collection('companies')
-        .doc(companyId)
+        .doc(uid)
         .collection('quotes')
         .where('customerEmail', '==', customerEmail)
         .orderBy('createdAt', 'desc')
@@ -103,7 +103,7 @@ export async function GET(
       try {
         const fallbackSnapshot = await db
           .collection('companies')
-          .doc(companyId)
+          .doc(uid)
           .collection('quotes')
           .where('customerEmail', '==', customerEmail)
           .orderBy('createdAt', 'desc')
@@ -112,7 +112,7 @@ export async function GET(
         if (fallbackSnapshot.docs.length > 0) {
           quotesSnapshot = fallbackSnapshot;
         }
-      } catch (error) {}
+      } catch {}
     }
 
     // Define quote type
@@ -142,7 +142,7 @@ export async function GET(
 
         const proposalsSnapshot = await db
           .collection('companies')
-          .doc(companyId)
+          .doc(uid)
           .collection('quotes')
           .doc(doc.id)
           .collection('proposals')
@@ -161,7 +161,7 @@ export async function GET(
         if (!hasProposals) {
           hasProposals = !!quoteData.response;
         }
-      } catch (error) {
+      } catch {
         // Fallback to legacy response check
         hasProposals = !!quoteData.response;
       }

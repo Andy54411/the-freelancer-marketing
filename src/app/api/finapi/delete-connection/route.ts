@@ -10,7 +10,7 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const { connectionId, userId, credentialType } = body;
+    const { connectionId, userId, credentialType: _credentialType } = body;
 
     if (!connectionId || !userId) {
       return NextResponse.json(
@@ -82,7 +82,7 @@ export async function DELETE(request: NextRequest) {
         // Also clean up any stored connection data in Firestore
         try {
           await db!.collection('finapi_connections').doc(userId).delete();
-        } catch (cleanupError) {}
+        } catch {}
 
         return NextResponse.json({
           success: true,
@@ -102,11 +102,11 @@ export async function DELETE(request: NextRequest) {
 
         throw new Error(`finAPI delete failed: ${deleteResponse.status} ${errorText}`);
       }
-    } catch (finapiError: any) {
+    } catch {
       // Clean up stored data even if finAPI delete fails
       try {
         await db!.collection('finapi_connections').doc(userId).delete();
-      } catch (cleanupError) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,

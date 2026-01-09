@@ -11,7 +11,7 @@ export default function DeliveryNotesPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [_showCreateModal, setShowCreateModal] = useState(false);
 
   // Autorisierung prüfen
   const isOwner = user?.uid === uid;

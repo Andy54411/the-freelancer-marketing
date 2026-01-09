@@ -168,12 +168,12 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Token-Verifikation für GET-Requests
   try {
     const cookieStore = await cookies();
@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
         permissions: staff.permissions,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

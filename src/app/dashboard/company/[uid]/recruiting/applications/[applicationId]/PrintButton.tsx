@@ -13,6 +13,8 @@ export function PrintButton() {
       const url = element.getAttribute('data-pdf-url');
       const name = element.getAttribute('data-pdf-name') || `attachment_${index + 1}.pdf`;
 
+      if (!url) return;
+
       try {
         const response = await fetch(url);
         const blob = await response.blob();
@@ -29,8 +31,7 @@ export function PrintButton() {
 
         // Blob-URL wieder freigeben
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      } catch (error) {
-        console.error('Download failed:', error);
+      } catch {
         // Fallback: Neuen Tab öffnen
         window.open(url, '_blank');
       }

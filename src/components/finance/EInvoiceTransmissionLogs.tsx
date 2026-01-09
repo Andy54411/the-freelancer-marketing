@@ -26,7 +26,6 @@ import {
   Mail,
   Globe,
   Server,
-  Download,
   Shield,
   Calendar,
   Eye,
@@ -57,7 +56,7 @@ export function EInvoiceTransmissionLogs({ companyId }: EInvoiceTransmissionLogs
       setLoading(true);
       const transmissionLogs = await EInvoiceTransmissionService.getTransmissionLogs(companyId);
       setLogs(transmissionLogs);
-    } catch (error) {
+    } catch {
       toast.error('Übertragungsprotokolle konnten nicht geladen werden');
     } finally {
       setLoading(false);

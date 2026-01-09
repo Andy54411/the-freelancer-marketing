@@ -361,7 +361,7 @@ export class TaskiloAIFeatures {
     return Math.round(baseDuration * (1 + complexity.score));
   }
 
-  private static findOptimalStartDate(projectData: any, requestedStart: Date): Date {
+  private static findOptimalStartDate(_projectData: any, requestedStart: Date): Date {
     // Berücksichtige Wochentage, Feiertage, etc.
     const optimal = new Date(requestedStart);
 
@@ -379,7 +379,7 @@ export class TaskiloAIFeatures {
       description: string;
       critical: boolean;
     }> = [];
-    const category = projectData.category;
+    const _category = projectData.category;
 
     if (duration > 3) {
       // Planungsphase

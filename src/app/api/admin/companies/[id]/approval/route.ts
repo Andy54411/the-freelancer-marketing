@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
@@ -10,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'taskilo-j
 
 // Verify admin authentication
 async function verifyAdminAuth(
-  request: NextRequest
+  _request: NextRequest
 ): Promise<{ isValid: boolean; userId?: string; error?: string }> {
   try {
     const cookieStore = await cookies();
@@ -36,14 +35,14 @@ async function verifyAdminAuth(
           return { isValid: true, userId: decoded.userId || decoded.sub };
         }
         console.log('[APPROVAL DEBUG] Role is not admin:', decoded.role);
-      } catch (jwtError) {
-        console.error('[APPROVAL DEBUG] JWT verification failed:', jwtError);
+      } catch {
+        console.error('[APPROVAL DEBUG] JWT verification failed');
       }
     } else {
       console.log('[APPROVAL DEBUG] No admin cookie found');
     }
-  } catch (error) {
-    console.error('[APPROVAL DEBUG] Error in verifyAdminAuth:', error);
+  } catch {
+    console.error('[APPROVAL DEBUG] Error in verifyAdminAuth');
   }
 
   return { isValid: false, error: 'Keine gültige Admin-Authentifizierung gefunden' };
@@ -212,7 +211,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       if (!globalNotificationResponse.ok) {
       }
-    } catch (notificationError) {}
+    } catch {}
 
     return NextResponse.json({
       success: true,
@@ -235,7 +234,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         timestamp: now,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Aktualisieren des Freigabe-Status' },
       { status: 500 }

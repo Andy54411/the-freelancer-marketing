@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
           } else {
           }
         }
-      } catch (firestoreError) {}
+      } catch {}
     }
 
     if (!authHeader) {
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     const data = JSON.parse(responseText);
     return Response.json(data);
-  } catch (error) {
+  } catch {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

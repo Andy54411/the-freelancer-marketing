@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     // Immer success zurückgeben, um Client-Fehler zu vermeiden
     return NextResponse.json(
       { success: true, warning: 'Offline status update failed' },

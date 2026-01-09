@@ -26,12 +26,10 @@ export async function GET(
     const projectId = searchParams.get('projectId');
 
     // Basis-Query für alle Zeiteinträge der Company
-    let query = db!.collection('companies').doc(companyId).collection('timeEntries');
-
-    // Optional: Filter nach Projekt
-    if (projectId) {
-      query = query.where('projectId', '==', projectId);
-    }
+    const baseCollection = db!.collection('companies').doc(companyId).collection('timeEntries');
+    const query = projectId 
+      ? baseCollection.where('projectId', '==', projectId)
+      : baseCollection;
 
     const snapshot = await query.get();
 

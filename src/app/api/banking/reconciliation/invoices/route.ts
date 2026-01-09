@@ -5,7 +5,7 @@ import { db } from '@/firebase/server';
  * GET /api/banking/reconciliation/invoices
  * Get invoices for banking reconciliation
  */
-export async function GET(request: NextRequest, companyId: string) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest, companyId: string) {
  * POST /api/banking/reconciliation/invoices
  * Update invoice reconciliation status
  */
-export async function POST(request: NextRequest, companyId: string) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { invoiceId, transactionId, action } = body;

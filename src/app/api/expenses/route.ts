@@ -126,7 +126,7 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
       totalInvoices,
       updatedAt: new Date(),
     });
-  } catch (error) {}
+  } catch {}
 }
 
 export async function GET(request: NextRequest) {
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
       expenses,
       count: expenses.length,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,
@@ -379,11 +379,11 @@ export async function POST(request: NextRequest) {
         },
       });
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,
-        error: 'Fehler beim Speichern der Ausgabe',
+        error: 'Fehler beim Erstellen der Ausgabe',
       },
       { status: 500 }
     );
@@ -454,7 +454,7 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Ausgabe erfolgreich gelöscht',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,

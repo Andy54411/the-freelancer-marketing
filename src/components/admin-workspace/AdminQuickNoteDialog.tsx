@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { StickyNote, Plus, Check, X } from 'lucide-react';
+import { StickyNote, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,19 +25,18 @@ import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type {
   AdminWorkspace,
   AdminWorkspaceTask,
-  AdminWorkspaceBoardColumn,
 } from '@/services/AdminWorkspaceService';
 
 interface AdminQuickNoteDialogProps {
   workspaces: AdminWorkspace[];
-  adminId: string;
+  _adminId: string;
   userId: string;
   onNoteAdded?: () => void;
 }
 
 export function AdminQuickNoteDialog({
   workspaces,
-  adminId,
+  _adminId,
   userId,
   onNoteAdded,
 }: AdminQuickNoteDialogProps) {
@@ -108,7 +107,7 @@ export function AdminQuickNoteDialog({
       if (onNoteAdded) {
         onNoteAdded();
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

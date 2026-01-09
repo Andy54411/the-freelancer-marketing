@@ -16,7 +16,7 @@ async function getFirebaseAuth(): Promise<any> {
     }
 
     return firebaseModule.auth;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase auth unavailable');
   }
 }
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ status: 'success' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create session' }, { status: 401 });
   }
 }

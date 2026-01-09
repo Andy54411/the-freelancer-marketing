@@ -3,10 +3,8 @@ import { HeizungData } from '@/types/subcategory-forms';
 import {
   FormField,
   FormSelect,
-  FormInput,
   FormTextarea,
   FormCheckboxGroup,
-  FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
 
@@ -68,7 +66,7 @@ const HeizungForm: React.FC<HeizungFormProps> = ({
     { value: 'andere', label: 'Andere' },
   ];
 
-  const buildingAgeOptions = [
+  const _buildingAgeOptions = [
     { value: 'neubau', label: 'Neubau (0-5 Jahre)' },
     { value: 'neu', label: 'Neu (5-15 Jahre)' },
     { value: 'mittel', label: 'Mittel (15-30 Jahre)' },
@@ -99,7 +97,7 @@ const HeizungForm: React.FC<HeizungFormProps> = ({
     { value: 'andere', label: 'Andere' },
   ];
 
-  const additionalServicesOptions = [
+  const _additionalServicesOptions = [
     { value: 'planung', label: 'Planung' },
     { value: 'beratung', label: 'Beratung' },
     { value: 'gutachten', label: 'Gutachten' },

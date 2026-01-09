@@ -4,7 +4,7 @@ const WEBMAIL_PROXY_URL = process.env.WEBMAIL_PROXY_URL || 'https://mail.taskilo
 const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY || '';
 
 // GET /api/webmail/drive/admin/stats - Admin Statistiken
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // TODO: Admin-Authentifizierung pruefen
     

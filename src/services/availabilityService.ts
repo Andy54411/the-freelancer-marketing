@@ -24,7 +24,7 @@ import {
   BlockDateRequest,
   CalendarBlockedDay
 } from '@/types/availability';
-import { format, addDays, isBefore, isAfter, parseISO, eachDayOfInterval } from 'date-fns';
+import { format, addDays, isBefore, parseISO, eachDayOfInterval } from 'date-fns';
 
 export class AvailabilityService {
   

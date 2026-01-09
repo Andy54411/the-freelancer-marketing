@@ -4,7 +4,7 @@
  * Works both client-side (localStorage) and server-side (cookies)
  */
 
-import { cookies } from 'next/headers';
+// cookies import entfernt - nicht verwendet
 
 interface DatevUserToken {
   access_token: string;
@@ -121,7 +121,7 @@ export class DatevTokenManager {
       }
 
       return tokenInfo;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -139,7 +139,7 @@ export class DatevTokenManager {
       if (!stored) return null;
 
       return JSON.parse(stored);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -225,7 +225,7 @@ export class DatevTokenManager {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
+        const _errorData = await response.text();
 
         this.clearUserToken();
         return false;
@@ -256,7 +256,7 @@ export class DatevTokenManager {
       });
 
       return true;
-    } catch (error) {
+    } catch {
       this.clearUserToken();
       return false;
     }
@@ -283,7 +283,7 @@ export class DatevTokenManager {
       }
 
       return true;
-    } catch (error) {
+    } catch {
       this.clearUserToken();
       return false;
     }
@@ -310,7 +310,7 @@ export class DatevTokenManager {
       }
 
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

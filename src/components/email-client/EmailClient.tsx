@@ -301,11 +301,16 @@ export function EmailClient({
     if (filter.search && filter.search.trim()) {
       const searchLower = filter.search.toLowerCase();
       filteredEmails = cachedEmails.filter(
-        email =>
-          email.subject?.toLowerCase().includes(searchLower) ||
-          email.body?.toLowerCase().includes(searchLower) ||
-          email.from?.email?.toLowerCase().includes(searchLower) ||
-          email.from?.name?.toLowerCase().includes(searchLower)
+        email => {
+          const fromEmail = typeof email.from === 'object' ? email.from?.email : email.from;
+          const fromName = typeof email.from === 'object' ? email.from?.name : undefined;
+          return (
+            email.subject?.toLowerCase().includes(searchLower) ||
+            email.body?.toLowerCase().includes(searchLower) ||
+            fromEmail?.toLowerCase().includes(searchLower) ||
+            fromName?.toLowerCase().includes(searchLower)
+          );
+        }
       );
     }
 

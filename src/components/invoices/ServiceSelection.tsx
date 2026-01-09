@@ -12,7 +12,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, ChevronsUpDown, Plus, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { InvoiceService, InvoiceServiceDraft, ServiceSelectionProps } from '@/types/service';
 
 export interface ExtendedServiceSelectionProps extends ServiceSelectionProps {
@@ -35,7 +34,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
   const [filteredServices, setFilteredServices] = useState<InvoiceService[]>(services);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [newServiceDraft, setNewServiceDraft] = useState<InvoiceServiceDraft>({
+  const [_newServiceDraft, _setNewServiceDraft] = useState<InvoiceServiceDraft>({
     name: '',
     description: '',
     price: '',
@@ -83,7 +82,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
       setIsCreatingNew(true);
       try {
         await onServiceCreate({
-          ...newServiceDraft,
+          ..._newServiceDraft,
           name: searchValue,
         });
         setIsCreatingNew(false);
@@ -113,7 +112,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-[2.5rem] p-0"
+              className="w-10 p-0"
             >
               <ChevronsUpDown className="h-4 w-4" />
             </Button>

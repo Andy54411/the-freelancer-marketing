@@ -1,0 +1,58 @@
+{
+  "id": "2026-01-09-aws-removal-google-vision-ocr",
+  "title": "AWS entfernt - Google Cloud Vision OCR",
+  "date": "2026-01-09",
+  "version": "3.8.0",
+  "type": "infrastructure",
+  "category": "backend",
+  "priority": "high",
+  "summary": "AWS Textract und S3 wurden vollständig entfernt. OCR läuft jetzt ausschließlich über Google Cloud Vision API.",
+  "description": "Komplette Migration von AWS zu Google Cloud:\n\n**Entfernt:**\n- AWS Textract OCR-Verarbeitung\n- AWS S3 Client und File-Download\n- AWS SDK Dependencies aus package.json\n\n**Ersetzt durch:**\n- Google Cloud Vision API für OCR\n- Google Cloud Storage für Dateien\n- Google AI Studio für intelligente Nachbearbeitung\n\n**Vorteile:**\n- Keine AWS-Credentials mehr nötig\n- Einheitliche Google Cloud Infrastruktur\n- Bessere Integration mit Firebase\n- Kostenersparnis durch Konsolidierung",
+  "changes": [
+    {
+      "type": "removed",
+      "title": "AWS Textract OCR",
+      "description": "performAWSTextractOCR und zugehörige Funktionen entfernt"
+    },
+    {
+      "type": "removed",
+      "title": "AWS S3 Client",
+      "description": "S3Client und downloadFromS3 aus file-download.ts entfernt"
+    },
+    {
+      "type": "removed",
+      "title": "AWS SDK Dependencies",
+      "description": "@aws-sdk/client-s3 und @aws-sdk/client-textract aus package.json entfernt"
+    },
+    {
+      "type": "improved",
+      "title": "Google Cloud Vision OCR",
+      "description": "OCR-Verarbeitung läuft jetzt über Google Cloud Vision API"
+    },
+    {
+      "type": "improved",
+      "title": "performHybridOCR",
+      "description": "Hybrid-OCR Funktion nutzt jetzt Google Vision statt AWS Textract"
+    },
+    {
+      "type": "improved",
+      "title": "Frontend API Routes",
+      "description": "ocr-extract und extract-receipt Routes auf GOOGLE_VISION umgestellt"
+    }
+  ],
+  "affectedFiles": [
+    "firebase_functions/src/finance/functions/finance-http.ts",
+    "firebase_functions/src/finance/utils/file-download.ts",
+    "firebase_functions/package.json",
+    "src/app/api/expenses/ocr-extract/route.ts",
+    "src/app/api/expenses/extract-receipt/route.ts",
+    "src/services/EnhancedOCRService.ts"
+  ],
+  "technicalDetails": {
+    "ocrProvider": "GOOGLE_VISION",
+    "removedPackages": ["@aws-sdk/client-s3", "@aws-sdk/client-textract"],
+    "cloudPlatform": "Google Cloud Platform only"
+  },
+  "author": "GitHub Copilot",
+  "tags": ["aws", "google-cloud", "ocr", "infrastructure", "migration"]
+}

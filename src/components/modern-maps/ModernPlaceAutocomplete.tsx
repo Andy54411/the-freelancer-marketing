@@ -95,7 +95,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
         elementRef.current = element;
 
         return;
-      } catch (error) {}
+      } catch {}
     }
 
     // Fallback auf traditionelles Autocomplete
@@ -110,7 +110,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
           const place = autocomplete.getPlace();
           handlePlaceSelection(place);
         });
-      } catch (error) {}
+      } catch {}
     }
 
     return () => {

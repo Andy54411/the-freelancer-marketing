@@ -2795,7 +2795,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         pageMode={pageMode}
         getRenderedHtml={getRenderedHtml}
         isTemplateReady={isTemplateReady()}
-        onSend={async (emailData) => {
+        _onSend={async (emailData) => {
           if (onSend) {
             await onSend('email', emailData as unknown as SendOptions);
           }

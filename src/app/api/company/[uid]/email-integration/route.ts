@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, auth, isFirebaseAvailable } from '@/firebase/server';
+import { db, isFirebaseAvailable } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,

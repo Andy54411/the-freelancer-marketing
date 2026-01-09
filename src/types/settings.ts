@@ -15,6 +15,8 @@ export interface RawFirestoreUserData {
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // Onboarding status
+  onboardingCompleted?: boolean;
   // Tasker Profile fields (Root-Level)
   bio?: string;
   description?: string;
@@ -363,7 +365,6 @@ export interface UserDataForSettings {
   portfolioItems?: any[];
   faqs?: any[];
   portfolio?: any[];
-  profilePictureURL?: string;
   identityFrontUrl?: string;
   identityBackUrl?: string;
   paymentTermsSettings?: {

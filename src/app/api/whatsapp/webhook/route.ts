@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isFirebaseAvailable } from '@/firebase/server';
+import { parseOptInCommand, recordOptIn, recordOptOut } from '@/lib/whatsapp-dsgvo';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       // Nachrichteninhalt basierend auf Typ extrahieren
       let messageBody = '';
       let mediaId = null;
-      let mediaUrl = null;
+      const mediaUrl = null;
       
       switch (messageType) {
         case 'text':
@@ -162,6 +163,96 @@ export async function POST(request: NextRequest) {
                 createdAt: new Date(),
               });
 
+            // Prüfe auf DSGVO Opt-In/Opt-Out Commands
+            if (messageType === 'text') {
+              const command = parseOptInCommand(messageBody);
+              
+              if (command === 'opt_in') {
+                await recordOptIn(
+                  companyDoc.id,
+                  customerPhone,
+                  customerId || undefined,
+                  customerName || undefined,
+                  'whatsapp_reply'
+                );
+                
+                // Sende Bestätigungsnachricht
+                const connectionDoc = await db
+                  .collection('companies')
+                  .doc(companyDoc.id)
+                  .collection('whatsappConnection')
+                  .doc('current')
+                  .get();
+                
+                if (connectionDoc.exists) {
+                  const connection = connectionDoc.data();
+                  
+                  if (connection?.accessToken && connection?.phoneNumberId) {
+                    const confirmationMessage = {
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      to: from,
+                      type: 'text',
+                      text: {
+                        preview_url: false,
+                        body: 'Vielen Dank! Sie haben zugestimmt und werden künftig Nachrichten von uns erhalten. Sie können dies jederzeit mit STOP widerrufen.',
+                      },
+                    };
+                    
+                    await fetch(`https://graph.facebook.com/v18.0/${connection.phoneNumberId}/messages`, {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${connection.accessToken}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(confirmationMessage),
+                    });
+                  }
+                }
+              } else if (command === 'opt_out') {
+                await recordOptOut(
+                  companyDoc.id,
+                  customerPhone,
+                  customerId || undefined,
+                  customerName || undefined
+                );
+                
+                // Sende Bestätigungsnachricht
+                const connectionDoc = await db
+                  .collection('companies')
+                  .doc(companyDoc.id)
+                  .collection('whatsappConnection')
+                  .doc('current')
+                  .get();
+                
+                if (connectionDoc.exists) {
+                  const connection = connectionDoc.data();
+                  
+                  if (connection?.accessToken && connection?.phoneNumberId) {
+                    const confirmationMessage = {
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      to: from,
+                      type: 'text',
+                      text: {
+                        preview_url: false,
+                        body: 'Ihre Zustimmung wurde widerrufen. Sie erhalten keine weiteren Nachrichten mehr.',
+                      },
+                    };
+                    
+                    await fetch(`https://graph.facebook.com/v18.0/${connection.phoneNumberId}/messages`, {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${connection.accessToken}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(confirmationMessage),
+                    });
+                  }
+                }
+              }
+            }
+
             // Aktualisiere oder erstelle WhatsApp-Kontakt
             await db
               .collection('companies')
@@ -177,6 +268,26 @@ export async function POST(request: NextRequest) {
                 updatedAt: new Date(),
               }, { merge: true });
 
+            // Rufe Chatbot-Automatisierung auf (asynchron, ohne zu blockieren)
+            // Nur für Text-Nachrichten und wenn kein DSGVO-Command erkannt wurde
+            if (messageType === 'text' && !parseOptInCommand(messageBody)) {
+              const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de';
+              
+              fetch(`${baseUrl}/api/whatsapp/automation/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  companyId: companyDoc.id,
+                  customerPhone,
+                  message: messageBody,
+                  messageId,
+                }),
+              }).catch(() => {
+                // Fehler bei Chatbot-Automatisierung ignorieren
+                // Die Nachricht wurde bereits gespeichert
+              });
+            }
+
             break;
           }
         }
@@ -188,8 +299,8 @@ export async function POST(request: NextRequest) {
       const status = value.statuses[0];
       const messageId = status.id;
       const newStatus = status.status; // sent, delivered, read, failed
-      const recipientId = status.recipient_id;
-      const phoneNumberId = value.metadata?.phone_number_id;
+      const _recipientId = status.recipient_id;
+      const _phoneNumberId = value.metadata?.phone_number_id;
 
       // Finde und aktualisiere die Nachricht
       const companiesSnapshot = await db.collection('companies').get();

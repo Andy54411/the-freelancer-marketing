@@ -1,15 +1,9 @@
 // Sofortige Notification-Erstellung über Admin-API (bypassed Firestore-Regeln)
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { NextResponse } from 'next/server';
 import { db } from '@/firebase/clients';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// JWT Secret für Admin-Tokens
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
-);
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const { userUid, testMessage } = await request.json();
 

@@ -35,10 +35,10 @@ export function InvoiceTemplatePicker({
 }: InvoiceTemplatePickerProps) {
   const [open, setOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<InvoiceTemplate>('TEMPLATE_NEUTRAL');
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   // Template aus Datenbank laden
   useEffect(() => {

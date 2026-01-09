@@ -20,7 +20,7 @@ const CustomerSchema = z.object({
 });
 
 // Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseDb(companyId: string): Promise<any> {
+async function getFirebaseDb(_companyId: string): Promise<any> {
   try {
     // Dynamically import Firebase services
     const firebaseModule = await import('@/firebase/server');
@@ -37,7 +37,7 @@ async function getFirebaseDb(companyId: string): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       success: true,
       customers,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Kunden' },
       { status: 500 }
@@ -158,7 +158,7 @@ export async function POST(
         .limit(1)
         .get();
 
-      if (!existingCustomerQuery.empty) {
+      if (existingCustomerQuery.docs.length > 0) {
         const existingCustomer = existingCustomerQuery.docs[0];
         const existingData = existingCustomer.data();
         return NextResponse.json({
@@ -173,12 +173,12 @@ export async function POST(
 
     // Generiere fortlaufende Kundennummer mit Transaktion (atomar)
     const companyRef = db.collection('companies').doc(uid);
-    const customerNumber = await db.runTransaction(async (transaction: FirebaseFirestore.Transaction) => {
-      const companyDoc = await transaction.get(companyRef);
+    const customerNumber = await db.runTransaction(async (transaction) => {
+      const companyDoc = await transaction.get(companyRef) as FirebaseFirestore.DocumentSnapshot;
       
       // Hole aktuelle Kundennummer-Sequenz oder starte bei 1000
       const currentSequence = companyDoc.exists && companyDoc.data()?.customerNumberSequence
-        ? companyDoc.data().customerNumberSequence
+        ? companyDoc.data()?.customerNumberSequence
         : 1000;
       
       const nextSequence = currentSequence + 1;

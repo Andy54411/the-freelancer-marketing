@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { admin, db } from '@/firebase/server';
+import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {

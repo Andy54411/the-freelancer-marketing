@@ -22,7 +22,7 @@ export function useJobFavorites(jobId: string) {
         setIsFavorite(doc.exists());
         setLoading(false);
       },
-      (error) => {
+      (_error) => {
         // Handle permission errors or other issues gracefully
         setLoading(false);
       }

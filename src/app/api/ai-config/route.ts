@@ -22,7 +22,7 @@ export async function GET() {
 
     const config = configDoc.data();
     return NextResponse.json(config);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Laden der Konfiguration' }, { status: 500 });
   }
 }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     await docRef.set(body);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Speichern der Konfiguration' }, { status: 500 });
   }
 }

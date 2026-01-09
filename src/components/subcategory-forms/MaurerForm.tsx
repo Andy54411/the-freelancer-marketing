@@ -6,8 +6,6 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
 } from './FormComponents';
 import { useRouter } from 'next/navigation';
 import { useRegistration } from '@/contexts/Registration-Context';
@@ -26,7 +24,7 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
   const FormSubmitButton = ({
     isValid,
     subcategory,
-    formData: passedFormData,
+    formData: _passedFormData,
   }: {
     isValid: boolean;
     subcategory: string;

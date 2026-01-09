@@ -143,7 +143,7 @@ export async function POST(request: Request) {
           supportChatId: supportChatId,
           message: 'Ihre Anfrage wurde an unser Support-Team weitergeleitet.',
         });
-      } catch (escalationError) {
+      } catch {
         // Fallback: Normale Antwort ohne Eskalation
         const cleanedText = text.replace(/\[escalate\]/g, '').trim();
         return NextResponse.json({ text: cleanedText });

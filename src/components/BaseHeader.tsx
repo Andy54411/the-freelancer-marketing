@@ -3,13 +3,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
-import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
-import { getAuth, onAuthStateChanged, signOut, User as FirebaseAuthUser } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { app } from '@/firebase/clients';
 
 const auth = getAuth(app);
@@ -21,8 +19,8 @@ interface BaseHeaderProps {
 }
 
 export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderProps) {
-  const [menuState, setMenuState] = useState(false);
-  const [currentUser, setCurrentUser] = useState<FirebaseAuthUser | null>(null);
+  const [_menuState, _setMenuState] = useState(false);
+  const [_currentUser, setCurrentUser] = useState<FirebaseAuthUser | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -31,14 +29,7 @@ export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderP
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      window.location.href = '/';
-    } catch (error) {}
-  };
-
-  const dynamicMenuItems = menuItems.map(item => ({
+  const _dynamicMenuItems = menuItems.map(item => ({
     ...item,
     href: item.href.replace('[uid]', currentUid || ''),
   }));
@@ -46,7 +37,7 @@ export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderP
   return (
     <header className="w-full">
       <nav
-        data-state={menuState && 'active'}
+        data-state={_menuState && 'active'}
         className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl"
       >
         <div className="mx-auto max-w-6xl px-6">

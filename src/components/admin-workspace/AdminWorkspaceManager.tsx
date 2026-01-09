@@ -18,8 +18,6 @@ import { AdminQuickNoteDialog } from './AdminQuickNoteDialog';
 // Import types from AdminWorkspaceService
 import type {
   AdminWorkspace,
-  AdminWorkspaceBoardColumn,
-  AdminWorkspaceTask,
 } from '@/services/AdminWorkspaceService';
 
 type ViewMode = 'board' | 'list' | 'calendar';
@@ -58,7 +56,7 @@ export default function AdminWorkspaceManager() {
           router.push('/admin/login');
           return;
         }
-      } catch (error) {
+      } catch {
         router.push('/admin/login');
         return;
       } finally {
@@ -94,7 +92,7 @@ export default function AdminWorkspaceManager() {
     return unsubscribe;
   }, [adminId, authLoading]);
 
-  const handleCreateWorkspace = async (workspaceData: Partial<AdminWorkspace>) => {
+  const _handleCreateWorkspace = async (workspaceData: Partial<AdminWorkspace>) => {
     if (!adminId || !adminUser?.id) return;
 
     try {
@@ -109,7 +107,7 @@ export default function AdminWorkspaceManager() {
 
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
-    } catch (error) {}
+    } catch {}
   };
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
@@ -117,7 +115,7 @@ export default function AdminWorkspaceManager() {
       // Use realtime update method that updates and notifies subscribers
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
-    } catch (error) {
+    } catch {
       // Revert optimistic update on error by reloading
       if (adminId) {
         const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
@@ -130,7 +128,7 @@ export default function AdminWorkspaceManager() {
     try {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
-    } catch (error) {}
+    } catch {}
   };
 
   const handleWorkspaceClick = (workspace: AdminWorkspace) => {
@@ -277,7 +275,7 @@ export default function AdminWorkspaceManager() {
               {adminId && adminUser?.id && (
                 <AdminQuickNoteDialog
                   workspaces={filteredWorkspaces}
-                  adminId={adminId}
+                  _adminId={adminId}
                   userId={adminUser.id}
                   onNoteAdded={() => {
                     // Realtime sync will automatically update the UI
@@ -400,7 +398,7 @@ export default function AdminWorkspaceManager() {
         {viewMode === 'list' && (
           <AdminWorkspaceList
             workspaces={filteredWorkspaces}
-            onUpdateWorkspace={handleUpdateWorkspace}
+            _onUpdateWorkspace={handleUpdateWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
             onWorkspaceClick={handleWorkspaceClick}
           />
@@ -408,8 +406,8 @@ export default function AdminWorkspaceManager() {
         {viewMode === 'calendar' && (
           <AdminWorkspaceCalendar
             workspaces={filteredWorkspaces}
-            onUpdateWorkspace={handleUpdateWorkspace}
-            onDeleteWorkspace={handleDeleteWorkspace}
+            _onUpdateWorkspace={handleUpdateWorkspace}
+            _onDeleteWorkspace={handleDeleteWorkspace}
             onWorkspaceClick={handleWorkspaceClick}
           />
         )}
@@ -422,7 +420,7 @@ export default function AdminWorkspaceManager() {
         onClose={handleCloseDetailSlider}
         onEdit={handleEditWorkspace}
         onView={handleViewWorkspace}
-        onUpdateWorkspace={handleUpdateWorkspace}
+        _onUpdateWorkspace={handleUpdateWorkspace}
       />
     </div>
   );

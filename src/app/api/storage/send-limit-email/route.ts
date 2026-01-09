@@ -6,7 +6,7 @@ import { admin } from '@/firebase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyId, type, currentUsage, limit, percentUsed } = await request.json();
+    const { companyId, type, currentUsage: _currentUsage, limit: _limit, percentUsed: _percentUsed } = await request.json();
 
     if (!companyId || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const companyData = companyDoc.data()!;
-    const recipient = {
+    const _recipient = {
       email: companyData.email || companyData.contactEmail,
       companyName: companyData.companyName || 'Ihr Unternehmen',
       companyId,

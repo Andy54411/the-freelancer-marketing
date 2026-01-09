@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, User, Building2, Shield, ArrowRight } from 'lucide-react';
@@ -79,7 +79,7 @@ function SmoothRedirectOverlayContent() {
         }
 
         setUserName(name);
-      } catch (error) {
+      } catch {
         // Fallback bei Fehlern
         setUserName(user.user_type === 'firma' ? 'Unternehmen' : 'liebe/r Nutzer/in');
       }

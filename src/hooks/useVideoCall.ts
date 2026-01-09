@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import TaskiloVideoService, { TaskiloVideoCallOptions } from '@/services/TaskiloVideoService';
+import TaskiloVideoService from '@/services/TaskiloVideoService';
 import { hasFunctionalConsent } from '@/lib/gtm-dsgvo';
 
 interface UseVideoCallOptions {

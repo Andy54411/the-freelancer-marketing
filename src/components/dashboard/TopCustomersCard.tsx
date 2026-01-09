@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ChevronDown } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import CustomerDetailModal from './CustomerDetailModal';
 
 interface Invoice {
@@ -266,7 +266,7 @@ export default function TopCustomersCard() {
     return `${amount.toFixed(2).replace('.', ',')}\u00A0€`;
   };
 
-  const getPeriodLabel = (period: string) => {
+  const _getPeriodLabel = (period: string) => {
     switch (period) {
       case '1month':return 'Letzter Monat';
       case '3months':return 'Letzte 3 Monate';

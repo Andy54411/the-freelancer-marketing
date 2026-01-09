@@ -12,7 +12,7 @@ if (!__g.__TASKO_PDF_BROWSER__) __g.__TASKO_PDF_BROWSER__ = null;
 // Globale, wiederverwendete Browser-Instanz (lokal/nicht-serverless sinnvoll)
 let browserRef: import('puppeteer').Browser | null = __g.__TASKO_PDF_BROWSER__ as any;
 
-async function getBrowser(preferredHost?: string) {
+async function getBrowser(_preferredHost?: string) {
   if (browserRef && (browserRef as any).isConnected?.()) return browserRef;
 
   // Browser starten (robuste Erkennung des Chrome-Pfads)

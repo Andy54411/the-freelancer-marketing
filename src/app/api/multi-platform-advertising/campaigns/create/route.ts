@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db as adminDb, auth as adminAuth, admin } from '@/firebase/server';
+import { db as adminDb, admin } from '@/firebase/server';
 import { googleAdsClientService } from '@/services/googleAdsClientService';
 
 interface CampaignData {
@@ -33,6 +33,11 @@ interface CampaignData {
   schedule: {
     startDate: string;
     endDate?: string;
+  };
+  customerAcquisition?: {
+    enabled: boolean;
+    optimizationMode?: 'BID_HIGHER' | 'ONLY_NEW';
+    value?: number;
   };
 }
 

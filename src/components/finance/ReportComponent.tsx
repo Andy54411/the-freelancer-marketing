@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,64 +22,89 @@ import {
   Printer,
   Mail,
   Loader2,
+  Users,
+  Package,
+  Clock,
+  ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { FinanceService } from '@/services/financeService';
+import { BusinessReportService, type BusinessReportData } from '@/services/businessReportService';
+import { DatevAuswertungsService, type BWAData, type SuSaData, type EURData } from '@/services/datevAuswertungsService';
 
 interface ReportComponentProps {
   companyId: string;
 }
 
-interface ReportData {
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-  vatTotal: number;
-  monthlyData: Array<{
-    month: string;
-    revenue: number;
-    expenses: number;
-    profit: number;
-  }>;
-}
-
 export function ReportComponent({ companyId }: ReportComponentProps) {
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [businessReport, setBusinessReport] = useState<BusinessReportData | null>(null);
+  const [bwaData, setBwaData] = useState<BWAData | null>(null);
+  const [susaData, setSusaData] = useState<SuSaData | null>(null);
+  const [eurData, setEurData] = useState<EURData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('current-year');
   const [activeTab, setActiveTab] = useState('overview');
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    loadReportData();
-  }, [companyId, selectedPeriod]);
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date = now;
 
-  const loadReportData = async () => {
+    switch (selectedPeriod) {
+      case 'current-month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'current-quarter':
+        const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+        startDate = new Date(now.getFullYear(), quarterStart, 1);
+        break;
+      case 'last-year':
+        startDate = new Date(now.getFullYear() - 1, 0, 1);
+        endDate = new Date(now.getFullYear() - 1, 11, 31);
+        break;
+      case 'current-year':
+      default:
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+    }
+
+    return { startDate, endDate };
+  }, [selectedPeriod]);
+
+  const loadReportData = useCallback(async () => {
     try {
       setLoading(true);
-      const stats = await FinanceService.getFinanceStats(companyId);
+      const { startDate, endDate } = getDateRange();
+      const year = endDate.getFullYear();
 
-      // Mock Daten für Berichte - hier würde eine echte API-Abfrage stehen
-      setReportData({
-        totalRevenue: stats.totalRevenue,
-        totalExpenses: stats.totalExpenses,
-        netProfit: stats.netProfit,
-        vatTotal: stats.totalRevenue * 0.19,
-        monthlyData: [
-          { month: 'Jan', revenue: 15000, expenses: 8000, profit: 7000 },
-          { month: 'Feb', revenue: 18000, expenses: 9000, profit: 9000 },
-          { month: 'Mär', revenue: 22000, expenses: 11000, profit: 11000 },
-          { month: 'Apr', revenue: 19000, expenses: 9500, profit: 9500 },
-          { month: 'Mai', revenue: 25000, expenses: 12000, profit: 13000 },
-          { month: 'Jun', revenue: 28000, expenses: 14000, profit: 14000 },
-        ],
-      });
-    } catch (error) {
+      // Bestimme den Periodentyp
+      let periodType: 'month' | 'quarter' | 'year' | 'custom' = 'year';
+      if (selectedPeriod === 'current-month') periodType = 'month';
+      else if (selectedPeriod === 'current-quarter') periodType = 'quarter';
+      else if (selectedPeriod === 'current-year' || selectedPeriod === 'last-year') periodType = 'year';
+
+      // Lade alle Daten parallel
+      const [report, bwa, susa, eur] = await Promise.all([
+        BusinessReportService.getBusinessReport(companyId, { startDate, endDate, type: periodType }),
+        DatevAuswertungsService.generateBWA(companyId, year, endDate.getMonth() + 1),
+        DatevAuswertungsService.generateSuSa(companyId, year, endDate.getMonth() + 1),
+        DatevAuswertungsService.generateEUR(companyId, year),
+      ]);
+
+      setBusinessReport(report);
+      setBwaData(bwa);
+      setSusaData(susa);
+      setEurData(eur);
+    } catch {
       toast.error('Berichtsdaten konnten nicht geladen werden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyId, getDateRange]);
+
+  useEffect(() => {
+    loadReportData();
+  }, [loadReportData]);
 
   const handleGenerateReport = async (reportType: string) => {
     try {
@@ -89,7 +114,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
 
       // Simulation eines Downloads
       await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch (error) {
+    } catch {
       toast.error('Bericht konnte nicht generiert werden');
     } finally {
       setGenerating(false);
@@ -138,15 +163,17 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="bwa">BWA</TabsTrigger>
+          <TabsTrigger value="susa">SuSa</TabsTrigger>
           <TabsTrigger value="eur">EÜR</TabsTrigger>
+          <TabsTrigger value="modules">Module</TabsTrigger>
           <TabsTrigger value="tax">Steuern</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* KPI Cards */}
+          {/* Finanz-KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -155,7 +182,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Umsatz</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {reportData ? formatCurrency(reportData.totalRevenue) : '€0,00'}
+                      {businessReport ? formatCurrency(businessReport.finance.totalRevenue) : '0,00 €'}
                     </p>
                   </div>
                 </div>
@@ -169,7 +196,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Ausgaben</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {reportData ? formatCurrency(reportData.totalExpenses) : '€0,00'}
+                      {businessReport ? formatCurrency(businessReport.finance.totalExpenses) : '0,00 €'}
                     </p>
                   </div>
                 </div>
@@ -183,7 +210,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Gewinn</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {reportData ? formatCurrency(reportData.netProfit) : '€0,00'}
+                      {businessReport ? formatCurrency(businessReport.finance.netProfit) : '0,00 €'}
                     </p>
                   </div>
                 </div>
@@ -197,7 +224,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">USt. Zahllast</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {reportData ? formatCurrency(reportData.vatTotal) : '€0,00'}
+                      {businessReport ? formatCurrency(businessReport.finance.vatBalance) : '0,00 €'}
                     </p>
                   </div>
                 </div>
@@ -280,71 +307,45 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
             <CardHeader>
               <CardTitle>Betriebswirtschaftliche Auswertung (BWA)</CardTitle>
               <CardDescription>
-                Monatliche betriebswirtschaftliche Kennzahlen und Entwicklung
+                DATEV-konforme BWA basierend auf {bwaData?.kontenrahmen} | Stand: {bwaData?.monat}/{bwaData?.jahr}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* BWA Hauptkennzahlen */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Umsatz & Erlöse */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900 border-b pb-2">Umsätze & Erlöse</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Nettoumsatz</span>
-                      <span className="font-medium">
-                        {reportData ? formatCurrency(reportData.totalRevenue) : '€0,00'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Umsatzsteuer</span>
-                      <span className="font-medium">
-                        {reportData ? formatCurrency(reportData.vatTotal) : '€0,00'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-semibold">Bruttoumsatz</span>
-                      <span className="font-semibold">
-                        {reportData
-                          ? formatCurrency(reportData.totalRevenue + reportData.vatTotal)
-                          : '€0,00'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Kosten & Aufwendungen */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900 border-b pb-2">
-                    Kosten & Aufwendungen
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Materialkosten</span>
-                      <span className="font-medium">
-                        {reportData ? formatCurrency(reportData.totalExpenses * 0.4) : '€0,00'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Personalkosten</span>
-                      <span className="font-medium">
-                        {reportData ? formatCurrency(reportData.totalExpenses * 0.35) : '€0,00'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Sonstige Kosten</span>
-                      <span className="font-medium">
-                        {reportData ? formatCurrency(reportData.totalExpenses * 0.25) : '€0,00'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-semibold">Gesamtkosten</span>
-                      <span className="font-semibold">
-                        {reportData ? formatCurrency(reportData.totalExpenses) : '€0,00'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {/* BWA Tabelle nach DATEV-Standard */}
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left py-2 px-3">Zeile</th>
+                      <th className="text-left py-2 px-3">Bezeichnung</th>
+                      <th className="text-right py-2 px-3">Betrag</th>
+                      <th className="text-right py-2 px-3">% v. GU</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bwaData?.zeilen.map((zeile, index) => {
+                      const isTotal = zeile.bezeichnung.includes('Summe') || 
+                                      zeile.bezeichnung.includes('Ergebnis') ||
+                                      zeile.bezeichnung.includes('Rohertrag') ||
+                                      zeile.bezeichnung.includes('Jahresüberschuss');
+                      return (
+                        <tr 
+                          key={index} 
+                          className={`border-b ${isTotal ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50'}`}
+                        >
+                          <td className="py-2 px-3 text-gray-500">{zeile.zeile}</td>
+                          <td className="py-2 px-3">{zeile.bezeichnung}</td>
+                          <td className={`py-2 px-3 text-right ${zeile.betrag < 0 ? 'text-red-600' : ''}`}>
+                            {formatCurrency(zeile.betrag)}
+                          </td>
+                          <td className="py-2 px-3 text-right text-gray-500">
+                            {zeile.prozentVomUmsatz.toFixed(1)}%
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               {/* BWA Kennzahlen */}
@@ -354,11 +355,11 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                     <div className="text-center">
                       <h5 className="text-sm font-medium text-green-700 mb-1">Betriebsergebnis</h5>
                       <p className="text-2xl font-bold text-green-900">
-                        {reportData ? formatCurrency(reportData.netProfit) : '€0,00'}
+                        {bwaData ? formatCurrency(bwaData.zusammenfassung.betriebsergebnis) : '0,00 €'}
                       </p>
                       <p className="text-xs text-green-600 mt-1">
-                        {reportData && reportData.totalRevenue > 0
-                          ? `${((reportData.netProfit / reportData.totalRevenue) * 100).toFixed(1)}% vom Umsatz`
+                        {bwaData && bwaData.zusammenfassung.gesamtleistung > 0
+                          ? `${((bwaData.zusammenfassung.betriebsergebnis / bwaData.zusammenfassung.gesamtleistung) * 100).toFixed(1)}% vom Umsatz`
                           : '0% vom Umsatz'}
                       </p>
                     </div>
@@ -368,13 +369,15 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <Card className="bg-blue-50 border-blue-200">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <h5 className="text-sm font-medium text-blue-700 mb-1">Kostenquote</h5>
+                      <h5 className="text-sm font-medium text-blue-700 mb-1">Rohertrag</h5>
                       <p className="text-2xl font-bold text-blue-900">
-                        {reportData && reportData.totalRevenue > 0
-                          ? `${((reportData.totalExpenses / reportData.totalRevenue) * 100).toFixed(1)}%`
-                          : '0%'}
+                        {bwaData ? formatCurrency(bwaData.zusammenfassung.rohertrag) : '0,00 €'}
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">Kosten/Umsatz-Verhältnis</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {bwaData && bwaData.zusammenfassung.gesamtleistung > 0
+                          ? `${((bwaData.zusammenfassung.rohertrag / bwaData.zusammenfassung.gesamtleistung) * 100).toFixed(1)}% Marge`
+                          : '0% Marge'}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -382,19 +385,17 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <Card className="bg-purple-50 border-purple-200">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <h5 className="text-sm font-medium text-purple-700 mb-1">Rentabilität</h5>
+                      <h5 className="text-sm font-medium text-purple-700 mb-1">Jahresüberschuss</h5>
                       <p className="text-2xl font-bold text-purple-900">
-                        {reportData && reportData.totalRevenue > 0
-                          ? `${((reportData.netProfit / reportData.totalRevenue) * 100).toFixed(1)}%`
-                          : '0%'}
+                        {bwaData ? formatCurrency(bwaData.zusammenfassung.jahresueberschuss) : '0,00 €'}
                       </p>
-                      <p className="text-xs text-purple-600 mt-1">Gewinnmarge</p>
+                      <p className="text-xs text-purple-600 mt-1">Nach Steuern</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Monatsvergleich */}
+              {/* Monatlicher Verlauf aus businessReport */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Monatlicher Geschäftsverlauf</CardTitle>
@@ -412,7 +413,7 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData?.monthlyData?.map((month, index) => (
+                        {businessReport?.monthlyData?.map((month, index) => (
                           <tr key={index} className="border-b hover:bg-gray-50">
                             <td className="py-2 font-medium">{month.month}</td>
                             <td className="text-right py-2">{formatCurrency(month.revenue)}</td>
@@ -470,48 +471,363 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
           </Card>
         </TabsContent>
 
+        {/* SUSA Tab - Summen- und Saldenliste */}
+        <TabsContent value="susa" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Summen- und Saldenliste (SuSa)</CardTitle>
+              <CardDescription>
+                DATEV-konforme Kontensalden | {susaData?.kontenrahmen} | Stand: {susaData?.monat}/{susaData?.jahr}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* SuSa Übersicht */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-blue-700">Summe Soll</h5>
+                    <p className="text-xl font-bold text-blue-900">
+                      {susaData ? formatCurrency(susaData.summen.summeSoll) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-green-700">Summe Haben</h5>
+                    <p className="text-xl font-bold text-green-900">
+                      {susaData ? formatCurrency(susaData.summen.summeHaben) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-purple-700">Saldo Soll</h5>
+                    <p className="text-xl font-bold text-purple-900">
+                      {susaData ? formatCurrency(susaData.summen.saldoSoll) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-orange-50 border-orange-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-orange-700">Saldo Haben</h5>
+                    <p className="text-xl font-bold text-orange-900">
+                      {susaData ? formatCurrency(susaData.summen.saldoHaben) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* SuSa Kontenliste */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left py-2 px-3">Konto</th>
+                      <th className="text-left py-2 px-3">Bezeichnung</th>
+                      <th className="text-right py-2 px-3">EB Soll</th>
+                      <th className="text-right py-2 px-3">EB Haben</th>
+                      <th className="text-right py-2 px-3">Soll</th>
+                      <th className="text-right py-2 px-3">Haben</th>
+                      <th className="text-right py-2 px-3">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {susaData?.konten.slice(0, 30).map((konto, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-3 font-mono">{konto.kontonummer}</td>
+                        <td className="py-2 px-3">{konto.bezeichnung}</td>
+                        <td className="py-2 px-3 text-right">{formatCurrency(konto.ebSoll)}</td>
+                        <td className="py-2 px-3 text-right">{formatCurrency(konto.ebHaben)}</td>
+                        <td className="py-2 px-3 text-right">{formatCurrency(konto.soll)}</td>
+                        <td className="py-2 px-3 text-right">{formatCurrency(konto.haben)}</td>
+                        <td className={`py-2 px-3 text-right font-medium ${konto.saldo < 0 ? 'text-red-600' : ''}`}>
+                          {formatCurrency(konto.saldo)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  onClick={() => handleGenerateReport('SuSa')}
+                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  disabled={generating}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  SuSa als PDF herunterladen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="eur" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Einnahmen-Überschuss-Rechnung (EÜR)</CardTitle>
               <CardDescription>
-                Gewinnermittlung für Freiberufler und Kleingewerbetreibende
+                DATEV-konforme EÜR für {eurData?.jahr} | Anlage EÜR zum Finanzamt
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">EÜR erstellen</h3>
-                <p className="text-gray-600 mb-4">
-                  Ihre Einnahmen-Überschuss-Rechnung wird automatisch aus den erfassten Daten
-                  generiert.
-                </p>
-                <div className="flex justify-center gap-2">
-                  <Button
-                    onClick={() => handleGenerateReport('EÜR')}
-                    className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generiere...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        EÜR herunterladen
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="outline">
-                    <Printer className="h-4 w-4 mr-2" />
-                    Drucken
-                  </Button>
-                </div>
+              {/* EÜR Übersicht */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-green-700">Betriebseinnahmen</h5>
+                    <p className="text-xl font-bold text-green-900">
+                      {eurData ? formatCurrency(eurData.zusammenfassung.betriebseinnahmen) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-red-50 border-red-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-red-700">Betriebsausgaben</h5>
+                    <p className="text-xl font-bold text-red-900">
+                      {eurData ? formatCurrency(eurData.zusammenfassung.betriebsausgaben) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4 text-center">
+                    <h5 className="text-sm font-medium text-blue-700">Gewinn/Verlust</h5>
+                    <p className={`text-xl font-bold ${eurData && eurData.zusammenfassung.gewinnVerlust >= 0 ? 'text-blue-900' : 'text-red-900'}`}>
+                      {eurData ? formatCurrency(eurData.zusammenfassung.gewinnVerlust) : '0,00 €'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* EÜR Anlage Zeilen */}
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left py-2 px-3">Zeile</th>
+                      <th className="text-left py-2 px-3">Bezeichnung</th>
+                      <th className="text-right py-2 px-3">Betrag</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eurData?.anlageZeilen.map((zeile, index) => {
+                      const isTotal = zeile.zeile === 23 || zeile.zeile === 87 || zeile.zeile === 88;
+                      return (
+                        <tr 
+                          key={index} 
+                          className={`border-b ${isTotal ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50'}`}
+                        >
+                          <td className="py-2 px-3 text-gray-500">{zeile.zeile}</td>
+                          <td className="py-2 px-3">{zeile.bezeichnung}</td>
+                          <td className={`py-2 px-3 text-right ${zeile.betrag < 0 ? 'text-red-600' : ''}`}>
+                            {formatCurrency(zeile.betrag)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-center gap-2">
+                <Button
+                  onClick={() => handleGenerateReport('EÜR')}
+                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generiere...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      EÜR herunterladen
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Drucken
+                </Button>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Module KPIs Tab */}
+        <TabsContent value="modules" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* HR KPIs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-[#14ad9f]" />
+                  Personal (HR)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Mitarbeiter gesamt</p>
+                    <p className="text-xl font-bold">{businessReport?.hr.totalEmployees}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Aktive Mitarbeiter</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport?.hr.activeEmployees}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Vollzeit</p>
+                    <p className="text-xl font-bold">{businessReport?.hr.fullTimeEmployees}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Teilzeit</p>
+                    <p className="text-xl font-bold">{businessReport?.hr.partTimeEmployees}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Brutto-Gehälter</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.hr.totalGrossSalary ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Arbeitgeberkosten</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.hr.totalEmployerCosts ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Krankheitstage</span>
+                    <span className="font-medium">{businessReport?.hr.sickDays} Tage</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Inventory KPIs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-[#14ad9f]" />
+                  Lagerbestand
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Artikel gesamt</p>
+                    <p className="text-xl font-bold">{businessReport?.inventory.totalItems}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Lagerwert</p>
+                    <p className="text-xl font-bold">{formatCurrency(businessReport?.inventory.totalValue ?? 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Niedriger Bestand</p>
+                    <p className="text-xl font-bold text-orange-500">{businessReport?.inventory.lowStockItems}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Nicht vorrätig</p>
+                    <p className="text-xl font-bold text-red-500">{businessReport?.inventory.outOfStockItems}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Verkaufswert</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.inventory.totalRetailValue ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Potenzielle Marge</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.inventory.potentialProfit ?? 0)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* TimeTracking KPIs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-[#14ad9f]" />
+                  Zeiterfassung
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Stunden gesamt</p>
+                    <p className="text-xl font-bold">{businessReport?.timeTracking.totalHours.toFixed(1)}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Abrechenbar</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport?.timeTracking.billableHours.toFixed(1)}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Abrechenbar %</p>
+                    <p className="text-xl font-bold">{businessReport?.timeTracking.billablePercentage.toFixed(1)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Stundensatz</p>
+                    <p className="text-xl font-bold">{formatCurrency(businessReport?.timeTracking.averageHourlyRate ?? 0)}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Abrechenbarer Umsatz</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.timeTracking.totalBillableAmount ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Aktive Projekte</span>
+                    <span className="font-medium">{businessReport?.timeTracking.activeProjects}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Orders KPIs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-[#14ad9f]" />
+                  Aufträge
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Aufträge gesamt</p>
+                    <p className="text-xl font-bold">{businessReport?.orders.totalOrders}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Abgeschlossen</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport?.orders.completedOrders}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">In Bearbeitung</p>
+                    <p className="text-xl font-bold text-blue-500">{businessReport?.orders.inProgressOrders}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Storniert</p>
+                    <p className="text-xl font-bold text-red-500">{businessReport?.orders.cancelledOrders}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Umsatz aus Aufträgen</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.orders.totalOrderValue ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Durchschnittswert</span>
+                    <span className="font-medium">{formatCurrency(businessReport?.orders.averageOrderValue ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Abschlussrate</span>
+                    <span className="font-medium">{businessReport?.orders.completionRate.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="tax" className="space-y-4">

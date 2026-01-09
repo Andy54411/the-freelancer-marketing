@@ -71,7 +71,7 @@ export default function FooterSection() {
           `❌ ${result.error || 'Fehler bei der Anmeldung. Bitte versuchen Sie es später erneut.'}`
         );
       }
-    } catch (error) {
+    } catch {
       setMessage('❌ Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.');
     } finally {
       setIsLoading(false);
@@ -102,6 +102,27 @@ export default function FooterSection() {
         {
           title: 'Hilfe',
           href: '/contact',
+        },
+      ],
+    },
+    {
+      group: 'Features',
+      items: [
+        {
+          title: 'WhatsApp Business',
+          href: '/features/whatsapp',
+        },
+        {
+          title: 'Taskilo Advertising',
+          href: '/features/advertising',
+        },
+        {
+          title: 'E-Rechnung',
+          href: '/features/e-invoicing',
+        },
+        {
+          title: 'Buchhaltung',
+          href: '/features/accounting',
         },
       ],
     },
@@ -322,15 +343,16 @@ export default function FooterSection() {
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-5xl px-6 relative z-10">
-        <div className="grid gap-12 md:grid-cols-5 md:gap-0 lg:grid-cols-4">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 md:col-span-5 md:row-start-1 lg:col-span-3">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 relative z-10">
+        <div className="grid gap-8 lg:gap-12">
+          {/* Links Grid */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
             {links.map((link, index) => (
-              <div key={index} className="space-y-4 text-sm">
+              <div key={index} className="space-y-3 text-sm">
                 <span className="block font-medium text-white">{link.group}</span>
-                {link.items.map((item, index) => (
+                {link.items.map((item, idx) => (
                   <Link
-                    key={index}
+                    key={idx}
                     href={item.href}
                     className="text-white/70 hover:text-white block duration-150 transition-colors"
                   >
@@ -340,26 +362,31 @@ export default function FooterSection() {
               </div>
             ))}
           </div>
+          
+          {/* Newsletter */}
           <form
             onSubmit={handleNewsletterSubmit}
-            className="row-start-1 border-b border-white/20 pb-8 text-sm md:col-span-2 md:border-none lg:col-span-1"
+            className="border-t border-white/20 pt-8 text-sm"
           >
-            <div className="space-y-4">
-              <Label htmlFor="mail" className="block font-medium text-white">
-                Newsletter
-              </Label>
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-4">
+                <Label htmlFor="mail" className="block font-medium text-white text-lg">
+                  Newsletter
+                </Label>
+                <span className="text-white/70 block text-sm mt-1">
+                  Bleiben Sie über Updates und neue Features informiert.
+                </span>
+              </div>
 
-              {/* Name (optional) */}
-              <Input
-                type="text"
-                placeholder="Name (optional)"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                disabled={isLoading}
-              />
-
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <Input
+                  type="text"
+                  placeholder="Name (optional)"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="h-10 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60 sm:flex-1"
+                  disabled={isLoading}
+                />
                 <Input
                   type="email"
                   id="mail"
@@ -367,58 +394,52 @@ export default function FooterSection() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="E-Mail-Adresse"
-                  className="h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                  className="h-10 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/60 sm:flex-1"
                   required
                   disabled={isLoading}
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  className="bg-white text-[#14ad9f] hover:bg-white/90 disabled:opacity-50"
+                  className="h-10 px-6 bg-white text-[#14ad9f] hover:bg-white/90 disabled:opacity-50 font-semibold"
                   disabled={isLoading || !consentGiven}
                 >
                   {isLoading ? 'Lädt...' : 'Abonnieren'}
                 </Button>
               </div>
 
-              {/* DSGVO Einverständnis */}
-              <div className="flex items-start gap-2">
+              {/* DSGVO Einverständnis - kompakter */}
+              <div className="flex items-center justify-center gap-3">
                 <input
                   type="checkbox"
                   id="newsletter-consent"
                   checked={consentGiven}
                   onChange={e => setConsentGiven(e.target.checked)}
-                  className="mt-1 h-5 w-5 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-2 shrink-0"
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-2 shrink-0"
                   disabled={isLoading}
                 />
                 <label
                   htmlFor="newsletter-consent"
-                  className="text-xs text-white/80 leading-relaxed cursor-pointer min-h-11 flex items-start pt-1"
+                  className="text-xs text-white/70 cursor-pointer"
                 >
-                  <span className="block">
-                    Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. Weitere
-                    Informationen finden Sie in unserer{' '}
-                    <a href="/datenschutz" className="text-white underline hover:text-white/80">
-                      Datenschutzerklärung
-                    </a>
-                    . Jederzeit abbestellbar.
-                  </span>
+                  Ich stimme der{' '}
+                  <a href="/datenschutz" className="text-white underline hover:text-white/80">
+                    Datenschutzerklärung
+                  </a>{' '}
+                  zu. Jederzeit abbestellbar.
                 </label>
               </div>
 
               {message && (
-                <span
+                <p
                   className={cn(
-                    'block text-sm',
+                    'text-center text-sm mt-3',
                     message.startsWith('✅') ? 'text-green-400' : 'text-red-400'
                   )}
                 >
                   {message}
-                </span>
+                </p>
               )}
-              <span className="text-white/70 block text-sm">
-                Bleiben Sie über Updates und neue Features informiert.
-              </span>
             </div>
           </form>
         </div>

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   collection,
-  getDocs,
   updateDoc,
   doc,
   query,
@@ -13,7 +12,6 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -182,7 +180,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         setTimeEntries(entries);
         setLoading(false);
       },
-      error => {
+      () => {
         setLoading(false);
         // Fallback: Lade Daten über API
         loadTimeEntries();
@@ -227,7 +225,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         createdAt: new Date(entry.createdAt || Date.now()),
       }));
       setTimeEntries(entries);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -239,7 +237,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     try {
       // Lade Zeiteinträge neu
       await loadTimeEntries();
-    } catch (error) {
+    } catch {
     } finally {
       setRefreshing(false);
     }
@@ -261,7 +259,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       };
 
       onProjectUpdate(updatedProject);
-    } catch (error) {}
+    } catch {}
   };
 
   const handleEditEntry = async (entryId: string) => {
@@ -344,7 +342,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       // Schließe das Modal
       setEditModalOpen(false);
       setEditingEntry(null);
-    } catch (error) {
+    } catch {
       alert('Fehler beim Aktualisieren des Zeiteintrags. Bitte versuchen Sie es erneut.');
     } finally {
       setSavingEdit(false);
@@ -376,7 +374,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       // Entferne den Eintrag aus der lokalen Liste
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen des Zeiteintrags. Bitte versuchen Sie es erneut.');
     } finally {
       setDeletingEntry(null);
@@ -392,7 +390,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     return currentTrackedHours * (project.hourlyRate || 0);
   };
 
-  const formatDuration = (minutes: number) => {
+  const _formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours > 0) {

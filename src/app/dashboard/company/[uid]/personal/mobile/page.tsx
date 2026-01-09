@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Smartphone,
   Download,
   QrCode,
   Users,
@@ -18,17 +17,9 @@ import {
   Calendar,
   Bell,
   MapPin,
-  Camera,
   Wifi,
   WifiOff,
   MessageSquare,
-  Settings,
-  Shield,
-  Zap,
-  ArrowRight,
-  CheckCircle,
-  AlertTriangle,
-  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -149,7 +140,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
         offlineCapable: true,
         lastSync: new Date(),
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der App-Daten');
     } finally {
       setLoading(false);
@@ -157,7 +148,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
   };
 
   const generateQRCode = () => {
-    const appURL = `https://taskilo.app/download/${resolvedParams.uid}`;
+    const _appURL = `https://taskilo.app/download/${resolvedParams.uid}`;
     toast.success('QR-Code wurde generiert!');
     // In der Realität würde hier ein QR-Code generiert werden
   };
@@ -166,7 +157,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
     try {
       // Mock: App-Einladung an alle Mitarbeiter senden
       toast.success(`App-Einladung an ${employees.length} Mitarbeiter gesendet`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Einladungen');
     }
   };

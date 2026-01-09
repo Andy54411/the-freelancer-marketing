@@ -102,7 +102,7 @@ export class GoogleBusinessTestHelper {
           if (accounts.length > 0) {
             await this.testLoadLocations(companyId, accounts[0].name);
           }
-        } catch (error) {
+        } catch {
           console.log('ℹ️ Locations Test übersprungen (Account erforderlich)');
         }
       } else {

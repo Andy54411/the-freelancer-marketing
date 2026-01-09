@@ -41,9 +41,9 @@ const TaskiloVideoCall: React.FC<TaskiloVideoCallProps> = ({
   // Synchronized stream management
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [videoElementsReady, setVideoElementsReady] = useState(false);
+  const [_videoElementsReady, setVideoElementsReady] = useState(false);
 
-  const { consent, isFunctionalAllowed } = useCookieConsentContext();
+  const { consent: _consent, isFunctionalAllowed } = useCookieConsentContext();
 
   useEffect(() => {
     if (isOpen && chatId && userId) {

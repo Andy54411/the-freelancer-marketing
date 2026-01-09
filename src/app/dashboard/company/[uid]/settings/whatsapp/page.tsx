@@ -171,7 +171,7 @@ export default function WhatsAppSettingsPage() {
             <div>
               <span className="font-medium">WhatsApp Business App erstellen</span>
               <br />
-              Wähle "Business" → "WhatsApp" als Produkt
+              Wähle &quot;Business&quot; → &quot;WhatsApp&quot; als Produkt
             </div>
           </div>
 
@@ -180,7 +180,7 @@ export default function WhatsAppSettingsPage() {
             <div>
               <span className="font-medium">Access Token & Phone Number ID kopieren</span>
               <br />
-              Unter "WhatsApp" → "API Setup" findest du beide Werte
+              Unter &quot;WhatsApp&quot; → &quot;API Setup&quot; findest du beide Werte
             </div>
           </div>
 

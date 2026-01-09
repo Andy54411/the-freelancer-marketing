@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Download, Upload, Clock, CheckCircle, AlertCircle, Send, Link2, ChevronDown, X } from 'lucide-react';
+import { FileText, Download, Upload, Clock, CheckCircle, AlertCircle, Send, Link2, X } from 'lucide-react';
 import { db } from '@/firebase/clients';
 import { doc, getDoc, Timestamp, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -314,7 +314,7 @@ export default function OrderInvoiceSection({
   if (isLoading) {
     return (
       <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
-        <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3">
+        <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-3">
           <h3 className="font-semibold text-white flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Rechnung
@@ -338,7 +338,7 @@ export default function OrderInvoiceSection({
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
-      <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-3">
+      <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-3">
         <h3 className="font-semibold text-white flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Rechnung
@@ -578,7 +578,7 @@ export default function OrderInvoiceSection({
                                   if (typeof date?.toDate === 'function') return date.toDate().toLocaleDateString('de-DE');
                                   if (date instanceof Date) return date.toLocaleDateString('de-DE');
                                   if (typeof date === 'string') return new Date(date).toLocaleDateString('de-DE');
-                                  if (date?._seconds) return new Date(date._seconds * 1000).toLocaleDateString('de-DE');
+                                  if (date?.seconds) return new Date(date.seconds * 1000).toLocaleDateString('de-DE');
                                   return '';
                                 })()}
                               </p>

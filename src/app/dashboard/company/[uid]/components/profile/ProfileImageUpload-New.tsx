@@ -42,7 +42,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
         try {
           const oldImageRef = ref(storage, profile.photoURL);
           await deleteObject(oldImageRef);
-        } catch (error) {}
+        } catch {}
       }
 
       // Upload des neuen Profilbilds
@@ -58,7 +58,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploadProgress(progress);
         },
-        error => {
+        () => {
           toast.error('Fehler beim Upload des Profilbilds');
           setIsUploadingProfileImage(false);
         },
@@ -69,7 +69,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
             setProfile(prev => (prev ? { ...prev, photoURL: downloadURL } : null));
 
             toast.success('Profilbild erfolgreich hochgeladen!');
-          } catch (error) {
+          } catch {
             toast.error('Fehler beim Speichern des Profilbilds');
           } finally {
             setIsUploadingProfileImage(false);
@@ -77,7 +77,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
           }
         }
       );
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Profilbild-Upload');
       setIsUploadingProfileImage(false);
     }
@@ -93,7 +93,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
       setProfile(prev => (prev ? { ...prev, photoURL: '' } : null));
 
       toast.success('Profilbild entfernt');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Profilbilds');
     }
   };

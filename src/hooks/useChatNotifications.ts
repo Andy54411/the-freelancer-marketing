@@ -37,7 +37,7 @@ export function useChatNotifications() {
     quotesListenersRef.current.forEach(unsubscribe => unsubscribe());
     quotesListenersRef.current = [];
 
-    const setupChatListener = (quoteId: string, userRole: 'customer' | 'provider') => {
+    const setupChatListener = (quoteId: string, _userRole: 'customer' | 'provider') => {
       // Prüfe ob bereits ein Listener für diese Quote existiert
       if (chatListenersRef.current.has(quoteId)) {
         return; // Bereits registriert, nicht nochmal

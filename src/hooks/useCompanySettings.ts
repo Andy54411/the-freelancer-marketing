@@ -179,7 +179,7 @@ export function useCompanySettings(userId?: string) {
         } else {
           setError('Unternehmensdaten nicht gefunden');
         }
-      } catch (err) {
+      } catch {
         setError('Fehler beim Laden der Unternehmenseinstellungen');
       } finally {
         setLoading(false);

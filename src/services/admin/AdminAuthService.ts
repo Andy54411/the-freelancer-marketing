@@ -191,7 +191,7 @@ export class AdminAuthService {
   /**
    * Verify admin from NextRequest - Convenience method
    */
-  static async verifyFromRequest(request: import('next/server').NextRequest): Promise<{
+  static async verifyFromRequest(_request: import('next/server').NextRequest): Promise<{
     id: string;
     email: string;
     name: string;

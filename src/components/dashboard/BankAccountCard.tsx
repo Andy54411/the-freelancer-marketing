@@ -355,7 +355,7 @@ export default function BankAccountCard({
     }
   };
 
-  const getBankInitial = (bankName: string) => {
+  const _getBankInitial = (bankName: string) => {
     return bankName.charAt(0).toUpperCase();
   };
 
@@ -383,17 +383,17 @@ export default function BankAccountCard({
           return logo;
         }
       }
-    } catch (error) {}
+    } catch {}
 
     return '/images/bank-avatar-fallback.svg';
   };
 
-  const getCounterpartAvatar = (counterpartName: string) => {
+  const getCounterpartAvatar = (_counterpartName: string) => {
     // Für Transaktionen verwenden wir das 32x32 Fallback-Avatar
     return '/images/transaction-avatar-fallback.svg';
   };
 
-  const primaryAccount = accounts.length > 0 ? accounts[0].accountName : 'Kein Konto verbunden';
+  const _primaryAccount = accounts.length > 0 ? accounts[0].accountName : 'Kein Konto verbunden';
   const hasAccounts = accounts.length > 0;
 
   // Berechne Gesamtsaldo nur für ausgewählte Konten

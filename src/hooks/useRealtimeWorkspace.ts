@@ -58,10 +58,10 @@ export function useRealtimeWorkspace({
           const update: WorkspaceUpdate = JSON.parse(event.data);
 
           onUpdate(update);
-        } catch (error) {}
+        } catch {}
       };
 
-      wsRef.current.onclose = event => {
+      wsRef.current.onclose = _event => {
         setIsConnected(false);
 
         // Auto-reconnect mit exponential backoff
@@ -77,10 +77,10 @@ export function useRealtimeWorkspace({
         }
       };
 
-      wsRef.current.onerror = error => {
+      wsRef.current.onerror = _error => {
         setConnectionError('WebSocket connection error');
       };
-    } catch (error) {
+    } catch {
       setConnectionError('Failed to create WebSocket connection');
     }
   };

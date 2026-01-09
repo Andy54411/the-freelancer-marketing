@@ -12,7 +12,7 @@ interface PageFooterProps {
 export const PageFooter: React.FC<PageFooterProps> = ({
   data,
   color = '#14ad9f',
-  variant = 'standard',
+  variant: _variant = 'standard',
 }) => {
   return (
     <div

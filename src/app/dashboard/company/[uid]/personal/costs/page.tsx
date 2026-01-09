@@ -10,11 +10,9 @@ import {
   PieChart,
   Download,
   RefreshCw,
-  AlertCircle,
   Target,
   Building,
   Clock,
-  Calendar,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -104,7 +102,7 @@ export default function PersonalCostsPage() {
         budgetUtilization: Math.min((dept.totalCosts / (totalCosts * 0.25)) * 100, 100), // Annahme: jede Abt. hat 25% Budget
       }));
       setDepartmentCosts(departments);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -120,7 +118,7 @@ export default function PersonalCostsPage() {
       a.download = `personalkosten-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (error) {}
+    } catch {}
   };
 
   if (loading) {

@@ -14,7 +14,7 @@ export default function VideoCallConsentModal({
   isOpen, 
   onConsent, 
   callerName, 
-  chatId 
+  chatId: _chatId 
 }: VideoCallConsentModalProps) {
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const [videoRecordingConsent, setVideoRecordingConsent] = useState(false);

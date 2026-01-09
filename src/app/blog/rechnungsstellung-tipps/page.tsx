@@ -3,7 +3,6 @@ import {
   FileText,
   Calendar,
   Euro,
-  CheckCircle,
   AlertTriangle,
   Clock,
   Building,

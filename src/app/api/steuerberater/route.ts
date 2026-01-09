@@ -13,7 +13,7 @@ async function getFirebaseDb() {
         if (db) {
           return db;
         }
-      } catch (importError) {}
+      } catch {}
 
       // Second try: Direct Firebase Admin initialization
       try {
@@ -23,7 +23,7 @@ async function getFirebaseDb() {
         let app;
         try {
           app = admin.app();
-        } catch (appError) {
+        } catch {
           // Use environment variables for initialization
           if (
             process.env.FIREBASE_PROJECT_ID &&
@@ -49,7 +49,7 @@ async function getFirebaseDb() {
         }
 
         db = admin.firestore(app);
-      } catch (adminError) {
+      } catch (adminError: unknown) {
         throw adminError;
       }
 
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     let database = null;
     try {
       database = await getFirebaseDb();
-    } catch (error) {}
+    } catch {}
 
     switch (action) {
       case 'invites':
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
               data: invites,
               timestamp: Date.now(),
             });
-          } catch (firebaseError) {}
+          } catch {}
         }
 
         // Mock data if Firebase not available or query failed
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
               data: documents,
               timestamp: Date.now(),
             });
-          } catch (firebaseError) {}
+          } catch {}
         }
 
         // Fallback if Firebase not available
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     let database = null;
     try {
       database = await getFirebaseDb();
-    } catch (error) {}
+    } catch {}
 
     switch (action) {
       case 'invite':
@@ -294,7 +294,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
           { status: 409 } // Conflict status code
         );
       }
-    } catch (duplicateCheckError) {}
+    } catch {}
 
     // Create invitation
     const inviteData = {
@@ -332,7 +332,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
       message: 'Einladung erfolgreich versendet',
       timestamp: Date.now(),
     });
-  } catch (error) {
+  } catch {
     // Fallback response even if Firebase fails
     return NextResponse.json({
       success: true,
@@ -394,7 +394,7 @@ async function handleShareDocument(database: any, companyId: string, data: any) 
       message: 'Dokument erfolgreich geteilt',
       timestamp: Date.now(),
     });
-  } catch (error) {
-    throw error;
+  } catch (_error) {
+    throw _error;
   }
 }

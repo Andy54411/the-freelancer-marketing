@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -30,8 +29,6 @@ import {
   Send,
   CheckCircle,
   AlertTriangle,
-  Download,
-  Settings,
   Zap,
   Shield,
   Globe,
@@ -63,7 +60,7 @@ interface EInvoiceStatus {
 export function EInvoiceIntegration({
   companyId,
   invoiceData,
-  onEInvoiceGenerated,
+  onEInvoiceGenerated: _onEInvoiceGenerated,
   onSettingsChanged,
 }: EInvoiceIntegrationProps) {
   const [settings, setSettings] = useState<EInvoiceSettings | null>(null);
@@ -87,7 +84,7 @@ export function EInvoiceIntegration({
       try {
         const settingsData = await EInvoiceService.getEInvoiceSettings(companyId);
         setSettings(settingsData);
-      } catch (error) {
+      } catch {
         setSettings({
           companyId,
           defaultFormat: 'zugferd',
@@ -226,7 +223,7 @@ export function EInvoiceIntegration({
   };
 
   // PDF/A-3 mit eingebetteter XML erstellen
-  const generatePDFA3 = async (pdfBuffer: ArrayBuffer) => {
+  const _generatePDFA3 = async (pdfBuffer: ArrayBuffer) => {
     if (!xmlPreview) {
       toast.error('XML-Daten fehlen für PDF/A-3 Erstellung');
       return null;
@@ -275,7 +272,7 @@ export function EInvoiceIntegration({
   };
 
   // TSE-Daten aktualisieren
-  const updateTSEData = (newTseData: Partial<TSEData>) => {
+  const _updateTSEData = (newTseData: Partial<TSEData>) => {
     setTseData(prev => (prev ? { ...prev, ...newTseData } : null));
   };
 

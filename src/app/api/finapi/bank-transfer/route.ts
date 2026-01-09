@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
-import { getFinApiBaseUrl } from '@/lib/finapi-config';
 import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 export async function POST(request: NextRequest) {
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const accessToken = userData.userToken;
+    const _accessToken = userData.userToken;
 
     // Prepare transfer payload for FinAPI (correct format based on CreateMoneyTransferParams)
     const transferPayload = {

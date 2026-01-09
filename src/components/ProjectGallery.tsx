@@ -37,7 +37,7 @@ export default function ProjectGallery({ userId }: Props) {
             setImages([]);
           }
         }
-      } catch (err) {
+      } catch {
         setImages([]);
       }
     };
@@ -120,7 +120,7 @@ export default function ProjectGallery({ userId }: Props) {
             layout="fill"
             objectFit="contain"
             onClick={e => e.stopPropagation()}
-            className="!relative !inset-auto max-w-[90vw] max-h-[90vh] rounded shadow-lg"
+            className="relative! inset-auto! max-w-[90vw] max-h-[90vh] rounded shadow-lg"
           />
           <button
             onClick={() => setModalImage(null)}

@@ -66,7 +66,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
       } else {
         toast.error('Mitarbeiter nicht gefunden');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Mitarbeiterdaten');
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
       setEmployee({ ...employee, ...formData });
       setIsEditing(false);
       toast.success('Mitarbeiterdaten erfolgreich aktualisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern der Mitarbeiterdaten');
     }
   };
@@ -355,7 +355,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
               <DocumentsTab
                 employeeId={resolvedParams.employeeId}
                 companyId={resolvedParams.uid}
-                employee={employee as unknown as { documents?: { name: string; type: string; url: string; uploadedAt?: string }[] }}
+                employee={employee}
               />
             </TabsContent>
 

@@ -21,8 +21,6 @@ import {
   List,
   ListOrdered,
   ChevronDown,
-  FileText,
-  Hash,
   Strikethrough,
   Palette,
   AlignLeft,
@@ -30,10 +28,6 @@ import {
   AlignRight,
   Indent,
   Outdent,
-  Table as TableIcon,
-  Link as LinkIcon,
-  Minus,
-  Type,
   Plus,
 } from 'lucide-react';
 import {
@@ -235,7 +229,7 @@ export default function HeaderTextEditor({
     );
   }
 
-  const insertPlaceholder = (token: string) => {
+  const _insertPlaceholder = (token: string) => {
     editor.chain().focus().insertContent(token).run();
   };
 

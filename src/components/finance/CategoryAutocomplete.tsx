@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MessageSquare, Megaphone, Briefcase, Package, Building2 } from 'lucide-react';
+import { Search, Building2 } from 'lucide-react';
 import { DatevCardService } from '@/services/datevCardService';
 
 interface Category {
@@ -48,7 +48,7 @@ export default function CategoryAutocomplete({
     }));
 
     // Debug: Suche nach "Sonstiges" Einträgen
-    const sonstigeCards = allCards.filter(
+    const _sonstigeCards = allCards.filter(
       (card) =>
       card.name.toLowerCase().includes('sonstig') ||
       card.description.toLowerCase().includes('sonstig') ||
@@ -190,7 +190,7 @@ export default function CategoryAutocomplete({
   };
 
   // Handle input blur with delay to allow clicks
-  const handleInputBlur = (e: React.FocusEvent) => {
+  const handleInputBlur = (_e: React.FocusEvent) => {
     // Delay closing to allow clicks on dropdown items
     setTimeout(() => {
       if (!containerRef.current?.contains(document.activeElement)) {
@@ -298,7 +298,7 @@ export default function CategoryAutocomplete({
       {/* Dropdown/Popover */}
       {isOpen &&
       <div
-        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-xl overflow-hidden"
+        className="absolute z-9999 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-xl overflow-hidden"
         style={{ minWidth: '400px' }}
         role="listbox">
 

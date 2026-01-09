@@ -5,10 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   GoogleBusinessProfileService,
-  GoogleBusinessAccount,
-  GoogleBusinessLocation,
 } from '@/services/GoogleBusinessProfileService';
-import { GoogleBusinessTestHelper } from '@/utils/GoogleBusinessTestHelper';
 import { AffiliateLocationService } from '@/services/AffiliateLocationService';
 import LocationSelectionModal from './LocationSelectionModal';
 import AffiliateLocationModal from './AffiliateLocationModal';
@@ -33,7 +30,6 @@ import {
   Package,
   CreditCard,
   Repeat,
-  CheckSquare,
   HelpCircle,
   Link as LinkIcon,
   Check,
@@ -577,8 +573,8 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
   const [selectedAppSubtype, setSelectedAppSubtype] = useState<string>('');
   const [selectedVideoSubtype, setSelectedVideoSubtype] = useState<string>('drive_conversions');
   const [selectedAppPlatform, setSelectedAppPlatform] = useState<string>('');
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [_selectedPlatform, setSelectedPlatform] = useState<string>('');
+  const [_searchQuery, setSearchQuery] = useState<string>('');
   const [selectedAwarenessSubtype, setSelectedAwarenessSubtype] = useState<string>('');
   const [selectedLocalGoal, setSelectedLocalGoal] = useState<string>('');
   const [selectedLocalBusinessType, setSelectedLocalBusinessType] =
@@ -590,13 +586,13 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [showAffiliateModal, setShowAffiliateModal] = useState<boolean>(false);
   const [showMerchantCenterModal, setShowMerchantCenterModal] = useState<boolean>(false);
-  const [selectedAffiliateChains, setSelectedAffiliateChains] = useState<any[]>([]);
+  const [selectedAffiliateChains, _setSelectedAffiliateChains] = useState<any[]>([]);
   const [enhancedConversionsEnabled, setEnhancedConversionsEnabled] = useState<boolean>(true);
   const [showMoreConversionGoals, setShowMoreConversionGoals] = useState<boolean>(false);
   const [showConversionSetupModal, setShowConversionSetupModal] = useState<boolean>(false);
   const [selectedGoalForSetup, setSelectedGoalForSetup] = useState<string>('');
-  const [conversionSetupMethod, setConversionSetupMethod] = useState<string>('ga4');
-  const [campaignName, setCampaignName] = useState<string>('');
+  const [_conversionSetupMethod, _setConversionSetupMethod] = useState<string>('ga4');
+  const [_campaignName, setCampaignName] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [phoneCountry, setPhoneCountry] = useState<string>('Deutschland');
   const [businessData, setBusinessData] = useState({
@@ -863,7 +859,7 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
     }
   };
 
-  const handleDisconnectGoogleBusiness = async () => {
+  const _handleDisconnectGoogleBusiness = async () => {
     try {
       await GoogleBusinessProfileService.disconnect(companyId);
       setIsGoogleBusinessConnected(false);

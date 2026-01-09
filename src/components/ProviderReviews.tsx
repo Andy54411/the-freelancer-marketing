@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   collection,
   query,
-  where,
   getDocs,
   limit,
   orderBy,
@@ -202,7 +201,7 @@ export default function ProviderReviews({
       const response = await fetch('/api/get-ip');
       const data = await response.json();
       setUserIP(data.ip || 'unknown');
-    } catch (error) {
+    } catch {
       setUserIP('unknown');
     }
   }, []);

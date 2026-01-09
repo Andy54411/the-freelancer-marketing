@@ -16,9 +16,6 @@ import {
   Play,
   Pause,
   Edit,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 

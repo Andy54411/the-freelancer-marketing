@@ -25,7 +25,7 @@ import {
   PartyPopper,
   ArrowRight
 } from 'lucide-react';
-import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
+import { RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 // Step6Data Interface
 interface Step6Data {
@@ -62,7 +62,6 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
   const { 
     stepData, 
     updateStepData, 
-    goToNextStep, 
     goToPreviousStep,
     saveCurrentStep,
     submitOnboarding 
@@ -114,7 +113,7 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
             companyRegister: data.companyRegister || data.step1?.companyRegister,
           });
         }
-      } catch (error) {
+      } catch {
         // Fehler beim Laden - ignorieren
       }
     };

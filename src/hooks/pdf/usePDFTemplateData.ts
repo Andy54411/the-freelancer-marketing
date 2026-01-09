@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceData, TaxRuleType } from '@/types/invoiceTypes';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
 import { replacePlaceholders, type PlaceholderData } from '@/utils/placeholderSystem';
 import { translateStandardFooterText } from '@/hooks/pdf/useDocumentTranslation';
@@ -69,7 +69,7 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
         }
 
         setCustomerNumber(fallbackNumber);
-      } catch (error) {
+      } catch {
         // Stiller Fallback bei Fehlern - keine Console-Error-Ausgabe
         const nameWords = customerName.split(' ').filter((word) => word.length > 0);
         const initials = nameWords
@@ -259,7 +259,7 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
   return useMemo(() => {
     // Dokumenttyp erkennen - props.documentType hat Vorrang
     const detectedType = props.documentType || detectDocumentType(documentData);
-    const documentTypeConfig = getDocumentTypeConfig(detectedType);
+    const _documentTypeConfig = getDocumentTypeConfig(detectedType);
 
     // Steuerregel aus Dokument extrahieren
     const taxRule = (documentData as any).taxRule || (documentData as any).taxRuleType;
@@ -377,7 +377,7 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
     const companyWebsite = documentData.companyWebsite || '';
     const companyVatId = documentData.companyVatId || '';
     const companyTaxNumber = documentData.companyTaxNumber || '';
-    const companyRegister = (documentData as any).companyRegister || '';
+    const _companyRegister = (documentData as any).companyRegister || '';
 
     // Textinhalte
     const headTextHtml = (documentData as any).headTextHtml;

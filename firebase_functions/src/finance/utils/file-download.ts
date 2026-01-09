@@ -1,23 +1,16 @@
 // @ts-ignore - Storage types are available at runtime in Firebase environment
 import { Storage } from '@google-cloud/storage';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+// AWS S3 wurde entfernt (Januar 2026) - NUR Google Cloud Storage
 import axios from 'axios';
 import { logger } from 'firebase-functions/v2';
-import { Readable } from 'stream';
 
 // Initialize Google Cloud Storage client
 const storage = new Storage();
 
-// Initialize AWS S3 Client for Lambda environment
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'eu-central-1',
-    // AWS SDK automatisch lädt Credentials aus Lambda-Umgebung (IAM Role)
-    // Alternativ können explizite Credentials gesetzt werden:
-    // credentials: {
-    //     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    //     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
-    // }
-});
+// ============================================================================
+// AWS S3 CLIENT WURDE ENTFERNT (Januar 2026)
+// ============================================================================
+// Wir nutzen nur noch Google Cloud Storage für Datei-Downloads
 
 /**
  * Download file from GCS path or HTTP(S) URL and return as Buffer
@@ -30,14 +23,15 @@ export interface FileDownloadResult {
     metadata?: {
         size: number;
         contentType?: string;
-        source: 'gcs' | 'url' | 's3';
+        source: 'gcs' | 'url';
     };
 }
 
 /**
- * Download file from multiple cloud storage sources
+ * Download file from multiple cloud storage sources (nur GCS und URLs)
+ * AWS S3 Support wurde entfernt (Januar 2026)
  * @param fileUrl - HTTP(S) URL to download file from (includes GCS signed URLs)
- * @param s3Path - AWS S3 path (s3://bucket/key)
+ * @param s3Path - DEPRECATED: AWS S3 path (ignoriert, nur für Kompatibilität)
  * @param gcsPath - Google Cloud Storage path (gs://bucket/path)
  * @returns FileDownloadResult with buffer and metadata
  */
@@ -47,41 +41,34 @@ export async function getFileBufferFromPath(
     gcsPath?: string
 ): Promise<FileDownloadResult> {
     try {
-        logger.info('[FILE DOWNLOAD] Starting multi-cloud file download process', {
+        logger.info('[FILE DOWNLOAD] Starting file download process (AWS S3 removed)', {
             hasFileUrl: !!fileUrl,
             hasS3Path: !!s3Path,
             hasGcsPath: !!gcsPath,
             fileUrl: fileUrl ? `${fileUrl.substring(0, 50)}...` : undefined,
-            s3Path,
             gcsPath
         });
 
         // Validate input parameters
-        if (!fileUrl && !s3Path && !gcsPath) {
+        if (!fileUrl && !gcsPath) {
             return {
                 buffer: null,
                 type: 'unknown',
-                error: 'Either fileUrl, s3Path, or gcsPath must be provided'
+                error: 'Either fileUrl or gcsPath must be provided (S3 support removed)'
             };
         }
 
-        // Priority 1: AWS S3 path (s3://) - Native Lambda environment
+        // S3 Path wird ignoriert - nur Warnung ausgeben
         if (s3Path) {
-            // Check if this is a simulated S3 path (development environment)
-            if (s3Path.includes('taskilo-file-storage') && !process.env.AWS_ACCESS_KEY_ID) {
-                logger.warn('[FILE DOWNLOAD] Detected simulated S3 path in development mode, skipping S3 download');
-                // Continue to other methods instead of failing
-            } else {
-                return await downloadFromS3(s3Path);
-            }
+            logger.warn('[FILE DOWNLOAD] S3 path ignored - AWS S3 support was removed (Januar 2026)', { s3Path });
         }
 
-        // Priority 2: Google Cloud Storage path (gs://)
+        // Priority 1: Google Cloud Storage path (gs://)
         if (gcsPath) {
             return await downloadFromGCS(gcsPath);
         }
 
-        // Priority 3: HTTP(S) URL (includes GCS signed URLs and Base64 data URLs)
+        // Priority 2: HTTP(S) URL (includes GCS signed URLs and Base64 data URLs)
         if (fileUrl) {
             // Check if it's a Base64 data URL (fallback from storage upload)
             if (fileUrl.startsWith('data:')) {
@@ -101,80 +88,15 @@ export async function getFileBufferFromPath(
         return {
             buffer: null,
             type: 'unknown',
-            error: `Multi-cloud file download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: `File download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
     }
 }
 
-/**
- * Download file from AWS S3 (native Lambda environment)
- */
-async function downloadFromS3(s3Path: string): Promise<FileDownloadResult> {
-    try {
-        logger.info('[FILE DOWNLOAD S3] Processing S3 path:', s3Path);
-
-        // Parse S3 path: s3://bucket-name/key/path/file.ext
-        const s3Details = extractS3Details(s3Path);
-        if (!s3Details.bucket || !s3Details.key) {
-            return {
-                buffer: null,
-                type: 'unknown',
-                error: 'Invalid S3 path format. Expected: s3://bucket-name/key/path/file.ext'
-            };
-        }
-
-        logger.info('[FILE DOWNLOAD S3] Parsed S3 path:', { 
-            bucket: s3Details.bucket, 
-            key: s3Details.key 
-        });
-
-        // Get object from S3
-        const getObjectCommand = new GetObjectCommand({
-            Bucket: s3Details.bucket,
-            Key: s3Details.key
-        });
-
-        const s3Response = await s3Client.send(getObjectCommand);
-
-        if (!s3Response.Body) {
-            return {
-                buffer: null,
-                type: 'unknown',
-                error: 'S3 object has no body content'
-            };
-        }
-
-        // Convert S3 Body stream to Buffer
-        const buffer = await streamToBuffer(s3Response.Body as Readable);
-
-        logger.info('[FILE DOWNLOAD S3] Successfully downloaded from S3:', {
-            bucket: s3Details.bucket,
-            key: s3Details.key,
-            bufferSize: buffer.length,
-            contentType: s3Response.ContentType,
-            contentLength: s3Response.ContentLength
-        });
-
-        return {
-            buffer,
-            type: s3Response.ContentType || 'application/octet-stream',
-            error: null,
-            metadata: {
-                size: buffer.length,
-                contentType: s3Response.ContentType || undefined,
-                source: 's3'
-            }
-        };
-
-    } catch (error) {
-        logger.error('[FILE DOWNLOAD S3] Error downloading from S3:', error);
-        return {
-            buffer: null,
-            type: 'unknown',
-            error: `S3 download failed: ${error instanceof Error ? error.message : 'Unknown S3 error'}`
-        };
-    }
-}
+// ============================================================================
+// AWS S3 DOWNLOAD FUNKTION ENTFERNT (Januar 2026)
+// ============================================================================
+// downloadFromS3() wurde entfernt - NUR Google Cloud Storage wird unterstützt
 
 /**
  * Download file from Google Cloud Storage
@@ -385,24 +307,10 @@ export function detectFileType(buffer: Buffer): string {
     return 'application/octet-stream';
 }
 
-/**
- * Extract bucket and key from S3 path
- */
-function extractS3Details(s3Path: string): { bucket: string | null; key: string | null } {
-    try {
-        // Parse s3://bucket-name/key/path/file.ext
-        const s3Match = s3Path.match(/^s3:\/\/([^\/]+)\/(.+)$/);
-        if (!s3Match) {
-            return { bucket: null, key: null };
-        }
-
-        const [, bucket, key] = s3Match;
-        return { bucket, key };
-    } catch (error) {
-        logger.error('[FILE DOWNLOAD S3] Error parsing S3 path:', error);
-        return { bucket: null, key: null };
-    }
-}
+// ============================================================================
+// AWS S3 HILFSFUNKTIONEN ENTFERNT (Januar 2026)
+// ============================================================================
+// extractS3Details() und streamToBuffer() wurden entfernt
 
 /**
  * Process Base64 Data URL (fallback when cloud storage is not available)
@@ -452,27 +360,4 @@ async function processBase64DataUrl(dataUrl: string): Promise<FileDownloadResult
             error: `Base64 processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
     }
-}
-
-/**
- * Convert AWS S3 Body stream to Buffer
- * S3 GetObjectCommand returns a Readable stream that needs to be converted to Buffer
- */
-async function streamToBuffer(stream: Readable): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        
-        stream.on('data', (chunk: Buffer) => {
-            chunks.push(chunk);
-        });
-        
-        stream.on('error', (error: Error) => {
-            reject(error);
-        });
-        
-        stream.on('end', () => {
-            const buffer = Buffer.concat(chunks);
-            resolve(buffer);
-        });
-    });
 }

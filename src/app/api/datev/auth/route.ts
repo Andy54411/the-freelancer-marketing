@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate a unique client ID for sandbox (e.g., "455148-2")
-    const clientId = generateSandboxClientId(sandboxClient);
+    const _clientId = generateSandboxClientId(sandboxClient);
 
     // Generate the full OAuth URL
     const { authUrl } = generateDatevAuthUrl(companyId);
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         const token = authHeader.substring(7);
         const decodedToken = await getAuth().verifyIdToken(token);
         firebaseUserId = decodedToken.uid;
-      } catch (authError) {
+      } catch {
         return NextResponse.json({ error: 'Invalid Firebase token' }, { status: 401 });
       }
 

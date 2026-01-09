@@ -69,7 +69,7 @@ export function InlinePreview({
             const { collection, getDocs, query, limit } = await import('firebase/firestore');
             const companiesSnapshot = await getDocs(query(collection(db, 'companies'), limit(5)));
 
-            companiesSnapshot.forEach((doc) => {
+            companiesSnapshot.forEach((_doc) => {
 
             });
           } catch (listError) {

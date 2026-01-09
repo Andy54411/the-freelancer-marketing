@@ -1,14 +1,11 @@
 import { db } from '@/firebase/server';
 import { JobPosting } from '@/types/career';
 import { notFound } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   MapPin,
-  Briefcase,
   Clock,
-  Building,
   ArrowLeft,
   CheckCircle,
   Printer,
@@ -17,8 +14,6 @@ import {
   Building2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { JobApplicationDialog } from '@/components/career/JobApplicationDialog';
-import { JobActions } from './JobActions';
 
 const jobTypeTranslations: Record<string, string> = {
   'full-time': 'Vollzeit',
@@ -71,7 +66,7 @@ export default async function JobDetailsPage({
     .collection('candidate_profile')
     .doc('main')
     .get();
-  const hasProfile = profileDoc.exists;
+  const _hasProfile = profileDoc.exists;
 
   // Check if already applied
   const applicationQuery = await db

@@ -8,12 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  TrendingUp, 
   Plus, 
-  Settings, 
-  ExternalLink,
-  CheckCircle,
-  XCircle,
   AlertTriangle,
   Play,
   Pause,
@@ -24,7 +19,7 @@ interface CampaignManagerProps {
   companyId: string;
 }
 
-export default function CampaignManager({ companyId }: CampaignManagerProps) {
+export default function CampaignManager({ companyId: _companyId }: CampaignManagerProps) {
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 

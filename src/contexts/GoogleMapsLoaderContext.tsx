@@ -48,7 +48,7 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
         setGoogle(loadedGoogle);
         setIsLoaded(true);
       })
-      .catch(e => {});
+      .catch(_e => {});
   }, []); // Der leere Array sorgt dafür, dass dies nur einmal ausgeführt wird
 
   const value = { isLoaded, google };

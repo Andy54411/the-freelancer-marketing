@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin, Clock, HelpCircle, Rocket, BookOpen, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, HelpCircle, BookOpen, CheckCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function ContactPage() {

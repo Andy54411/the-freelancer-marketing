@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UNKNOWN_USER_NAME } from '@/constants/strings';
 import { useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { useAuth, UserProfile } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { FiInbox, FiLoader, FiMessageSquare, FiUser, FiSlash } from 'react-icons/fi';
 import { db } from '@/firebase/clients';
 import {
@@ -48,7 +48,7 @@ export default function UserInboxPage() {
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [loadingChats, setLoadingChats] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
   const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
 
@@ -109,7 +109,7 @@ export default function UserInboxPage() {
         setChats(validChats);
         setLoadingChats(false);
       },
-      err => {
+      _err => {
         setError('Fehler beim Laden der Chats.');
         setLoadingChats(false);
       }
@@ -139,7 +139,7 @@ export default function UserInboxPage() {
           setSelectedOrderStatus(null);
           setError('Zugehöriger Auftrag für diesen Chat nicht gefunden.');
         }
-      } catch (err) {
+      } catch {
         setError('Fehler beim Laden des Auftragsstatus.');
       } finally {
         setLoadingOrderStatus(false);
@@ -176,7 +176,7 @@ export default function UserInboxPage() {
               <FiInbox className="mr-3" /> Posteingang
             </h1>
           </div>
-          <div className="overflow-y-auto flex-grow">
+          <div className="overflow-y-auto grow">
             {chats.length > 0 ? (
               <ul>
                 {chats.map(chat => (

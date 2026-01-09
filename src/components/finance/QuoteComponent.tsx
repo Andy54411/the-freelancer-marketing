@@ -5,39 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 // Tabs entfernt: Übersicht-Tab wird nicht mehr benötigt
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   FileText,
-  Download,
   Plus,
   Eye,
   Edit,
   Trash2,
-  Calendar,
-  Euro,
   Loader2,
   Search,
   Send,
   Check,
   X,
-  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
@@ -49,7 +28,7 @@ interface QuoteComponentProps {
 export function QuoteComponent({ companyId }: QuoteComponentProps) {
   const [quotes, setQuotes] = useState<QuoteType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuote, setSelectedQuote] = useState<QuoteType | null>(null);
+  const [_selectedQuote, _setSelectedQuote] = useState<QuoteType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({
     total: 0,
@@ -72,7 +51,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
 
         setQuotes(quotesData);
         setStats(statsData);
-      } catch (error) {
+      } catch {
         toast.error('Angebote konnten nicht geladen werden');
       } finally {
         setLoading(false);
@@ -124,7 +103,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     try {
       await QuoteService.convertToInvoice(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wird in Rechnung umgewandelt`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Umwandeln in Rechnung');
     }
   };
@@ -133,7 +112,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     try {
       await QuoteService.sendQuote(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wurde versendet`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Versenden des Angebots');
     }
   };
@@ -142,7 +121,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     try {
       await QuoteService.deleteQuote(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wurde gelöscht`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Angebots');
     }
   };

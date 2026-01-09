@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, User } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -105,7 +105,7 @@ export function WorkspaceCalendar({
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: (Date | null)[] = [];
 
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
@@ -126,7 +126,7 @@ export function WorkspaceCalendar({
     const diff = startOfWeek.getDate() - day;
     startOfWeek.setDate(diff);
 
-    const days = [];
+    const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const weekDay = new Date(startOfWeek);
       weekDay.setDate(startOfWeek.getDate() + i);

@@ -145,12 +145,12 @@ async function refreshDatevToken(refreshToken: string, userId: string): Promise<
 }
 
 // Helper functions (to be implemented based on storage strategy)
-function getStoredDatevToken(userId: string): any {
+function getStoredDatevToken(_userId: string): any {
   // Implementation depends on whether this is client-side (localStorage) or server-side (Firestore)
   return null;
 }
 
-async function storeDatevToken(userId: string, tokenData: any): Promise<void> {
+async function storeDatevToken(_userId: string, _tokenData: any): Promise<void> {
   // Store token in appropriate storage (localStorage for client, Firestore for server)
 }
 
@@ -158,6 +158,6 @@ function generateSecureState(userId: string): string {
   return Buffer.from(`${userId}_${Date.now()}_${Math.random()}`).toString('base64');
 }
 
-function storeAuthState(state: string, userId: string): void {
+function storeAuthState(_state: string, _userId: string): void {
   // Store state for OAuth flow verification
 }

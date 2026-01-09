@@ -141,7 +141,7 @@ Analysiere diese Nachricht sorgfältig und bewerte sie nach den Plattform-Regeln
     let moderationResult;
     try {
       moderationResult = JSON.parse(text);
-    } catch (parseError) {
+    } catch {
       // Fallback bei Parse-Fehler
       moderationResult = {
         isViolation: false,
@@ -184,9 +184,7 @@ Analysiere diese Nachricht sorgfältig und bewerte sie nach den Plattform-Regeln
       success: true,
       ...moderationResult,
     });
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+  } catch {
 
     // Bei Fehlern: Erlauben, aber loggen
     return NextResponse.json({
@@ -212,5 +210,5 @@ async function logModerationEvent(event: {
       ...event,
       reviewed: false,
     });
-  } catch (error) {}
+  } catch {}
 }

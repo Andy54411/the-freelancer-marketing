@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Bot,
   Briefcase,
@@ -11,8 +10,6 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  Star,
-  Users,
   BarChart3,
   Lightbulb,
   ArrowRight,
@@ -27,10 +24,10 @@ import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CompanyAIAssistantPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  const [activeAssistant, setActiveAssistant] = useState<string | null>(null);
+  const [_activeAssistant, setActiveAssistant] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const companyAssistantFeatures = [
@@ -219,7 +216,7 @@ export default function CompanyAIAssistantPage() {
             });
 
             if (response.ok) {
-              const data = await response.json();
+              const _data = await response.json();
               // Zeige die generierte Beschreibung in einem Modal oder navigiere zum Profil
               toast.success('Profil-Beschreibung wurde optimiert! Navigiere zum Profil...');
               // Optional: Kurze Verzögerung und Navigation zum Profil
@@ -229,7 +226,7 @@ export default function CompanyAIAssistantPage() {
             } else {
               throw new Error('Fehler beim Generieren der Beschreibung');
             }
-          } catch (error) {
+          } catch {
             toast.error('Fehler beim Optimieren der Beschreibung');
           }
           break;
@@ -255,7 +252,7 @@ export default function CompanyAIAssistantPage() {
         default:
           toast.info('Feature wird entwickelt...');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler bei der Ausführung');
     } finally {
       setIsGenerating(false);

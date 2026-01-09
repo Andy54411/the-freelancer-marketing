@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRevolutPaymentService } from '@/services/payment';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const paymentService = getRevolutPaymentService();
   
   // Check if configured

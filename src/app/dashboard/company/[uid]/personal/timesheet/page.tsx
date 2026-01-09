@@ -320,8 +320,8 @@ export default function TimesheetPage({ params }: { params: Promise<{ uid: strin
     return `${hours}:${mins.toString().padStart(2, '0')}h`;
   };
 
-  const getWeekDays = (startDate: Date) => {
-    const days = [];
+  const getWeekDays = (startDate: Date): Date[] => {
+    const days: Date[] = [];
     const start = new Date(startDate);
     const day = start.getDay();
     const diff = start.getDate() - day + (day === 0 ? -6 : 1);

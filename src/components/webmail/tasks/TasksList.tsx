@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CheckCircle2, Circle, Star, MoreVertical, ChevronDown, ChevronRight, GripVertical, Calendar, Repeat, AlignLeft, X, Trash2, Check, CornerDownRight, ListPlus, Clock } from 'lucide-react';
+import { CheckCircle2, Circle, Star, MoreVertical, ChevronDown, ChevronRight, Calendar, Repeat, AlignLeft, X, Trash2, Check, CornerDownRight, ListPlus, Clock } from 'lucide-react';
 import { TaskDatePicker } from './TaskDatePicker';
 import { TaskRepeatPicker } from './TaskRepeatPicker';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
@@ -63,7 +63,7 @@ export function TasksList({
   onTaskDelete,
   showCompleted,
   onToggleShowCompleted,
-  currentListId,
+  currentListId: _currentListId,
 }: TasksListProps) {
   const { isDark } = useWebmailTheme();
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export function TasksList({
   const [showEditRepeatPicker, setShowEditRepeatPicker] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const listMenuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const _menuButtonRef = useRef<HTMLButtonElement>(null);
   const [newTaskForm, setNewTaskForm] = useState<NewTaskForm>({
     title: '',
     description: '',
@@ -94,7 +94,7 @@ export function TasksList({
     repeat: undefined,
     starred: false,
   });
-  const [showDescription, setShowDescription] = useState(false);
+  const [, setShowDescription] = useState(false);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const editTitleInputRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -259,7 +259,7 @@ export function TasksList({
     }
   };
 
-  const handleDeleteCurrentTask = () => {
+  const _handleDeleteCurrentTask = () => {
     if (!editingTaskId) return;
     onTaskDelete?.(editingTaskId);
     cancelEdit();
@@ -298,7 +298,7 @@ export function TasksList({
     return date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
-  const formatDueDate = (dateStr: string) => {
+  const _formatDueDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
     const tomorrow = new Date(today);
@@ -313,7 +313,7 @@ export function TasksList({
     return date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
   };
 
-  const isOverdue = (dateStr: string) => {
+  const _isOverdue = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

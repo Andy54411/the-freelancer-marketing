@@ -176,7 +176,8 @@ export default function SettingsPage() {
   }, [uid, user]);
 
   // Handle form changes
-  const handleChange = (path: string, value: string | number | boolean | null) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleChange = (path: string, value: string | number | boolean | null | any[]) => {
     if (!form) return;
 
     const pathArray = path.split('.');

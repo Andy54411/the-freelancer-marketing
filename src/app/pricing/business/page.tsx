@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Check, 
@@ -372,7 +373,15 @@ function ModuleCard({ module, isActive, isTrialing, onSubscribe, loading }: Modu
         )}
       </div>
 
-      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">{module.name}</h3>
+      {module.id === 'whatsapp' ? (
+        <Link href="/features/whatsapp" className="block group">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 group-hover:text-[#14ad9f] transition-colors">
+            {module.name}
+          </h3>
+        </Link>
+      ) : (
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">{module.name}</h3>
+      )}
       <p className="text-gray-600 text-sm mb-3 sm:mb-4 min-h-[40px] sm:min-h-[48px]">{module.description}</p>
 
       <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">

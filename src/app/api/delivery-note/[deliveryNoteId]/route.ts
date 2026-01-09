@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { deliveryNoteId: string } }
 ) {
   try {
@@ -47,9 +47,7 @@ export async function GET(
           }
         }
 
-        // Debug: Log welche profilePictureURL gefunden wurde
-        const profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
-      } catch (error) {}
+      } catch {}
     }
 
     return NextResponse.json({
@@ -57,7 +55,7 @@ export async function GET(
       companyData,
       success: true,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Laden des Lieferscheins' }, { status: 500 });
   }
 }

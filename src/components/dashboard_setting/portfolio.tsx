@@ -27,7 +27,7 @@ import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'react-hot-toast';
-import { categories as allCategories, getCategoryBySubcategory } from '@/data/categories';
+import { categories as allCategories } from '@/data/categories';
 import { getSkillsForSubcategory, getAllSkillsForCategory } from '@/data/skills';
 
 export interface PortfolioFormProps {
@@ -313,7 +313,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     });
   };
 
-  const handleMultipleImageUpload = (files: FileList | null) => {
+  const _handleMultipleImageUpload = (files: FileList | null) => {
     if (!files) return;
 
     const remainingSlots = 5 - portfolioItems.length;

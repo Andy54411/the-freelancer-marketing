@@ -3,7 +3,7 @@ import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { ProjectEmailNotificationService } from '@/lib/project-email-notifications';
 
-export async function POST(request: Request, companyId: string) {
+export async function POST(request: Request) {
   try {
     const { projectData, userId } = await request.json();
 
@@ -108,7 +108,7 @@ export async function POST(request: Request, companyId: string) {
         // Speichere Quest in der quotes Collection
         const questRef = await db!
           .collection('companies')
-          .doc(companyId)
+          .doc(userId)
           .collection('quotes')
           .add(questDoc);
 
@@ -125,7 +125,7 @@ export async function POST(request: Request, companyId: string) {
 
       // Sende E-Mail-Benachrichtigungen an die ausgewählten Provider
       try {
-      } catch (emailError) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,
@@ -243,7 +243,7 @@ export async function POST(request: Request, companyId: string) {
               read: false,
               priority: 'high',
             });
-          } catch (error) {}
+          } catch {}
         }
       }
 
@@ -262,7 +262,7 @@ export async function POST(request: Request, companyId: string) {
           // Für KI-Projekte: category ist eigentlich die subcategory
           // Wir verwenden eine leere category und lassen das E-Mail-System
           // die Hauptkategorie aus der subcategory ableiten
-          const emailResult = await emailService.notifyCompaniesAboutNewProject({
+          await emailService.notifyCompaniesAboutNewProject({
             projectId: projectRef.id,
             title: projectData.title,
             description: projectData.description,
@@ -280,7 +280,7 @@ export async function POST(request: Request, companyId: string) {
             urgency: projectData.priority || 'medium',
             createdAt: new Date(),
           });
-        } catch (emailError) {}
+        } catch {}
       }
 
       return NextResponse.json({
@@ -293,7 +293,7 @@ export async function POST(request: Request, companyId: string) {
         },
       });
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Erstellen des Projekts' }, { status: 500 });
   }
 }

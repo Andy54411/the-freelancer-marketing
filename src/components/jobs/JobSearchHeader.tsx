@@ -6,7 +6,6 @@ import { z } from 'zod';
 import {
   collection,
   query,
-  where,
   getDocs,
   limit,
   orderBy,

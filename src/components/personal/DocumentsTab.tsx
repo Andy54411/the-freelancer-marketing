@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, File, Eye, Trash2, Download } from 'lucide-react';
+import { File, Eye, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonalService, EmployeeDocument, Employee } from '@/services/personalService';
 import {
@@ -87,9 +86,11 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
 
   // Lade Dokumente aus dem Employee-Objekt (aus Recruiting übernommen)
   useEffect(() => {
-    if (employee?.documents?.length && !loading) {
+    // Employee kann documents aus Recruiting haben (nicht im Type definiert)
+    const employeeWithDocs = employee as (Employee & { documents?: Array<{ name: string; type: string; url: string; uploadedAt?: string }> }) | undefined;
+    if (employeeWithDocs?.documents?.length && !loading) {
       // Konvertiere die eingebetteten Dokumente in EmployeeDocument-Format
-      const embeddedDocs: EmployeeDocument[] = employee.documents.map((doc, idx) => ({
+      const embeddedDocs: EmployeeDocument[] = employeeWithDocs.documents.map((doc, idx) => ({
         id: `embedded-${idx}`,
         companyId,
         employeeId,
@@ -115,7 +116,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
         return [...prev, ...newDocs];
       });
     }
-  }, [employee?.documents, loading]);
+  }, [employee, loading]);
 
   // Hilfsfunktionen für Dokumenttyp-Mapping
   const mapDocTypeToCategory = (type: string): EmployeeDocument['category'] => {
@@ -160,7 +161,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
 
       const docs = await PersonalService.getEmployeeDocuments(companyId, employeeId);
       setDocuments(docs);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Dokumente');
     } finally {
       setLoading(false);
@@ -242,7 +243,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
       // 5. Reset form
       setSelectedCategory('');
       event.target.value = '';
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hochladen des Dokuments');
     } finally {
       setUploading(false);
@@ -262,7 +263,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
           const storage = getStorage(app);
           const fileRef = storageRef(storage, document.storagePath);
           await deleteObject(fileRef);
-        } catch (storageError) {
+        } catch {
           // Wir machen weiter, auch wenn Storage-Löschung fehlschlägt
         }
       }
@@ -270,7 +271,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, empl
       // Local state aktualisieren
       setDocuments(prev => prev.filter(doc => doc.id !== document.id));
       toast.success('Dokument erfolgreich gelöscht');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Dokuments');
     }
   };

@@ -12,8 +12,6 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
-  Timestamp,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Customer } from '@/components/finance/AddCustomerModal';
@@ -385,7 +383,7 @@ export class CustomerService {
         customer =>
           customer.email.toLowerCase() === email.toLowerCase() && customer.id !== excludeCustomerId
       );
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -431,7 +429,12 @@ export class CustomerService {
             customer.vatId || '',
             customer.totalInvoices.toString(),
             customer.totalAmount.toFixed(2),
-            new Date(customer.createdAt).toLocaleDateString('de-DE'),
+            (typeof customer.createdAt === 'string' 
+              ? new Date(customer.createdAt)
+              : customer.createdAt instanceof Date 
+                ? customer.createdAt 
+                : new Date((customer.createdAt as { seconds: number }).seconds * 1000)
+            ).toLocaleDateString('de-DE'),
           ].join(',')
         ),
       ];

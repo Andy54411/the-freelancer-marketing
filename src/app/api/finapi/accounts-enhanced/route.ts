@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
-    const credentialType = searchParams.get('credentialType') || 'sandbox';
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -142,7 +141,7 @@ export async function GET(request: NextRequest) {
             });
           }
         }
-      } catch (finapiError: any) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,
@@ -155,7 +154,7 @@ export async function GET(request: NextRequest) {
         lastSync: new Date().toISOString(),
         timestamp: new Date().toISOString(),
       });
-    } catch (finapiError: any) {
+    } catch {
       // Return empty instead of error to keep UI functional
       return NextResponse.json({
         success: true,

@@ -76,7 +76,7 @@ export class DatevApiClient {
           } else {
           }
         }
-      } catch (firestoreError) {}
+      } catch (_firestoreError) {}
     }
 
     return null;

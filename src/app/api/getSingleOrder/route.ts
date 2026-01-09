@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 

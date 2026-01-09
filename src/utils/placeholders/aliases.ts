@@ -1,5 +1,5 @@
 // Platzhalter-Aliase für Kompatibilität und Standardisierung
-import { PlaceholderRegistry, STANDARD_PLACEHOLDER_NAMES } from './types';
+import { PlaceholderRegistry } from './types';
 
 /**
  * Zentrale Definition von Aliasen für Platzhalter-Namen

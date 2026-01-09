@@ -15,7 +15,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Lock,
   AlertTriangle,
-  FileText,
   Download,
   Mail,
   Printer,

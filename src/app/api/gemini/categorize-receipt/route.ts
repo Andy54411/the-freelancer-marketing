@@ -151,7 +151,6 @@ Antworte nur mit dem JSON-Objekt, keine weiteren Texte.
     ];
 
     let lastError: Error | null = null;
-    const usedModel = '';
 
     for (const modelName of modelNames) {
       try {
@@ -269,7 +268,7 @@ Antworte nur mit dem JSON-Objekt, keine weiteren Texte.
         modelUsed: 'fallback',
         error: error instanceof Error ? error.message : 'Unbekannter Fehler',
       });
-    } catch (fallbackError) {
+    } catch {
       return NextResponse.json(
         {
           error: 'Kategorisierung fehlgeschlagen',

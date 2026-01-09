@@ -16,8 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, Plus, Trash2, Briefcase, Upload, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Pencil, Trash2, Briefcase, Upload, FileText } from 'lucide-react';
 import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';

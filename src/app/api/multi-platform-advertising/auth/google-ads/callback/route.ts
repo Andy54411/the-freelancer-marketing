@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Authentifiziere mit OAuth Token
-        const customer = client.Customer({
+        const _customer = client.Customer({
           customer_id: 'dummy', // Wird durch listAccessibleCustomers überschrieben
           refresh_token: tokens.refresh_token,
         });

@@ -53,7 +53,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
       const requests = await PersonalService.getAbsenceRequests(companyId);
       const employeeRequests = requests.filter(req => req.employeeId === employee.id);
       setVacationRequests(employeeRequests);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Urlaubsdaten');
 
       // Fallback zu Mock-Daten wenn Firebase fehlt
@@ -214,7 +214,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
       toast.success(
         approve ? 'Antrag genehmigt und im Dienstplan aktualisiert' : 'Antrag abgelehnt'
       );
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Verarbeiten des Antrags');
     }
   };
@@ -256,8 +256,8 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
           });
         }
       }
-    } catch (error) {
-      throw error;
+    } catch {
+      throw new Error('Fehler beim Synchronisieren mit dem Dienstplan');
     }
   };
 
@@ -448,7 +448,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
                               size="sm"
                               variant="outline"
                               className="text-green-600 hover:bg-green-50"
-                              onClick={() => handleApproveRequest(request.id, true)}
+                              onClick={() => handleApproveRequest(request.id ?? '', true)}
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -456,7 +456,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
                               size="sm"
                               variant="outline"
                               className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleApproveRequest(request.id, false)}
+                              onClick={() => handleApproveRequest(request.id ?? '', false)}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>

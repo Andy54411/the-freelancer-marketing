@@ -5,7 +5,6 @@ import {
   ValidationIssue,
   CompanyOCRSettings,
   SupplierPattern,
-  GermanyValidationRules,
 } from '@/types/ocr-enhanced';
 
 export class EnhancedOCRService {
@@ -139,7 +138,7 @@ export class EnhancedOCRService {
     settings: CompanyOCRSettings,
     existingData?: any
   ): Promise<GoBDReceiptData> {
-    const text = ocrText.toLowerCase();
+    const _text = ocrText.toLowerCase();
     const originalText = ocrText;
 
     // Nutze bereits extrahierte Basis-Daten falls vorhanden
@@ -427,7 +426,7 @@ export class EnhancedOCRService {
 
   private async validateGermanCompliance(
     data: GoBDReceiptData,
-    settings: CompanyOCRSettings
+    _settings: CompanyOCRSettings
   ): Promise<{
     isCompliant: boolean;
     issues: ValidationIssue[];
@@ -536,7 +535,7 @@ export class EnhancedOCRService {
               'Content-Type': 'application/json',
               'x-user-id': 'system',
               'x-company-id': 'system',
-              'x-ocr-provider': 'AWS_TEXTRACT',
+              'x-ocr-provider': 'GOOGLE_VISION', // AWS Textract entfernt (Januar 2026)
             },
             body: JSON.stringify(payload),
           }
@@ -716,7 +715,7 @@ export class EnhancedOCRService {
     };
   }
 
-  private extractRechnungsdetails(text: string, blocks: any[], settings: CompanyOCRSettings) {
+  private extractRechnungsdetails(_text: string, _blocks: any[], settings: CompanyOCRSettings) {
     return {
       rechnungsart: 'EINGANGSRECHNUNG' as const,
       zahlungsbedingungen: {
@@ -727,7 +726,7 @@ export class EnhancedOCRService {
     };
   }
 
-  private extractRechnungspositionen(text: string, blocks: any[]) {
+  private extractRechnungspositionen(_text: string, _blocks: any[]) {
     return []; // Positionsextraktion würde hier implementiert
   }
 
@@ -740,7 +739,7 @@ export class EnhancedOCRService {
     };
   }
 
-  private extractBankingData(text: string, blocks: any[]) {
+  private extractBankingData(_text: string, _blocks: any[]) {
     return undefined; // Banking-Extraktion würde hier implementiert
   }
 
@@ -803,7 +802,7 @@ export class EnhancedOCRService {
     return indicators.some(i => text.toLowerCase().includes(i));
   }
 
-  private async loadSupplierPatterns(companyId: string): Promise<SupplierPattern[]> {
+  private async loadSupplierPatterns(_companyId: string): Promise<SupplierPattern[]> {
     // Würde Firestore-Collection laden
     return [];
   }
@@ -845,13 +844,13 @@ export class EnhancedOCRService {
     return (maxLength - matrix[b.length][a.length]) / maxLength;
   }
 
-  private async updateSupplierStatistics(patternId: string, amount: number): Promise<void> {
+  private async updateSupplierStatistics(_patternId: string, _amount: number): Promise<void> {
     // Firestore-Update würde hier implementiert
   }
-  private async learnNewSupplier(data: GoBDReceiptData, companyId: string): Promise<void> {
+  private async learnNewSupplier(_data: GoBDReceiptData, _companyId: string): Promise<void> {
     // Neuen Lieferanten in Firestore speichern
   }
-  private async validateEUVATNumber(vatId: string): Promise<{ valid: boolean }> {
+  private async validateEUVATNumber(_vatId: string): Promise<{ valid: boolean }> {
     // EU VIES-Validierung würde hier implementiert
     return { valid: true };
   }
@@ -873,16 +872,16 @@ export class EnhancedOCRService {
     };
   }
 
-  private async suggestDATEVCategories(data: GoBDReceiptData, companyId: string): Promise<void> {
+  private async suggestDATEVCategories(_data: GoBDReceiptData, _companyId: string): Promise<void> {
     // DATEV-Kategorie-Vorschläge basierend auf Lieferant und Beschreibung
   }
-  private async suggestCostCenters(data: GoBDReceiptData, companyId: string): Promise<void> {
+  private async suggestCostCenters(_data: GoBDReceiptData, _companyId: string): Promise<void> {
     // Kostenstellen-Vorschläge basierend auf Kategorien
   }
-  private async checkForDuplicates(data: GoBDReceiptData, companyId: string): Promise<void> {
+  private async checkForDuplicates(_data: GoBDReceiptData, _companyId: string): Promise<void> {
     // Duplikats-Prüfung basierend auf Rechnungsnummer und Lieferant
   }
-  private extractAddress(lines: string[]): string {
+  private extractAddress(_lines: string[]): string {
     // Adress-Extraktion würde hier implementiert
     return '';
   }
@@ -895,37 +894,37 @@ export class EnhancedOCRService {
     return undefined;
   }
 
-  private extractCity(lines: string[]): string | undefined {
+  private extractCity(_lines: string[]): string | undefined {
     // Stadt-Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractCountry(lines: string[]): string | undefined {
+  private extractCountry(_lines: string[]): string | undefined {
     // Land-Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractRegistrationNumber(lines: string[]): string | undefined {
+  private extractRegistrationNumber(_lines: string[]): string | undefined {
     // HRB-Nummer Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractLegalForm(lines: string[]): string | undefined {
+  private extractLegalForm(_lines: string[]): string | undefined {
     // Rechtsform-Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractPhone(lines: string[]): string | undefined {
+  private extractPhone(_lines: string[]): string | undefined {
     // Telefonnummer-Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractEmail(lines: string[]): string | undefined {
+  private extractEmail(_lines: string[]): string | undefined {
     // E-Mail-Extraktion würde hier implementiert
     return undefined;
   }
 
-  private extractWebsite(lines: string[]): string | undefined {
+  private extractWebsite(_lines: string[]): string | undefined {
     // Website-Extraktion würde hier implementiert
     return undefined;
   }

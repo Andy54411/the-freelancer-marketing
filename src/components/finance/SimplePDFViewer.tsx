@@ -22,7 +22,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   pageMode = 'multi',
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
-  const { totalPages, contentHeight } = useSimplePagination(contentRef, a4Height);
+  const { totalPages, contentHeight: _contentHeight } = useSimplePagination(contentRef, a4Height);
   const [currentPage, setCurrentPage] = useState(1);
 
   const handlePageModeChange = (mode: 'single' | 'multi') => {

@@ -163,7 +163,7 @@ export class DeliveryNoteService {
         const result = await NumberSequenceService.getNextNumberForType(noteData.companyId || '', 'Lieferschein');
         sequentialNumber = result.number;
         deliveryNoteNumber = result.formattedNumber;
-      } catch (settingsError) {
+      } catch {
         // Fallback: Einfache Nummerierung ohne Settings
         const timestamp = Date.now();
         deliveryNoteNumber = `LS-${timestamp}`;
@@ -214,7 +214,7 @@ export class DeliveryNoteService {
         ...updates,
         updatedAt: new Date(),
       });
-    } catch (error) {
+    } catch {
       throw new Error('Lieferschein konnte nicht aktualisiert werden');
     }
   }
@@ -225,7 +225,7 @@ export class DeliveryNoteService {
   static async deleteDeliveryNote(id: string): Promise<void> {
     try {
       await deleteDoc(doc(db, this.COLLECTION, id));
-    } catch (error) {
+    } catch {
       throw new Error('Lieferschein konnte nicht gelöscht werden');
     }
   }
@@ -254,7 +254,7 @@ export class DeliveryNoteService {
           deliveredAt: doc.data().deliveredAt?.toDate(),
           invoicedAt: doc.data().invoicedAt?.toDate(),
         })) as DeliveryNote[];
-      } catch (indexError) {
+      } catch {
         // Fallback: Ohne orderBy
         const q = query(collection(db, this.COLLECTION), where('companyId', '==', companyId));
 
@@ -275,7 +275,7 @@ export class DeliveryNoteService {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       }
-    } catch (error) {
+    } catch {
       throw new Error('Lieferscheine konnten nicht geladen werden');
     }
   }
@@ -302,7 +302,7 @@ export class DeliveryNoteService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       throw new Error('Lieferschein konnte nicht geladen werden');
     }
   }
@@ -322,7 +322,7 @@ export class DeliveryNoteService {
       }
 
       await this.updateDeliveryNote(id, updates);
-    } catch (error) {
+    } catch {
       throw new Error('Status konnte nicht aktualisiert werden');
     }
   }
@@ -336,7 +336,7 @@ export class DeliveryNoteService {
         status: 'delivered',
         deliveredAt: new Date(),
       });
-    } catch (error) {
+    } catch {
       throw new Error('Status konnte nicht aktualisiert werden');
     }
   }
@@ -353,7 +353,7 @@ export class DeliveryNoteService {
 
       // Hier würde die Rechnung erstellt werden
       // Integration mit InvoiceService
-      const invoiceData = {
+      const _invoiceData = {
         companyId: deliveryNote.companyId,
         customerId: deliveryNote.customerId,
         customerName: deliveryNote.customerName,
@@ -382,7 +382,7 @@ export class DeliveryNoteService {
       });
 
       return invoiceId;
-    } catch (error) {
+    } catch {
       throw new Error('Rechnung konnte nicht erstellt werden');
     }
   }
@@ -411,7 +411,7 @@ export class DeliveryNoteService {
           stockReduced: true,
         })),
       });
-    } catch (error) {
+    } catch {
       throw new Error('Lagerbestand konnte nicht aktualisiert werden');
     }
   }
@@ -515,7 +515,7 @@ export class DeliveryNoteService {
           updatedAt: new Date(),
         });
       }
-    } catch (error) {
+    } catch {
       throw new Error('Einstellungen konnten nicht gespeichert werden');
     }
   }
@@ -538,7 +538,7 @@ export class DeliveryNoteService {
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as DeliveryNoteLayoutTemplate[];
-    } catch (error) {
+    } catch {
       throw new Error('Templates konnten nicht geladen werden');
     }
   }

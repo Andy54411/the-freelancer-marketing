@@ -14,12 +14,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Link as LinkIcon,
-  Palette,
   Type,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   ImageIcon,
   Upload,
   User,
@@ -27,7 +22,6 @@ import {
   Clock,
   GripVertical,
   Plus,
-  Move,
   Trash2,
   Table as TableIcon,
   CheckSquare,
@@ -36,8 +30,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,14 +114,14 @@ interface DraggableHeadingProps {
 const DraggableHeading: React.FC<DraggableHeadingProps> = ({ option, editor, onSelect }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId }, drop] = useDrop<{ option: HeadingOption }, void, { handlerId: string | symbol | null }>({
     accept: 'heading',
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
       };
     },
-    drop(item: { option: HeadingOption }) {
+    drop(item) {
       // Führe den Command des gedragten Elements aus
       item.option.command(editor);
       onSelect();
@@ -186,14 +178,14 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
   const ref = useRef<HTMLDivElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
 
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId }, drop] = useDrop<{ index: number; id: string }, void, { handlerId: string | symbol | null }>({
     accept: 'section',
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
       };
     },
-    hover(item: { index: number; id: string }, monitor) {
+    hover(item, monitor) {
       if (!ref.current) {
         return;
       }
@@ -242,7 +234,7 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
     },
   });
 
-  const [{ isDragging }, drag, preview] = useDrag({
+  const [{ isDragging }, drag, _preview] = useDrag({
     type: 'section',
     item: () => {
       return { id: section.id, index };
@@ -418,8 +410,8 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
 export function RichTextEditor({
   content,
   onChange,
-  placeholder = 'Beginne mit dem Schreiben...',
-  className = '',
+  placeholder: _placeholder = 'Beginne mit dem Schreiben...',
+  className: _className = '',
   coverImage,
   onCoverChange,
   title = '',
@@ -431,7 +423,7 @@ export function RichTextEditor({
   updatedAt,
 }: RichTextEditorProps) {
   const [mounted, setMounted] = useState(false);
-  const [showCoverUpload, setShowCoverUpload] = useState(false);
+  const [_showCoverUpload, _setShowCoverUpload] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [showHeadingDropZone, setShowHeadingDropZone] = useState(false);
   const headingDropZoneRef = useRef<HTMLDivElement>(null);
@@ -716,7 +708,7 @@ export function RichTextEditor({
             </div>
           ) : (
             <div
-              className="h-32 bg-linear-to-r from-[#14ad9f] to-[#129488] cursor-pointer flex items-center justify-center group hover:from-[#129488] hover:to-[#0f8a7e] transition-all"
+              className="h-32 bg-linear-to-r from-[#14ad9f] to-taskilo-hover cursor-pointer flex items-center justify-center group hover:from-taskilo-hover hover:to-[#0f8a7e] transition-all"
               onClick={() => coverInputRef.current?.click()}
             >
               <div className="text-center text-white">

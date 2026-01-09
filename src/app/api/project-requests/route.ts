@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
         });
 
         await Promise.allSettled(directNotificationPromises);
-      } catch (directNotificationError) {}
+      } catch {}
     }
 
     // 2. Standard E-Mail und Public Notifications (immer ausführen für öffentliche Subcategory)
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 
           const publicNotificationPromises = companiesQuery.docs.map(async companyDoc => {
             try {
-              const companyData = companyDoc.data();
+              const _companyData = companyDoc.data();
 
               // Skip falls dieses Unternehmen bereits eine direkte Notification erhalten hat
               if (selectedProviders.length > 0 && selectedProviders.includes(companyDoc.id)) {
@@ -221,11 +221,11 @@ export async function POST(request: NextRequest) {
           });
 
           const publicNotificationResults = await Promise.allSettled(publicNotificationPromises);
-          const successfulPublicNotifications = publicNotificationResults.filter(
+          const _successfulPublicNotifications = publicNotificationResults.filter(
             result => result.status === 'fulfilled' && result.value.success && !result.value.skipped
           ).length;
-        } catch (notificationError) {}
-      } catch (emailError) {
+        } catch {}
+      } catch {
         // Projekt wurde trotzdem erfolgreich erstellt, auch wenn E-Mails fehlschlagen
       }
     }
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
       id: docRef.id,
       message: 'Projektanfrage erfolgreich erstellt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Erstellen der Projektanfrage' },
       { status: 500 }
@@ -297,7 +297,7 @@ export async function GET(request: NextRequest) {
       projectRequests,
       total: snapshot.size,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Abrufen der Projektanfragen' }, { status: 500 });
   }
 }

@@ -51,8 +51,8 @@ export function SevDeskLockManager({ companyId, onLockComplete }: SevDeskLockMan
     }
 
     // Validierung: Wenn nur ein Datum gesetzt, nutze aktueller Monat als Fallback
-    const actualStartDate = startDate || format(new Date(), 'yyyy-MM-01');
-    const actualEndDate = endDate || format(new Date(), 'yyyy-MM-dd');
+    const _actualStartDate = startDate || format(new Date(), 'yyyy-MM-01');
+    const _actualEndDate = endDate || format(new Date(), 'yyyy-MM-dd');
 
     try {
       setIsLocking(true);

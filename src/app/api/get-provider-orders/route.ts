@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             orderData.timeTracking.timeEntries &&
             Array.isArray(orderData.timeTracking.timeEntries)
           ) {
-            orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
+            orderData.timeTracking.timeEntries.forEach((entry: any) => {
               if (
                 entry.billableAmount &&
                 typeof entry.billableAmount === 'number' &&
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
                   customerAvatarUrl = companyData?.logoUrl || companyData?.profilePictureURL;
                 }
               }
-            } catch (customerError) {}
+            } catch {}
           }
 
           return {
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         },
         { headers }
       );
-    } catch (firestoreError) {
+    } catch {
       // Fallback: Try Firebase Function (if billing gets activated)
 
       const functionUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/getProviderOrders?providerId=${providerId}`;

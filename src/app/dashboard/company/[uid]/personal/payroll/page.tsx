@@ -5,35 +5,24 @@ import { useParams } from 'next/navigation';
 import {
   FileText,
   Download,
-  Upload,
   Calendar,
   Clock,
-  DollarSign,
   Users,
-  CheckCircle,
-  AlertCircle,
   FileSpreadsheet,
-  Send,
-  Filter,
   Eye,
   Edit,
-  Trash2,
   ChevronLeft,
   ChevronRight,
-  Calculator,
   TrendingUp,
   Euro,
-  Briefcase,
   Moon,
   Sun,
-  Coffee,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -42,13 +31,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -62,8 +44,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'react-hot-toast';
 import { PersonalService, Employee, TimeEntry } from '@/services/personalService';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 
 // Zuschlagsarten
 interface Surcharge {
@@ -121,13 +101,13 @@ export default function PayrollPage() {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [_timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
 
   // Zuschlagseinstellungen
-  const [surcharges, setSurcharges] = useState<Surcharge[]>([
+  const [surcharges, _setSurcharges] = useState<Surcharge[]>([
     { id: '1', name: 'Nachtzuschlag', type: 'NIGHT', percentage: 25, startTime: '22:00', endTime: '06:00' },
     { id: '2', name: 'Sonntagszuschlag', type: 'SUNDAY', percentage: 50 },
     { id: '3', name: 'Feiertagszuschlag', type: 'HOLIDAY', percentage: 100 },
@@ -171,7 +151,7 @@ export default function PayrollPage() {
       const payroll = calculatePayrollData(activeEmployees, entries);
       setPayrollData(payroll);
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);
@@ -188,7 +168,7 @@ export default function PayrollPage() {
       let overtimeHours = 0;
       let nightHours = 0;
       let sundayHours = 0;
-      let holidayHours = 0;
+      const holidayHours = 0;
 
       empEntries.forEach(entry => {
         const duration = (entry.duration || 0) / 60; // In Stunden
@@ -318,7 +298,7 @@ export default function PayrollPage() {
       toast.success('DATEV-Export erfolgreich erstellt');
       setShowExportModal(false);
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Export');
     } finally {
       setExporting(false);
@@ -366,7 +346,7 @@ export default function PayrollPage() {
       toast.success('Export erfolgreich erstellt');
       setShowExportModal(false);
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Export');
     } finally {
       setExporting(false);

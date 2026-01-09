@@ -4,32 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
   FileText,
-  Download,
   Upload,
-  Calendar,
   Clock,
   AlertCircle,
   CheckCircle,
   XCircle,
   RefreshCw,
-  Filter,
   Search,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  FileCheck,
   Send,
   Eye,
-  History,
-  Building,
   Shield,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -58,7 +47,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'react-hot-toast';
 import { PersonalService, Employee } from '@/services/personalService';
-import { collection, getDocs, doc, addDoc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 // eAU Status
@@ -103,7 +92,7 @@ export default function EauPage() {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [eauRecords, setEauRecords] = useState<EauRecord[]>([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, _setSelectedYear] = useState(new Date().getFullYear());
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -159,7 +148,7 @@ export default function EauPage() {
 
       setEauRecords(recordsWithEmployees);
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);
@@ -236,7 +225,7 @@ export default function EauPage() {
 
       toast.success('eAU-Abruf gestartet');
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Abruf');
     } finally {
       setRequesting(false);
@@ -257,7 +246,7 @@ export default function EauPage() {
       toast.success('Erneuter Abruf gestartet');
       loadData();
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim erneuten Abruf');
     }
   };
@@ -280,7 +269,7 @@ export default function EauPage() {
       setShowUploadModal(false);
       loadData();
 
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hochladen');
     }
   };

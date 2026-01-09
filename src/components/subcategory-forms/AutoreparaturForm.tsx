@@ -5,8 +5,6 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
-  FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';
 
@@ -60,84 +58,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
     { value: 'hybrid', label: 'Hybrid' },
     { value: 'elektro', label: 'Elektro' },
     { value: 'andere', label: 'Andere' },
-  ];
-
-  const problemAreaOptions = [
-    { value: 'motor', label: 'Motor' },
-    { value: 'getriebe', label: 'Getriebe' },
-    { value: 'bremsen', label: 'Bremsen' },
-    { value: 'reifen', label: 'Reifen' },
-    { value: 'lenkung', label: 'Lenkung' },
-    { value: 'fahrwerk', label: 'Fahrwerk' },
-    { value: 'auspuff', label: 'Auspuff' },
-    { value: 'elektronik', label: 'Elektronik' },
-    { value: 'licht', label: 'Licht' },
-    { value: 'klimaanlage', label: 'Klimaanlage' },
-    { value: 'heizung', label: 'Heizung' },
-    { value: 'batterie', label: 'Batterie' },
-    { value: 'karosserie', label: 'Karosserie' },
-    { value: 'lack', label: 'Lack' },
-    { value: 'scheiben', label: 'Scheiben' },
-    { value: 'innenraum', label: 'Innenraum' },
-    { value: 'türen', label: 'Türen' },
-    { value: 'schlösser', label: 'Schlösser' },
-    { value: 'andere', label: 'Andere' },
-  ];
-  const warrantyOptions = [
-    { value: 'ja', label: 'Ja, Garantie erwünscht' },
-    { value: 'nein', label: 'Nein, keine Garantie' },
-    { value: 'herstellergarantie', label: 'Herstellergarantie' },
-    { value: 'werkstattgarantie', label: 'Werkstattgarantie' },
-  ];
-
-  const serviceLocationOptions = [
-    { value: 'werkstatt', label: 'In der Werkstatt' },
-    { value: 'vor_ort', label: 'Vor Ort beim Kunden' },
-    { value: 'abholung', label: 'Abholung und Rückbringung' },
-    { value: 'andere', label: 'Andere' },
-  ];
-
-  const paymentMethodOptions = [
-    { value: 'rechnung', label: 'Rechnung' },
-    { value: 'bar', label: 'Bar' },
-    { value: 'karte', label: 'Karte' },
-    { value: 'überweisung', label: 'Überweisung' },
-    { value: 'versicherung', label: 'Versicherung' },
-    { value: 'andere', label: 'Andere' },
-  ];
-
-  const additionalServicesOptions = [
-    { value: 'kostenvoranschlag', label: 'Kostenvoranschlag' },
-    { value: 'diagnose', label: 'Diagnose' },
-    { value: 'ersatzfahrzeug', label: 'Ersatzfahrzeug' },
-    { value: 'abholung', label: 'Abholung' },
-    { value: 'rückbringung', label: 'Rückbringung' },
-    { value: 'terminvereinbarung', label: 'Terminvereinbarung' },
-    { value: 'notdienst', label: 'Notdienst' },
-    { value: 'wochenend_service', label: 'Wochenend-Service' },
-    { value: 'express_service', label: 'Express-Service' },
-    { value: 'originalteile', label: 'Originalteile' },
-    { value: 'ersatzteile', label: 'Ersatzteile' },
-    { value: 'gebrauchtteile', label: 'Gebrauchtteile' },
-    { value: 'teilegutachten', label: 'Teilegutachten' },
-    { value: 'unfallgutachten', label: 'Unfallgutachten' },
-    { value: 'wertgutachten', label: 'Wertgutachten' },
-    { value: 'hauptuntersuchung', label: 'Hauptuntersuchung' },
-    { value: 'abgasuntersuchung', label: 'Abgasuntersuchung' },
-    { value: 'ölentsorgung', label: 'Ölentsorgung' },
-    { value: 'batterieentsorgung', label: 'Batterieentsorgung' },
-    { value: 'reifenentsorgung', label: 'Reifenentsorgung' },
-    { value: 'fahrzeugaufbereitung', label: 'Fahrzeugaufbereitung' },
-    { value: 'innenreinigung', label: 'Innenreinigung' },
-    { value: 'außenreinigung', label: 'Außenreinigung' },
-    { value: 'motorwäsche', label: 'Motorwäsche' },
-    { value: 'unterbodenschutz', label: 'Unterbodenschutz' },
-    { value: 'rostschutz', label: 'Rostschutz' },
-    { value: 'lackschutz', label: 'Lackschutz' },
-    { value: 'polsterreinigung', label: 'Polsterreinigung' },
-    { value: 'lederreinigung', label: 'Lederreinigung' },
-    { value: 'geruchsbeseitigung', label: 'Geruchsbeseitigung' },
-    { value: 'ozonbehandlung', label: 'Ozonbehandlung' },
   ];
 
   const handleInputChange = (field: keyof AutoreparaturData, value: any) => {

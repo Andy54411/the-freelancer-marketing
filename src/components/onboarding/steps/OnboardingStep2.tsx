@@ -5,7 +5,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Calculator, Percent, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calculator, Percent, CreditCard, AlertCircle } from 'lucide-react';
 import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 interface OnboardingStep2Props {
@@ -20,8 +20,8 @@ interface Step2Data {
   taxRate: string;
 }
 
-const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
-  const { updateStepData, stepData, goToPreviousStep, goToNextStep, saveCurrentStep } =
+const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid: _companyUid }) => {
+  const { updateStepData, goToPreviousStep, goToNextStep, saveCurrentStep } =
     useOnboarding();
   const { user } = useAuth();
 
@@ -52,7 +52,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             taxRate: existingStep2.taxRate || '19',
           });
         }
-      } catch (error) {
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -80,8 +80,6 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
     return missing;
   };
-
-  const isFormValid = validateForm().length === 0;
 
   // Validierungsstatus prüfen
   const isValidForNext = () => {
@@ -120,7 +118,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
       // 3. Zum nächsten Step - skipValidation=true weil wir bereits validiert haben
       goToNextStep(true);
-    } catch (error) {
+    } catch {
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSaving(false);

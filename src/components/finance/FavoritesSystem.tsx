@@ -69,7 +69,7 @@ const FavoriteToggle = ({
 const FavoritesSection = ({ 
   favorites,
   onSelect,
-  currentCompanyId 
+  currentCompanyId: _currentCompanyId 
 }: {
   favorites: Array<{code: string, name: string, category: string, usageCount?: number}>;
   onSelect: (account: any) => void;

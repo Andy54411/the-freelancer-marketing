@@ -72,7 +72,7 @@ export async function POST(request: NextRequest, companyId: string) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';
       }
-    } catch (error) {}
+    } catch {}
 
     // Bell-Notifications senden
     try {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest, companyId: string) {
           description: projectData.description,
         }
       );
-    } catch (notificationError) {
+    } catch {
       // Notifications-Fehler sollten die Quote-Erstellung nicht blockieren
     }
 

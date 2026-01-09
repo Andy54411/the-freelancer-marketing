@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Debug-Logging für Hydration
-const themeContextLog = (step: string, data?: Record<string, unknown>) => {
+const themeContextLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }

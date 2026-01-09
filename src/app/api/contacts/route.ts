@@ -119,7 +119,7 @@ export async function GET(request: Request) {
 // POST /api/contacts - Add new contact (for future expansion)
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const _body = await request.json();
 
     // For now, return method not allowed as contacts are statically defined
     return NextResponse.json(
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/contacts/[id] - Update contact (for future expansion)
-export async function PUT(request: Request) {
+export async function PUT(_request: Request) {
   return NextResponse.json(
     {
       success: false,
@@ -160,7 +160,7 @@ export async function PUT(request: Request) {
 }
 
 // DELETE /api/contacts/[id] - Delete contact (for future expansion)
-export async function DELETE(request: Request) {
+export async function DELETE(_request: Request) {
   return NextResponse.json(
     {
       success: false,

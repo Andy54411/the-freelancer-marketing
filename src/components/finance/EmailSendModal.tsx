@@ -1,54 +1,79 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { 
   X, 
   Send, 
   FileText, 
-  Plus, 
   Loader2, 
   AlertTriangle, 
   Mail, 
   User, 
   MessageSquare,
   Paperclip,
-  Eye,
-  ChevronDown,
   Upload,
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { InvoiceData } from '@/types/invoiceTypes';
 import { GoBDService } from '@/services/gobdService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoBDActionWarning } from '@/components/finance/gobd';
+import { WhatsAppNotificationService } from '@/services/whatsapp-notifications.service';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 interface EmailRecipient {
   email: string;
   name?: string;
 }
 
+/**
+ * Flexibler Dokument-Typ für alle unterstützten Dokumentarten
+ */
+interface DocumentData {
+  id: string;
+  invoiceNumber?: string;
+  number?: string;
+  documentNumber?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  companyName?: string;
+  total?: number;
+  dueDate?: string;
+  gobdStatus?: {
+    isLocked?: boolean;
+    auditTrail?: unknown[];
+  };
+  items?: { id: string; description: string; quantity: number; unitPrice: number; total: number }[];
+  customer?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: {
+      street?: string;
+      zipCode?: string;
+      city?: string;
+      country?: string;
+    };
+    taxNumber?: string;
+    vatId?: string;
+  };
+}
+
 interface EmailSendModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: InvoiceData | any;
+  document: DocumentData;
   documentType:
     | 'invoice'
     | 'quote'
@@ -62,9 +87,9 @@ interface EmailSendModalProps {
   companyId: string;
   selectedTemplate: string; // Template from SendDocumentModal
   pageMode?: 'single' | 'multi'; // ✅ Page mode for PDF generation
-  getRenderedHtml: () => Promise<string | null>; // ✅ Get rendered HTML from SendDocumentModal
-  isTemplateReady: boolean; // ✅ Check if template is rendered and ready
-  onSend?: (emailData: EmailSendData) => Promise<void>;
+  getRenderedHtml: () => Promise<string | null>; // Get rendered HTML from SendDocumentModal
+  isTemplateReady: boolean; // Check if template is rendered and ready
+  _onSend?: (emailData: EmailSendData) => Promise<void>;
   companyData?: {
     name: string;
     email: string;
@@ -108,7 +133,7 @@ export function EmailSendModal({
   pageMode = 'single',
   getRenderedHtml,
   isTemplateReady,
-  onSend,
+  _onSend,
   companyData,
   defaultRecipients = [],
   enableGoBDLocking = true,
@@ -246,7 +271,8 @@ export function EmailSendModal({
       // Reset initialization tracking when modal closes
       initializedRef.current = null;
     }
-  }, [isOpen, document?.id, documentType, companyData?.name, companyData?.signature, defaultRecipients]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, document?.id, documentType, companyData?.name, companyData?.signature, defaultRecipients, documentLabels]);
 
   // Email validation
   const isValidEmail = (email: string) => {
@@ -484,6 +510,47 @@ export function EmailSendModal({
     }
   };
 
+  /**
+   * Lädt die Handynummer des Kunden aus Firestore
+   * Falls customerPhone nicht in der Rechnung vorhanden ist
+   */
+  const loadCustomerPhone = async (): Promise<string | null> => {
+    // 1. Prüfe ob Phone bereits in Rechnung vorhanden
+    const existingPhone = document?.customerPhone || document?.customer?.phone;
+    if (existingPhone) {
+      return existingPhone;
+    }
+
+    // 2. Suche Kunde in Firestore anhand von E-Mail oder Name
+    try {
+      const customersRef = collection(db, 'companies', companyId, 'customers');
+      
+      // Zuerst nach E-Mail suchen (eindeutiger)
+      if (document?.customerEmail) {
+        const emailQuery = query(customersRef, where('email', '==', document.customerEmail));
+        const emailSnap = await getDocs(emailQuery);
+        if (!emailSnap.empty) {
+          const customerData = emailSnap.docs[0].data();
+          return customerData.phone || null;
+        }
+      }
+
+      // Falls nicht gefunden, nach Name suchen
+      if (document?.customerName) {
+        const nameQuery = query(customersRef, where('name', '==', document.customerName));
+        const nameSnap = await getDocs(nameQuery);
+        if (!nameSnap.empty) {
+          const customerData = nameSnap.docs[0].data();
+          return customerData.phone || null;
+        }
+      }
+    } catch {
+      // Fehler beim Laden - nicht kritisch
+    }
+
+    return null;
+  };
+
   // Handle send with GoBD confirmation
   const handleSend = async () => {
     if (recipients.length === 0) {
@@ -588,10 +655,73 @@ export function EmailSendModal({
             if (lockSuccess) {
               onDocumentLocked?.(document.id);
             }
-          } catch (error) {
-            console.error('GoBD auto-lock failed:', error);
+          } catch {
             // Nicht kritisch - E-Mail wurde bereits versendet
             toast.warning('E-Mail versendet, aber automatische Festschreibung fehlgeschlagen');
+          }
+        }
+
+        // WhatsApp-Benachrichtigung senden (nur für Rechnungen)
+        if (documentType === 'invoice') {
+          try {
+            const customerPhone = await loadCustomerPhone();
+            
+            if (customerPhone) {
+              // Kunden-ID ermitteln (falls vorhanden)
+              let customerId = '';
+              if (document?.customerEmail) {
+                const customersRef = collection(db, 'companies', companyId, 'customers');
+                const emailQuery = query(customersRef, where('email', '==', document.customerEmail));
+                const emailSnap = await getDocs(emailQuery);
+                if (!emailSnap.empty) {
+                  customerId = emailSnap.docs[0].id;
+                }
+              }
+
+              await WhatsAppNotificationService.notifyInvoiceSent(
+                companyId,
+                companyData?.name || document?.companyName || 'Taskilo',
+                customerId,
+                document?.customerName || '',
+                customerPhone,
+                document?.invoiceNumber || documentNumber,
+                document?.total || 0,
+                document?.dueDate || '',
+                document?.id
+              );
+            }
+          } catch {
+            // WhatsApp-Fehler nicht kritisch - E-Mail wurde bereits versendet
+          }
+        }
+
+        // WhatsApp-Benachrichtigung senden (für Angebote)
+        if (documentType === 'quote') {
+          try {
+            const customerPhone = await loadCustomerPhone();
+            
+            if (customerPhone) {
+              // Kunden-ID ermitteln (falls vorhanden)
+              let customerId = '';
+              if (document?.customerEmail) {
+                const customersRef = collection(db, 'companies', companyId, 'customers');
+                const emailQuery = query(customersRef, where('email', '==', document.customerEmail));
+                const emailSnap = await getDocs(emailQuery);
+                if (!emailSnap.empty) {
+                  customerId = emailSnap.docs[0].id;
+                }
+              }
+
+              await WhatsAppNotificationService.notifyQuoteSent(
+                companyId,
+                customerId,
+                document?.customerName || '',
+                customerPhone,
+                document?.id
+              );
+            }
+          } catch {
+            // WhatsApp-Fehler nicht kritisch - E-Mail wurde bereits versendet
           }
         }
         
@@ -616,7 +746,7 @@ export function EmailSendModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 flex flex-col [&>button]:hidden">
         {/* Header mit Taskilo Branding - Fixed */}
-        <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] text-white p-6 shrink-0">
+        <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover text-white p-6 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">

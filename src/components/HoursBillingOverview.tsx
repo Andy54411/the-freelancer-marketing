@@ -48,7 +48,7 @@ export default function HoursBillingOverview({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'customer' | 'provider' | null>(null);
-  const [orderData, setOrderData] = useState<any>(null);
+  const [_orderData, setOrderData] = useState<any>(null);
   const [expandedSection, setExpandedSection] = useState<
     'paid' | 'pending' | 'logged' | 'original' | null
   >(null);
@@ -98,7 +98,7 @@ export default function HoursBillingOverview({
           setUserRole(null);
           return null;
         }
-      } catch (error) {
+      } catch {
         setUserRole(null);
         return null;
       }
@@ -190,7 +190,7 @@ export default function HoursBillingOverview({
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('Fehler bei der Freigabe der Stunden');
     } finally {
       setApproving(false);
@@ -347,7 +347,7 @@ export default function HoursBillingOverview({
       }
 
       return date.toLocaleDateString('de-DE');
-    } catch (error) {
+    } catch {
       return 'Unbekanntes Datum';
     }
   };

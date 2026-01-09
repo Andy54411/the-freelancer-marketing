@@ -5,13 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from
-'@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -30,16 +23,12 @@ import {
 import {
   Eye,
   Edit,
-  Trash2,
   X,
-  Mail,
-  Download,
   MoreHorizontal,
   Filter,
   Search,
   Calendar,
   DollarSign,
-  Tag,
   FileText,
   Copy } from
 'lucide-react';
@@ -59,7 +48,7 @@ interface QuoteListViewProps {
 
 export function QuoteListView({
   quotes: initialQuotes,
-  onRefresh,
+  onRefresh: _onRefresh,
   companyId,
   activeTab,
   setActiveTab,
@@ -259,7 +248,7 @@ export function QuoteListView({
   };
 
   // Helper function to get a reliable quote ID
-  const getReliableQuoteId = (quote: Quote, index: number): string | null => {
+  const getReliableQuoteId = (quote: Quote, _index: number): string | null => {
     // First try the quote.id
     if (quote.id && quote.id.trim() !== '') {
       return quote.id;

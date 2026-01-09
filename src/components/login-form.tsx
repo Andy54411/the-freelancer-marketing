@@ -3,7 +3,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Fehlende Imports hinzugefügt
+import { Card, CardContent } from '@/components/ui/card'; // Fehlende Imports hinzugefügt
 import { Input } from '@/components/ui/input'; // Fehlender Import hinzugefügt
 import { Label } from '@/components/ui/label'; // Fehlender Import hinzugefügt
 import React, { useState } from 'react'; // Import für React und Typen wie React.FormEvent

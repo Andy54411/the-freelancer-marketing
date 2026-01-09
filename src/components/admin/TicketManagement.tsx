@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,13 +28,11 @@ import {
   Clock,
   CheckCircle,
   Plus,
-  Filter,
   Search,
   Tag,
   User,
   Calendar,
   MessageCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import AdminTicketDetail from './AdminTicketDetail';
 
@@ -113,7 +111,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       } else {
         setError(data.error || 'Fehler beim Laden der Tickets');
       }
-    } catch (err) {
+    } catch {
       setError('Netzwerk-Fehler beim Laden der Tickets');
     } finally {
       setLoading(false);
@@ -150,7 +148,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       } else {
         setError(data.error || 'Fehler beim Erstellen des Tickets');
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Erstellen des Tickets');
     }
   };
@@ -174,7 +172,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       } else {
         setError(data.error || 'Fehler beim Aktualisieren des Tickets');
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Aktualisieren des Tickets');
     }
   };
@@ -203,7 +201,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       } else {
         setError(data.error || 'Fehler beim Hinzufügen des Kommentars');
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Hinzufügen des Kommentars');
     }
   };
@@ -226,7 +224,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       } else {
         setError(data.error || 'Fehler beim Löschen des Tickets');
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Löschen des Tickets');
     }
   };

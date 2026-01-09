@@ -4474,7 +4474,11 @@ export default function CreateQuotePage() {
           setShowSendDocumentModal(false);
           setCreatedDocument(null);
         }}
-        document={createdDocument}
+        document={{
+          ...createdDocument,
+          date: createdDocument.date instanceof Date ? createdDocument.date.toISOString() : createdDocument.date,
+          validUntil: createdDocument.validUntil instanceof Date ? createdDocument.validUntil.toISOString() : createdDocument.validUntil,
+        }}
         documentType="quote"
         companyId={uid}
         redirectAfterAction={`/dashboard/company/${uid}/finance/quotes`}

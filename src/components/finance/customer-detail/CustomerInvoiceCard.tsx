@@ -15,7 +15,6 @@ import {
 import { 
   FileText, 
   Loader2, 
-  ExternalLink,
   Eye,
   Calendar,
   Euro,

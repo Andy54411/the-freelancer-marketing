@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
                 periodEnd: subscription.currentPeriodEnd,
               }),
             });
-          } catch (emailError) {
+          } catch {
             // E-Mail-Fehler loggen aber nicht als Billing-Fehler werten
             results.errors.push(`${subscription.id}: E-Mail-Versand fehlgeschlagen`);
           }

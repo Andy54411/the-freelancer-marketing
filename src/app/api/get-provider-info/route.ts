@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(providerInfo);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Laden der Provider-Informationen.' },
       { status: 500 }

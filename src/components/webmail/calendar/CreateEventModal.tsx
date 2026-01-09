@@ -119,7 +119,7 @@ export function CreateEventModal({
 
   const [formData, setFormData] = useState<EventFormData>(getDefaultFormData());
   const [attendeeInput, setAttendeeInput] = useState('');
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showMoreOptions, _setShowMoreOptions] = useState(false);
   const [showExtendedModal, setShowExtendedModal] = useState(false);
 
   useEffect(() => {

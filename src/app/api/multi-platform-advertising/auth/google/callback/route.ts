@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
@@ -82,10 +81,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await setDoc(
-      doc(db, 'companies', state, 'advertising_connections', 'google-ads'),
-      connectionData
-    );
+    await db
+      .collection('companies')
+      .doc(state)
+      .collection('advertising_connections')
+      .doc('google-ads')
+      .set(connectionData);
 
     console.log('✅ Google Ads connection saved for company:', state);
 

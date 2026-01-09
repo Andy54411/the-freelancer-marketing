@@ -13,7 +13,7 @@ import {
   FiSearch,
 } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -80,7 +80,7 @@ export default function AdminStornoManagement() {
         const data = await response.json();
         setRequests(data.requests || []);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export default function AdminStornoManagement() {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        await response.json();
 
         // Update local state
         setRequests(prev =>
@@ -130,7 +130,7 @@ export default function AdminStornoManagement() {
         const error = await response.json();
         alert(`Fehler: ${error.message}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler bei der Verarbeitung. Bitte versuchen Sie es erneut.');
     } finally {
       setProcessing(false);

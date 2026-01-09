@@ -67,7 +67,7 @@ export class FinAPITokenManager {
       }
 
       return tokenInfo;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -81,7 +81,7 @@ export class FinAPITokenManager {
       if (!stored) return null;
 
       return JSON.parse(stored);
-    } catch (error) {
+    } catch {
       return null;
     }
   }

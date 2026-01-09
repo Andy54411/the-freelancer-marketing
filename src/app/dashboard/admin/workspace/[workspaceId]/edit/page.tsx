@@ -60,7 +60,7 @@ export default function EditAdminWorkspacePage() {
         } else {
           router.push('/admin/login');
         }
-      } catch (error) {
+      } catch {
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -85,17 +85,17 @@ export default function EditAdminWorkspacePage() {
 
         setWorkspace(workspaceData);
         setFormData({
-          title: workspaceData.title,
-          description: workspaceData.description,
-          type: workspaceData.type,
-          status: workspaceData.status,
-          priority: workspaceData.priority,
+          title: workspaceData.title || '',
+          description: workspaceData.description || '',
+          type: workspaceData.type || 'task',
+          status: workspaceData.status || 'open',
+          priority: workspaceData.priority || 'medium',
           dueDate: workspaceData.dueDate
             ? new Date(workspaceData.dueDate).toISOString().split('T')[0]
             : '',
           tags: workspaceData.tags || [],
         });
-      } catch (error) {
+      } catch {
         router.push(`/dashboard/admin/workspace`);
       } finally {
         setLoading(false);
@@ -136,7 +136,7 @@ export default function EditAdminWorkspacePage() {
 
       // Navigate back to workspace overview
       router.push(`/dashboard/admin/workspace`);
-    } catch (error) {
+    } catch {
       // TODO: Show error toast
     } finally {
       setSaving(false);
@@ -156,7 +156,7 @@ export default function EditAdminWorkspacePage() {
     try {
       await adminWorkspaceService.deleteWorkspace(workspace.id);
       router.push(`/dashboard/admin/workspace`);
-    } catch (error) {
+    } catch {
       // TODO: Show error toast
     }
   };

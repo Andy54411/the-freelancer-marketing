@@ -162,7 +162,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
           const orderData = orderDoc.data();
           orderAnalysis = checkStornoEligibility(orderData, stornoSettings);
         }
-      } catch (orderError) {}
+      } catch {}
     }
 
     return NextResponse.json({
@@ -310,7 +310,7 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
       stornoSettings,
       publicPreview: generatePublicStornoConditions(stornoSettings),
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Speichern der Einstellungen' }, { status: 500 });
   }
 }

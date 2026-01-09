@@ -3,16 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { MapPin, Clock, Car, AlertCircle, Calendar, Zap, Users, Plus } from 'lucide-react';
 import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
@@ -36,7 +27,7 @@ interface OnboardingStep4Props {
   companyUid?: string;
 }
 
-export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
+export default function OnboardingStep4({ companyUid: _companyUid }: OnboardingStep4Props) {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
 
   // Normalisiere die Daten bei der Initialisierung - stelle sicher dass alle Werte definiert sind

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PersonalService, Employee, PersonalStats } from '@/services/personalService';
+import { PersonalService, Employee } from '@/services/personalService';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2, UserPlus, Shield, RotateCcw, RefreshCw } from 'lucide-react';
+import { Users, Search, Plus, Download, Eye, Trash2, UserPlus, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { EmployeeInviteDialog } from '@/components/personal/EmployeeInviteDialog';
@@ -59,7 +59,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeData || []);
       setRetryCount(0); // Reset auf Erfolg
-    } catch (error) {
+    } catch {
       setRetryCount(prev => prev + 1);
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
@@ -93,7 +93,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
     setFilteredEmployees(filtered);
   };
 
-  const resetDashboardAccess = async (employeeId: string) => {
+  const _resetDashboardAccess = async (employeeId: string) => {
     try {
       const response = await fetch(
         `/api/company/${resolvedParams.uid}/employees/invite?employeeId=${employeeId}`,
@@ -140,7 +140,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       toast.success('Mitarbeiterdaten exportiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Export');
     }
   };
@@ -194,7 +194,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       setShowDeleteDialog(false);
       setSelectedEmployee(null);
       toast.success('Mitarbeiter wurde deaktiviert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Deaktivieren des Mitarbeiters');
     }
   };

@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
         phone: '+49 (0) XXX XXX XXX',
       },
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen des Widerspruchs' },
       { status: 500 }
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
       appeals,
       total: appeals.length,
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Abrufen der Widersprüche' }, { status: 500 });
   }
 }

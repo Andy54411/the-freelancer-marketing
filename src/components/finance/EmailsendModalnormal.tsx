@@ -1,36 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from
-'@/components/ui/select';
 import {
   X,
   Send,
   FileText,
-  Plus,
   Loader2,
-  AlertTriangle,
   Mail,
   User,
   MessageSquare,
   Paperclip,
-  Eye,
-  ChevronDown,
   Upload,
   Trash2 } from
 'lucide-react';
@@ -91,20 +78,6 @@ interface EmailAttachment {
   base64: string;
 }
 
-interface EmailSendData {
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
-  subject: string;
-  message: string;
-  signature?: string;
-  sendCopy: boolean;
-  attachments: EmailAttachment[];
-  priority?: 'normal' | 'high' | 'low';
-  scheduledSend?: Date;
-  trackOpening?: boolean;
-}
-
 export function EmailSendModalNormal({
   isOpen,
   onClose,
@@ -125,7 +98,7 @@ export function EmailSendModalNormal({
   const [sending, setSending] = useState(false);
   const initializedRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
 
   // Email form fields
   const [recipients, setRecipients] = useState<EmailRecipient[]>([]);
@@ -468,7 +441,7 @@ export function EmailSendModalNormal({
               }
               allStyles.push(css);
             }
-          } catch (e) {
+          } catch {
 
             // Ignore CORS errors for external stylesheets
           }});
@@ -730,7 +703,7 @@ export function EmailSendModalNormal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 flex flex-col [&>button]:hidden">
         {/* Header mit Taskilo Branding - Fixed */}
-        <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] text-white p-6 shrink-0">
+        <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover text-white p-6 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">

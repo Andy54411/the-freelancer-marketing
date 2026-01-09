@@ -1,7 +1,6 @@
 import React from 'react';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
 import { DocumentType } from '@/lib/document-utils';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface FooterTextProps {
   data: ProcessedPDFData;
@@ -13,8 +12,8 @@ interface FooterTextProps {
 export const FooterText: React.FC<FooterTextProps> = ({
   data,
   variant = 'standard',
-  documentType,
-  language = 'de',
+  documentType: _documentType,
+  language: _language = 'de',
 }) => {
   // 🔥 CRITICAL FIX: Verwende processedFooterText (bereits verarbeitet in usePDFTemplateData)
   // NICHT data.footerText (enthält noch Platzhalter)!

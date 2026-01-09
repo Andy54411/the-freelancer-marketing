@@ -9,7 +9,7 @@ interface DashboardConfig {
 const STORAGE_KEY = 'taskilo-dashboard-config';
 
 // Default Dashboard Layout - ALLE Komponenten als Drag & Drop
-const getDefaultComponents = (uid: string): DashboardComponent[] => [
+const getDefaultComponents = (_uid: string): DashboardComponent[] => [
   {
     id: 'onboarding-banner',
     title: 'Onboarding Banner',
@@ -149,7 +149,7 @@ export function useDashboardConfig(uid: string) {
   const saveConfig = useCallback((newComponents: DashboardComponent[]) => {
     try {
       // Entferne React-Komponenten vor dem Speichern (nur Metadaten speichern)
-      const componentsToSave = newComponents.map(({ component, ...rest }) => rest);
+      const componentsToSave = newComponents.map(({ component: _component, ...rest }) => rest);
       
       const config: DashboardConfig = {
         components: componentsToSave as DashboardComponent[],

@@ -17,18 +17,15 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   Plus,
-  Minus,
   Calculator,
   Save,
   Send,
   FileText,
-  Eye,
   Download,
   Mail,
   Printer,
   X,
   Calendar,
-  Euro,
   User,
   Building,
   Phone,
@@ -54,7 +51,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [_loadingCustomers, setLoadingCustomers] = useState(true);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -91,7 +88,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
 
       const loadedCustomers = await CustomerService.getCustomers(companyId);
       setCustomers(loadedCustomers);
-    } catch (error) {
+    } catch {
       toast.error('Kunden konnten nicht geladen werden');
     } finally {
       setLoadingCustomers(false);
@@ -211,7 +208,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
       }
 
       onClose();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern des Angebots');
     } finally {
       setLoading(false);
@@ -225,7 +222,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
       await QuoteService.sendQuote(companyId, quote.id);
       toast.success('Angebot wurde versendet');
       onClose();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Versenden des Angebots');
     }
   };
@@ -390,13 +387,19 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                     <span>{quote.customerPhone}</span>
                   </div>
                 )}
-                {quote.customerAddress && (
+                {quote.customerAddress && typeof quote.customerAddress === 'object' && (
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <span>
                       {quote.customerAddress.street}, {quote.customerAddress.postalCode}{' '}
                       {quote.customerAddress.city}
                     </span>
+                  </div>
+                )}
+                {quote.customerAddress && typeof quote.customerAddress === 'string' && (
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span>{quote.customerAddress}</span>
                   </div>
                 )}
               </CardContent>

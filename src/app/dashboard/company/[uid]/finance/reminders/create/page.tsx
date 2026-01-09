@@ -51,10 +51,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { db } from '@/firebase/clients';
-import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
 import { SendDocumentModal } from '@/components/finance/SendDocumentModal';
+import { WhatsAppNotificationService } from '@/services/whatsapp-notifications.service';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1067,6 +1068,53 @@ export default function CreateReminderPage() {
 
       const remindersRef = collection(db, 'companies', uid, 'reminders');
       await addDoc(remindersRef, reminderData);
+
+      // WhatsApp-Zahlungserinnerung senden
+      try {
+        let customerPhone = '';
+        let customerId = '';
+        
+        // Kundentelefon aus Kunden-Dokument laden
+        const customersRef = collection(db, 'companies', uid, 'customers');
+        if (selectedInvoice.customerEmail) {
+          const emailQuery = query(customersRef, where('email', '==', selectedInvoice.customerEmail));
+          const customerSnap = await getDocs(emailQuery);
+          if (!customerSnap.empty) {
+            const customerData = customerSnap.docs[0].data();
+            customerPhone = customerData.phone || '';
+            customerId = customerSnap.docs[0].id;
+          }
+        }
+        
+        if (!customerPhone && selectedInvoice.customerName) {
+          const nameQuery = query(customersRef, where('name', '==', selectedInvoice.customerName));
+          const customerSnap = await getDocs(nameQuery);
+          if (!customerSnap.empty) {
+            const customerData = customerSnap.docs[0].data();
+            customerPhone = customerData.phone || '';
+            customerId = customerSnap.docs[0].id;
+          }
+        }
+        
+        if (customerPhone) {
+          const companyDoc = await getDoc(doc(db, 'companies', uid));
+          const companyName = companyDoc.data()?.name || 'Taskilo';
+          
+          await WhatsAppNotificationService.sendInvoiceReminder(
+            uid,
+            companyName,
+            customerId,
+            selectedInvoice.customerName,
+            customerPhone,
+            selectedInvoice.invoiceNumber,
+            selectedInvoice.outstandingAmount + formData.reminderFee,
+            selectedInvoice.daysPastDue,
+            formData.invoiceId
+          );
+        }
+      } catch {
+        // WhatsApp-Fehler nicht kritisch
+      }
 
       // TODO: Implement email sending logic here
       toast.success('Mahnung wurde erstellt und versendet');

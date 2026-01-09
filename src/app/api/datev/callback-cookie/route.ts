@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       if (!companyId || !codeVerifier) {
         throw new Error('Invalid state data');
       }
-    } catch (parseError) {
+    } catch {
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter')}`
       );
@@ -102,12 +102,12 @@ export async function GET(request: NextRequest) {
       });
 
       return response;
-    } catch (tokenError) {
+    } catch {
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
-  } catch (error) {
+  } catch {
     const fallbackUrl =
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
@@ -178,7 +178,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
     });
 
     if (!responseWithSecret.ok) {
-      const errorText = await responseWithSecret.text();
+      const _errorText = await responseWithSecret.text();
 
       throw new Error(
         `Token exchange failed: ${responseWithSecret.status} ${responseWithSecret.statusText}`
@@ -195,7 +195,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const _errorText = await response.text();
 
     throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`);
   }

@@ -47,7 +47,7 @@ export default function ReviewForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasProfilePicture, setHasProfilePicture] = useState(false);
-  const [userPhotoURL, setUserPhotoURL] = useState<string | null>(null);
+  const [_userPhotoURL, setUserPhotoURL] = useState<string | null>(null);
 
   // Überprüfe beim Laden der Komponente, ob der User ein Profilbild hat
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function ReviewForm({
         'submitReview'
       );
       const result = await submitReviewCallable(body);
-      const resultData = result.data;
+      const _resultData = result.data;
 
       setSuccess(true);
       setKommentar('');

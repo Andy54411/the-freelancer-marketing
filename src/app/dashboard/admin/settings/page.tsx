@@ -40,7 +40,7 @@ export default function AdminSettingsPage() {
         const data = await response.json();
         setSystemStatus(data);
       }
-    } catch (error) {
+    } catch {
       // Fallback Status
       setSystemStatus({
         dynamodb: 'healthy',

@@ -48,7 +48,7 @@ export function useCompanyOnboardingCheck(companyUid: string | null | undefined)
         });
 
         // Log for debugging
-      } catch (error) {
+      } catch {
         setStatus({
           needsOnboarding: true,
           completionPercentage: 0,

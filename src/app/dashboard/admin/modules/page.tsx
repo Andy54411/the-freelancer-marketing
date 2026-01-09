@@ -20,8 +20,6 @@ import {
   Filter,
   ChevronDown,
   CheckCircle,
-  AlertTriangle,
-  XCircle,
   Sparkles,
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';

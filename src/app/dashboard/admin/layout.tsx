@@ -12,7 +12,6 @@ import {
   BarChart3,
   Shield,
   LogOut,
-  Menu,
   X,
   Ticket,
   Briefcase,
@@ -96,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       } else {
         router.push('/admin/login');
       }
-    } catch (_error) {
+    } catch {
       router.push('/admin/login');
     } finally {
       setLoading(false);
@@ -111,7 +110,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST' });
       router.push('/admin/login');
-    } catch (_error) {}
+    } catch {}
   };
 
   if (loading) {

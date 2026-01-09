@@ -1,0 +1,69 @@
+{
+  "version": "2.15.0",
+  "date": "2026-01-09",
+  "title": "Steuer-Compliance: TaxService & Anlagenbuchhaltung",
+  "category": "feature",
+  "priority": "high",
+  "sections": [
+    {
+      "title": "TaxService komplett neu implementiert",
+      "icon": "Calculator",
+      "items": [
+        "UStVA-Berechnung aus echten Firestore-Daten (Rechnungen + Ausgaben)",
+        "EÜR-Berechnung nach BMF-Anlage mit allen Kategorien",
+        "GuV nach Gesamtkostenverfahren",
+        "BWA mit monatlicher Analyse",
+        "Integration mit Anlagenbuchhaltung für AfA-Werte",
+        "GoBD-konforme Datenbasis (nur gesperrte Rechnungen)"
+      ]
+    },
+    {
+      "title": "Anlagenbuchhaltung (FixedAssetService)",
+      "icon": "Package",
+      "items": [
+        "Vollständige AfA-Berechnung nach §7 EStG",
+        "Lineare + degressive Abschreibung",
+        "GWG-Behandlung nach §6 Abs. 2 EStG (bis 800€ netto)",
+        "Sammelposten nach §6 Abs. 2a EStG (250-1000€, 5 Jahre)",
+        "BMF-konforme AfA-Tabelle (Nutzungsdauer nach Anlagekategorie)",
+        "Anlagenveräußerung (Verkauf, Verschrottung, Spende)",
+        "DATEV-Kontenzuordnung (SKR03/SKR04)",
+        "GoBD-konforme Festschreibung"
+      ]
+    },
+    {
+      "title": "Firestore-Infrastruktur",
+      "icon": "Database",
+      "items": [
+        "Neue Indexes für fixedAssets, taxReports, invoices, expenses",
+        "Firestore Rules für taxReports, taxSettings, fixedAssets",
+        "Company-Subcollection-Pattern implementiert"
+      ]
+    }
+  ],
+  "technical": {
+    "files_changed": [
+      "src/services/taxService.ts (komplett neu, ~1084 Zeilen)",
+      "src/services/fixedAssetService.ts (neu, ~645 Zeilen)",
+      "firestore.indexes.json (8 neue Indexes)",
+      "firestore.rules (3 neue Subcollection-Regeln)",
+      "docs/STEUER_COMPLIANCE_SYSTEMANALYSE.md (aktualisiert)"
+    ],
+    "new_collections": [
+      "companies/{companyId}/taxReports",
+      "companies/{companyId}/taxSettings",
+      "companies/{companyId}/fixedAssets"
+    ],
+    "breaking_changes": false,
+    "migration_required": false
+  },
+  "compliance": {
+    "gobd": true,
+    "paragraph_7_estg": true,
+    "paragraph_6_estg": true,
+    "paragraph_19_ustg": true,
+    "datev_compatible": true
+  },
+  "author": "AI-System",
+  "reviewed_by": null
+}

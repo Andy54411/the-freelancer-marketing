@@ -1,7 +1,6 @@
 // 🎯 META ADS OAUTH CALLBACK - Multi-Platform Auth Handler
 
 import { NextRequest, NextResponse } from 'next/server';
-import { MetaAdsService } from '@/services/platform-services/metaAdsService';
 import { advertisingFirebaseService } from '@/services/firebase/advertisingService';
 
 export async function GET(request: NextRequest) {
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch Meta user info or ad accounts');
     }
 
-    const userData = await userResponse.json();
+    const _userData = await userResponse.json();
     const adAccountsData = await adAccountsResponse.json();
 
     // Use first available ad account

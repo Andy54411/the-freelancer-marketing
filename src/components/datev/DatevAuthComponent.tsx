@@ -26,7 +26,7 @@ interface DatevAuthComponentProps {
 
 function DatevAuthComponent({ companyId, onAuthSuccess, onAuthError }: DatevAuthComponentProps) {
   const [connection, setConnection] = useState<DatevConnection>({ isConnected: false });
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [, setIsAuthenticated] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,7 +74,7 @@ function DatevAuthComponent({ companyId, onAuthSuccess, onAuthError }: DatevAuth
       } else {
         setShowButtons(true);
       }
-    } catch (error) {
+    } catch {
       setShowButtons(true);
     } finally {
       setIsLoading(false);
@@ -100,9 +100,8 @@ function DatevAuthComponent({ companyId, onAuthSuccess, onAuthError }: DatevAuth
 
       const { authUrl } = await response.json();
 
-      // Redirect to DATEV OAuth
-
-      window.location.href = authUrl;
+      // Redirect to DATEV OAuth in a new tab
+      window.open(authUrl, '_blank');
     } catch (error) {
       if (onAuthError) {
         onAuthError(error instanceof Error ? error.message : 'Authentication failed');
@@ -121,7 +120,7 @@ function DatevAuthComponent({ companyId, onAuthSuccess, onAuthError }: DatevAuth
       setShowButtons(true);
 
       toast.success('DATEV-Verbindung getrennt');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };

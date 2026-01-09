@@ -41,7 +41,7 @@ export function DeleteEmployeeModal({
       toast.success('Mitarbeiter erfolgreich gelöscht');
       onEmployeeDeleted(employee.id!);
       onClose();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Mitarbeiters');
     } finally {
       setLoading(false);

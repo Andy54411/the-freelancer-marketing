@@ -52,11 +52,9 @@ import {
 
 // Firebase Storage Service (ersetzt AWS S3)
 import { WorkspaceStorageService } from '@/services/admin/WorkspaceStorageService';
-import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type {
   AdminWorkspace,
   AdminWorkspaceTask,
-  AdminWorkspaceMember,
 } from '@/services/AdminWorkspaceService';
 import dynamic from 'next/dynamic';
 
@@ -274,7 +272,7 @@ export default function AdminTaskDetailSlider({
 
       await onTaskUpdated(task.id, updates);
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Fehler beim Speichern der Aufgabe' });
     } finally {
       setLoading(false);
@@ -389,7 +387,7 @@ export default function AdminTaskDetailSlider({
           timestamp: new Date(),
         };
         setActivities(prev => [activity, ...prev]);
-      } catch (error) {
+      } catch {
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[fileId];
@@ -430,7 +428,7 @@ export default function AdminTaskDetailSlider({
         timestamp: new Date(),
       };
       setActivities(prev => [activity, ...prev]);
-    } catch (error) {
+    } catch {
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
     }
   };

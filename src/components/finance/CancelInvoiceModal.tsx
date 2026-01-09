@@ -17,7 +17,7 @@ export const CancelInvoiceModal: React.FC<CancelInvoiceModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  invoice,
+  invoice: _invoice,
   isLoading = false
 }) => {
   if (!isOpen) return null;

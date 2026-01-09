@@ -15,6 +15,13 @@ interface PlatformMetrics {
   roas: number;
 }
 
+interface PlatformBreakdownItem {
+  platform: string;
+  metrics: PlatformMetrics;
+  campaignCount: number;
+  isActive: boolean;
+}
+
 async function refreshGoogleAdsToken(refreshToken: string): Promise<string | null> {
   try {
     const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -274,8 +281,8 @@ export async function GET(request: NextRequest) {
     
     const connectionsSnapshot = await connectionsRef.get();
     
-    const platformBreakdown: any[] = [];
-    let summaryMetrics: PlatformMetrics = {
+    const platformBreakdown: PlatformBreakdownItem[] = [];
+    const summaryMetrics: PlatformMetrics = {
       impressions: 0,
       clicks: 0,
       cost: 0,

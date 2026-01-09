@@ -17,9 +17,9 @@ interface AdminUser {
 
 export default function AdminWorkspaceOverview() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [_authLoading, setAuthLoading] = useState(true);
   const [selectedWorkspace, setSelectedWorkspace] = useState<AdminWorkspace | null>(null);
-  const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
+  const [_workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Admin Authentication Check
@@ -44,7 +44,7 @@ export default function AdminWorkspaceOverview() {
           window.location.href = '/admin/login';
           return;
         }
-      } catch (error) {
+      } catch {
         window.location.href = '/admin/login';
         return;
       } finally {
@@ -80,7 +80,7 @@ export default function AdminWorkspaceOverview() {
       // Load workspace with tasks
       const workspaceWithTasks = await adminWorkspaceService.getWorkspace(workspace.id);
       setSelectedWorkspace(workspaceWithTasks);
-    } catch (error) {
+    } catch {
       // Fallback to basic workspace if detailed loading fails
       setSelectedWorkspace(workspace);
     }
@@ -110,7 +110,7 @@ export default function AdminWorkspaceOverview() {
           prev ? { ...prev, ...updates, updatedAt: new Date() } : null
         );
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
@@ -122,7 +122,7 @@ export default function AdminWorkspaceOverview() {
       if (selectedWorkspace?.id === workspaceId) {
         setSelectedWorkspace(null);
       }
-    } catch (error) {}
+    } catch {}
   };
 
   if (loading) {

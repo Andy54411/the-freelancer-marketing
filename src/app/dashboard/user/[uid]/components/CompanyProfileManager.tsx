@@ -4,12 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   doc,
   updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
@@ -30,10 +24,8 @@ import {
   FiZap,
   FiAward,
   FiPlus,
-  FiEdit3,
   FiTrash2,
   FiEye,
-  FiStar,
 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -91,7 +83,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({ userData,
     imageUrl: '',
     projectUrl: '',
   });
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [_uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -150,14 +142,14 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({ userData,
 
       toast.success('Company Profile erfolgreich aktualisiert!');
       onDataSaved();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern des Profils');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleImageUpload = async (file: File) => {
+  const _handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
       const storage = getStorage();

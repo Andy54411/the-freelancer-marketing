@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { userType = 'customer', limit = 20, lastOrderId } = body;
+    const { userType = 'customer', limit = 20, lastOrderId: _lastOrderId } = body;
 
     // Extrahiere User ID aus Authorization Header
     const authHeader = request.headers.get('Authorization');
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         {
           success: false,

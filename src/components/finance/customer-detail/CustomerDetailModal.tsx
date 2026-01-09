@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { 
   Building2, 
-  FileText, 
   Receipt, 
   Users, 
   History, 
@@ -50,8 +49,8 @@ export function CustomerDetailModal({
   isOpen,
   onClose,
   invoices = [],
-  calendarEvents = [],
-  loading = false,
+  calendarEvents: _calendarEvents = [],
+  loading: _loading = false,
   calculatedStats = { totalAmount: 0, totalInvoices: 0, totalMeetings: 0 },
   onEditContact,
   companyId,
@@ -110,7 +109,7 @@ export function CustomerDetailModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="!max-w-none !w-[95vw] max-h-[90vh] overflow-y-auto"
+        className="max-w-none! w-[95vw]! max-h-[90vh] overflow-y-auto"
         style={{ width: '95vw', maxWidth: 'none' }}
       >
         <DialogHeader>

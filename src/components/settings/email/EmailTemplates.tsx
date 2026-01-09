@@ -19,14 +19,14 @@ interface EmailTemplatesProps {
 }
 
 export function EmailTemplates({ 
-  companyId, 
+  companyId: _companyId, 
   templates, 
   onCreateTemplate, 
-  onUpdateTemplate, 
+  onUpdateTemplate: _onUpdateTemplate, 
   onDeleteTemplate 
 }: EmailTemplatesProps) {
   const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [_editingId, setEditingId] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     subject: '',

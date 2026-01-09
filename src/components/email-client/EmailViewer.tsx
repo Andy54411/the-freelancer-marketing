@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Reply,
   ReplyAll,
@@ -12,23 +11,10 @@ import {
   Archive,
   Trash2,
   Star,
-  Download,
-  Printer,
-  MoreHorizontal,
   ArrowLeft,
   Paperclip,
-  Calendar,
-  Phone,
-  User,
   AlertOctagon,
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { EmailMessage } from './types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -57,11 +43,11 @@ export function EmailViewer({
   onArchive,
   onDelete,
   onStar,
-  onMarkAsRead,
+  onMarkAsRead: _onMarkAsRead,
   onMarkAsSpam,
   className,
 }: EmailViewerProps) {
-  const [showAllRecipients, setShowAllRecipients] = useState(false);
+  const [_showAllRecipients, _setShowAllRecipients] = useState(false);
 
   // Helper functions for safe access to email properties
   const getSenderName = (from: any) => {
@@ -95,7 +81,7 @@ export function EmailViewer({
     return 'Unbekannter Absender';
   };
 
-  const getSenderEmail = (from: any) => {
+  const _getSenderEmail = (from: any) => {
     if (!from) return '';
 
     // String format (most common from Gmail API)
@@ -272,13 +258,13 @@ export function EmailViewer({
     }
   };
 
-  const handleDownloadAttachment = (attachment: any) => {
+  const _handleDownloadAttachment = (attachment: any) => {
     if (attachment.url) {
       window.open(attachment.url, '_blank');
     }
   };
 
-  const formatFileSize = (bytes: number) => {
+  const _formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];

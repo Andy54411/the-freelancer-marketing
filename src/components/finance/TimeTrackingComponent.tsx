@@ -44,7 +44,7 @@ import {
   Project as ProjectType,
   TimeTrackingReport,
 } from '@/services/timeTrackingService';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { ManualTimeEntry } from './ManualTimeEntry';
 
@@ -77,7 +77,7 @@ interface TimeTrackingComponentProps {
 
 export function TimeTrackingComponent({ companyId, userId }: TimeTrackingComponentProps) {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [_projects, setProjects] = useState<ProjectType[]>([]);
   const [firebaseProjects, setFirebaseProjects] = useState<FirebaseProject[]>([]); // Neue State für Firebase-Projekte
   const [runningEntry, setRunningEntry] = useState<TimeEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,7 +165,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
 
       setRunningEntry(running);
       setStats(statistics);
-    } catch (error) {
+    } catch {
       toast.error('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -208,7 +208,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       }));
 
       return loadedProjects;
-    } catch (error) {
+    } catch {
       // Fallback: Direkte Firestore-Abfrage
       try {
         const projectsQuery = query(
@@ -246,7 +246,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         });
 
         return loadedProjects;
-      } catch (fallbackError) {
+      } catch {
         return [];
       }
     }
@@ -300,11 +300,11 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       if (newEntryForm.customerName) entryData.customerName = newEntryForm.customerName;
       if (newEntryForm.category) entryData.category = newEntryForm.category;
 
-      const entryId = await TimeTrackingService.startTimeEntry(entryData);
+      const _entryId = await TimeTrackingService.startTimeEntry(entryData);
 
       toast.success('Zeiterfassung gestartet');
       await loadData();
-    } catch (error) {
+    } catch {
       toast.error('Zeiterfassung konnte nicht gestartet werden');
     }
   };
@@ -316,7 +316,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       await TimeTrackingService.stopTimeEntry(runningEntry.id);
       toast.success('Zeiterfassung gestoppt');
       await loadData();
-    } catch (error) {
+    } catch {
       toast.error('Zeiterfassung konnte nicht gestoppt werden');
     }
   };
@@ -328,7 +328,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       await TimeTrackingService.pauseTimeEntry(runningEntry.id);
       toast.success('Zeiterfassung pausiert');
       await loadData();
-    } catch (error) {
+    } catch {
       toast.error('Zeiterfassung konnte nicht pausiert werden');
     }
   };
@@ -340,7 +340,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       await TimeTrackingService.resumeTimeEntry(runningEntry.id);
       toast.success('Zeiterfassung fortgesetzt');
       await loadData();
-    } catch (error) {
+    } catch {
       toast.error('Zeiterfassung konnte nicht fortgesetzt werden');
     }
   };
@@ -354,7 +354,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       await TimeTrackingService.deleteTimeEntry(entryId);
       toast.success('Zeiteintrag gelöscht');
       await loadData();
-    } catch (error) {
+    } catch {
       toast.error('Zeiteintrag konnte nicht gelöscht werden');
     }
   };
@@ -374,7 +374,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
 
       setReport(reportData);
       setShowReport(true);
-    } catch (error) {
+    } catch {
       toast.error('Report konnte nicht generiert werden');
     }
   };

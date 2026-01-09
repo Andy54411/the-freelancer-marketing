@@ -46,7 +46,7 @@ async function getJob(id: string) {
     createdAt: jobData.createdAt?.toDate?.()?.toISOString() || jobData.createdAt,
     postedAt: jobData.postedAt?.toDate?.()?.toISOString() || jobData.postedAt,
     updatedAt: jobData.updatedAt?.toDate?.()?.toISOString() || jobData.updatedAt,
-  } as JobPosting;
+  } as unknown as JobPosting;
 }
 
 export async function generateMetadata({
@@ -158,7 +158,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
           postedAt: data.postedAt?.toDate?.()?.toISOString() || data.postedAt,
           updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-        } as JobPosting;
+        } as unknown as JobPosting;
       })
       .filter(j => j.id !== job.id)
       .slice(0, 4);

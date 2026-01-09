@@ -28,8 +28,10 @@ import * as httpOrders from './http_orders';
 import * as callableGeneral from './callable_general';
 import * as httpGeneral from './http_general';
 import * as httpWebhooks from './http_webhooks';
-import * as httpFileUploads from './http_file_uploads';
-import * as mobileAppPayments from './mobile_app_payments';
+// STRIPE FILE UPLOADS DEAKTIVIERT (Januar 2026)
+// import * as httpFileUploads from './http_file_uploads';
+// STRIPE MOBILE PAYMENTS DEAKTIVIERT (Januar 2026)
+// import * as mobileAppPayments from './mobile_app_payments';
 import * as triggersFirestore from './triggers_firestore';
 import * as callableOrders from './callable_orders';
 import * as callableTimeTracking from './callable_timeTracking';
@@ -44,7 +46,8 @@ import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
 import * as financeHttpModule from './finance/functions/finance-http';
-import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
+// STRIPE FIX PAYMENT DEAKTIVIERT (Januar 2026)
+// import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
 import * as offerPushNotifications from './offer_push_notifications';
@@ -136,8 +139,8 @@ export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
 // Finance Module API - Production version with OCR & Smart Detection
 export const financeApiWithOCR = financeHttpModule.financeApi;
 
-// Manual Fix Functions
-export const fixInconsistentPayment = fixInconsistentPaymentModule.fixInconsistentPayment;
+// STRIPE FIX PAYMENT DEAKTIVIERT (Januar 2026)
+// export const fixInconsistentPayment = fixInconsistentPaymentModule.fixInconsistentPayment;
 
 // Quote Notification Triggers
 export const onQuoteCreated = quoteNotifications.onQuoteCreated;
@@ -156,10 +159,10 @@ export const onJobCreatedForAlerts = jobAlertNotifications.onJobCreated;
 // Maintenance Functions (Temporary)
 export const updateAllUserCustomClaims = maintenanceAuth.updateAllUserCustomClaims;
 
-// Mobile App Payment Functions
-export const createB2CPayment = mobileAppPayments.createB2CPayment;
-export const createB2BPayment = mobileAppPayments.createB2BPayment;
-export const createHourlyPayment = mobileAppPayments.createHourlyPayment;
+// STRIPE MOBILE PAYMENTS DEAKTIVIERT (Januar 2026)
+// export const createB2CPayment = mobileAppPayments.createB2CPayment;
+// export const createB2BPayment = mobileAppPayments.createB2BPayment;
+// export const createHourlyPayment = mobileAppPayments.createHourlyPayment;
 
 // Gmail Functions
 import * as gmailWebhookModule from './gmail-webhook';

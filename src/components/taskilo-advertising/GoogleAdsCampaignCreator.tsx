@@ -24,7 +24,7 @@ export default function GoogleAdsCampaignCreator({ companyId }: GoogleAdsCampaig
     websiteUrl: '',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, _setIsSubmitting] = useState(false);
 
   const handleContinue = () => {
     console.log('🚀 NEUE VERSION - handleContinue gestartet!', businessData);

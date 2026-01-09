@@ -40,7 +40,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
           setUser(data.employee);
         }
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -86,7 +86,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       setUser(null);
-    } catch (error) {}
+    } catch {}
   };
 
   const hasPermission = (permission: string): boolean => {

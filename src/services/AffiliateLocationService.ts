@@ -1,5 +1,5 @@
 import { db } from '@/firebase/clients';
-import { collection, doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
 export interface AffiliateLocationSelection {
   id: string;

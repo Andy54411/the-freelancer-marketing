@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             customerType = 'company';
           }
         }
-      } catch (authError) {
+      } catch {
         // Auth-Fehler ignorieren - Quote kann auch ohne Auth erstellt werden
       }
     }
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         providerCategory = providerData?.selectedCategory || providerData?.category || '';
         providerSubcategory = providerData?.selectedSubcategory || providerData?.subcategory || '';
       }
-    } catch (error) {
+    } catch {
       // Fehler ignorieren
     }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         read: false,
         createdAt: Timestamp.now(),
       });
-    } catch (notificationError) {
+    } catch {
       // Notification-Fehler ignorieren
     }
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             description: quoteData.projectDescription,
           }
         );
-      } catch (notificationError) {
+      } catch {
         // Notifications-Fehler sollten die Erstellung nicht blockieren
       }
     }
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       quoteId: projectId, // Backward compatibility
       message: 'Angebots-Anfrage erfolgreich gesendet',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Erstellen der Angebots-Anfrage' },
       { status: 500 }

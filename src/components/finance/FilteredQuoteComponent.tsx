@@ -1,25 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   FileText,
-  Download,
   Plus,
   Eye,
   Edit,
   Trash2,
-  Calendar,
-  Euro,
   Loader2,
   Search,
   Send,
-  Check,
-  X,
-  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
@@ -59,7 +53,7 @@ export function FilteredQuoteComponent({
         // Filtere nach Status
         const filteredQuotes = quotesData.filter(quote => quote.status === statusFilter);
         setQuotes(filteredQuotes);
-      } catch (error) {
+      } catch {
         toast.error('Angebote konnten nicht geladen werden');
       } finally {
         setLoading(false);
@@ -113,7 +107,7 @@ export function FilteredQuoteComponent({
       try {
         await QuoteService.deleteQuote(companyId, quote.id);
         toast.success(`Angebot ${quote.number} wurde gelöscht`);
-      } catch (error) {
+      } catch {
         toast.error('Fehler beim Löschen des Angebots');
       }
     }
@@ -123,7 +117,7 @@ export function FilteredQuoteComponent({
     try {
       await QuoteService.updateQuote(companyId, quote.id, { status: 'sent' });
       toast.success(`Angebot ${quote.number} wurde versendet`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Versenden des Angebots');
     }
   };
@@ -132,7 +126,7 @@ export function FilteredQuoteComponent({
     try {
       await QuoteService.convertToInvoice(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wird in Rechnung umgewandelt`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Umwandeln in Rechnung');
     }
   };

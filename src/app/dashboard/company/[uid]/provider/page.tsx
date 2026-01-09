@@ -4,27 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { User as FirebaseUser, getAuth } from 'firebase/auth';
 import Image from 'next/image';
-import Link from 'next/link';
 import {
   FiMapPin,
   FiMessageSquare,
   FiStar,
-  FiAward,
   FiBriefcase,
-  FiClock,
-  FiCheckCircle,
-  FiTrendingUp,
-  FiZap,
   FiUser,
   FiLoader,
   FiAlertCircle,
-  FiShare2,
   FiEye,
   FiHeart,
-  FiCalendar,
-  FiGlobe,
   FiPhone,
   FiMail,
   FiArrowLeft,
@@ -119,7 +109,7 @@ const ProviderProfilePage = () => {
         );
         const reviewsSnapshot = await getDocs(reviewsQuery);
         setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
-      } catch (err) {
+      } catch {
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);

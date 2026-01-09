@@ -428,10 +428,19 @@ export class TextTemplateService {
    * Konvertiert QuerySnapshot zu TextTemplate Array
    */
   private static mapQuerySnapshotToTemplates(
-    querySnapshot: QuerySnapshot<DocumentData, DocumentData>
+    querySnapshot: QuerySnapshot<unknown, DocumentData>
   ): TextTemplate[] {
     return querySnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = doc.data() as Record<string, unknown>;
+      
+      // Helper function to convert Firestore Timestamp to Date
+      const toDateSafe = (val: unknown): Date => {
+        if (val && typeof val === 'object' && 'toDate' in val && typeof (val as { toDate: () => Date }).toDate === 'function') {
+          return (val as { toDate: () => Date }).toDate();
+        }
+        return new Date();
+      };
+      
       return {
         id: doc.id,
         name: data.name,
@@ -443,8 +452,8 @@ export class TextTemplateService {
         isPrivate: data.isPrivate,
         companyId: data.companyId,
         createdBy: data.createdBy,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: toDateSafe(data.createdAt),
+        updatedAt: toDateSafe(data.updatedAt),
       } as TextTemplate;
     });
   }

@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import {
   X,
   Plus,
-  Calendar,
-  User,
-  Tag,
   FileText,
   Folder,
   CheckSquare,
@@ -135,7 +132,7 @@ export function CreateWorkspaceModal({
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const _getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
         return 'bg-red-100 text-red-800 border-red-300';

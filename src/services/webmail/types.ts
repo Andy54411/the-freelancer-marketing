@@ -73,10 +73,10 @@ export interface EmailAddress {
 export interface EmailContent extends EmailMessage {
   text?: string;
   html?: string;
-  attachments: EmailAttachment[];
+  attachments: EmailAttachmentDetails[];
 }
 
-export interface EmailAttachment {
+export interface EmailAttachmentDetails {
   filename: string;
   contentType: string;
   size: number;

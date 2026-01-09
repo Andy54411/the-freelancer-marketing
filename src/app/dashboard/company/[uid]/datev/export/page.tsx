@@ -14,8 +14,6 @@ export default function DatevExportPage() {
   const uid = params?.uid as string;
   const exportType = searchParams?.get('type') || 'accounting';
 
-  const [selectedExportMethod, setSelectedExportMethod] = useState<'bds' | 'file' | null>(null);
-
   useEffect(() => {
     const isOwner = user?.uid === uid;
     const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;

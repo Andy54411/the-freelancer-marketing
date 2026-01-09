@@ -15,14 +15,13 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 import { GoBDDocument, GoBDPeriodLock } from '@/types/gobdTypes';
 import { GoBDService } from '@/services/gobdService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 interface ManualLockManagerProps {

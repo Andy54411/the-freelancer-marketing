@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/firebase/clients';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 import Link from 'next/link';
@@ -100,7 +100,7 @@ export default function CreateExpensePage() {
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   const [isLoading, setIsLoading] = useState(false);
-  const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
+  const [currentReceipt, _setCurrentReceipt] = useState<File | null>(null);
   const [currentReceipts, setCurrentReceipts] = useState<string[]>([]); // Multiple receipts support - stores URLs
   const [extractedLineItems, setExtractedLineItems] = useState<LineItem[]>([]); // Store extracted line items
 

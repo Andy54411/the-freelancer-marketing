@@ -545,7 +545,7 @@ export class GermanyValidationEngine {
       
       return { valid: true };
       
-    } catch (error) {
+    } catch {
       return { valid: false, reason: 'Ungültiges Datumsformat' };
     }
   }

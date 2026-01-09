@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -21,21 +20,13 @@ import {
   ShoppingCart,
   Globe,
   Settings,
-  Link,
   CheckCircle,
   AlertCircle,
   Plug,
   Key,
   Zap,
   Database,
-  ArrowRight,
-  Plus,
-  Trash2,
-  Edit3,
-  ExternalLink,
   RefreshCw,
-  Download,
-  Upload,
   Eye,
   EyeOff,
 } from 'lucide-react';
@@ -190,14 +181,14 @@ export function DeliveryNoteApiIntegrations({ companyId }: DeliveryNoteApiIntegr
           },
         },
       ]);
-    } catch (error) {
+    } catch {
       toast.error('Integrationen konnten nicht geladen werden');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddIntegration = (integration: any) => {
+  const _handleAddIntegration = (integration: any) => {
     setSelectedIntegration({
       ...integration,
       id: Date.now().toString(),
@@ -230,16 +221,16 @@ export function DeliveryNoteApiIntegrations({ companyId }: DeliveryNoteApiIntegr
       setShowConfigDialog(false);
       setSelectedIntegration(null);
       toast.success('Integration erfolgreich gespeichert');
-    } catch (error) {
+    } catch {
       toast.error('Integration konnte nicht gespeichert werden');
     }
   };
 
-  const handleTestConnection = async (integration: ApiIntegration) => {
+  const handleTestConnection = async (_integration: ApiIntegration) => {
     try {
       toast.success('Verbindung erfolgreich getestet');
       // Hier würde die tatsächliche API-Verbindung getestet
-    } catch (error) {
+    } catch {
       toast.error('Verbindungstest fehlgeschlagen');
     }
   };
@@ -251,7 +242,7 @@ export function DeliveryNoteApiIntegrations({ companyId }: DeliveryNoteApiIntegr
       setIntegrations(prev =>
         prev.map(i => (i.id === integration.id ? { ...i, lastSync: new Date() } : i))
       );
-    } catch (error) {
+    } catch {
       toast.error('Synchronisation fehlgeschlagen');
     }
   };

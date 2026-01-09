@@ -8,7 +8,6 @@ import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 interface ElegantTemplateProps {

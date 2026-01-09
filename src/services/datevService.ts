@@ -4,16 +4,7 @@
  * Server-side Funktionen sind in /lib/datev-server-utils.ts und API-Routen
  */
 
-import { getDatevConfig, DATEV_ENDPOINTS, validateDatevConfig } from '@/lib/datev-config';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
-
-// DATEV Sandbox URLs (unterschiedlich von Production!)
-const DATEV_API_BASE =
-  process.env.NODE_ENV === 'production' ? 'https://api.datev.de' : 'https://sandbox-api.datev.de';
-const DATEV_AUTH_BASE =
-  process.env.NODE_ENV === 'production'
-    ? 'https://login.datev.de'
-    : 'https://sandbox-login.datev.de';
 
 // DATEV API Response Types
 export interface DatevOrganization {
@@ -104,7 +95,7 @@ export class DatevService {
           authToken = await auth.currentUser.getIdToken();
         } else {
         }
-      } catch (authError) {}
+      } catch {}
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -203,9 +194,9 @@ export class DatevService {
    * Get transactions for date range
    */
   static async getTransactions(
-    dateFrom: string,
-    dateTo: string,
-    organizationId?: string
+    _dateFrom: string,
+    _dateTo: string,
+    _organizationId?: string
   ): Promise<DatevTransaction[]> {
     try {
       // Note: This would need a dedicated backend route for transactions
@@ -220,8 +211,8 @@ export class DatevService {
    * Create new transaction
    */
   static async createTransaction(
-    transaction: Omit<DatevTransaction, 'id' | 'status'>,
-    organizationId?: string
+    _transaction: Omit<DatevTransaction, 'id' | 'status'>,
+    _organizationId?: string
   ): Promise<DatevTransaction> {
     try {
       // Note: This would need a dedicated backend route for transactions
@@ -236,9 +227,9 @@ export class DatevService {
    * Upload document
    */
   static async uploadDocument(
-    file: File,
-    description?: string,
-    organizationId?: string
+    _file: File,
+    _description?: string,
+    _organizationId?: string
   ): Promise<DatevDocument> {
     try {
       // Note: This would need a dedicated backend route for document upload
@@ -252,7 +243,7 @@ export class DatevService {
   /**
    * Get documents
    */
-  static async getDocuments(organizationId?: string): Promise<DatevDocument[]> {
+  static async getDocuments(_organizationId?: string): Promise<DatevDocument[]> {
     try {
       // Note: This would need a dedicated backend route for documents
 
@@ -266,11 +257,11 @@ export class DatevService {
    * Create DATEV export job
    */
   static async createExportJob(
-    type: 'MOVEMENTS' | 'ACCOUNTS' | 'CUSTOMERS' | 'VENDORS',
-    format: 'DATEV_ASCII' | 'DATEV_XML' | 'CSV',
-    dateFrom: string,
-    dateTo: string,
-    organizationId?: string
+    _type: 'MOVEMENTS' | 'ACCOUNTS' | 'CUSTOMERS' | 'VENDORS',
+    _format: 'DATEV_ASCII' | 'DATEV_XML' | 'CSV',
+    _dateFrom: string,
+    _dateTo: string,
+    _organizationId?: string
   ): Promise<DatevExportJob> {
     try {
       // Note: This would need a dedicated backend route for export jobs
@@ -284,7 +275,7 @@ export class DatevService {
   /**
    * Get export job status
    */
-  static async getExportJob(jobId: string): Promise<DatevExportJob> {
+  static async getExportJob(_jobId: string): Promise<DatevExportJob> {
     try {
       // Note: This would need a dedicated backend route for export jobs
 
@@ -298,7 +289,7 @@ export class DatevService {
    * Import Taskilo invoice to DATEV
    */
   static async importInvoiceToDatev(
-    invoice: {
+    _invoice: {
       id: string;
       invoiceNumber: string;
       date: string;
@@ -308,7 +299,7 @@ export class DatevService {
       vatAmount: number;
       description: string;
     },
-    organizationId?: string
+    _organizationId?: string
   ): Promise<DatevTransaction> {
     try {
       // Note: This requires createTransaction to be implemented
@@ -323,14 +314,14 @@ export class DatevService {
    * Sync Taskilo payments with DATEV
    */
   static async syncPaymentToDatev(
-    payment: {
+    _payment: {
       id: string;
       amount: number;
       date: string;
       reference: string;
       invoiceId: string;
     },
-    organizationId?: string
+    _organizationId?: string
   ): Promise<DatevTransaction> {
     try {
       // Note: This requires createTransaction to be implemented

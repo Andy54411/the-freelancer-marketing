@@ -247,6 +247,9 @@ export interface GoogleAdsApiResponse<T = any> {
     message: string;
     details?: any;
     isProductionAccount?: boolean; // Flag für Production Account Fehler
+    isManagerAccount?: boolean; // Flag für Manager Account Konflikte
+    needsNewInvitation?: boolean; // Flag wenn neue Einladung benötigt wird
+    alreadyInvited?: boolean; // Flag wenn bereits eingeladen
   };
   pagination?: {
     nextPageToken?: string;

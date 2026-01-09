@@ -116,8 +116,6 @@ Standort: ${city}, ${country}`;
     return NextResponse.json({ description: generatedText });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    const errorName = error instanceof Error ? error.name : 'Error';
 
     // Spezifischere Fehlerbehandlung
     if (errorMessage.includes('API key')) {

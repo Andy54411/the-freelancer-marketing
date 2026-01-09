@@ -47,7 +47,7 @@ export function NavUser({
     try {
       await signOut(auth);
       router.push('/'); // Zur Startseite umleiten
-    } catch (error) {}
+    } catch {}
   };
 
   return (

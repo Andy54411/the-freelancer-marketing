@@ -6,13 +6,11 @@ import {
   VideoOff,
   Mic,
   MicOff,
-  Phone,
   PhoneOff,
   Users,
   MessageSquare,
   Monitor,
   MonitorOff,
-  Settings,
   Copy,
   Check,
   Loader2,
@@ -25,7 +23,6 @@ import {
   Volume2,
   VolumeX,
   Star,
-  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,7 +185,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   
   // WebRTC State
-  const [iceServers, setIceServers] = useState<RTCIceServer[]>([]);
+  const [_iceServers, setIceServers] = useState<RTCIceServer[]>([]);
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   
   // Refs
@@ -336,7 +333,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           participantId: message.payload.participantId as string,
           userName: message.payload.userName as string,
           message: message.payload.message as string,
-          timestamp: message.timestamp as string || new Date().toISOString(),
+          timestamp: (message.payload.timestamp as string) || new Date().toISOString(),
           isOwn: message.payload.participantId === myParticipantIdRef.current,
         };
         setChatMessages(prev => [...prev, newMessage]);
@@ -436,7 +433,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         }
         break;
     }
-  }, [onJoinRequest, onMeetingEnded]);
+  }, [isHost, onJoinRequest, onMeetingEnded, showChatPanel]);
 
   // ============== INTERNAL JOIN (uses handleSignalingMessage) ==============
 
@@ -528,12 +525,12 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         handleSignalingMessage(JSON.parse(event.data));
       };
 
-      ws.onerror = (wsError) => {
+      ws.onerror = (_wsError) => {
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
       };
 
-      ws.onclose = (closeEvent) => {
+      ws.onclose = (_closeEvent) => {
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
       };
@@ -1105,7 +1102,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       setInviteEmail('');
       setTimeout(() => setInviteSuccess(null), 3000);
       
-    } catch (err) {
+    } catch {
       setError('E-Mail-Einladung konnte nicht gesendet werden.');
     } finally {
       setInviteSending(false);

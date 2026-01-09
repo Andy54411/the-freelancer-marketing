@@ -239,7 +239,7 @@ const ProjectsPage: React.FC = () => {
             updateProjectsState();
           }
         },
-        error => {
+        _error => {
           loadedCollections = Math.max(loadedCollections, 1);
           if (loadedCollections >= totalCollections) {
             updateProjectsState();
@@ -303,7 +303,7 @@ const ProjectsPage: React.FC = () => {
           allProjects = [...allProjects, ...quoteProjects]; // Add new quotes
           processQuotesData();
         },
-        error => {
+        _error => {
           processQuotesData();
         }
       );
@@ -312,7 +312,7 @@ const ProjectsPage: React.FC = () => {
         quotesQuery2,
         snapshot => {
           snapshot.docs.forEach(doc => {
-            const data = doc.data();
+            const _data = doc.data();
           });
 
           const quoteProjects: Project[] = snapshot.docs.map(doc => {
@@ -353,7 +353,7 @@ const ProjectsPage: React.FC = () => {
 
           processQuotesData();
         },
-        error => {
+        _error => {
           processQuotesData();
         }
       ); // Cleanup subscriptions on unmount
@@ -389,8 +389,8 @@ const ProjectsPage: React.FC = () => {
       const project = projects.find(p => p.id === projectId);
 
       if (project?.isDirectAssignment) {
-        // Lösche aus quotes Collection (direkte KI-Anfragen)
-        await deleteDoc(doc(db, 'companies', companyId, 'quotes', projectId));
+        // Lösche aus globaler quotes Collection (direkte KI-Anfragen)
+        await deleteDoc(doc(db, 'quotes', projectId));
       } else {
         // Lösche aus project_requests Collection (öffentliche Projekte)
         await deleteDoc(doc(db, 'project_requests', projectId));
@@ -407,7 +407,7 @@ const ProjectsPage: React.FC = () => {
         projectId: '',
         projectTitle: '',
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen des Projekts');
     }
   };

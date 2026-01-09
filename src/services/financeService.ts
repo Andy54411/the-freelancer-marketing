@@ -2,11 +2,9 @@ import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   doc,
-  setDoc,
   updateDoc,
   collection as fsCollection,
   addDoc,
-  Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
 import { UsageTrackingService } from './usageTrackingService';
@@ -146,7 +144,7 @@ export class FinanceService {
     const actionsCol = fsCollection(db, 'companies', companyId, 'invoices', invoiceId, 'actions');
 
     try {
-      const docRef = await addDoc(actionsCol, actionData);
+      const _docRef = await addDoc(actionsCol, actionData);
     } catch (firestoreError) {
       console.error('❌ Firestore subcollection save failed:', firestoreError);
       // Continue - we still want to update the main invoice
@@ -172,7 +170,7 @@ export class FinanceService {
   static async getFinanceStats(companyId: string): Promise<FinanceStats> {
     try {
       // Lade echte Auftragsdaten aus Firebase
-      const [orders, invoices, payments, expenses] = await Promise.all([
+      const [orders, invoices, _payments, expenses] = await Promise.all([
         this.getCompanyOrders(companyId),
         this.getInvoices(companyId),
         this.getPayments(companyId),
@@ -264,49 +262,54 @@ export class FinanceService {
   }
 
   /**
-   * Lädt alle Rechnungen für ein Unternehmen
+   * Lädt alle Rechnungen für ein Unternehmen aus der Subcollection
+   * KORRIGIERT: Nutzt jetzt companies/{companyId}/invoices statt globaler invoices Collection
    */
   private static async getInvoices(companyId: string): Promise<InvoiceData[]> {
-    const invoicesQuery = query(
-      collection(db, 'invoices'),
-      where('companyId', '==', companyId),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      // NEUE SUBCOLLECTION STRUKTUR - kein where() nötig, da bereits nach companyId gefiltert
+      const invoicesRef = collection(db, 'companies', companyId, 'invoices');
+      const querySnapshot = await getDocs(invoicesRef);
+      const invoices: InvoiceData[] = [];
 
-    const querySnapshot = await getDocs(invoicesQuery);
-    const invoices: InvoiceData[] = [];
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        invoices.push({
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        } as InvoiceData);
+      });
 
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      invoices.push({
-        ...data,
-        id: doc.id,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-      } as InvoiceData);
-    });
+      // Client-side Sortierung (keine orderBy in Firestore)
+      invoices.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
 
-    return invoices;
+      return invoices;
+    } catch {
+      return [];
+    }
   }
 
   /**
-   * Lädt alle Zahlungen für ein Unternehmen
+   * Lädt alle Zahlungen für ein Unternehmen aus der Subcollection
+   * KORRIGIERT: Nutzt jetzt companies/{companyId}/payments statt globaler payments Collection
    */
   private static async getPayments(companyId: string): Promise<PaymentRecord[]> {
     try {
-      const paymentsQuery = query(
-        collection(db, 'payments'),
-        where('companyId', '==', companyId),
-        orderBy('date', 'desc')
-      );
-
-      const querySnapshot = await getDocs(paymentsQuery);
+      // NEUE SUBCOLLECTION STRUKTUR
+      const paymentsRef = collection(db, 'companies', companyId, 'payments');
+      const querySnapshot = await getDocs(paymentsRef);
       const payments: PaymentRecord[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
         payments.push({
           id: doc.id,
-          companyId: data.companyId,
+          companyId: companyId,
           amount: data.amount || 0,
           type: data.type || 'income',
           category: data.category || '',
@@ -317,31 +320,31 @@ export class FinanceService {
         });
       });
 
+      // Client-side Sortierung (keine orderBy in Firestore)
+      payments.sort((a, b) => b.date.getTime() - a.date.getTime());
+
       return payments;
-    } catch (error) {
+    } catch {
       return [];
     }
   }
 
   /**
-   * Lädt alle Ausgaben für ein Unternehmen
+   * Lädt alle Ausgaben für ein Unternehmen aus der Subcollection
+   * KORRIGIERT: Nutzt jetzt companies/{companyId}/expenses statt globaler expenses Collection
    */
   private static async getExpenses(companyId: string): Promise<ExpenseRecord[]> {
     try {
-      const expensesQuery = query(
-        collection(db, 'expenses'),
-        where('companyId', '==', companyId),
-        orderBy('date', 'desc')
-      );
-
-      const querySnapshot = await getDocs(expensesQuery);
+      // NEUE SUBCOLLECTION STRUKTUR - kein where() nötig, da bereits nach companyId gefiltert
+      const expensesRef = collection(db, 'companies', companyId, 'expenses');
+      const querySnapshot = await getDocs(expensesRef);
       const expenses: ExpenseRecord[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
         expenses.push({
           id: doc.id,
-          companyId: data.companyId,
+          companyId: companyId,
           amount: data.amount || 0,
           category: data.category || '',
           description: data.description || '',
@@ -352,8 +355,11 @@ export class FinanceService {
         });
       });
 
+      // Client-side Sortierung (keine orderBy in Firestore)
+      expenses.sort((a, b) => b.date.getTime() - a.date.getTime());
+
       return expenses;
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -390,7 +396,7 @@ export class FinanceService {
       });
 
       return orders;
-    } catch (error) {
+    } catch {
       return [];
     }
   }

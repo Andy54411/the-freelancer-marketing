@@ -143,7 +143,7 @@ export async function POST(
       estimatedProcessingTime: '24-48 Stunden',
       supportContact: 'Bei Fragen kontaktieren Sie unseren Support',
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Storno-Anfrage' },
       { status: 500 }
@@ -213,7 +213,7 @@ export async function GET(
         stornoReasons: canRequestStorno.reason,
       },
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Storno-Informationen' },
       { status: 500 }
@@ -261,7 +261,7 @@ function getCanRequestStornoInfo(auftragData: any) {
 /**
  * Benachrichtige Provider über Storno-Anfrage
  */
-async function notifyProviderAboutStornoRequest(auftragData: any, stornoData: any) {
+async function notifyProviderAboutStornoRequest(_auftragData: any, _stornoData: any) {
   try {
-  } catch (error) {}
+  } catch {}
 }

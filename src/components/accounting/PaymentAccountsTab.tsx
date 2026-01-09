@@ -60,7 +60,7 @@ export default function PaymentAccountsTab({
   onEdit,
   onDelete,
   onAdd,
-  companyId,
+  companyId: _companyId,
 }: PaymentAccountsTabProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

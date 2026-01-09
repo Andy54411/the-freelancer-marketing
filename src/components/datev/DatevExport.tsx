@@ -18,7 +18,6 @@ import {
   FiCheck,
   FiClock,
   FiAlertCircle,
-  FiDownload,
   FiRefreshCw,
   FiFilter,
 } from 'react-icons/fi';
@@ -54,7 +53,7 @@ interface ExportJob {
 
 export function DatevExport({ companyId }: DatevExportProps) {
   const [loading, setLoading] = useState(true);
-  const [organization, setOrganization] = useState<DatevOrganization | null>(null);
+  const [organization] = useState<DatevOrganization | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -131,7 +130,7 @@ export function DatevExport({ companyId }: DatevExportProps) {
           completedAt: '2025-08-02T15:00:45Z',
         },
       ]);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Export-Daten');
     } finally {
       setLoading(false);
@@ -198,7 +197,7 @@ export function DatevExport({ companyId }: DatevExportProps) {
               );
 
               toast.success(`${invoice.number} erfolgreich zu DATEV exportiert`);
-            } catch (error) {
+            } catch {
               // Update job with error
               setExportJobs(prev =>
                 prev.map(job =>
@@ -216,7 +215,7 @@ export function DatevExport({ companyId }: DatevExportProps) {
 
       setSelectedInvoices([]);
       toast.info(`Export von ${selectedInvoices.length} Rechnung(en) gestartet`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Starten des Exports');
     }
   };

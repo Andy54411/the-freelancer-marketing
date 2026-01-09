@@ -187,7 +187,7 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
 
                 {/* Countries List */}
                 <div className="flex-1 overflow-y-auto max-h-96 border border-gray-200 rounded">
-                  {filteredCountries.map((country, index) => (
+                  {filteredCountries.map((country, _index) => (
                     <div
                       key={country}
                       className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"

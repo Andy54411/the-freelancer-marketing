@@ -6,7 +6,6 @@ import {
   FormSelect,
   FormInput,
   FormTextarea,
-  FormCheckboxGroup,
   FormRadioGroup,
   FormSubmitButton,
 } from './FormComponents';

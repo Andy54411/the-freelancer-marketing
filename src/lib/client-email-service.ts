@@ -71,7 +71,7 @@ export class ClientEmailService {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Netzwerkfehler beim E-Mail-Versand' };
     }
   }
@@ -121,7 +121,7 @@ export class ClientEmailService {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       return {
         success: false,
         results: messages.map(m => ({ error: 'Netzwerkfehler', to: m.to })),
@@ -163,7 +163,7 @@ export class ClientEmailService {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Netzwerkfehler beim Template-E-Mail-Versand' };
     }
   }
@@ -179,7 +179,7 @@ export class ClientEmailService {
 
       const result = await response.json();
       return result.templates || [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -205,7 +205,7 @@ export class ClientEmailService {
         lastEvent: result.lastEvent ? new Date(result.lastEvent) : undefined,
         error: result.error,
       };
-    } catch (error) {
+    } catch {
       return { status: 'sent', error: 'Netzwerkfehler' };
     }
   }

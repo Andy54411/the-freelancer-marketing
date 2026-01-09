@@ -19,7 +19,7 @@ async function getFirebaseDb(): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
             error: 'User not found',
           });
         }
-      } catch (error) {
+      } catch {
         userDetails.push({
           id: userId,
           exists: false,

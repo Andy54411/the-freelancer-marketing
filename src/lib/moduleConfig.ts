@@ -392,9 +392,9 @@ export function getModulePrice(
   interval: 'monthly' | 'yearly' = 'monthly',
   net = false
 ) {
-  const module = PREMIUM_MODULES[moduleId];
-  if (!module) return 0;
-  return net ? module.priceNet[interval] : module.price[interval];
+  const moduleConfig = PREMIUM_MODULES[moduleId];
+  if (!moduleConfig) return 0;
+  return net ? moduleConfig.priceNet[interval] : moduleConfig.price[interval];
 }
 
 /**

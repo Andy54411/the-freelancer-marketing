@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -64,7 +63,7 @@ export function ApplicantProfileForm({ uid, initialData }: Props) {
       } else {
         toast.error(result.error || 'Fehler beim Speichern');
       }
-    } catch (error) {
+    } catch {
       toast.error('Ein unerwarteter Fehler ist aufgetreten');
     } finally {
       setIsSaving(false);
@@ -194,7 +193,7 @@ export function ApplicantProfileForm({ uid, initialData }: Props) {
                   <Input type="date" {...form.register(`experience.${index}.startDate`)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Enddatum (Leer lassen für "Aktuell")</Label>
+                  <Label>Enddatum (Leer lassen für &quot;Aktuell&quot;)</Label>
                   <Input type="date" {...form.register(`experience.${index}.endDate`)} />
                 </div>
               </div>

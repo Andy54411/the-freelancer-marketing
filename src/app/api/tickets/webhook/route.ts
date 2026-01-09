@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
     const headersList = await headers();
-    const signature = headersList.get('resend-signature');
+    const _signature = headersList.get('resend-signature');
 
     // TODO: Webhook-Signatur validieren (für Produktionsumgebung)
 
@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ message: 'Webhook verarbeitet' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Webhook-Verarbeitung fehlgeschlagen' }, { status: 500 });
   }
 }
 
 async function handleIncomingEmail(emailData: any) {
   try {
-    const { from, to, subject, text, html } = emailData;
+    const { from, to: _to, subject, text, html } = emailData;
 
     // Prüfen ob es eine Antwort auf ein bestehendes Ticket ist
     const ticketIdMatch = subject.match(/#(ticket-\w+)/);
@@ -39,7 +39,7 @@ async function handleIncomingEmail(emailData: any) {
       // Neues Ticket aus E-Mail erstellen
       return await createTicketFromEmail(from, subject, text || html);
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'E-Mail-Verarbeitung fehlgeschlagen' }, { status: 500 });
   }
 }
@@ -50,7 +50,7 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
     // Für jetzt nur Logging
 
     // Ticket aus Datenbank laden (Mock)
-    const ticket: Ticket = {
+    const _ticket: Ticket = {
       id: ticketId,
       title: 'Beispiel Ticket',
       description: 'Ticket Beschreibung',
@@ -181,5 +181,5 @@ async function sendTicketConfirmationEmail(to: string, ticket: Ticket) {
     if (response.ok) {
     } else {
     }
-  } catch (error) {}
+  } catch {}
 }

@@ -1,11 +1,7 @@
 // Hauptkomponente für dynamische Unterkategorie-Formulare
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  SubcategoryData,
-  getSubcategoryType,
-  validateSubcategoryData,
-} from '@/types/subcategory-forms';
+import { SubcategoryData } from '@/types/subcategory-forms';
 import { useRegistration } from '@/contexts/Registration-Context';
 import AutoreparaturForm from './AutoreparaturForm';
 import BodenlegerForm from './BodenlegerForm';
@@ -61,7 +57,6 @@ import OnlineMarketingForm from './OnlineMarketingForm';
 import PhysiotherapieForm from './PhysiotherapieForm';
 import RechercheForm from './RechercheForm';
 import RechtsberatungForm from './RechtsberatungForm';
-import RechnungswesenForm from './RechnungswesenForm';
 import ReinigungskraftForm from './ReinigungskraftForm';
 import SchlosserForm from './SchlosserForm';
 import SchreinerForm from './SchreinerForm';
@@ -79,7 +74,6 @@ import TierpflegeForm from './TierpflegeForm';
 import TischlerForm from './TischlerForm';
 import TransportdienstleistungenForm from './TransportdienstleistungenForm';
 import TrockenbauerForm from './TrockenbauerForm';
-import UmzugshelferForm from './UmzugshelferForm';
 import UnternehmensberatungForm from './UnternehmensberatungForm';
 import VersicherungsberatungForm from './VersicherungsberatungForm';
 import VerwaltungForm from './VerwaltungForm';
@@ -99,13 +93,13 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   subcategory,
   data,
   onDataChange,
-  onValidationChange,
+  onValidationChange: _onValidationChange,
   hideSubmitButton = false,
 }) => {
   const [formData, setFormData] = useState<SubcategoryData | null>(null);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [_errors, _setErrors] = useState<string[]>([]);
   const router = useRouter();
-  const { customerType, selectedCategory, selectedSubcategory, setDescription } = useRegistration();
+  const { setDescription } = useRegistration();
 
   // Initialisiere Formulardaten basierend auf Unterkategorie
   useEffect(() => {
@@ -1103,7 +1097,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   };
 
   // Vereinfachte Validierung - lokale Formulare übernehmen die Validierung
-  const isFormValid = () => {
+  const _isFormValid = () => {
     // Alle Validierung kommt aus den lokalen Formularen
     return true;
   };
@@ -1161,7 +1155,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
     return parts.join(' | ');
   };
 
-  const handleNextClick = () => {
+  const _handleNextClick = () => {
     // Extrahiere die Beschreibung aus den Formulardaten
     let description = '';
     if (formData) {
@@ -2308,13 +2302,13 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       {/* Zentrale Validierung und Buttons entfernt - jedes Formular hat seine eigene lokale Validierung und Button */}
 
       {/* Fehleranzeige */}
-      {errors.length > 0 && (
+      {_errors.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <h4 className="text-red-800 dark:text-red-200 font-semibold mb-2">
             Bitte korrigieren Sie folgende Fehler:
           </h4>
           <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-            {errors.map((error, index) => (
+            {_errors.map((error, index) => (
               <li key={index}>• {error}</li>
             ))}
           </ul>

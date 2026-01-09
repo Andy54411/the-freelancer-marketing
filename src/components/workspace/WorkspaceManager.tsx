@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { QuickNoteDialog } from './QuickNoteDialog';
 
 // Import types from WorkspaceService (remove local duplicates)
-import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
+import type { Workspace } from '@/services/WorkspaceService';
 
 type ViewMode = 'board' | 'list' | 'calendar';
 
@@ -52,7 +52,7 @@ export default function WorkspaceManager() {
           setWorkspaces(workspaceData);
           setLoading(false);
         });
-      } catch (error) {
+      } catch {
         setLoading(false);
       }
     };
@@ -67,7 +67,7 @@ export default function WorkspaceManager() {
     };
   }, [companyId]);
 
-  const handleCreateWorkspace = async (workspaceData: Partial<Workspace>) => {
+  const _handleCreateWorkspace = async (workspaceData: Partial<Workspace>) => {
     if (!companyId || !user?.uid) return;
 
     try {
@@ -82,7 +82,7 @@ export default function WorkspaceManager() {
 
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
-    } catch (error) {}
+    } catch {}
   };
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<Workspace>) => {
@@ -98,7 +98,7 @@ export default function WorkspaceManager() {
 
       // Update in Realtime Database - real-time listener will sync automatically
       await WorkspaceService.updateWorkspace(workspaceId, updates);
-    } catch (error) {
+    } catch {
       // Revert optimistic update on error by re-triggering realtime sync
       // The subscription will automatically refresh the data
     }
@@ -108,7 +108,7 @@ export default function WorkspaceManager() {
     try {
       await WorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
-    } catch (error) {}
+    } catch {}
   };
 
   const handleWorkspaceClick = (workspace: Workspace) => {

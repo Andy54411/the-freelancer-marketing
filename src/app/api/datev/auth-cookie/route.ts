@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Redirect to DATEV authorization server
     return NextResponse.redirect(authUrl);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         error: 'auth_url_generation_failed',

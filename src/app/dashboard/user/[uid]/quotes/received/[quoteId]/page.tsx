@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import UserHeader from '@/components/UserHeader';
 import {
   FiArrowLeft,
   FiLoader,
@@ -14,7 +13,6 @@ import {
   FiClock,
   FiCalendar,
   FiMapPin,
-  FiUser,
   FiMail,
   FiPhone,
   FiCreditCard,
@@ -72,7 +70,6 @@ export default function CustomerQuoteDetailsPage({
   const [quote, setQuote] = useState<QuoteDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
 
   // Payment Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -167,10 +164,10 @@ export default function CustomerQuoteDetailsPage({
           alert('Angebot abgelehnt.');
         }
       } else {
-        const errorData = await response.json();
-        alert(`Fehler: ${errorData.error}`);
+        const _errorData = await response.json();
+        alert(`Fehler: ${_errorData.error}`);
       }
-    } catch (error) {
+    } catch {
       alert('Ein Fehler ist aufgetreten.');
     } finally {
       setProcessing(false);
@@ -213,8 +210,8 @@ export default function CustomerQuoteDetailsPage({
         const errorData = await response.json();
         throw new Error(errorData.error || 'Fehler bei der Auftragsverarbeitung');
       }
-    } catch (error) {
-      handlePaymentError(error instanceof Error ? error.message : 'Unbekannter Fehler');
+    } catch {
+      handlePaymentError('Fehler bei der Auftragsverarbeitung');
     }
   };
 
@@ -515,6 +512,7 @@ export default function CustomerQuoteDetailsPage({
                                       customerName={quote.customer?.name || 'Kunde'}
                                       providerName={proposal.companyName || 'Anbieter'}
                                       currentUserType="customer"
+                                      companyId={proposal.companyUid}
                                     />
                                   </div>
                                 )}

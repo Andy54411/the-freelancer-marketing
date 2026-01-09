@@ -23,8 +23,6 @@ import {
   Check,
   Building2,
   User,
-  Settings,
-  ChevronDown,
   X,
   Phone,
   Mail,
@@ -41,7 +39,6 @@ import {
 import { toast } from 'sonner';
 import { validateVATNumber } from '@/utils/vatValidation';
 import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
-import { CustomerService } from '@/services/customerService';
 import NewCategoryModal from '@/components/finance/NewCategoryModal';
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
@@ -264,7 +261,7 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+      const _viewportHeight = window.innerHeight;
       
       // Bestimme beste Position
       if (rect.right + 256 > viewportWidth) {
@@ -342,14 +339,14 @@ export default function EditContactPage() {
   const contactId = params?.contactId as string;
   
   // Fixed values for page mode - EDIT MODE
-  const open = true;
-  const onOpenChange = () => {};
-  const defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
-  const contactType: 'organisation' | 'person' = 'organisation';
-  const saving = false;
-  const onSave = undefined;
-  const persistDirectly = true;
-  const onSaved = undefined;
+  const _open = true;
+  const _onOpenChange = () => {};
+  const _defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
+  const _contactType: 'organisation' | 'person' = 'organisation';
+  const _saving = false;
+  const _onSave = undefined;
+  const _persistDirectly = true;
+  const _onSaved = undefined;
 
   // State Management - MUSS vor jedem bedingten Return stehen
   const [loading, setLoading] = useState(true); // Start with loading=true for edit mode
@@ -357,21 +354,21 @@ export default function EditContactPage() {
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
   const [formData, setFormData] = useState<ExtendedFormData>(DEFAULT_FORM_DATA);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
-  const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
-  const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
+  const [, setNextCustomerNumber] = useState('KD-001');
+  const [, _setCurrentNumberSequence] = useState<NumberSequence | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [customCategories, setCustomCategories] = useState<
     Array<{id: string;name: string;categoryType: string;}>>(
     []);
   const [referenceFieldType, setReferenceFieldType] = useState<'customerReference' | 'leitwegId'>('customerReference');
   const [newTag, setNewTag] = useState('');
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [, setShowTypeDropdown] = useState(false);
   const [isEditMode] = useState(true); // NEW: Track edit mode
   const [availableInventory, setAvailableInventory] = useState<Array<{id: string; name: string; sku: string}>>([]);
 
   // Refs for outside click detection
   const typeDropdownRef = useRef<HTMLDivElement>(null);
-  const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
+  const [, _setDefaultValuesApplied] = useState(false);
 
   // Tab Definitionen - nur relevante Tabs für neue Kunden
   const tabs: TabDefinition[] = [
@@ -549,17 +546,16 @@ export default function EditContactPage() {
 
   // 🔥 CRITICAL FIX: Separate category loading from tab changes
   useEffect(() => {
-    if (open) {
-      loadCategories();
-      loadInventory(); // Lade auch Firmen-Inventory für Produktauswahl
-      // Don't generate new number in edit mode - use existing customerNumber from loaded data
-      if (!isEditMode) {
-        generateNextCustomerNumber();
-      }
-      // Synchronisiere Produkt-Nummernkreis mit existierendem Inventory
-      syncProductNumberSequence();
+    // Page is always open, no modal check needed
+    loadCategories();
+    loadInventory(); // Lade auch Firmen-Inventory für Produktauswahl
+    // Don't generate new number in edit mode - use existing customerNumber from loaded data
+    if (!isEditMode) {
+      generateNextCustomerNumber();
     }
-  }, [open, isEditMode]);
+    // Synchronisiere Produkt-Nummernkreis mit existierendem Inventory
+    syncProductNumberSequence();
+  }, [isEditMode]);
 
   // Synchronisiere Produkt-Nummernkreis mit existierenden Produkten
   const syncProductNumberSequence = async () => {
@@ -760,7 +756,7 @@ export default function EditContactPage() {
     });
   };
 
-  const addAddress = () => {
+  const _addAddress = () => {
     const newAddress = createDefaultAddress();
     setFormData((prev) => ({
       ...prev,
@@ -768,7 +764,7 @@ export default function EditContactPage() {
     }));
   };
 
-  const updateAddress = (addressId: string, field: keyof Address, value: string) => {
+  const _updateAddress = (addressId: string, field: keyof Address, value: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.map((addr) =>
@@ -777,7 +773,7 @@ export default function EditContactPage() {
     }));
   };
 
-  const removeAddress = (addressId: string) => {
+  const _removeAddress = (addressId: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.filter((addr) => addr.id !== addressId)
@@ -2187,7 +2183,7 @@ export default function EditContactPage() {
             </Button>
             <Button
               className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
-              disabled={Boolean(saving) || !isValid() || loading}
+              disabled={Boolean(_saving) || !isValid() || loading}
               onClick={async () => {
                 try {
                   setLoading(true);
@@ -2293,7 +2289,7 @@ export default function EditContactPage() {
                     lastModifiedBy: companyId
                   };
 
-                  if (persistDirectly && companyId && contactId) {
+                  if (_persistDirectly && companyId && contactId) {
                     try {
                       // Use the correct API import for customer update
                       const { updateCustomer } = await import('@/utils/api/companyApi');
@@ -2316,7 +2312,7 @@ export default function EditContactPage() {
                     }
                   }
 
-                  if (onSave) {
+                  if (_onSave) {
                     // Custom save logic würde hier stehen
                     toast.success('Änderungen erfolgreich gespeichert!');
                   }
@@ -2328,7 +2324,7 @@ export default function EditContactPage() {
                 }
               }}>
 
-              {saving || loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {_saving || loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {loading ? 'Wird aktualisiert...' : 'Änderungen speichern'}
             </Button>
           </div>

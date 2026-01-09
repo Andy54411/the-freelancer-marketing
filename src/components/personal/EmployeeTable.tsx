@@ -26,31 +26,25 @@ import {
   Trash2,
   Eye,
   Search,
-  Filter,
   Mail,
   Phone,
-  MapPin,
   CheckCircle,
   XCircle,
-  Clock,
   Smartphone,
-  UserPlus,
 } from 'lucide-react';
 import { type Employee } from '@/services/personalService';
 import { DeleteEmployeeModal } from './DeleteEmployeeModal';
-import Link from 'next/link';
 
 interface EmployeeTableProps {
   employees: Employee[];
   companyId: string;
-  onEmployeeUpdated: (employee: Employee) => void;
+  onEmployeeUpdated?: (employee: Employee) => void;
   onEmployeeDeleted: (employeeId: string) => void;
 }
 
 export function EmployeeTable({
   employees,
   companyId,
-  onEmployeeUpdated,
   onEmployeeDeleted,
 }: EmployeeTableProps) {
   const router = useRouter();

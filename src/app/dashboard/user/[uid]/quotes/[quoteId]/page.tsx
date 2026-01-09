@@ -13,9 +13,7 @@ import {
   Check as FiCheck,
   X as FiX,
   Loader2 as FiLoader,
-  Download as FiDownload,
   Calendar as FiCalendar,
-  Euro as FiEuro,
   MapPin as FiMapPin,
   Building as FiBuilding,
   Star as FiStar,
@@ -113,7 +111,7 @@ export default function CustomerQuoteDetailPage() {
       } else {
         setError(result.error || 'Angebotsanfrage nicht gefunden');
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Laden der Angebotsanfrage');
     } finally {
       setLoading(false);
@@ -155,7 +153,7 @@ export default function CustomerQuoteDetailPage() {
             `Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`
         );
       }
-    } catch (err) {
+    } catch {
       setError(`Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`);
     } finally {
       setLoadingState(false);
@@ -481,14 +479,16 @@ export default function CustomerQuoteDetailPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Angebot erhalten am
-                  </label>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {new Date(quote.response.respondedAt).toLocaleString('de-DE')}
-                  </p>
-                </div>
+                {quote.response.respondedAt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Angebot erhalten am
+                    </label>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {new Date(quote.response.respondedAt).toLocaleString('de-DE')}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -648,6 +648,7 @@ export default function CustomerQuoteDetailPage() {
               customerName={quote.customerName}
               providerName={quote.providerName || quote.providerCompany || 'Anbieter'}
               currentUserType="customer"
+              companyId={quote.providerId}
             />
           )}
         </div>

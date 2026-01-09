@@ -53,8 +53,7 @@ import {
 // Firebase imports
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '@/firebase/clients';
-import { WorkspaceService } from '@/services/WorkspaceService';
-import type { Workspace, WorkspaceTask, WorkspaceMember } from '@/services/WorkspaceService';
+import type { Workspace, WorkspaceTask } from '@/services/WorkspaceService';
 import dynamic from 'next/dynamic';
 
 const RichTextEditor = dynamic(
@@ -271,7 +270,7 @@ export default function TaskDetailSlider({
 
       await onTaskUpdated(task.id, updates);
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Fehler beim Speichern der Aufgabe' });
     } finally {
       setLoading(false);
@@ -384,7 +383,7 @@ export default function TaskDetailSlider({
           timestamp: new Date(),
         };
         setActivities(prev => [activity, ...prev]);
-      } catch (error) {
+      } catch {
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[fileId];
@@ -426,7 +425,7 @@ export default function TaskDetailSlider({
         timestamp: new Date(),
       };
       setActivities(prev => [activity, ...prev]);
-    } catch (error) {
+    } catch {
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
     }
   };

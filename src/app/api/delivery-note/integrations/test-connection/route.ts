@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // API-Test-Route für verschiedene Integrationen
 export async function POST(request: NextRequest) {
   try {
-    const { integrationType, credentials, config } = await request.json();
+    const { integrationType, credentials } = await request.json();
 
     let testResult;
 

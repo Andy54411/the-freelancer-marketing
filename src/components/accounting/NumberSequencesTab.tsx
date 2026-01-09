@@ -24,7 +24,7 @@ interface NumberSequencesTabProps {
 
 export default function NumberSequencesTab({
   sequences,
-  onEdit,
+  onEdit: _onEdit,
   onDelete,
   onUpdate,
 }: NumberSequencesTabProps) {

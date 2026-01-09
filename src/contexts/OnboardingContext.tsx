@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -115,7 +115,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
           setOnboardingStatus(initialStatus);
         }
-      } catch (error) {
+      } catch {
         // Fallback: Set default status to prevent app crash
         const fallbackStatus: CompanyOnboardingStatus = {
           uid: companyId,
@@ -206,7 +206,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     // Check conditional validators
     if (rules.conditional) {
-      for (const [field, validator] of Object.entries(rules.conditional)) {
+      for (const [_field, validator] of Object.entries(rules.conditional)) {
         if (!validator(data)) {
           return false;
         }
@@ -301,7 +301,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   // OPTIMIZED: Helper function to serialize stepData for Firestore (prevent data bloat)
-  const serializeStepData = useCallback((data: Record<number, any>) => {
+  const _serializeStepData = useCallback((data: Record<number, any>) => {
     const serialized: Record<string, any> = {};
 
     // Clear existing step data to prevent accumulation

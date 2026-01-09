@@ -33,7 +33,7 @@ interface QuoteRequest {
   customerPhone?: string;
   requesterName?: string;
   requestDate?: string;
-  createdAt?: Date;
+  createdAt?: Date | { _seconds: number; _nanoseconds: number };
   status: 'pending' | 'received' | 'responded' | 'accepted' | 'declined' | 'expired';
   providerId: string;
   customerUid?: string;
@@ -356,9 +356,11 @@ export default function CustomerQuotesOverviewPage() {
                               <p className="flex items-center text-sm text-gray-500">
                                 <FiClock className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                 {quote.createdAt
-                                  ? new Date(quote.createdAt._seconds * 1000).toLocaleDateString(
-                                      'de-DE'
-                                    )
+                                  ? new Date(
+                                      typeof quote.createdAt === 'object' && '_seconds' in quote.createdAt
+                                        ? quote.createdAt._seconds * 1000
+                                        : quote.createdAt
+                                    ).toLocaleDateString('de-DE')
                                   : 'Datum unbekannt'}
                               </p>
                             </div>

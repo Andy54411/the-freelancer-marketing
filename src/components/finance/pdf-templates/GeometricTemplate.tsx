@@ -9,7 +9,6 @@ import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface GeometricTemplateProps {
   data: ProcessedPDFData;

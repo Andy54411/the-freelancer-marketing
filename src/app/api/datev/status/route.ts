@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json({
         isConnected: false,
         connectedAt: null,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         cashRegister: !isExpired,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       isConnected: false,
       connectedAt: null,

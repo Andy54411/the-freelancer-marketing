@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function AIAssistantPage() {
   const { user } = useAuth();
-  const [activeAssistant, setActiveAssistant] = useState<string | null>(null);
+  const [_activeAssistant, setActiveAssistant] = useState<string | null>(null);
 
   const projectCreationAssistant = {
     id: 'project-creation',
@@ -240,7 +240,7 @@ export default function AIAssistantPage() {
       </div>
 
       {/* Projekt-Assistent */}
-      {user?.uid && <TaskiloProjectAssistant userId={user.uid} onOrderCreate={orderData => {}} />}
+      {user?.uid && <TaskiloProjectAssistant userId={user.uid} onOrderCreate={_orderData => {}} />}
     </div>
   );
 }

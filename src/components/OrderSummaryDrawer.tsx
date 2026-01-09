@@ -89,7 +89,7 @@ export function OrderSummaryDrawer({
 
       setQuickMessage('');
       toast.success('Nachricht gesendet!');
-    } catch (error) {
+    } catch {
       toast.error('Nachricht konnte nicht gesendet werden.');
     } finally {
       setIsSending(false);

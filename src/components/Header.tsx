@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'; // Import memo
 import AppHeaderNavigation from './AppHeaderNavigation'; // Pfad anpassen, falls nötig
 import Link from 'next/link'; // Importiere Link
+import Image from 'next/image'; // Importiere Image
 import LoginPopup from '@/components/LoginPopup';
 import {
   Search as FiSearch,
@@ -11,19 +12,15 @@ import {
   HelpCircle as FiHelpCircle,
   ChevronDown as FiChevronDown,
   Grid as FiGrid,
-  Briefcase as FiBriefcase,
-  Users as FiUsers,
-  Award as FiAward,
   Settings as FiSettings,
   LogOut as FiLogOut,
-  FilePlus as FiFilePlus,
   Inbox as FiInbox,
   CheckSquare as FiCheckSquare,
   User as FiUser,
-} from 'lucide-react'; // FiUser hinzugefügt
-import { User, getAuth, signOut } from 'firebase/auth'; // Für Benutzer-Infos und Logout
-import { app, storage, db } from '@/firebase/clients'; // Firebase App-Instanz, Storage und Firestore DB
-import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; // Firebase Storage Funktionen
+} from 'lucide-react';
+import { User, getAuth, signOut } from 'firebase/auth';
+import { app, storage, db } from '@/firebase/clients';
+import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage';
 import {
   doc,
   getDoc,
@@ -34,7 +31,7 @@ import {
   QuerySnapshot,
   orderBy,
   limit,
-} from 'firebase/firestore'; // Firestore Funktionen
+} from 'firebase/firestore';
 import { categories, Category } from '@/lib/categoriesData'; // Importiere Kategorien und Typen
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -154,7 +151,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       otherUserData.photoURL ||
                       null;
                   }
-                } catch (error) {}
+                } catch {
+                  // Silent error handling
+                }
               }
 
               // Bestimme den korrekten Link zum Posteingang basierend auf dem Benutzertyp
@@ -178,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           setUnreadMessagesCount(unreadCount);
           setRecentChats(chatsData);
         },
-        error => {
+        _error => {
           setUnreadMessagesCount(0);
           setRecentChats([]);
         }
@@ -300,7 +299,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
               setImageLoadError(false);
 
               return;
-            } catch (storageError) {}
+            } catch {
+              // Silent error handling
+            }
           }
 
           // Fallback: Verwende die direkte URL
@@ -342,7 +343,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           setProfilePictureURLFromStorage(null); // Kein Bild gefunden
         }
       }
-    } catch (error) {
+    } catch {
       setProfilePictureURLFromStorage(null); // Fehlerfall
     }
   }, []);
@@ -382,7 +383,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         console.log('❌ No user or company found:', uid);
         setFirestoreUserData(null);
       }
-    } catch (error) {
+    } catch {
       setFirestoreUserData(null);
     }
   }, []);
@@ -476,7 +477,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       setIsProfileDropdownOpen(false);
       setFirestoreUserData(null); // Firestore-Daten beim Logout zurücksetzen
       router.push('/'); // Weiterleitung zur Startseite nach dem Logout
-    } catch (error) {}
+    } catch {
+      // Silent error handling
+    }
   };
   // NEU: Gefilterte Kategorien basierend auf dem Suchbegriff
   const filteredCategories = useMemo(() => {
@@ -642,11 +645,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                                 >
                                   <div className="flex items-center gap-3">
                                     {chat.otherUserAvatarUrl ? (
-                                      <img
-                                        src={chat.otherUserAvatarUrl}
-                                        alt={chat.otherUserName}
-                                        className="w-10 h-10 rounded-full object-cover"
-                                      />
+                                      <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                                        <Image
+                                          src={chat.otherUserAvatarUrl}
+                                          alt={chat.otherUserName}
+                                          fill
+                                          className="object-cover"
+                                          sizes="40px"
+                                        />
+                                      </div>
                                     ) : (
                                       <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                                         <FiUser />
@@ -735,30 +742,39 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   >
                     {/* PRIORITÄT: Benutzer-Profilbild > Firmenlogo > Platzhalter */}
                     {(profilePictureURLFromStorage || currentUser.photoURL) && !imageLoadError ? (
-                      <img
+                      <Image
                         src={profilePictureURLFromStorage || currentUser.photoURL || ''}
                         alt={firestoreUserData?.user_type === 'firma' ? 'Company Logo' : 'Avatar'}
+                        width={32}
+                        height={32}
                         className={`w-7 h-7 sm:w-8 sm:h-8 object-cover ${
                           firestoreUserData?.user_type === 'firma' ? 'rounded-md' : 'rounded-full'
                         }`}
-                        onError={e => {
+                        onError={() => {
                           setImageLoadError(true);
                         }}
                         onLoad={() => {
                           setImageLoadError(false);
                         }}
+                        unoptimized
                       />
                     ) : company?.profilePictureURL ? (
-                      <img
+                      <Image
                         src={company.profilePictureURL}
                         alt="Firmenlogo"
+                        width={32}
+                        height={32}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-md object-cover"
+                        unoptimized
                       />
                     ) : company?.logoUrl ? (
-                      <img
+                      <Image
                         src={company.logoUrl}
                         alt="Firmenlogo"
+                        width={32}
+                        height={32}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-md object-cover"
+                        unoptimized
                       />
                     ) : (
                       // Fallback wenn kein Bild vorhanden oder Ladefehler
@@ -907,7 +923,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
       <LoginPopup 
         isOpen={showLoginPopup} 
-        onClose={() => setShowLoginPopup(false)} 
+        onClose={() => setShowLoginPopup(false)}
+        onLoginSuccess={() => {
+          setShowLoginPopup(false);
+        }}
       />
 
       <style jsx>

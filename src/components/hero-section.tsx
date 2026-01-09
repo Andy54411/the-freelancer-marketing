@@ -19,8 +19,8 @@ interface CompanyLogo {
 
 export default function HeroSection() {
   const [newCompanies, setNewCompanies] = useState<CompanyLogo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
+  const [_loading, setLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
   const { trackEvent, trackNavigation } = useAnalyticsContext();
   const router = useRouter();
 

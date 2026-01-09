@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -70,7 +70,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       } else {
         toast.error('Mitarbeiter nicht gefunden');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Mitarbeiterdaten');
     } finally {
       setLoading(false);
@@ -90,7 +90,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       setEmployee({ ...employee, ...formData });
       setIsEditing(false);
       toast.success('Mitarbeiterdaten erfolgreich aktualisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern der Mitarbeiterdaten');
     }
   };

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         let errorData: any = null;
         try {
           errorData = JSON.parse(errorText);
-        } catch (e) {
+        } catch {
           // Ignore parse errors
         }
 
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }

@@ -140,7 +140,7 @@ export function WorkspaceBoard({
       // Call parent update function for Realtime Database sync
       // This will trigger real-time updates for all connected users
       await onUpdateWorkspace(selectedWorkspace.id, updates);
-    } catch (error) {
+    } catch {
       // Revert local state on error
       setSelectedWorkspace(selectedWorkspace);
     }
@@ -298,7 +298,7 @@ export function WorkspaceBoard({
         boardColumns: updatedColumns,
         updatedAt: new Date(),
       });
-    } catch (error) {}
+    } catch {}
   };
 
   const handleEditTask = (task: WorkspaceTask) => {
@@ -452,7 +452,7 @@ export function WorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -532,7 +532,7 @@ export function WorkspaceBoard({
         boardColumns: updatedColumns,
         archivedTasks: updatedArchivedTasks,
       });
-    } catch (error) {
+    } catch {
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -585,7 +585,7 @@ export function WorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

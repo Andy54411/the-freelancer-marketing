@@ -73,7 +73,7 @@ request: NextRequest,
       lastUpdated: stornoSettings.lastUpdated || null
     });
 
-  } catch (error: any) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Fehler beim Laden der Storno-Bedingungen' },
@@ -195,7 +195,7 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
       timeWindow: getTimeWindowDescription(hoursUntilDeadline)
     };
 
-  } catch (error) {
+  } catch {
 
     return null;
   }

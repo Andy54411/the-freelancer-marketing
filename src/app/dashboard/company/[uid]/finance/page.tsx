@@ -21,7 +21,7 @@ export default function FinancePage() {
       setLoading(true);
       const financeStats = await FinanceService.getFinanceStats(uid);
       setStats(financeStats);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Finanzstatistiken');
 
       // Fallback: Leere Statistiken
@@ -32,6 +32,8 @@ export default function FinancePage() {
         outstandingInvoices: 0,
         outstandingAmount: 0,
         thisMonthRevenue: 0,
+        vatTotal: 0,
+        monthlyData: [],
         lastUpdate: new Date(),
       });
     } finally {

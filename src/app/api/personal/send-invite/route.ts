@@ -15,7 +15,7 @@ interface InviteEmailRequest {
 export async function POST(req: NextRequest) {
   try {
     const body: InviteEmailRequest = await req.json();
-    const { employeeEmail, employeeName, companyId, registrationUrl, companyCode } = body;
+    const { employeeEmail, employeeName, companyId, registrationUrl: _registrationUrl, companyCode } = body;
 
     console.log('[send-invite] Request received:', { employeeEmail, employeeName, companyId, companyCode });
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
           companyName = companyData?.companyName || companyData?.name || companyData?.step1?.firmenname || 'Ihr Unternehmen';
         }
       }
-    } catch (companyError) {
+    } catch {
       // Fallback auf Standard-Firmennamen
     }
 

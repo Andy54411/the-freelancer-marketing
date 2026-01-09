@@ -397,7 +397,7 @@ export default function ProductsServicesCard({
                   </span>
                 </div>
                 <ul className="space-y-4">
-                  {topProducts.map((product, index) => (
+                  {topProducts.map((product, _index) => (
                     <li
                       key={product.id}
                       className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -448,7 +448,7 @@ export default function ProductsServicesCard({
                   </span>
                 </div>
                 <ul className="space-y-4">
-                  {lowestProducts.map((product, index) => (
+                  {lowestProducts.map((product, _index) => (
                     <li
                       key={product.id}
                       className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -497,7 +497,7 @@ export default function ProductsServicesCard({
                   <span className="text-lg font-semibold text-gray-900">Noch keine Verkäufe</span>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
-                  {noSalesProducts.slice(0, 3).map((product, index) => (
+                  {noSalesProducts.slice(0, 3).map((product, _index) => (
                     <div
                       key={product.id}
                       className="flex items-center justify-between py-3 px-4 bg-gray-25 rounded-lg border border-gray-100"

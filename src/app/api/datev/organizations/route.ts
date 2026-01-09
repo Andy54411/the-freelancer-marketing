@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract client ID for API calls
-    const clientId =
+    const _clientId =
       tokenData.client_id || process.env.DATEV_CLIENT_ID || '6111ad8e8cae82d1a805950f2ae4adc4';
 
     // Check if tokens are expired
@@ -160,12 +160,7 @@ export async function GET(request: NextRequest) {
         } else {
           const errorText = await response.text();
 
-          // Try to parse error for debugging
-          try {
-            const errorData = JSON.parse(errorText);
-          } catch (e) {
-            // Ignore parse errors
-          }
+          // Error text already captured above for debugging
 
           lastError = {
             endpoint: endpoint.name,
@@ -232,10 +227,8 @@ export async function GET(request: NextRequest) {
               match: tokenData.environment === process.env.NODE_ENV,
             },
           });
-        } else {
-          const fallbackError = await userInfoResponse.text();
         }
-      } catch (fallbackError) {}
+      } catch {}
 
       // Final error if everything fails
 

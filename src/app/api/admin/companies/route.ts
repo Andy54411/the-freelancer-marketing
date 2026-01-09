@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Laden der Unternehmen' }, { status: 500 });
   }
 }

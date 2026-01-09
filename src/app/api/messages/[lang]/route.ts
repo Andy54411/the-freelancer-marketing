@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ lang
     const translations = JSON.parse(fileContent);
 
     return NextResponse.json(translations);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to load translations' }, { status: 500 });
   }
 }

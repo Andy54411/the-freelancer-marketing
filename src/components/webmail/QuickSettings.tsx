@@ -134,7 +134,7 @@ const defaultSettings: WebmailSettings = {
 const SETTINGS_KEY = 'taskilo_webmail_settings';
 
 // Debug-Logging für Hydration
-const quickSettingsLog = (step: string, data?: Record<string, unknown>) => {
+const quickSettingsLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }

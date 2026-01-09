@@ -3,11 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
@@ -17,7 +15,6 @@ import {
   CheckCircle,
   AlertCircle,
   User,
-  Calendar,
   MessageCircle,
   Shield,
   Eye,
@@ -30,7 +27,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -94,7 +90,7 @@ export default function AdminTicketDetail({
       } else {
         toast.error('Fehler beim Laden des Tickets');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden des Tickets');
     }
   };
@@ -113,7 +109,7 @@ export default function AdminTicketDetail({
       } else {
         toast.error('Fehler beim Laden der Antworten');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Antworten');
     } finally {
       setLoading(false);
@@ -171,7 +167,7 @@ export default function AdminTicketDetail({
         const errorData = await response.json();
         toast.error(errorData.error || 'Fehler beim Senden der Antwort');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Antwort');
     } finally {
       setSending(false);
@@ -204,7 +200,7 @@ export default function AdminTicketDetail({
       } else {
         toast.error('Fehler beim Aktualisieren des Status');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren des Status');
     }
   };
@@ -237,7 +233,7 @@ export default function AdminTicketDetail({
       } else {
         toast.error('Fehler beim Zuweisen des Tickets');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Zuweisen des Tickets');
     } finally {
       setShowAssignDialog(false);
@@ -424,7 +420,7 @@ export default function AdminTicketDetail({
             <div className="text-center py-8 text-gray-500">Noch keine Antworten vorhanden</div>
           ) : (
             <div className="space-y-4">
-              {replies.map((reply, index) => (
+              {replies.map((reply) => (
                 <div
                   key={reply.id}
                   className={`flex gap-3 p-4 rounded-lg border ${

@@ -152,7 +152,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
         }));
 
         setUploadProgress('');
-      } catch (error) {
+      } catch {
         setUploadProgress('Fehler beim Hochladen');
       } finally {
         setIsUploading(false);
@@ -196,7 +196,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
       }));
 
       setUploadProgress('');
-    } catch (error) {
+    } catch {
       setUploadProgress('Fehler beim Hochladen');
     } finally {
       setIsUploading(false);
@@ -250,7 +250,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
     };
 
     // Erstelle eine saubere Kopie ohne File-Objekte
-    const { imageFile, additionalImageFiles, ...cleanItem } = editedItem;
+    const { imageFile: _imageFile, additionalImageFiles: _additionalImageFiles, ...cleanItem } = editedItem;
 
     // Kombiniere mit selectedTechnologies
     const itemWithTechnologies = {

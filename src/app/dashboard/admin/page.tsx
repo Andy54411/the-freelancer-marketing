@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import TicketManagement from '@/components/admin/TicketManagement';
+
 import { DemoRequestsCard } from '@/components/admin/demo-requests-card';
 import { AdminCalendarCard } from '@/components/admin/admin-calendar-card';
 import {
@@ -12,11 +12,8 @@ import {
   Mail,
   Activity,
   TrendingUp,
-  DollarSign,
   AlertTriangle,
   Ticket,
-  BarChart3,
-  Settings,
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -58,7 +55,7 @@ export default function AdminDashboardPage() {
           });
         }
       }
-    } catch (error) {
+    } catch {
       setStats({
         totalUsers: 0,
         totalCompanies: 0,

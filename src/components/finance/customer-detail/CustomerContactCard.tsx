@@ -13,17 +13,6 @@ import {
 } from 'lucide-react';
 import { Customer } from '../AddCustomerModal';
 
-interface ContactPerson {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  position?: string;
-  department?: string;
-  isPrimary: boolean;
-}
-
 interface CustomerContactCardProps {
   customer: Customer;
   onEditContact?: () => void;

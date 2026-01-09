@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         step1: userData?.step1,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Laden der Account-Informationen.' },
       { status: 500 }

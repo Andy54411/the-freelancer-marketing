@@ -77,7 +77,7 @@ export function ContactExchangeDisplay({
             source: 'company',
           };
         }
-      } catch (companyError) {}
+      } catch {}
 
       // Fallback: Versuche Users Collection
       try {
@@ -112,10 +112,10 @@ export function ContactExchangeDisplay({
             source: 'user',
           };
         }
-      } catch (userError) {}
+      } catch {}
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -186,7 +186,7 @@ export function ContactExchangeDisplay({
           });
         } else {
         }
-      } catch (error) {
+      } catch {
       } finally {
         setLoading(false);
       }

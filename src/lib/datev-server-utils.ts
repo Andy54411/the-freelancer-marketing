@@ -16,7 +16,7 @@ export function getDatevCookieName(companyId: string): string {
 }
 
 // DATEV Sandbox URLs (unterschiedlich von Production!)
-const DATEV_API_BASE =
+const _DATEV_API_BASE =
   process.env.NODE_ENV === 'production' ? 'https://api.datev.de' : 'https://sandbox-api.datev.de';
 const DATEV_AUTH_BASE =
   process.env.NODE_ENV === 'production'
@@ -67,7 +67,7 @@ export async function getDatevTokenFromCookies(
     }
 
     return tokenData;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -144,7 +144,7 @@ export async function exchangeCodeForTokens(code: string) {
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
+    const _errorBody = await response.text();
 
     throw new Error(`Failed to exchange DATEV sandbox code for token: ${response.statusText}`);
   }

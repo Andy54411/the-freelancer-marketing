@@ -10,15 +10,10 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Brain,
-  TrendingUp,
   Users,
-  Calendar,
-  Clock,
   DollarSign,
   Target,
   Zap,
-  BarChart3,
-  AlertTriangle,
   CheckCircle,
   Settings,
   Lightbulb,
@@ -63,7 +58,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
   const { user } = useAuth();
   const resolvedParams = React.use(params);
   const [loading, setLoading] = useState(true);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [_employees, setEmployees] = useState<Employee[]>([]);
   const [aiMetrics, setAiMetrics] = useState<AIMetrics>({
     costOptimization: 0,
     efficiencyGain: 0,
@@ -165,7 +160,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
         satisfactionIndex: 87,
         predictiveAccuracy: 91,
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der KI-Daten');
     } finally {
       setLoading(false);

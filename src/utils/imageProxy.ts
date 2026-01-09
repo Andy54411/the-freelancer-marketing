@@ -31,7 +31,7 @@ export function getProxiedImageUrl(firebaseStorageUrl: string): string {
     const proxyUrl = `/api/image-proxy?path=${encodeURIComponent(imagePath)}`;
 
     return proxyUrl;
-  } catch (error) {
+  } catch {
     return firebaseStorageUrl; // Fallback zur originalen URL
   }
 }

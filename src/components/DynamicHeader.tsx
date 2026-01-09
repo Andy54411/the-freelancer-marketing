@@ -14,8 +14,8 @@ interface DynamicHeaderProps {
   className?: string;
 }
 
-export function DynamicHeader({ className }: DynamicHeaderProps) {
-  const { user: authUser, loading: authLoading } = useAuth();
+export function DynamicHeader({ className: _className }: DynamicHeaderProps) {
+  const { user: _authUser, loading: authLoading } = useAuth();
   const [currentUser, setCurrentUser] = useState<FirebaseAuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

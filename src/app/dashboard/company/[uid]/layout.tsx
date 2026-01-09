@@ -484,8 +484,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   return (
     <SidebarVisibilityProvider>
-      <div className="flex flex-col min-h-screen">
-        <div className="print:hidden">
+      <div className="flex flex-col h-screen overflow-hidden">
+        <div className="print:hidden shrink-0">
           {isWebmailConnected && webmailEmail ? (
             <>
               <MailHeader
@@ -524,7 +524,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           )}
         </div>
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Desktop Sidebar - Dynamic width based on collapsed state */}
           <div
             className={`hidden md:block md:shrink-0 transition-all duration-300 print:hidden ${
@@ -568,10 +568,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           </div>
 
           {/* Main Content */}
-          <main className="flex-1">
-            {/* Email Integration und Emails bekommen volle Breite */}
-            {pathname?.includes('/email-integration') || pathname?.includes('/emails') ? (
-              <div className="h-full w-full">{children}</div>
+          <main className={`flex-1 min-h-0 ${pathname?.includes('/email-integration') || pathname?.includes('/emails') || pathname?.includes('/whatsapp') ? 'overflow-hidden' : 'overflow-auto'}`}>
+            {/* Email Integration, Emails und WhatsApp bekommen volle Breite/Höhe */}
+            {pathname?.includes('/email-integration') || pathname?.includes('/emails') || pathname?.includes('/whatsapp') ? (
+              <div className="h-full w-full overflow-hidden">{children}</div>
             ) : (
               <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">

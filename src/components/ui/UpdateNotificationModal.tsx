@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { UpdateNotification } from '@/types/updates';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,6 @@ import {
   Bug,
   Shield,
   Calendar,
-  ExternalLink,
   PlayCircle,
   FileText,
   CheckCircle,

@@ -41,7 +41,7 @@ const GrafikerForm: React.FC<GrafikerFormProps> = ({ data, onDataChange, onValid
     { value: 'alle_formate', label: 'Alle Formate' },
   ];
 
-  const timeframeOptions = [
+  const _timeframeOptions = [
     { value: '1-3_tage', label: '1-3 Tage' },
     { value: '1_woche', label: '1 Woche' },
     { value: '2_wochen', label: '2 Wochen' },

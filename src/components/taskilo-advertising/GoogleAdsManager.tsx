@@ -13,8 +13,7 @@ import {
   Settings, 
   ExternalLink,
   CheckCircle,
-  XCircle,
-  AlertTriangle 
+  XCircle
 } from 'lucide-react';
 
 interface GoogleAdsManagerProps {
@@ -99,7 +98,7 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
         setIsConnected(false);
         setConnectionData(null);
       }
-    } catch (error) {
+    } catch {
       setIsConnected(false);
       setConnectionData(null);
     } finally {

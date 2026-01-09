@@ -20,7 +20,6 @@ import {
   MoreHorizontal,
   Mail,
   Eye,
-  Sparkles,
 } from 'lucide-react';
 import { QuoteService, Quote } from '@/services/quoteService';
 import { CustomerService } from '@/services/customerService';
@@ -178,7 +177,7 @@ export default function QuoteDetailView() {
             }
             allStyles.push(css);
           }
-        } catch (e) {
+        } catch {
           // Ignore CORS errors for external stylesheets
         }
       });
@@ -261,7 +260,7 @@ export default function QuoteDetailView() {
       toast.success('PDF erfolgreich heruntergeladen!');
     } catch (error) {
       console.error('❌ Error downloading PDF:', error);
-      toast.error(`Fehler beim Herunterladen der PDF: ${error.message}`);
+      toast.error(`Fehler beim Herunterladen der PDF: ${(error as Error).message}`);
     } finally {
       setDownloadingPdf(false);
     }
@@ -896,7 +895,7 @@ export default function QuoteDetailView() {
               signature: (quote as any).companySignature || undefined,
             }}
             defaultRecipients={[(quote as any).customerEmail || ''].filter(Boolean)}
-            onSend={async (method, options) => {
+            onSend={async (method, _options) => {
               if (method === 'email') {
                 try {
                   // Setze sentAt Datum in der Datenbank
@@ -956,7 +955,7 @@ export default function QuoteDetailView() {
             }}
             documentType="quote"
             companyId={uid}
-            onSend={async (method, options) => {
+            onSend={async (method, _options) => {
               // Handle send actions if needed
               toast.success(`${method} Aktion ausgeführt`);
             }}

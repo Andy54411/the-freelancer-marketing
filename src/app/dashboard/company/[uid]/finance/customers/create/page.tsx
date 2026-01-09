@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle, History, Users, FileText, Receipt, CreditCard, Upload, Printer, Download, Edit, User, Check, File, Folder, Book, Mail, DollarSign, MoreHorizontal, Save, X, Info, HelpCircle, Plus, Tag, ChevronDown, Settings, InfoIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, UserPlus, Star, CheckCircle, Users, FileText, CreditCard, User, MoreHorizontal, Save, X, Info, HelpCircle, Plus, Tag, ChevronDown, Settings, InfoIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateVATNumber, getVATFormat } from '@/utils/vatValidation';
 import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
@@ -66,7 +66,7 @@ export interface Customer {
 export default function CreateCustomerPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   // State Management - ALL HOOKS MUST BE BEFORE EARLY RETURNS
@@ -89,8 +89,8 @@ export default function CreateCustomerPage() {
   });
 
   // Customer number management
-  const [nextCustomerNumber, setNextCustomerNumber] = useState('1003');
-  const [showNumberingModal, setShowNumberingModal] = useState(false);
+  const [_nextCustomerNumber, setNextCustomerNumber] = useState('1003');
+  const [_showNumberingModal, _setShowNumberingModal] = useState(false);
   const [showNumberSequenceModal, setShowNumberSequenceModal] = useState(false);
   const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
 
@@ -264,7 +264,7 @@ export default function CreateCustomerPage() {
   }, [formData.organizationType]);
 
   // Legacy function for backward compatibility  
-  const generateNextSupplierNumber = () => generateCustomerNumber('Lieferant');
+  const _generateNextSupplierNumber = () => generateCustomerNumber('Lieferant');
 
   // VAT Validation
   const handleVATValidation = async () => {
@@ -280,7 +280,7 @@ export default function CreateCustomerPage() {
         handleInputChange('vatValidated', false);
         toast.error('USt-IdNr. ist ungültig');
       }
-    } catch (error) {
+    } catch {
       handleInputChange('vatValidated', false);
       toast.error('Fehler bei der VAT-Validierung');
     }
@@ -441,7 +441,8 @@ export default function CreateCustomerPage() {
         creditorNumber: formData.creditorNumber,
 
         // Geschäftsbedingungen & Zahlungsinformationen
-        paymentTerms: formData.paymentTerms,
+        // paymentTerms als Zahl (Tage) für Typ-Kompatibilität
+        paymentTerms: formData.defaultInvoiceDueDate,
         discount: formData.discount,
         creditLimit: formData.creditLimit,
         currency: formData.currency,
@@ -487,7 +488,7 @@ export default function CreateCustomerPage() {
       };
 
       // Speichere Kunden in Firebase Subcollection
-      const customerId = await CustomerService.addCustomer(params.uid, customerData);
+      await CustomerService.addCustomer(params.uid, customerData);
 
 
       toast.success('Kunde erfolgreich erstellt');
@@ -1570,7 +1571,7 @@ export default function CreateCustomerPage() {
                     <option value="TJS">TJS - Somoni</option>
                     <option value="TMT">TMT - Turkmenistan-Manat</option>
                     <option value="TND">TND - Tunesischer Dinar</option>
-                    <option value="TOP">TOP - Pa'anga</option>
+                    <option value="TOP">TOP - Pa&apos;anga</option>
                     <option value="TRY">TRY - Türkische Lira</option>
                     <option value="TTD">TTD - Trinidad-und-Tobago-Dollar</option>
                     <option value="TVD">TVD - Tuvalu-Dollar</option>

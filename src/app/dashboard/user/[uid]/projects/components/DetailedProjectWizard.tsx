@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Euro, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, Euro, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { categories } from '@/lib/categoriesData';
 
@@ -43,7 +43,7 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [projectDescription, setProjectDescription] = useState(initialDescription);
+  const [projectDescription, _setProjectDescription] = useState(initialDescription);
   const [loading, setLoading] = useState(false);
 
   // Schritt 1: Kategorie auswählen
@@ -85,7 +85,7 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
       } else {
         toast.error('Fehler beim Laden der Fragen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der kategorie-spezifischen Fragen');
     }
 
@@ -141,7 +141,7 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
       } else {
         toast.error('Fehler beim Erstellen des Projekts');
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Erstellen der detaillierten Projektbeschreibung');
     }
 

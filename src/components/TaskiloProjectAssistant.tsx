@@ -5,22 +5,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
-  MessageSquare,
   Send,
   Bot,
   CheckCircle,
   Clock,
-  AlertCircle,
   FileText,
   Calendar,
   MapPin,
   Euro,
   Star,
-  Lightbulb,
-  ArrowRight,
   User,
   Briefcase,
   Settings,
@@ -86,14 +81,14 @@ interface TaskiloProjectAssistantProps {
 
 export default function TaskiloProjectAssistant({
   userId,
-  onOrderCreate,
+  onOrderCreate: _onOrderCreate,
   existingOrderId,
 }: TaskiloProjectAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<ProjectStep>('welcome');
-  const [orderData, setOrderData] = useState<Partial<OrderData>>({});
+  const [orderData, _setOrderData] = useState<Partial<OrderData>>({});
   const [isExpanded, setIsExpanded] = useState(false);
   const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
   const messagesEndRef = useRef<HTMLDivElement>(null);

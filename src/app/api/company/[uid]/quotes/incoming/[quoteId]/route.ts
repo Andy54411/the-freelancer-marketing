@@ -4,7 +4,7 @@ import { db, auth } from '@/firebase/server';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> },
-  companyId: string
+  _companyId: string
 ) {
   const { uid, quoteId } = await params;
   try {
@@ -26,7 +26,7 @@ export async function GET(
 
     try {
       decodedToken = await auth.verifyIdToken(token);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -42,7 +42,7 @@ export async function GET(
     // Try to get the quote from quotes collection
     const quoteDoc = await db
       .collection('companies')
-      .doc(companyId)
+      .doc(uid)
       .collection('quotes')
       .doc(quoteId)
       .get();
@@ -93,7 +93,7 @@ export async function GET(
             };
           }
         }
-      } catch (error) {}
+      } catch {}
     }
 
     // If no customerUid or customer not found, use the basic info from quote data
@@ -119,7 +119,7 @@ export async function GET(
     try {
       const subcollectionSnapshot = await db
         .collection('companies')
-        .doc(companyId)
+        .doc(uid)
         .collection('quotes')
         .doc(quoteId)
         .collection('proposals')
@@ -132,7 +132,7 @@ export async function GET(
         finalStatus = 'responded';
       } else {
       }
-    } catch (error) {}
+    } catch {}
 
     // Fallback: Check main proposals collection (old structure)
     if (!hasResponse) {
@@ -148,7 +148,7 @@ export async function GET(
           responseData = proposalsSnapshot.docs[0].data();
           finalStatus = 'responded';
         }
-      } catch (error) {}
+      } catch {}
     }
 
     // Use actual status from quote if available

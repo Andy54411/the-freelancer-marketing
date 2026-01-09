@@ -6,7 +6,7 @@
  */
 
 import { db } from '@/firebase/server';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, Firestore } from 'firebase-admin/firestore';
 import { type TaskiloLevel, PAYOUT_CONFIG } from '@/services/TaskiloLevelService';
 
 // ============================================================================
@@ -53,6 +53,20 @@ export interface CreateEscrowParams {
 }
 
 // ============================================================================
+// HELPER
+// ============================================================================
+
+/**
+ * Gibt die Firestore-Instanz zurück oder wirft einen Fehler wenn nicht verfügbar
+ */
+function getFirestore(): Firestore {
+  if (!db) {
+    throw new Error('Firestore is not available');
+  }
+  return db;
+}
+
+// ============================================================================
 // ESCROW SERVICE (SERVER)
 // ============================================================================
 
@@ -67,7 +81,8 @@ export class EscrowServiceServer {
    */
   static async getPlatformFeePercent(providerId: string): Promise<number> {
     try {
-      const companyDoc = await db.collection('companies').doc(providerId).get();
+      const firestore = getFirestore();
+      const companyDoc = await firestore.collection('companies').doc(providerId).get();
       if (!companyDoc.exists) {
         return 15; // Default für neue Unternehmen
       }
@@ -135,17 +150,18 @@ export class EscrowServiceServer {
       escrowData.metadata = metadata;
     }
 
-    await db.collection(this.COLLECTION).doc(escrowId).set(escrowData);
+    const firestore = getFirestore();
+    await firestore.collection(this.COLLECTION).doc(escrowId).set(escrowData);
 
-    return escrowData as EscrowRecord;
+    return escrowData as unknown as EscrowRecord;
   }
 
   /**
    * Holt einen Escrow by ID
    */
   static async getById(escrowId: string): Promise<EscrowRecord | null> {
-    // db is imported from @/firebase/server
-    const doc = await db.collection(this.COLLECTION).doc(escrowId).get();
+    const firestore = getFirestore();
+    const doc = await firestore.collection(this.COLLECTION).doc(escrowId).get();
     
     if (!doc.exists) {
       return null;
@@ -158,8 +174,8 @@ export class EscrowServiceServer {
    * Markiert Escrow als "gehalten" (Zahlung eingegangen)
    */
   static async markAsHeld(escrowId: string, paymentId?: string): Promise<void> {
-    // db is imported from @/firebase/server
-    const escrowRef = db.collection(this.COLLECTION).doc(escrowId);
+    const firestore = getFirestore();
+    const escrowRef = firestore.collection(this.COLLECTION).doc(escrowId);
     const escrowSnap = await escrowRef.get();
 
     if (!escrowSnap.exists) {
@@ -191,8 +207,8 @@ export class EscrowServiceServer {
    * Gibt Escrow frei (Auszahlung an Anbieter)
    */
   static async release(escrowId: string, payoutId?: string): Promise<void> {
-    // db is imported from @/firebase/server
-    const escrowRef = db.collection(this.COLLECTION).doc(escrowId);
+    const firestore = getFirestore();
+    const escrowRef = firestore.collection(this.COLLECTION).doc(escrowId);
     
     const updateData: Record<string, unknown> = {
       status: 'released',
@@ -211,8 +227,8 @@ export class EscrowServiceServer {
    * Erstattet Escrow
    */
   static async refund(escrowId: string, reason?: string): Promise<void> {
-    // db is imported from @/firebase/server
-    const escrowRef = db.collection(this.COLLECTION).doc(escrowId);
+    const firestore = getFirestore();
+    const escrowRef = firestore.collection(this.COLLECTION).doc(escrowId);
     
     const updateData: Record<string, unknown> = {
       status: 'refunded',
@@ -231,8 +247,8 @@ export class EscrowServiceServer {
    * Markiert Escrow als disputed
    */
   static async dispute(escrowId: string, reason?: string): Promise<void> {
-    // db is imported from @/firebase/server
-    const escrowRef = db.collection(this.COLLECTION).doc(escrowId);
+    const firestore = getFirestore();
+    const escrowRef = firestore.collection(this.COLLECTION).doc(escrowId);
     
     const updateData: Record<string, unknown> = {
       status: 'disputed',
@@ -251,8 +267,8 @@ export class EscrowServiceServer {
    * Holt Escrows für einen Käufer
    */
   static async getByBuyer(buyerId: string): Promise<EscrowRecord[]> {
-    // db is imported from @/firebase/server
-    const snapshot = await db
+    const firestore = getFirestore();
+    const snapshot = await firestore
       .collection(this.COLLECTION)
       .where('buyerId', '==', buyerId)
       .get();
@@ -264,12 +280,110 @@ export class EscrowServiceServer {
    * Holt Escrows für einen Anbieter
    */
   static async getByProvider(providerId: string): Promise<EscrowRecord[]> {
-    // db is imported from @/firebase/server
-    const snapshot = await db
+    const firestore = getFirestore();
+    const snapshot = await firestore
       .collection(this.COLLECTION)
       .where('providerId', '==', providerId)
       .get();
     
     return snapshot.docs.map(doc => doc.data() as EscrowRecord);
+  }
+
+  /**
+   * Holt Escrow by Order ID
+   */
+  static async getByOrderId(orderId: string): Promise<EscrowRecord | null> {
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection(this.COLLECTION)
+      .where('orderId', '==', orderId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    return snapshot.docs[0].data() as EscrowRecord;
+  }
+
+  /**
+   * Holt alle pending Escrows für einen Anbieter
+   */
+  static async getPendingEscrows(providerId: string): Promise<EscrowRecord[]> {
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection(this.COLLECTION)
+      .where('providerId', '==', providerId)
+      .where('status', '==', 'held')
+      .get();
+    
+    return snapshot.docs.map(doc => doc.data() as EscrowRecord);
+  }
+
+  /**
+   * Berechnet Zusammenfassung für einen Anbieter
+   */
+  static async getProviderSummary(providerId: string): Promise<{
+    totalHeld: number;
+    totalReleased: number;
+    totalRefunded: number;
+    pendingPayouts: number;
+    currency: string;
+  }> {
+    const escrows = await this.getByProvider(providerId);
+
+    const summary = {
+      totalHeld: 0,
+      totalReleased: 0,
+      totalRefunded: 0,
+      pendingPayouts: 0,
+      currency: 'EUR',
+    };
+
+    for (const escrow of escrows) {
+      switch (escrow.status) {
+        case 'held':
+          summary.totalHeld += escrow.providerAmount;
+          summary.pendingPayouts++;
+          break;
+        case 'released':
+          summary.totalReleased += escrow.providerAmount;
+          break;
+        case 'refunded':
+          summary.totalRefunded += escrow.amount;
+          break;
+      }
+    }
+
+    return summary;
+  }
+
+  /**
+   * Vorzeitige Freigabe durch Käufer-Bestätigung
+   */
+  static async earlyRelease(escrowId: string, buyerId: string): Promise<void> {
+    const escrow = await this.getById(escrowId);
+
+    if (!escrow) {
+      throw new Error(`Escrow ${escrowId} not found`);
+    }
+
+    if (escrow.buyerId !== buyerId) {
+      throw new Error('Only buyer can trigger early release');
+    }
+
+    if (escrow.status !== 'held') {
+      throw new Error(`Escrow is not in held status: ${escrow.status}`);
+    }
+
+    // Setze clearingEndsAt auf jetzt, damit Auszahlung sofort möglich ist
+    const firestore = getFirestore();
+    await firestore.collection(this.COLLECTION).doc(escrowId).update({
+      clearingEndsAt: Timestamp.now(),
+      earlyReleaseBy: buyerId,
+      earlyReleaseAt: Timestamp.now(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
   }
 }

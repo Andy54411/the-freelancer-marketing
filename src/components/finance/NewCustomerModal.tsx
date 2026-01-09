@@ -23,8 +23,6 @@ import {
   Check,
   Building2,
   User,
-  Settings,
-  ChevronDown,
   X,
   Phone,
   Mail,
@@ -40,7 +38,6 @@ import {
 import { toast } from 'sonner';
 import { validateVATNumber } from '@/utils/vatValidation';
 import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
-import { CustomerService } from '@/services/customerService';
 import NewCategoryModal from './NewCategoryModal';
 
 export interface ContactPerson {
@@ -245,7 +242,7 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+      const _viewportHeight = window.innerHeight;
       
       // Bestimme beste Position
       if (rect.right + 256 > viewportWidth) {
@@ -336,8 +333,8 @@ export default function NewCustomerModal({
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
   const [formData, setFormData] = useState<ExtendedFormData>(DEFAULT_FORM_DATA);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
-  const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
-  const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
+  const [_nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
+  const [_currentNumberSequence, _setCurrentNumberSequence] = useState<NumberSequence | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [customCategories, setCustomCategories] = useState<
     Array<{id: string;name: string;categoryType: string;}>>(
@@ -345,7 +342,7 @@ export default function NewCustomerModal({
   const [referenceFieldType, setReferenceFieldType] = useState<'customerReference' | 'leitwegId'>('customerReference');
 
   const [newTag, setNewTag] = useState('');
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [_showTypeDropdown, setShowTypeDropdown] = useState(false);
 
   // Refs for outside click detection
   const typeDropdownRef = useRef<HTMLDivElement>(null);
@@ -626,7 +623,7 @@ export default function NewCustomerModal({
     });
   };
 
-  const addAddress = () => {
+  const _addAddress = () => {
     const newAddress = createDefaultAddress();
     setFormData((prev) => ({
       ...prev,
@@ -634,7 +631,7 @@ export default function NewCustomerModal({
     }));
   };
 
-  const updateAddress = (addressId: string, field: keyof Address, value: string) => {
+  const _updateAddress = (addressId: string, field: keyof Address, value: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.map((addr) =>
@@ -643,7 +640,7 @@ export default function NewCustomerModal({
     }));
   };
 
-  const removeAddress = (addressId: string) => {
+  const _removeAddress = (addressId: string) => {
     setFormData((prev) => ({
       ...prev,
       addresses: prev.addresses.filter((addr) => addr.id !== addressId)
@@ -1145,7 +1142,7 @@ export default function NewCustomerModal({
                   <h3 className="text-lg font-medium text-gray-900">Steuerliche Informationen</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 min-h-[32px]">
+                      <div className="flex items-center gap-2 min-h-8">
                         <Label>Steuernummer</Label>
                         <TooltipIcon 
                           text="Deutsche Steuernummer des Unternehmens. Format: 12345/67890. Wird für steuerliche Dokumentation benötigt."
@@ -1158,7 +1155,7 @@ export default function NewCustomerModal({
                       placeholder="12345/67890" />
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 min-h-[32px]">
+                      <div className="flex items-center gap-2 min-h-8">
                         <Label>USt-IdNr.</Label>
                         <TooltipIcon 
                           text="Umsatzsteuer-Identifikationsnummer für EU-Geschäfte. Format: DE123456789. Klicken Sie auf 'Prüfen' zur Validierung."
@@ -1632,7 +1629,7 @@ export default function NewCustomerModal({
                     <h4 className="font-medium text-gray-900 mb-1">Was ist Skonto?</h4>
                     <p className="text-sm text-gray-700">
                       Skonto ist ein Preisnachlass, den Sie Ihren Kunden bei frühzeitiger Zahlung gewähren. 
-                      Dies verbessert Ihre Liquidität und reduziert das Ausfallrisiko. Übliche Konditionen sind "2% bei Zahlung innerhalb 14 Tagen".
+                      Dies verbessert Ihre Liquidität und reduziert das Ausfallrisiko. Übliche Konditionen sind &quot;2% bei Zahlung innerhalb 14 Tagen&quot;.
                     </p>
                   </div>
                 </div>

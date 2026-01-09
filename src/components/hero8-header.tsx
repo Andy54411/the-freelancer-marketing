@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/navigation-menu';
 
 // Debug-Logging für Hydration
-const heroHeaderLog = (step: string, data?: Record<string, unknown>) => {
+const heroHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }

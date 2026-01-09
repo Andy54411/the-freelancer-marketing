@@ -17,7 +17,7 @@ export default function LocationSelectionModal({
   isOpen,
   onClose,
   onContinue,
-  googleBusinessAccounts = [],
+  googleBusinessAccounts: _googleBusinessAccounts = [],
 }: LocationSelectionModalProps) {
   const [selectedOption, setSelectedOption] = useState('google-business');
   const [selectedSubOption, setSelectedSubOption] = useState('dashboard');

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReceivedEmail } from '@/types/email';
-import { Archive, Clock, User, Mail, Paperclip, Undo2, Trash2, ArrowLeft } from 'lucide-react';
+import { Archive, Clock, User, Paperclip, Undo2, Trash2, ArrowLeft } from 'lucide-react';
 
 interface ArchivedEmailsViewProps {
   archivedEmails: ReceivedEmail[];
@@ -121,14 +121,14 @@ export default function ArchivedEmailsView({
                               </span>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <Badge className={getPriorityColor(email.priority)}>
+                              <Badge className={getPriorityColor(email.priority || 'normal')}>
                                 {email.priority === 'high'
                                   ? 'Hoch'
                                   : email.priority === 'low'
                                     ? 'Niedrig'
                                     : 'Normal'}
                               </Badge>
-                              <Badge className={getCategoryColor(email.category)}>
+                              <Badge className={getCategoryColor(email.category || 'notification')}>
                                 {email.category === 'support'
                                   ? 'Support'
                                   : email.category === 'inquiry'
@@ -158,14 +158,14 @@ export default function ArchivedEmailsView({
                           <div className="flex items-center space-x-4 text-xs text-gray-500">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span>Empfangen: {formatDate(email.receivedAt)}</span>
+                              <span>Empfangen: {formatDate(email.receivedAt || '')}</span>
                             </div>
-                            {email.archivedAt && (
+                            {email.archivedAt ? (
                               <div className="flex items-center space-x-1">
                                 <Archive className="h-3 w-3" />
                                 <span>Archiviert: {formatDate(email.archivedAt)}</span>
                               </div>
-                            )}
+                            ) : null}
                             {email.attachments && email.attachments.length > 0 && (
                               <div className="flex items-center space-x-1">
                                 <Paperclip className="h-3 w-3" />

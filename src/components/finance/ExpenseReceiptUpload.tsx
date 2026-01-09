@@ -96,7 +96,7 @@ export function ExpenseReceiptUpload({
   onFileUploaded,
   onFilesUploaded,
   showPreview = true,
-  enhancedMode = true,
+  enhancedMode: _enhancedMode = true,
   accept = '.pdf,.jpg,.jpeg,.png,.heic,.heif',
   maxSize = 10 * 1024 * 1024, // 10MB default
   multiple = false,
@@ -106,7 +106,7 @@ export function ExpenseReceiptUpload({
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [storageUrls, setStorageUrls] = useState<string[]>([]); // Store all uploaded URLs
+  const [_storageUrls, setStorageUrls] = useState<string[]>([]); // Store all uploaded URLs
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [ocrProgress, setOcrProgress] = useState<string>('');
@@ -245,7 +245,7 @@ export function ExpenseReceiptUpload({
   };
 
   // Upload file and return storage URL (for bundling)
-  const handleFileBundleUpload = async (file: File): Promise<string | null> => {
+  const _handleFileBundleUpload = async (file: File): Promise<string | null> => {
     try {
       // Convert HEIC if needed
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -368,7 +368,7 @@ export function ExpenseReceiptUpload({
       const formDataOCR = new FormData();
 
       // Add all files to the same request
-      processedFiles.forEach((file, index) => {
+      processedFiles.forEach((file, _index) => {
         formDataOCR.append('files', file); // Note: 'files' plural!
       });
       formDataOCR.append('companyId', companyId);

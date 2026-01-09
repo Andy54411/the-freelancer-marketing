@@ -8,8 +8,7 @@ import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionSe
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   const { uid, quoteId } = await params;
 
@@ -24,7 +23,7 @@ export async function GET(
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -40,7 +39,8 @@ export async function GET(
 
     if (!projectDoc.exists) {
       // Check if it might be in the quotes collection instead
-      projectRef = db!.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
+      // Use uid as the customer's company ID to look up quotes
+      projectRef = db!.collection('companies').doc(uid).collection('quotes').doc(quoteId);
       projectDoc = await projectRef.get();
       isQuotesCollection = true;
 
@@ -61,7 +61,7 @@ export async function GET(
 
     if (isQuotesCollection) {
       // Get proposals from subcollection for quotes collection
-      const proposals = await ProposalSubcollectionService.getProposalsForQuote(quoteId);
+      const proposals = await ProposalSubcollectionService.getProposalsForQuote(uid, quoteId);
 
       for (const proposal of proposals) {
         // Get company information
@@ -105,7 +105,7 @@ export async function GET(
               };
             }
           }
-        } catch (error) {
+        } catch {
           // Company not found, use defaults
         }
 
@@ -164,7 +164,7 @@ export async function GET(
                 };
               }
             }
-          } catch (error) {
+          } catch {
             // Company not found, use defaults
           }
 
@@ -234,7 +234,7 @@ export async function GET(
       success: true,
       quote,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler beim Laden der Quote-Details' }, { status: 500 });
   }
 }

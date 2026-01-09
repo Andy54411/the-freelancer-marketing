@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Plus, Clock, MapPin, User } from 'lucide-react';
+import { CalendarDays, Plus } from 'lucide-react';
 import CompanyCalendar from '@/components/CompanyCalendar';
 import { useCalendarEventModal } from '@/hooks/useCalendarEventModal';
 import { Customer } from '../finance/AddCustomerModal';
@@ -14,8 +14,8 @@ interface CustomerCalendarTabProps {
 
 export function CustomerCalendarTab({ customer }: CustomerCalendarTabProps) {
   const {
-    handleEventClick,
-    handleDateSelect,
+    handleEventClick: _handleEventClick,
+    handleDateSelect: _handleDateSelect,
     handleCreateEvent,
     CalendarEventModalComponent,
   } = useCalendarEventModal({

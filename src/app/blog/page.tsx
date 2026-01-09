@@ -7,7 +7,6 @@ import {
   Zap,
   CreditCard,
   ChevronDown,
-  ChevronUp,
   Shield,
   Clock,
   DollarSign,

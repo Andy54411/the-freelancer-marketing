@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
   FiUpload,
-  FiDownload,
   FiFileText,
   FiFile,
   FiRefreshCw,
@@ -18,7 +17,7 @@ import {
   FiAlertCircle,
   FiClock,
 } from 'react-icons/fi';
-import { DatevService, DatevOrganization } from '@/services/datevService';
+import { DatevOrganization } from '@/services/datevService';
 import { DatevTokenManager } from '@/lib/datev-token-manager';
 import { toast } from 'sonner';
 
@@ -51,7 +50,7 @@ interface SyncJob {
 
 export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
   const [loading, setLoading] = useState(true);
-  const [organization, setOrganization] = useState<DatevOrganization | null>(null);
+  const [organization] = useState<DatevOrganization | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [syncJobs, setSyncJobs] = useState<SyncJob[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -107,7 +106,7 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
           category: 'contract',
         },
       ]);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Laden der Dokument-Daten');
     } finally {
       setLoading(false);
@@ -200,7 +199,7 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
         );
 
         toast.success(`${file.name} erfolgreich zu DATEV hochgeladen`);
-      } catch (error) {
+      } catch {
         clearInterval(progressInterval);
 
         setSyncJobs(prev =>
@@ -287,7 +286,7 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
       );
 
       toast.success(`${document.name} erfolgreich synchronisiert`);
-    } catch (error) {
+    } catch {
       setSyncJobs(prev =>
         prev.map(job =>
           job.id === syncJob.id

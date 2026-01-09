@@ -13,7 +13,6 @@ import {
   FileText,
   Upload,
   Mail,
-  ExternalLink,
   Bell,
   X,
   PartyPopper,
@@ -76,7 +75,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId }),
-      }).catch(err => {
+      }).catch(() => {
         // Fehler ignorieren - Cleanup ist nice-to-have
       });
     }
@@ -112,7 +111,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
           error: data.error || 'Fehler beim Laden des Freigabe-Status',
         });
       }
-    } catch (error) {
+    } catch {
       setStatus({
         isApproved: false,
         isLoading: false,
@@ -138,7 +137,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
           setShowNotifications(true);
         }
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const markNotificationAsRead = async (notificationId: string) => {
@@ -150,7 +149,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, readAt: new Date().toISOString() } : n))
       );
-    } catch (error) {}
+    } catch {}
   };
 
   const getStatusIcon = () => {

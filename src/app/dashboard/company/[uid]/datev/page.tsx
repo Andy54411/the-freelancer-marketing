@@ -8,7 +8,6 @@ import {
   RefreshCw,
   CheckCircle,
   ExternalLink,
-  Download,
   HelpCircle,
 } from 'lucide-react';
 
@@ -73,7 +72,7 @@ export default function DatevMainPage() {
       } else {
         setConnections([]);
       }
-    } catch (error) {
+    } catch {
       setConnections([]);
     } finally {
       setLoading(false);

@@ -55,7 +55,7 @@ export function InventorySelector({
 
       setInventoryItems(activeItems);
       setFilteredItems(activeItems);
-    } catch (error) {
+    } catch {
       toast.error('Inventar-Artikel konnten nicht geladen werden');
     } finally {
       setLoading(false);

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       notificationId: docRef.id,
       message: 'Globale Benachrichtigung erfolgreich erstellt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Benachrichtigung' },
       { status: 500 }
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       notifications,
       count: notifications.length,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Abrufen der Benachrichtigungen' },
       { status: 500 }

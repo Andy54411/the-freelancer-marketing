@@ -47,14 +47,6 @@ const EventplanungForm: React.FC<EventplanungFormProps> = ({
     { value: 'flexibel', label: 'Flexibel' },
   ];
 
-  const durationOptions = [
-    { value: '2-4_stunden', label: '2-4 Stunden' },
-    { value: '4-6_stunden', label: '4-6 Stunden' },
-    { value: 'ganzer_tag', label: 'Ganzer Tag' },
-    { value: 'mehrere_tage', label: 'Mehrere Tage' },
-    { value: 'nach_absprache', label: 'Nach Absprache' },
-  ];
-
   const handleInputChange = (field: keyof EventplanungData, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);

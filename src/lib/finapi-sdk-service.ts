@@ -269,10 +269,10 @@ export class FinAPISDKService {
             } as FinAPIUser,
             userToken
           };
-        } catch (tokenError: any) {}
+        } catch (_tokenError: any) {}
       } else {
       }
-    } catch (error) {}
+    } catch {}
 
     // Check if we should create a new user or return error for read operations
     if (!forceCreate) {
@@ -336,7 +336,7 @@ export class FinAPISDKService {
                 userToken
               };
             }
-          } catch (tokenError: any) {}
+          } catch (_tokenError: any) {}
         }
 
         // Since we can't delete users in sandbox (403 Access Denied),
@@ -364,7 +364,7 @@ export class FinAPISDKService {
           });
 
           return newUser;
-        } catch (uniqueError: any) {}
+        } catch (_uniqueError: any) {}
       }
 
       throw new Error(`User creation failed: ${response.status} ${errorText}`);
@@ -408,7 +408,7 @@ export class FinAPISDKService {
 
       const userData = await response.json();
       return userData.users?.[0] || null;
-    } catch (error: any) {
+    } catch {
       return null;
     }
   }
@@ -515,8 +515,8 @@ export class FinAPISDKService {
   async createWebForm(
   userEmail: string,
   companyId: string,
-  bankId?: string,
-  redirectUrl?: string)
+  _bankId?: string,
+  _redirectUrl?: string)
   : Promise<string> {
     try {
       // Validate input parameters
@@ -550,7 +550,7 @@ export class FinAPISDKService {
       const webFormPayload = {};
 
       // Remove undefined values
-      const cleanPayload = Object.fromEntries(
+      const _cleanPayload = Object.fromEntries(
         Object.entries(webFormPayload).filter(([_, value]) => value !== undefined)
       );
 
@@ -599,7 +599,7 @@ export class FinAPISDKService {
     transactions: any[];
   }> {
     try {
-      const userId = this.generateFinapiUserId(companyId);
+      const _userId = this.generateFinapiUserId(companyId);
       const password = this.generateFinapiPassword(companyId);
 
       // Get or create user and token
@@ -656,7 +656,7 @@ export class FinAPISDKService {
         accounts,
         transactions
       };
-    } catch (error: any) {
+    } catch {
       // FALLBACK: Use legacy finAPI system
       try {
         const legacyResult = await finApiService.syncAccountsAndTransactions(companyId);
@@ -670,7 +670,7 @@ export class FinAPISDKService {
         } else {
           throw new Error(legacyResult.message);
         }
-      } catch (fallbackError: any) {
+      } catch (_fallbackError: any) {
         return {
           connections: [],
           accounts: [],
@@ -708,11 +708,11 @@ export class FinAPISDKService {
 
       const banksData = await response.json();
       return banksData.banks || [];
-    } catch (error: any) {
+    } catch {
       // FALLBACK: Use legacy finAPI system
       try {
         return [];
-      } catch (fallbackError: any) {
+      } catch (_fallbackError: any) {
         return [];
       }
     }
@@ -825,9 +825,8 @@ export class FinAPISDKService {
       const admin = (await import('firebase-admin')).default;
 
       // Check if Firebase Admin is already initialized
-      let app;
       try {
-        app = admin.app();
+        admin.app();
       } catch {}
 
       const db = admin.firestore();
@@ -843,7 +842,7 @@ export class FinAPISDKService {
       } else {
         return null;
       }
-    } catch (error: any) {
+    } catch {
       return null;
     }
   }
@@ -869,7 +868,7 @@ export class FinAPISDKService {
           lastModifiedBy: 'finapi-service'
         });
       }
-    } catch (error: any) {}
+    } catch {}
   }
 }
 

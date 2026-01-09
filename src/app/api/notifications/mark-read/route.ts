@@ -27,7 +27,7 @@ async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
       auth: firebaseModule.auth,
       db: firebaseModule.db,
     };
-  } catch (error) {
+  } catch {
     throw new Error('Firebase services unavailable');
   }
 }
@@ -84,10 +84,10 @@ export async function PATCH(request: NextRequest) {
         success: true,
         message: 'Benachrichtigung als gelesen markiert',
       });
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',
@@ -151,10 +151,10 @@ export async function POST(request: NextRequest) {
         message: `${snapshot.size} Benachrichtigungen als gelesen markiert`,
         marked: snapshot.size,
       });
-    } catch (authError) {
+    } catch {
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',

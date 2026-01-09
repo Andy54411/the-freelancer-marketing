@@ -18,7 +18,6 @@ import {
   Loader2,
   MoreHorizontal,
   Archive,
-  Circle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
@@ -37,7 +36,7 @@ import {
 import { Palette } from 'lucide-react';
 
 // Debug-Logging für Hydration
-const mailSidebarLog = (step: string, data?: Record<string, unknown>) => {
+const mailSidebarLog = (_step: string, _data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
   } else {
   }

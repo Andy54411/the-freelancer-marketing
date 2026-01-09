@@ -5,7 +5,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { CheckCircle, Building2, Users, Globe, FileText, AlertCircle, Mail, ExternalLink, Loader2 } from 'lucide-react';
+import { Building2, Users, Globe, FileText, AlertCircle } from 'lucide-react';
 import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 interface OnboardingStep1Props {
@@ -22,11 +22,13 @@ interface Step1Data {
   employees: string;
   website: string;
   description: string;
+  wantsTaskiloEmail?: boolean;
+  taskiloEmailPrefix?: string;
   managerData?: ManagerData;
 }
 
-const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
-  const { updateStepData, stepData, goToNextStep, saveCurrentStep } = useOnboarding();
+const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid: _companyUid }) => {
+  const { updateStepData, goToNextStep, saveCurrentStep } = useOnboarding();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState<Step1Data>({
@@ -61,8 +63,8 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             employees: existingStep1.employees || '',
             website: existingStep1.website || userData.companyWebsite || '',
             description: existingStep1.description || '',
-            wantsTaskiloEmail: existingStep1.wantsTaskiloEmail !== false, // Default true
-            taskiloEmailPrefix: existingStep1.taskiloEmailPrefix || '',
+            wantsTaskiloEmail: (existingStep1 as { wantsTaskiloEmail?: boolean }).wantsTaskiloEmail !== false, // Default true
+            taskiloEmailPrefix: (existingStep1 as { taskiloEmailPrefix?: string }).taskiloEmailPrefix || '',
           });
 
           // Lade Manager-Daten falls erforderlich
@@ -71,7 +73,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             setFormData(prev => ({ ...prev, managerData: existingStep1.managerData }));
           }
         }
-      } catch (error) {
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -101,11 +103,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     }));
   };
 
-  // Prüfe ob Manager-Daten erforderlich sind (basierend auf Registration legalForm)
-  const requiresManager = (legalForm: string): boolean => {
-    const formsRequiringManager = ['GmbH', 'UG (haftungsbeschränkt)', 'AG'];
-    return formsRequiringManager.includes(legalForm);
-  };
+
 
   // Validierung
   const validateForm = (): string[] => {
@@ -154,14 +152,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       // 3. Zum nächsten Step - skipValidation=true weil wir bereits validiert haben
       goToNextStep(true);
-    } catch (error) {
+    } catch {
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSaving(false);
     }
   };
-
-  const isFormValid = validateForm().length === 0;
 
   if (loading) {
     return (

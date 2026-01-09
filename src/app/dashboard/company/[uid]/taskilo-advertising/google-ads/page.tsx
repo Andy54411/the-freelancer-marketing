@@ -282,7 +282,7 @@ export default function GoogleAdsPage() {
             <ol className="space-y-3 text-blue-900">
               <li className="flex gap-3">
                 <span className="font-bold min-w-6">1.</span>
-                <span>Klicken Sie unten auf "Integration beantragen"</span>
+                <span>Klicken Sie unten auf &quot;Integration beantragen&quot;</span>
               </li>
               <li className="flex gap-3">
                 <span className="font-bold min-w-6">2.</span>

@@ -8,9 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  TrendingUp, 
-  Plus, 
-  Settings, 
   ExternalLink,
   CheckCircle,
   XCircle,
@@ -22,7 +19,7 @@ interface LinkedInAdsManagerProps {
 }
 
 export default function LinkedInAdsManager({ companyId }: LinkedInAdsManagerProps) {
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, _setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

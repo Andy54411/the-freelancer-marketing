@@ -1,6 +1,5 @@
 import React from 'react';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
-import { InvoiceFooter } from './InvoiceFooter';
 
 interface PDFSectionProps {
   data: ProcessedPDFData;
@@ -13,9 +12,9 @@ export const PDFSection: React.FC<PDFSectionProps> = ({
   data,
   children,
   sectionType,
-  hasFooter = true,
+  hasFooter: _hasFooter = true,
 }) => {
-  const footerData = {
+  const _footerData = {
     companyName: (data as any).companyName || '',
     phoneNumber: (data as any).phoneNumber || '',
     email: (data as any).contactEmail || '',

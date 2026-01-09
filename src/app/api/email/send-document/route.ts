@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
       sendCopy,
       attachments,
       companySlug,
-      documentType,
-      meta,
+      documentType: _documentType,
+      meta: _meta,
     }: {
       to: string[];
       cc?: string[];

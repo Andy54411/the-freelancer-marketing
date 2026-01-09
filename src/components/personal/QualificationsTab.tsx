@@ -159,7 +159,7 @@ export default function QualificationsTab({
       return employee.qualifications.skills;
     }
     // Skills aus der DB sind ein Array von Strings
-    const employeeAny = employee as Record<string, unknown>;
+    const employeeAny = employee as unknown as Record<string, unknown>;
     if (employeeAny?.skills && Array.isArray(employeeAny.skills)) {
       return (employeeAny.skills as string[]).map((skill, idx) => ({
         id: `skill-${idx}`,
@@ -173,7 +173,7 @@ export default function QualificationsTab({
 
   const mapExperienceFromDB = (): Experience[] => {
     // Experience aus der DB lesen
-    const employeeAny = employee as Record<string, unknown>;
+    const employeeAny = employee as unknown as Record<string, unknown>;
     if (employeeAny?.experience && Array.isArray(employeeAny.experience)) {
       return (employeeAny.experience as Array<{
         company?: string;

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
-    const credentialType = searchParams.get('credentialType') || 'sandbox';
+    // credentialType is available via searchParams if needed
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -105,8 +105,8 @@ export async function GET(request: NextRequest) {
               false // Don't force create - use existing
             );
             finapiUser.userToken = refreshedUser.userToken;
-          } catch (tokenError) {
-            throw tokenError;
+          } catch (err) {
+            throw err;
           }
         } else {
           return NextResponse.json({
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
             });
           }
         }
-      } catch (finapiError: any) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
         message: 'No bank connections found. Please use WebForm to connect your bank.',
         timestamp: new Date().toISOString(),
       });
-    } catch (finapiError: any) {
+    } catch {
       // Return empty instead of error to keep UI functional
       return NextResponse.json({
         success: true,
@@ -220,7 +220,7 @@ export async function DELETE(request: NextRequest) {
           if (userToken) {
           }
         }
-      } catch (finapiError: any) {}
+      } catch {}
 
       return NextResponse.json({
         success: true,

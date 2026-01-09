@@ -15,7 +15,7 @@ interface GmailConnectionCardProps {
 }
 
 export function GmailConnectionCard({ 
-  companyId, 
+  companyId: _companyId, 
   gmailConfig, 
   onDelete, 
   onConnect 

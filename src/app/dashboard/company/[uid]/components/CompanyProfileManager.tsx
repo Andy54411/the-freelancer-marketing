@@ -8,8 +8,6 @@ import {
   FiSave,
   FiUser,
   FiImage,
-  FiMapPin,
-  FiEye,
   FiTrendingUp,
   FiAward,
   FiPackage,
@@ -179,7 +177,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
 
       toast.success('Company Profile wurde erfolgreich aktualisiert!');
       onDataSaved();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern des Profils');
     } finally {
       setSaving(false);

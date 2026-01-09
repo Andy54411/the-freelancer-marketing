@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseDb(companyId: string): Promise<any> {
+async function getFirebaseDb(_companyId: string): Promise<any> {
   try {
     // Dynamically import Firebase services
     const firebaseModule = await import('@/firebase/server');
@@ -18,7 +18,7 @@ async function getFirebaseDb(companyId: string): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -77,7 +77,7 @@ export async function GET(
       success: true,
       invoices,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Rechnungen' },
       { status: 500 }
@@ -91,8 +91,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
     const { uid } = await params;
@@ -150,7 +149,7 @@ export async function POST(
         await db!.collection('companies').doc(uid).update({
           'step3.lastInvoiceNumber': finalInvoiceNumber,
         });
-      } catch (error) {
+      } catch {
         // Fallback: Zeitstempel-basierte Nummer
         const fallbackNumber = Date.now() % 10000;
         finalInvoiceNumber = `R-${new Date().getFullYear()}-${fallbackNumber.toString().padStart(3, '0')}`;
@@ -200,7 +199,7 @@ export async function POST(
       },
       message: 'Rechnung erfolgreich erstellt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Erstellen der Rechnung' },
       { status: 500 }

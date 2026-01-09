@@ -3,28 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
-import RevolutConnectModal from '@/components/RevolutConnectModal';
-import BankDisconnectDialog from '@/components/BankDisconnectDialog';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
-  Building2,
   CreditCard,
-  RefreshCw,
-  Settings,
-  Zap,
-  Shield,
   AlertCircle,
   Search,
   Loader2,
@@ -32,18 +17,6 @@ import {
   CheckCircle,
   Clock,
   Activity,
-  Send,
-  Filter,
-  Download,
-  Calendar,
-  Euro,
-  MoreHorizontal,
-  ArrowUp,
-  ArrowDown,
-  FileText,
-  Link,
-  ChevronDown,
-  Users,
 } from 'lucide-react';
 
 interface BankConnection {
@@ -85,26 +58,26 @@ export default function BankingDashboardPage() {
   const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
   const [connectedBanks, setConnectedBanks] = useState<{ [bankId: string]: boolean }>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
-  const [showBankSelection, setShowBankSelection] = useState(false);
+  const [_selectedBank, setSelectedBank] = useState<Bank | null>(null);
+  const [_showBankSelection, _setShowBankSelection] = useState(false);
 
   // WebForm Modal States
-  const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
-  const [webFormUrl, setWebFormUrl] = useState<string>('');
-  const [webFormBankName, setWebFormBankName] = useState<string>('');
+  const [_isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
+  const [_webFormUrl, setWebFormUrl] = useState<string>('');
+  const [_webFormBankName, setWebFormBankName] = useState<string>('');
 
   // Revolut Modal States
-  const [isRevolutModalOpen, setIsRevolutModalOpen] = useState(false);
+  const [_isRevolutModalOpen, _setIsRevolutModalOpen] = useState(false);
 
   // Bank Disconnect Dialog States
-  const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
+  const [_isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
   const [selectedConnectionForDisconnect, setSelectedConnectionForDisconnect] =
     useState<BankConnection | null>(null);
 
   // Bank Search States
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [_searchResults, _setSearchResults] = useState<any[]>([]);
+  const [_isSearching, _setIsSearching] = useState(false);
+  const [_showSearchResults, _setShowSearchResults] = useState(false);
 
   // Function to get the correct bank logo filename
   const getBankLogoPath = (name: string): string => {
@@ -144,10 +117,10 @@ export default function BankingDashboardPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const connectionStatus = urlParams.get('connection');
     const mode = urlParams.get('mode');
-    const bankId = urlParams.get('bank');
+    const _bankId = urlParams.get('bank');
     const revolutSuccess = urlParams.get('revolut_success');
     const revolutError = urlParams.get('revolut_error');
-    const revolutAccounts = urlParams.get('accounts');
+    const _revolutAccounts = urlParams.get('accounts');
 
     if (connectionStatus === 'success') {
       if (mode === 'mock') {
@@ -313,7 +286,7 @@ export default function BankingDashboardPage() {
 
       window.location.href = `/dashboard/company/${params.uid}/banking/connect?${queryParams.toString()}`;
     }
-    setShowSearchResults(false);
+    _setShowSearchResults(false);
   };
 
   // Filter banks based on search
@@ -362,7 +335,7 @@ export default function BankingDashboardPage() {
             allConnections.push(...enhancedConnections);
           }
         }
-      } catch (finapiError) {}
+      } catch {}
 
       // Load Revolut connections
       try {
@@ -387,7 +360,7 @@ export default function BankingDashboardPage() {
             allConnections.push(...revolutConnections);
           }
         }
-      } catch (revolutError) {}
+      } catch {}
 
       // If we have any connections, use them
       if (allConnections.length > 0) {
@@ -437,7 +410,7 @@ export default function BankingDashboardPage() {
 
       // No connections found
       setConnections([]);
-    } catch (error) {
+    } catch {
       setConnections([]);
     } finally {
       setLoading(false);
@@ -455,7 +428,7 @@ export default function BankingDashboardPage() {
         // Correct property name: bankConnections (not connections)
         const firestoreConnections = firestoreData.bankConnections || [];
         const lastSync = firestoreData.lastSync;
-        const syncStatus = firestoreData.syncStatus;
+        const _syncStatus = firestoreData.syncStatus;
 
         // If we have finAPI connections but no Firestore data, update status to "connected"
         if (connections.length > 0 && firestoreConnections.length === 0) {
@@ -483,7 +456,7 @@ export default function BankingDashboardPage() {
 
             if (updateResponse.ok) {
             }
-          } catch (updateError) {}
+          } catch {}
         }
 
         // Merge finAPI and Firestore data
@@ -508,7 +481,7 @@ export default function BankingDashboardPage() {
           return enhancedConnection;
         });
       }
-    } catch (error) {}
+    } catch {}
 
     // If Firestore data is unavailable, default to "connected" if we have finAPI connections
     if (connections.length > 0) {
@@ -542,7 +515,7 @@ export default function BankingDashboardPage() {
       });
 
       if (importResponse.ok) {
-        const importData = await importResponse.json();
+        const _importData = await importResponse.json();
 
         // Reload connections to show updated status
         setTimeout(() => {
@@ -570,7 +543,7 @@ export default function BankingDashboardPage() {
           }, 2000);
         }
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const loadAvailableBanks = async () => {
@@ -623,10 +596,10 @@ export default function BankingDashboardPage() {
           setConnectedBanks(connected);
         }
       }
-    } catch (error) {}
+    } catch {}
   };
 
-  const handleConnectBank = async (bank: Bank) => {
+  const _handleConnectBank = async (bank: Bank) => {
     if (isConnecting) return;
 
     if (connectedBanks[bank.id.toString()]) {
@@ -672,7 +645,7 @@ export default function BankingDashboardPage() {
     }
   };
 
-  const handleWebFormSuccess = async (bankConnectionId?: string) => {
+  const _handleWebFormSuccess = async (_bankConnectionId?: string) => {
     setIsConnecting(false);
     setSelectedBank(null);
     setIsWebFormModalOpen(false);
@@ -689,12 +662,12 @@ export default function BankingDashboardPage() {
     }, 2000);
   };
 
-  const handleOpenDisconnectDialog = (connection: BankConnection) => {
+  const _handleOpenDisconnectDialog = (connection: BankConnection) => {
     setSelectedConnectionForDisconnect(connection);
     setIsDisconnectDialogOpen(true);
   };
 
-  const handleDisconnectBank = async () => {
+  const _handleDisconnectBank = async () => {
     if (!selectedConnectionForDisconnect) return;
 
     try {
@@ -732,13 +705,13 @@ export default function BankingDashboardPage() {
     }
   };
 
-  const handleWebFormClose = () => {
+  const _handleWebFormClose = () => {
     setIsWebFormModalOpen(false);
     setIsConnecting(false);
     setSelectedBank(null);
   };
 
-  const handleWebFormError = (error: string) => {
+  const _handleWebFormError = (error: string) => {
     setError(error);
     setIsConnecting(false);
     setSelectedBank(null);
@@ -758,7 +731,7 @@ export default function BankingDashboardPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const _getStatusIcon = (status: string) => {
     switch (status) {
       case 'connected':
         return <CheckCircle className="h-4 w-4 text-[#14ad9f]" />;

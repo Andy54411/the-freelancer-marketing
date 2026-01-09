@@ -10,7 +10,6 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
@@ -25,7 +24,6 @@ import {
   Calendar,
 } from 'lucide-react';
 import { format, differenceInCalendarDays, isValid } from 'date-fns';
-import { de } from 'date-fns/locale';
 import DirectChatModal from '@/components/DirectChatModal';
 import ResponseTimeDisplay from '@/components/ResponseTimeDisplay';
 import ProviderReviews from '@/components/ProviderReviews';
@@ -34,7 +32,7 @@ import {
   DateTimeSelectionPopupProps,
 } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserProfileData, SavedAddress } from '@/types/types';
+import { UserProfileData } from '@/types/types';
 
 interface Provider {
   id: string;
@@ -70,7 +68,7 @@ interface Provider {
 export default function CompanyProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, firebaseUser } = useAuth();
+  const { user: _user, firebaseUser } = useAuth();
   const companyUid = (params?.uid as string) || '';
   const providerId = (params?.id as string) || '';
 
@@ -211,7 +209,7 @@ export default function CompanyProviderDetailPage() {
           router.push(`/dashboard/company/${companyUid}`);
         }
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -226,7 +224,7 @@ export default function CompanyProviderDetailPage() {
         const data = firmaDoc.data();
         setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const loadUserProfile = async () => {
@@ -238,7 +236,7 @@ export default function CompanyProviderDetailPage() {
         const data = userDoc.data();
         setUserProfile(data as UserProfileData);
       }
-    } catch (error) {}
+    } catch {}
   };
 
   const openChatWithProvider = () => {

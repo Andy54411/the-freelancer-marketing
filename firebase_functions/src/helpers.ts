@@ -5,7 +5,7 @@ import { getFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/f
 import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 import * as admin from "firebase-admin";
-import Stripe from "stripe";
+// STRIPE ENTFERNT (Januar 2026) - Ersetzt durch Revolut/Escrow
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { UNKNOWN_USER_NAME } from "./constants";
@@ -156,63 +156,21 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
   }
 }
 
-// --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
+// ============================================================================
+// STRIPE ENTFERNT (Januar 2026) - Ersetzt durch Revolut/Escrow Payment System
+// ============================================================================
+// getStripeInstance() wurde entfernt - alle Zahlungen laufen jetzt über Revolut
 
-export function getStripeInstance(stripeKey: string): Stripe {
-  if (!stripeKey) {
-    logger.error("KRITISCH: STRIPE_SECRET_KEY nicht verfügbar!", { at: 'getStripeInstance' });
-    throw new HttpsError("internal", "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt).");
-  }
-
-  try {
-    // Entferne Whitespace und Newlines
-    const cleanKey = stripeKey.trim().replace(/\r?\n/g, '');
-    
-    // Detaillierte Schlüsselvalidierung
-    if (!cleanKey) {
-      logger.error("[getStripeInstance] Key is empty after cleaning");
-      throw new Error('Empty key after cleaning');
-    }
-    
-    if (!cleanKey.startsWith('sk_')) {
-      logger.error("[getStripeInstance] Invalid key format:", {
-        keyStart: cleanKey.substring(0, 3),
-        length: cleanKey.length,
-        possibleNewlines: stripeKey.includes('\n')
-      });
-      throw new Error('Invalid key format: Must start with sk_');
-    }
-    
-    if (cleanKey.length < 20) {
-      logger.error("[getStripeInstance] Key is too short:", {
-        length: cleanKey.length
-      });
-      throw new Error('Key is too short to be valid');
-    }
-
-    logger.info("[getStripeInstance] Creating Stripe instance with key type:", 
-      cleanKey.startsWith('sk_live_') ? 'LIVE' : 'TEST'
-    );
-    
-        // Neues Stripe Client-Objekt mit minimaler Konfiguration
-    return new Stripe(cleanKey, {
-      typescript: true,
-      timeout: 120000, // 120 Sekunden Timeout für alle Anfragen
-      maxNetworkRetries: 5 // 5 Versuche bei Netzwerkfehlern
-    });
-  } catch (e: unknown) {
-    let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
-    if (e instanceof Error) {
-      errorMessage = e.message;
-    }
-    logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
-    throw new HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
-  }
+/**
+ * @deprecated STRIPE WURDE ENTFERNT - Diese Funktion wirft immer einen Fehler
+ * Alle Zahlungen laufen jetzt über das Revolut/Escrow System
+ */
+export function getStripeInstance(_stripeKey: string): never {
+  throw new HttpsError("unimplemented", "Stripe wurde entfernt. Bitte nutzen Sie das Revolut/Escrow Payment System.");
 }
 
 /**
  * Gibt die öffentlich zugängliche Frontend-URL zurück (Live-URL im Prod, oder die in .env.local gesetzte Live-URL im Emulator).
- * Diese URL ist für Dienste wie Stripe Business Profile URL gedacht.
  */
 export function getPublicFrontendURL(liveUrl: string): string {
   if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_EMULATOR_HOST) {

@@ -11,9 +11,8 @@ import {
 } from 'firebase/storage';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/clients';
-import { FiUpload, FiTrash2, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { Input } from '@/components/ui/input';
-import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 import { UserDataForSettings } from '@/types/settings';
 import { getAuth } from 'firebase/auth';
@@ -28,9 +27,9 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [projectImages, setProjectImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [_uploading, setUploading] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
-  const [progress, setProgress] = useState<number>(0);
+  const [_progress, setProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
 
@@ -75,7 +74,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
             setProjectImages(userData.projectImages || []);
           }
         }
-      } catch (error) {}
+      } catch {}
     };
     fetchProjectImagesFromFirestore();
   }, [uid]);
@@ -208,7 +207,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     }
   };
 
-  const handleProjectUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const _handleProjectUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || !uid) return;
 
@@ -292,7 +291,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     }
   };
 
-  const handleDelete = async (url: string) => {
+  const _handleDelete = async (url: string) => {
     if (!uid) return;
     setUploadError(null);
     setUploadSuccess(false);

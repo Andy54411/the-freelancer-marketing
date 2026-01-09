@@ -76,14 +76,14 @@ export function AbsenceApprovalModal({
       onClose();
       setNotes('');
       setSelectedAction(null);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Verarbeiten des Antrags');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async () => {
+  const _handleSubmit = async () => {
     if (!selectedAction || !request.id) return;
 
     try {
@@ -102,7 +102,7 @@ export function AbsenceApprovalModal({
       onClose();
       setNotes('');
       setSelectedAction(null);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Verarbeiten des Antrags');
     } finally {
       setLoading(false);

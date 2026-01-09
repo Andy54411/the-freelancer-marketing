@@ -3,12 +3,10 @@
 import React, { useState } from 'react';
 import {
   ChevronDown,
-  Filter,
   X,
   Globe,
   Users,
   MapPin,
-  Clock,
   BadgeCheck,
   Zap,
   SlidersHorizontal,

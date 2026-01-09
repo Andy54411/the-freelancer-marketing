@@ -62,7 +62,7 @@ class TaskiloAIAssistant {
       availability: string;
     }>;
   }> {
-    const { message, currentStep, orderData = {}, userId } = request;
+    const { message, currentStep, orderData = {} } = request;
 
     // Nachricht in Firestore speichern
     await this.saveConversation(request);
@@ -87,10 +87,10 @@ class TaskiloAIAssistant {
         return this.handleBudget(message, orderData);
 
       case 'provider-matching':
-        return await this.handleProviderMatching(message, orderData, userId);
+        return await this.handleProviderMatching(message, orderData, request.userId);
 
       case 'project-monitoring':
-        return await this.handleProjectMonitoring(message, userId);
+        return await this.handleProjectMonitoring(message, request.userId);
 
       default:
         return {
@@ -272,7 +272,7 @@ Ich analysiere Bewertungen, Verfügbarkeit und Preise!`,
 
 ${providers
   .map(
-    (provider, _index) => `
+    (provider) => `
 ⭐ **${provider.name}** (${provider.rating}/5)
 💰 Ab ${provider.price}€ | 📍 ${provider.distance}km entfernt
 ✅ ${provider.experience} | 📅 ${provider.availability}
@@ -449,7 +449,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         aiAssisted: true,
       });
       return orderRef.id;
-    } catch (error) {
+    } catch {
       return 'temp-' + Date.now();
     }
   }
@@ -505,7 +505,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         nextAppointment: 'Morgen 10:00',
         providerName: 'ProService München',
       }));
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -516,7 +516,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         ...request,
         timestamp: new Date(),
       });
-    } catch (error) {}
+    } catch {}
   }
 }
 
@@ -532,7 +532,7 @@ export async function POST(request: NextRequest) {
     const result = await TaskiloAIAssistant.processMessage(body);
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

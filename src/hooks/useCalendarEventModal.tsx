@@ -100,7 +100,7 @@ export function useCalendarEventModal({
   }, [onEventChange]);
 
   // Handle event deleted
-  const handleEventDeleted = useCallback((eventId: string) => {
+  const handleEventDeleted = useCallback((_eventId: string) => {
     setIsModalOpen(false);
     setSelectedEvent(null);
     setSelectedDate(undefined);

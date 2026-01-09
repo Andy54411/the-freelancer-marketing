@@ -9,18 +9,16 @@ import { QualificationSection } from './QualificationSection';
 import { PersonalSection } from './PersonalSection';
 import { DocumentsSection } from './DocumentsSection';
 
-import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApplicantProfileSchema, ApplicantProfile } from '@/types/career';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,12 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, Upload, User, Pencil, Target } from 'lucide-react';
+import { Loader2, Pencil, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import Image from 'next/image';
 
 const JOB_CATEGORIES = [
   'Ausbildung',
@@ -122,20 +118,6 @@ const CAREER_LEVELS = [
   'Führungskraft',
   'Executive',
 ];
-
-const NOTICE_PERIOD_DURATIONS = [
-  'Sofort',
-  '1 Monat',
-  '2 Monate',
-  '3 Monate',
-  '6 Monate',
-  '12 Monate',
-];
-
-const NOTICE_PERIOD_TIMINGS = ['zum Monatsende', 'zum Quartalsende', 'zum Jahresende', 'ab sofort'];
-
-const CURRENCIES = ['EUR', 'CHF', 'USD', 'GBP'];
-const SALARY_PERIODS = ['Jahr', 'Monat'];
 
 interface CandidateProfileFormProps {
   userId: string;
@@ -236,7 +218,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Persönliche Daten gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -262,7 +244,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Dokumente gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -298,7 +280,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       toast.success('Berufliche Wünsche gespeichert');
       setIsEditingPreferences(false);
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -321,7 +303,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Berufserfahrung gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -344,7 +326,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Bildungsweg gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -367,7 +349,7 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Sprachkenntnisse gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
@@ -390,14 +372,14 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Fachkenntnisse gespeichert');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function onSubmit(data: ApplicantProfile) {
+  async function _onSubmit(data: ApplicantProfile) {
     setIsSubmitting(true);
     try {
       const profileData = {

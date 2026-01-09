@@ -11,9 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import {
   CheckCircle2,
-  AlertTriangle,
   Shield,
-  FileText,
   Globe,
   Zap,
   Settings,

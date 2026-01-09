@@ -5,7 +5,7 @@ import { JobFilterSidebar } from './JobFilterSidebar';
 import { JobSearchHeader } from './JobSearchHeader';
 import { JobCard } from './JobCard';
 import { JobPosting } from '@/types/career';
-import { Mail, Loader2, SlidersHorizontal, X } from 'lucide-react';
+import { Mail, Loader2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +14,6 @@ import { findCategoryBySubcategory } from '@/lib/categoriesData';
 import {
   doc,
   getDoc,
-  collection,
   query,
   where,
   getDocs,
@@ -141,7 +140,7 @@ export function JobBoard() {
                 createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                 postedAt: data.postedAt?.toDate?.()?.toISOString() || data.postedAt,
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-              } as JobPosting;
+              } as unknown as JobPosting;
             });
           }
         } catch (e) {
@@ -363,7 +362,7 @@ export function JobBoard() {
         let industry = job.industry;
 
         if (!industry) {
-          industry = findCategoryBySubcategory(job.title);
+          industry = findCategoryBySubcategory(job.title) ?? undefined;
         }
 
         if (!industry) {

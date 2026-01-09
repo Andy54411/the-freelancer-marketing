@@ -4,34 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Users,
-  UserPlus,
   TrendingUp,
-  Calendar,
   DollarSign,
-  Clock,
   Target,
-  Award,
-  AlertCircle,
-  Download,
-  Upload,
   Filter,
   Search,
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { PersonalActions } from '@/components/personal/PersonalActions';
@@ -178,7 +159,7 @@ export default function PersonalOverviewPage() {
 
       // Reset retry count on success
       setRetryCount(0);
-    } catch (error) {
+    } catch {
       // Increment retry count and retry after delay if under limit
       if (retryCount < maxRetries - 1) {
         setTimeout(() => {
@@ -211,7 +192,7 @@ export default function PersonalOverviewPage() {
   const departments = ['all', ...new Set(employees.map(emp => emp.department))];
 
   // Gefilterte Mitarbeiterliste
-  const filteredEmployees = employees.filter(emp => {
+  const _filteredEmployees = employees.filter(emp => {
     const matchesSearch = `${emp.firstName} ${emp.lastName} ${emp.position}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -226,7 +207,7 @@ export default function PersonalOverviewPage() {
     }).format(amount);
   };
 
-  const getEmploymentTypeLabel = (type: string) => {
+  const _getEmploymentTypeLabel = (type: string) => {
     const labels = {
       FULL_TIME: 'Vollzeit',
       PART_TIME: 'Teilzeit',
@@ -236,7 +217,7 @@ export default function PersonalOverviewPage() {
     return labels[type as keyof typeof labels] || type;
   };
 
-  const getEmploymentTypeBadge = (type: string) => {
+  const _getEmploymentTypeBadge = (type: string) => {
     const variants = {
       FULL_TIME: 'default',
       PART_TIME: 'secondary',

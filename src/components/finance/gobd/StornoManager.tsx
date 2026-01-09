@@ -23,7 +23,6 @@ import {
   CheckCircle,
   Loader2,
   Euro,
-  Calendar,
   FileText
 } from 'lucide-react';
 import { GoBDDocument, StornoRequest, CreditNoteRequest } from '@/types/gobdTypes';
@@ -104,7 +103,7 @@ export function StornoManager({ companyId, document, onStornoCreated, onCreditNo
     try {
       setProcessing(true);
       
-      const creditRequest: CreditNoteRequest = {
+      const _creditRequest: CreditNoteRequest = {
         originalDocumentId: document.id,
         reason: creditReason.trim(),
         creditAmount: amount,

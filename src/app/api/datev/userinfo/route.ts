@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         error: 'internal_error',
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       { error: 'invalid_request', message: 'Invalid test mode' },
       { status: 400 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'internal_error', message: 'Failed to process mock request' },
       { status: 500 }

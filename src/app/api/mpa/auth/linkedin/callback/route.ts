@@ -1,7 +1,6 @@
 // 🎯 LINKEDIN ADS OAUTH CALLBACK - Multi-Platform Auth Handler
 
 import { NextRequest, NextResponse } from 'next/server';
-import { LinkedInAdsService } from '@/services/platform-services/linkedinAdsService';
 import { advertisingFirebaseService } from '@/services/firebase/advertisingService';
 
 export async function GET(request: NextRequest) {

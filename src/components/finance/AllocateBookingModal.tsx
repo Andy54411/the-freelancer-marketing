@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Receipt } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -149,7 +149,7 @@ export function AllocateBookingModal({
       setIsSubmitting(true);
 
       // Update cashbook entries with linked documents
-      const { collection, doc, updateDoc, arrayUnion } = await import('firebase/firestore');
+      const { collection, doc, updateDoc } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
       const cashbookRef = collection(db, 'companies', companyId, 'cashbook');

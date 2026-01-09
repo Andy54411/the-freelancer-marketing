@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,8 +34,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  Plus,
-  Upload,
   FileText,
   Edit,
   Trash2,
@@ -133,7 +131,7 @@ export function ExpenseComponent({
   };
 
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [_uploadingFile, setUploadingFile] = useState(false);
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     title: '',
@@ -300,7 +298,7 @@ export function ExpenseComponent({
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const _handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !companyId) return;
 
@@ -369,7 +367,7 @@ export function ExpenseComponent({
           description: result.error || 'Datei konnte nicht verarbeitet werden',
         });
       }
-    } catch (error) {
+    } catch {
       toast.error('Upload-Fehler');
     } finally {
       setUploadingFile(false);
@@ -439,7 +437,7 @@ export function ExpenseComponent({
       // 2. Neuen Lieferanten automatisch anlegen über API
 
       // Generiere Lieferanten-Nummer
-      const supplierNumbers = existingCustomers
+      const _supplierNumbers = existingCustomers
         .map((c: any) => c.customerNumber || '')
         .filter((num: string) => num.startsWith('LF-'))
         .map((num: string) => parseInt(num.replace('LF-', ''), 10))
@@ -493,7 +491,7 @@ export function ExpenseComponent({
         toast.error('Fehler bei automatischer Lieferanten-Erstellung');
         return '';
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler bei automatischer Lieferanten-Erstellung');
       return '';
     }
@@ -569,7 +567,7 @@ export function ExpenseComponent({
           });
           pdfDownloadURL = await uploadPdfToStorage(currentReceipt);
           toast.success('PDF erfolgreich gespeichert!');
-        } catch (error) {
+        } catch {
           toast.error('PDF-Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
         }
       }
@@ -632,7 +630,7 @@ export function ExpenseComponent({
         toast.success('Ausgabe erfolgreich gespeichert');
         await onRefresh?.();
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setIsLoading(false);
@@ -744,7 +742,7 @@ export function ExpenseComponent({
           });
           pdfDownloadURL = await uploadPdfToStorage(currentReceipt, editingExpense.id);
           toast.success('PDF erfolgreich gespeichert!');
-        } catch (error) {
+        } catch {
           toast.error('PDF-Upload fehlgeschlagen, Änderungen werden trotzdem gespeichert');
         }
       }
@@ -786,7 +784,7 @@ export function ExpenseComponent({
         toast.success('Ausgabe erfolgreich aktualisiert');
         await onRefresh?.();
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren');
     } finally {
       setIsLoading(false);
@@ -824,7 +822,7 @@ export function ExpenseComponent({
         toast.success(`Ausgabe "${expense.title}" wurde gelöscht`);
         await onRefresh?.();
       }
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Löschen der Ausgabe');
     } finally {
       setIsLoading(false);
@@ -887,7 +885,7 @@ export function ExpenseComponent({
                       description: 'Daten wurden automatisch eingetragen',
                     });
                   }}
-                  onFileUploaded={(storageUrl: string) => {
+                  onFileUploaded={(_storageUrl: string) => {
                     // File Upload erfolgreich - setze Flag für Upload-Status
                     setUploadingFile(false);
                     toast.success('Datei erfolgreich hochgeladen');

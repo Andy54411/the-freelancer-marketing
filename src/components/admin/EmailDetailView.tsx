@@ -18,17 +18,12 @@ import {
   Trash2,
   Archive,
   Star,
-  Flag,
-  MoreVertical,
   Paperclip,
-  Calendar,
   User,
   Mail,
   Clock,
   Eye,
   FileText,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react';
 
 interface ModernEmailContent {
@@ -61,25 +56,11 @@ interface EmailDetailViewProps {
   onEmailSent?: () => void; // Callback wenn E-Mail gesendet wurde
 }
 
-interface QuickReplyData {
-  to: string;
-  subject: string;
-  message: string;
-}
-
 // Hilfsfunktionen für bessere E-Mail-Bereinigung
 function decodeUTF8Properly(text: string): string {
   if (!text) return '';
 
-  // Spezielle Debug-Analyse für problematische Zeichen
-  if (text.includes('Match')) {
-    // Zeichen-Code-Analyse
-    const matchIndex = text.indexOf('Match');
-    if (matchIndex > 0) {
-      const beforeChar = text.charAt(matchIndex - 1);
-      const afterChar = text.charAt(matchIndex + 5);
-    }
-  }
+  
 
   try {
     // Schritt 1: HTML-Entitäten dekodieren
@@ -93,11 +74,11 @@ function decodeUTF8Properly(text: string): string {
     }
 
     // Schritt 3: Quoted-printable dekodieren (z.B. =FC -> ü)
-    decoded = decoded.replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+    decoded = decoded.replace(/=([0-9A-F]{2})/gi, (_match, hex) => {
       try {
         return String.fromCharCode(parseInt(hex, 16));
       } catch {
-        return match;
+        return _match;
       }
     });
 
@@ -176,7 +157,7 @@ function decodeUTF8Properly(text: string): string {
       .trim();
 
     return decoded;
-  } catch (error) {
+  } catch {
     return text;
   }
 }
@@ -218,7 +199,7 @@ function getCleanTextContent(email: ReceivedEmail): string {
 
         return finalCleanedText.trim();
       }
-    } catch (error) {}
+    } catch {}
   }
 
   return 'E-Mail-Inhalt konnte nicht geladen werden.';
@@ -273,7 +254,7 @@ function QuickReplyForm({
       if (onEmailSent) {
         onEmailSent();
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Senden der Antwort. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSending(false);
@@ -443,7 +424,7 @@ export default function EmailDetailView({
             contentId: undefined,
           })) || [],
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -484,13 +465,13 @@ export default function EmailDetailView({
         .replace(/=3D/g, '='); // 3D Ersetzungen für HTML - WICHTIG für URLs!
 
       // 3. Allgemeine Hex-kodierte Zeichen dekodieren (NACH spezifischen Ersetzungen)
-      result = result.replace(/=([0-9A-F]{2})/g, (match, hex) => {
+      result = result.replace(/=([0-9A-F]{2})/g, (_match, hex) => {
         const charCode = parseInt(hex, 16);
         return String.fromCharCode(charCode);
       });
 
       return result;
-    } catch (error) {
+    } catch {
       return str;
     }
   };
@@ -607,10 +588,10 @@ export default function EmailDetailView({
         const decoder = new TextDecoder('utf-8', { fatal: false });
         const bytes = encoder.encode(result);
         result = decoder.decode(bytes);
-      } catch (e) {}
+      } catch {}
 
       return result;
-    } catch (error) {
+    } catch {
       return content;
     }
   };
@@ -731,31 +712,7 @@ export default function EmailDetailView({
   const processedContent = useMemo(() => {
     // Priorität 1: Verwende parsedEmail falls verfügbar - ABER MIT BEREINIGUNG!
     if (parsedEmail) {
-      if (parsedEmail.text) {
-        // Detaillierte Euro-Symbol-Analyse
-        let euroCount = 0;
-        const sampleEuros: Array<{
-          index: number;
-          char: string;
-          charCode: number;
-          context: string;
-        }> = [];
-        for (let i = 0; i < Math.min(parsedEmail.text.length, 1000); i++) {
-          const char = parsedEmail.text[i];
-          if (char === '€') {
-            euroCount++;
-            if (sampleEuros.length < 5) {
-              sampleEuros.push({
-                index: i,
-                char: char,
-                charCode: char.charCodeAt(0),
-                context: parsedEmail.text.substring(Math.max(0, i - 10), i + 10),
-              });
-            }
-          }
-        }
-      } else {
-      }
+      
 
       // WICHTIG: Auch parsedEmail.text muss bereinigt werden!
       const cleanedText = parsedEmail.text
@@ -805,9 +762,6 @@ export default function EmailDetailView({
         ALLOW_DATA_ATTR: false,
       });
 
-      const textParser = new DOMParser();
-      const htmlDoc = textParser.parseFromString(processedHtml, 'text/html');
-
       // Verwende getCleanTextContent für bessere Text-Extraktion
       const processedText = getCleanTextContent(email);
 
@@ -844,7 +798,7 @@ export default function EmailDetailView({
             html: email.htmlContent,
           };
         }
-      } catch (error) {}
+      } catch {}
     }
 
     // Priorität 5: Fallback - nur wenn wirklich nichts vorhanden ist
@@ -896,27 +850,6 @@ export default function EmailDetailView({
       personal: 'bg-blue-100 text-blue-800',
     };
     return colors[category || ''] || 'bg-gray-100 text-gray-800';
-  };
-
-  // Bessere Text-Content-Funktion mit modernen APIs
-  const getBestTextContent = () => {
-    if (parsedEmail) {
-      return parsedEmail.text || 'Kein Text verfügbar';
-    }
-
-    if (email.textContent && email.textContent.trim() && email.textContent !== email.htmlContent) {
-      return decodeUTF8Properly(email.textContent);
-    }
-
-    // Fallback zu HTML-zu-Text Konvertierung
-    if (email.htmlContent) {
-      const textParser = new DOMParser();
-      const htmlDoc = textParser.parseFromString(email.htmlContent, 'text/html');
-      const textContent = htmlDoc.body?.textContent || htmlDoc.textContent || '';
-      return decodeUTF8Properly(textContent);
-    }
-
-    return 'Kein Inhalt verfügbar';
   };
 
   return (

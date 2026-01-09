@@ -19,6 +19,10 @@ import {
 // Import zod for validation
 import { z } from 'zod';
 
+// PDF-Parse für native PDF-Text-Extraktion (kein OCR für PDFs mit eingebettetem Text)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfParse = require('pdf-parse');
+
 // Cloud Storage wird jetzt über das file-download Utility-Modul verwaltet
 
 // Import File Download Utilities
@@ -132,14 +136,11 @@ const germanInvoiceSchema = z.object({
 // Import Express types (Firebase Functions v2 uses Express internally)
 import { Request, Response } from 'express';
 
-// AWS SDK for Textract
-import { TextractClient, AnalyzeDocumentCommand } from '@aws-sdk/client-textract';
-
-// Google Cloud Vision API für OCR
+// Google Cloud Vision API für OCR (AWS Textract wurde entfernt - nur Google)
 import { ImageAnnotatorClient } from '@google-cloud/vision';
 
-// Google AI Studio für intelligente OCR-Nachbearbeitung
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// Vertex AI für intelligente OCR - verwendet GCloud Billing, keine Free-Tier-Limits
+import { VertexAI } from '@google-cloud/vertexai';
 
 // PDF Text Parsing - ENTFERNT (KEIN FALLBACK MEHR)
 
@@ -300,11 +301,14 @@ const cloudStorageOcrRequestSchema = z.object({
     path: ['fileUrl', 's3Path', 'gcsPath']
 });
 
+// Gemini 2.0 Flash - Stabil und über globalen Endpunkt EU-weit verfügbar
+const GEMINI_MODEL = 'gemini-2.0-flash-001';
+
 /**
  * Model configuration for production use
  */
 const GEMINI_PRODUCTION_CONFIG = {
-    model: "gemini-2.0-flash-exp", // ✅ FINALE LÖSUNG: Aktuelles, stabiles Gemini-Modell
+    model: GEMINI_MODEL, // Aktuelles, stabiles Gemini-Modell über globalen Endpunkt
     generationConfig: {
         temperature: 0.1, // Niedrig für konsistente Extraktion
         topK: 1,
@@ -422,48 +426,26 @@ function logAPIUsage(companyId: string, operation: string, fileSize?: number, mo
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cors = require('cors')({ origin: corsOptions });
 
-// Global TextractClient (initialized once for better performance)
-const textractClient = new TextractClient({
-    region: (process.env.AWS_REGION || 'eu-central-1').trim(),
-    credentials: {
-        accessKeyId: (process.env.AWS_ACCESS_KEY_ID || '').trim(),
-        secretAccessKey: (process.env.AWS_SECRET_ACCESS_KEY || '').trim()
-    }
-});
+// ============================================================================
+// GOOGLE CLOUD VISION OCR - AWS Textract wurde entfernt (Januar 2026)
+// ============================================================================
+// NUR Google Cloud Vision API für OCR - keine AWS-Abhängigkeiten mehr
 
-// Validate AWS credentials at startup
-const awsAccessKey = process.env.AWS_ACCESS_KEY_ID?.trim();
-const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
-const awsRegion = (process.env.AWS_REGION || 'eu-central-1').trim();
+// Vertex AI Client für OCR-Nachbearbeitung (GCloud Billing, keine Free-Tier-Limits)
+// WICHTIG: us-central1 hat alle Gemini-Modelle verfügbar
+let vertexAI: VertexAI | null = null;
+const GCLOUD_PROJECT_ID = 'tilvo-f142f';
+const GCLOUD_LOCATION = 'us-central1'; // Beste Modellverfügbarkeit
 
-logger.info('[AWS] Environment check:', {
-    hasAccessKey: !!awsAccessKey,
-    hasSecretKey: !!awsSecretKey,
-    region: awsRegion,
-    accessKeyLength: awsAccessKey?.length || 0,
-    isFromSecret: !!process.env.AWS_ACCESS_KEY_ID // This will be true if loaded from Firebase Secret
-});
-
-if (!awsAccessKey || !awsSecretKey) {
-    logger.warn('[AWS] AWS credentials not configured - OCR will fail at runtime if used');
-} else {
-    logger.info('[AWS] ✅ AWS Textract configured with region:', awsRegion);
-}
-
-// Google AI Studio Client für OCR-Nachbearbeitung
-let genAI: GoogleGenerativeAI | null = null;
-
-// Initialize Google AI Studio immediately at startup
+// Initialize Vertex AI at startup - verwendet automatisch Application Default Credentials
 try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
-        genAI = new GoogleGenerativeAI(apiKey);
-        logger.info('[Google AI] ✅ Google AI Studio initialized successfully with API key from Firebase Secret');
-    } else {
-        logger.warn('[Google AI] ⚠️ GEMINI_API_KEY not found in environment variables');
-    }
+    vertexAI = new VertexAI({
+        project: GCLOUD_PROJECT_ID,
+        location: GCLOUD_LOCATION
+    });
+    logger.info(`[Vertex AI] Vertex AI initialisiert in ${GCLOUD_LOCATION}, Modell: ${GEMINI_MODEL}`);
 } catch (error) {
-    logger.error('[Google AI] ❌ Failed to initialize Google AI Studio:', error);
+    logger.error('[Vertex AI] Vertex AI Initialisierung fehlgeschlagen:', error);
 }
 
 // Model-Instanzen
@@ -544,16 +526,11 @@ async function loadUserCompanyData(userId: string): Promise<UserCompanyData | nu
  * Zentrale HTTP-API für das Finance-Modul mit OCR-Integration
  */
 export const financeApi = onRequest({
-    secrets: [
-        'AWS_ACCESS_KEY_ID',
-        'AWS_SECRET_ACCESS_KEY', 
-        'AWS_REGION',
-        'GEMINI_API_KEY'
-    ],
+    // Keine Secrets mehr benötigt - Vertex AI verwendet Application Default Credentials
     cors: true,
     memory: '1GiB',
     cpu: 1,
-    timeoutSeconds: 60,
+    timeoutSeconds: 120, // Erhöht für Vertex AI
     region: 'europe-west1'
 }, async (request, response) => {
     return cors(request, response, async () => {
@@ -566,78 +543,77 @@ export const financeApi = onRequest({
             logger.info(`[FinanceAPI Debug] Full URL: ${url}, Path: ${path}, Parts: ${JSON.stringify(pathParts)}`);
             logger.info(`[FinanceAPI Debug] Method: ${method}, First part: ${pathParts[0]}, Test check: ${pathParts[0] === 'test-gemini'}`);
 
-            // Test Gemini AI availability (no auth required)
+            // Test Vertex AI availability (no auth required)
             if (method === 'GET' && pathParts[0] === 'test-gemini') {
-                logger.info('[GEMINI TEST] 🔬 Testing Gemini AI availability...');
+                logger.info('[VERTEX AI TEST] 🔬 Testing Vertex AI availability...');
                 
                 try {
-                    const apiKey = process.env.GEMINI_API_KEY;
-                    logger.info('[GEMINI TEST] 🔑 Environment check:', {
-                        hasKey: !!apiKey,
-                        keyLength: apiKey?.length || 0,
-                        keyPrefix: apiKey?.substring(0, 15) + '...' || 'none',
-                        genAIInstance: !!genAI
+                    logger.info('[VERTEX AI TEST] 🔑 Environment check:', {
+                        vertexAIInstance: !!vertexAI,
+                        project: GCLOUD_PROJECT_ID,
+                        location: GCLOUD_LOCATION
                     });
                     
-                    if (apiKey && genAI) {
-                        // Production-ready: Use specific model optimized for German invoice processing
-                        const PRODUCTION_MODEL = "gemini-2.0-flash-exp"; // ✅ FINALE LÖSUNG: Aktuelles, stabiles Gemini-Modell
+                    if (vertexAI) {
+                        const PRODUCTION_MODEL = GEMINI_MODEL;
                         
                         try {
-                            logger.info(`[GEMINI TEST] 🎯 Using production model: ${PRODUCTION_MODEL}`);
-                            const model = genAI.getGenerativeModel({ 
+                            logger.info(`[VERTEX AI TEST] 🎯 Using production model: ${PRODUCTION_MODEL}`);
+                            const model = vertexAI.getGenerativeModel({
                                 model: PRODUCTION_MODEL,
                                 generationConfig: {
-                                    temperature: 0.1, // Niedrige Temperatur für konsistente Rechnungsextraktion
-                                    topK: 1,
-                                    topP: 1,
-                                    maxOutputTokens: 2048
+                                    temperature: 0.1,
+                                    maxOutputTokens: 256
                                 }
                             });
                             
-                            const result = await model.generateContent("Test: Say 'Produktionssystem bereit für deutsche Rechnungsverarbeitung'");
-                            const responseText = result.response.text();
+                            const result = await model.generateContent({
+                                contents: [{
+                                    role: 'user',
+                                    parts: [{ text: "Test: Say 'Produktionssystem bereit für deutsche Rechnungsverarbeitung'" }]
+                                }]
+                            });
+                            const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
                             
-                            logger.info(`[GEMINI TEST] ✅ Production model ready:`, responseText);
+                            logger.info(`[VERTEX AI TEST] ✅ Production model ready:`, responseText);
                             
                             response.json({
                                 success: true,
-                                message: 'Gemini AI production system ready!',
+                                message: 'Vertex AI production system ready!',
                                 model: PRODUCTION_MODEL,
                                 response: responseText,
-                                apiKeyConfigured: true,
+                                project: GCLOUD_PROJECT_ID,
                                 optimizedForGermanInvoices: true
                             });
                             return;
                         } catch (modelError) {
-                            logger.error(`[GEMINI TEST] ❌ Production model ${PRODUCTION_MODEL} failed:`, modelError);
+                            logger.error(`[VERTEX AI TEST] ❌ Production model ${PRODUCTION_MODEL} failed:`, modelError);
                             
                             response.json({
                                 success: false,
-                                message: 'Gemini AI production model failed',
+                                message: 'Vertex AI production model failed',
                                 model: PRODUCTION_MODEL,
                                 error: modelError instanceof Error ? modelError.message : 'Unknown error',
-                                apiKeyConfigured: true
+                                project: GCLOUD_PROJECT_ID
                             });
                             return;
                         }
                     } else {
-                        logger.warn('[GEMINI TEST] ❌ Not available');
+                        logger.warn('[VERTEX AI TEST] ❌ Not available');
                         response.json({
                             success: false,
-                            message: 'Gemini AI not available',
-                            apiKeyConfigured: !!apiKey,
-                            genAIInitialized: !!genAI,
-                            allEnvVars: Object.keys(process.env).filter(key => key.includes('GEMINI'))
+                            message: 'Vertex AI not available',
+                            vertexAIInitialized: !!vertexAI,
+                            project: GCLOUD_PROJECT_ID
                         });
                         return;
                     }
                 } catch (error) {
-                    logger.error('[GEMINI TEST] ❌ Error:', error);
+                    logger.error('[VERTEX AI TEST] ❌ Error:', error);
                     response.json({
                         success: false,
                         error: error instanceof Error ? error.message : String(error),
-                        message: 'Gemini test failed'
+                        message: 'Vertex AI test failed'
                     });
                     return;
                 }
@@ -1150,7 +1126,7 @@ async function handleReceiptExtraction(
         } = validationResult.data;
         
         const safeFileName = fileName || 'receipt.pdf';
-        const ocrProvider = (request.headers['x-ocr-provider'] as string) || 'AWS_TEXTRACT';
+        const ocrProvider = (request.headers['x-ocr-provider'] as string) || 'GOOGLE_VISION'; // AWS entfernt (Januar 2026)
 
         logger.info(`[OCR DEBUG] ⚡ Multi-Cloud Storage OCR Request:`, {
             hasFileUrl: !!fileUrl,
@@ -1278,7 +1254,7 @@ async function handleReceiptExtraction(
             success: true,
             data: extractedData,
             ocr: {
-                provider: ocrResult.enhanced ? 'AWS_TEXTRACT + GOOGLE_AI_STUDIO' : ocrProvider,
+                provider: ocrResult.enhanced ? 'GOOGLE_VISION + GOOGLE_AI_STUDIO' : ocrProvider,
                 confidence: ocrResult.confidence,
                 textLength: ocrResult.text.length,
                 processingTime: ocrResult.processingTime,
@@ -1332,7 +1308,7 @@ async function handleReceiptExtraction(
     }
 }
 
-// HYBRID OCR: Google Cloud Vision + Google AI Studio + AWS Textract
+// HYBRID OCR: Google Cloud Vision + Google AI Studio (AWS Textract entfernt)
 async function performHybridOCR(
     fileBuffer: Buffer,
     fileName: string,
@@ -1344,63 +1320,64 @@ async function performHybridOCR(
         logger.info(`[OCR Hybrid DEBUG] Starting hybrid OCR processing for ${fileName}`, {
             fileSizeBytes: fileBuffer.length,
             fileSizeKB: Math.round(fileBuffer.length / 1024),
-            provider: provider,
+            provider: 'GOOGLE_VISION',
             timestamp: new Date().toISOString()
         });
         
-        // === AWS TEXTRACT MIT MULTI-PASS OCR (KEIN FALLBACK - NUR ERROR HANDLING) ===
-        logger.info('[OCR DEBUG] 🎯 Attempting AWS Textract with Multi-Pass OCR (NO FALLBACKS)...');
+        // === GOOGLE CLOUD VISION OCR (AWS Textract wurde entfernt) ===
+        logger.info('[OCR DEBUG] 🎯 Starting Google Cloud Vision OCR...');
         
-        // Verwende unser verbessertes iteratives OCR-System - BEI FEHLER: SOFORT EXCEPTION
-        const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
-        logger.info('[OCR DEBUG] ✅ AWS Textract Multi-Pass OCR successful!', {
-            textLength: textractResult.text?.length || 0,
-            confidence: textractResult.confidence,
+        // Verwende Google Cloud Vision für OCR
+        const visionResult = await processWithGoogleCloudVision(fileBuffer, fileName);
+        logger.info('[OCR DEBUG] ✅ Google Cloud Vision OCR successful!', {
+            textLength: visionResult.extractedText?.length || 0,
+            confidence: visionResult.confidence,
             processingTimeMs: Date.now() - startTime,
-            enhanced: true
+            enhanced: visionResult.enhanced
         });
         
         return {
-            text: textractResult.text,
-            confidence: textractResult.confidence,
+            text: visionResult.extractedText,
+            confidence: visionResult.confidence,
             processingTime: Date.now() - startTime,
-            blocks: textractResult.blocks || [],
-            enhanced: true
+            blocks: [], // Google Vision gibt keine Blocks zurück
+            enhanced: visionResult.enhanced
         };
     } catch (error) {
-        logger.error('[OCR Hybrid] Complete OCR processing failed:', error);
-        throw new Error(`OCR processing failed: ${(error as Error).message}`);
+        logger.error('[OCR Hybrid] Google Cloud Vision OCR failed:', error);
+        throw new Error(`Google Cloud Vision OCR failed: ${(error as Error).message}`);
     }
 }
 
-// COST-OPTIMIZED Google AI Studio direktes PDF Processing
-async function processWithGoogleAIStudioDirect(
+// Vertex AI PDF/Image Processing - verwendet GCloud Billing, keine Free-Tier-Limits
+async function processWithVertexAI(
     fileBuffer: Buffer,
     fileName: string
 ): Promise<{ extractedText: string; confidence: number; enhanced: boolean }> {
     try {
-        logger.info(`[Google AI Cost-Optimized DEBUG] Processing ${fileName} with cost-optimized extraction`, {
+        logger.info(`[Vertex AI DEBUG] Processing ${fileName} with Vertex AI`, {
             fileSizeBytes: fileBuffer.length,
             fileSizeKB: Math.round(fileBuffer.length / 1024)
         });
         
-        // Validate file size for cost control
-        const maxSizeKB = 4 * 1024; // 4MB limit for cost control
+        // Validate file size
+        const maxSizeKB = 20 * 1024; // 20MB limit
         if (fileBuffer.length > maxSizeKB * 1024) {
-            logger.error(`[Google AI Cost-Optimized DEBUG] File too large:`, {
+            logger.error(`[Vertex AI DEBUG] File too large:`, {
                 actualSizeBytes: fileBuffer.length,
                 maxSizeBytes: maxSizeKB * 1024
             });
-            throw new Error(`File too large for cost-optimized processing: ${fileBuffer.length} bytes (max: ${maxSizeKB}KB)`);
+            throw new Error(`File too large for Vertex AI: ${fileBuffer.length} bytes (max: ${maxSizeKB}KB)`);
         }
         
-        logger.info(`[Google AI Cost-Optimized DEBUG] Converting to base64...`);
+        logger.info(`[Vertex AI DEBUG] Converting to base64...`);
         const base64Data = fileBuffer.toString('base64');
-        const mimeType = 'application/pdf';
-        logger.info(`[Google AI Cost-Optimized DEBUG] Base64 conversion complete, size: ${base64Data.length} chars`);
+        const isPdf = isPdfFile(fileName, fileBuffer);
+        const mimeType = isPdf ? 'application/pdf' : 'image/jpeg';
+        logger.info(`[Vertex AI DEBUG] Base64 conversion complete, size: ${base64Data.length} chars, mimeType: ${mimeType}`);
         
-        // COST-OPTIMIZED: Comprehensive but efficient prompt for maximum data extraction
-        const ocrPrompt = `Extrahiere ALLE verfügbaren Daten aus diesem PDF-Dokument:
+        // OCR-Prompt für deutsche Rechnungen
+        const ocrPrompt = `Extrahiere ALLE verfügbaren Daten aus diesem Dokument:
 
 **GRUNDDATEN:**
 1. Firmenname/Anbieter
@@ -1454,95 +1431,97 @@ BANK: [Bankname]
 ---
 VOLLTEXT:`;
 
-        logger.info(`[Google AI Cost-Optimized DEBUG] Checking Google AI initialization...`);
-        if (!genAI) {
-            logger.warn(`[Google AI Cost-Optimized DEBUG] Google AI not initialized, attempting to reinitialize...`);
-            // Try to reinitialize if not available
-            const apiKey = process.env.GEMINI_API_KEY;
-            if (apiKey) {
-                genAI = new GoogleGenerativeAI(apiKey);
-                logger.info('[Google AI Cost-Optimized DEBUG] Reinitialized Google AI Studio during processing');
-            } else {
-                logger.error('[Google AI Cost-Optimized DEBUG] GEMINI_API_KEY not found in environment');
-                throw new Error('Google AI Studio not configured - GEMINI_API_KEY secret missing');
-            }
-        } else {
-            logger.info(`[Google AI Cost-Optimized DEBUG] Google AI already initialized`);
+        if (!vertexAI) {
+            logger.warn(`[Vertex AI DEBUG] Vertex AI not initialized, attempting to reinitialize...`);
+            vertexAI = new VertexAI({
+                project: GCLOUD_PROJECT_ID,
+                location: GCLOUD_LOCATION
+            });
+            logger.info('[Vertex AI DEBUG] Reinitialized Vertex AI');
         }
         
-        // Use the correct working models from API
-        let model;
-        const modelNames = [
-            "gemini-2.0-flash-exp", // ✅ Primäres Modell
-            "models/gemini-2.0-flash-exp",
-            "models/gemini-2.5-flash",
-            "models/gemini-2.0-flash", 
-            "models/gemini-flash-latest"
-        ];
+        // Verwende gemini-2.0-flash-001 für Kosteneffizienz
+        const model = vertexAI.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 4096,
+            }
+        });
         
-        for (const modelName of modelNames) {
-            try {
-                model = genAI.getGenerativeModel({ 
-                    model: modelName,
-                    generationConfig: {
-                        temperature: 0.1,
-                        maxOutputTokens: 2048, // Increased for comprehensive extraction
+        logger.info(`[Vertex AI DEBUG] ✅ Using model: gemini-2.0-flash-001`);
+        
+        const result = await model.generateContent({
+            contents: [{
+                role: 'user',
+                parts: [
+                    {
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: mimeType
+                        }
+                    },
+                    {
+                        text: ocrPrompt
                     }
-                });
-                logger.info(`[Google AI Cost-Optimized DEBUG] ✅ Using working model: ${modelName}`);
-                break;
-            } catch (modelError) {
-                logger.warn(`[Google AI Cost-Optimized DEBUG] ❌ Model ${modelName} failed, trying next...`);
-            }
+                ]
+            }]
+        });
+        
+        const response = result.response;
+        const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        
+        if (!responseText || responseText.trim().length === 0) {
+            throw new Error('Vertex AI returned empty response');
         }
         
-        if (!model) {
-            throw new Error('No working Gemini model found');
-        }
-        
-        const result = await model.generateContent([
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: mimeType
-                }
-            },
-            ocrPrompt
-        ]);
-        
-        const response = await result.response;
-        const responseText = response.text();
-        
-        logger.info('[Google AI Cost-Optimized] Success:', {
+        logger.info('[Vertex AI] Success:', {
             responseLength: responseText.length,
             fileSize: fileBuffer.length,
-            savings: 'Using cost-optimized prompt (70% token reduction)'
+            model: GEMINI_MODEL
         });
         
         return {
             extractedText: responseText,
-            confidence: 0.88, // Slightly lower due to shorter prompt but still excellent
+            confidence: 0.92,
             enhanced: true
         };
         
     } catch (error) {
-        logger.error('[Google AI Cost-Optimized] Processing failed:', error);
-        throw new Error(`Google AI cost-optimized processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        logger.error('[Vertex AI] Processing failed:', error);
+        throw new Error(`Vertex AI processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 
-// REMOVED: enhanceOCRWithGoogleAI function - no longer needed with direct processing
-// Cost optimization: Direct Google AI processing eliminates double processing costs
+// Helper function to detect if file is a PDF
+function isPdfFile(fileName: string, fileBuffer: Buffer): boolean {
+    // Check file extension
+    const extension = fileName.toLowerCase().split('.').pop();
+    if (extension === 'pdf') return true;
+    
+    // Check PDF magic bytes (%PDF-)
+    if (fileBuffer.length >= 5) {
+        const header = fileBuffer.slice(0, 5).toString('ascii');
+        if (header === '%PDF-') return true;
+    }
+    
+    return false;
+}
 
 // Google Cloud Vision OCR - Standalone Processing (NO FALLBACK)
+// Supports both IMAGES (textDetection) and PDFs (pdf-parse + textDetection)
 async function processWithGoogleCloudVision(
     fileBuffer: Buffer,
     fileName: string
 ): Promise<{ extractedText: string; confidence: number; enhanced: boolean }> {
     try {
+        const isPdf = isPdfFile(fileName, fileBuffer);
+        
         logger.info(`[Google Cloud Vision DEBUG] Processing ${fileName} with Vision API`, {
             fileSizeBytes: fileBuffer.length,
-            fileSizeKB: Math.round(fileBuffer.length / 1024)
+            fileSizeKB: Math.round(fileBuffer.length / 1024),
+            isPdf: isPdf,
+            detectionMethod: isPdf ? 'pdf-parse (native text extraction)' : 'textDetection (Image)'
         });
         
         // Validate file size
@@ -1558,68 +1537,115 @@ async function processWithGoogleCloudVision(
         // Initialize Google Cloud Vision client
         const client = new ImageAnnotatorClient();
         
-        logger.info(`[Google Cloud Vision DEBUG] Calling Vision API for text detection...`);
+        let fullText = '';
+        let averageConfidence = 0.85;
         
-        // Perform text detection
-        const [result] = await client.textDetection({
-            image: { content: fileBuffer.toString('base64') }
-        });
-        
-        const detections = result.textAnnotations;
-        
-        // EXTENDED DEBUG LOGGING
-        logger.info(`[Google Cloud Vision DEBUG] Detection results:`, {
-            totalDetections: detections?.length || 0,
-            hasFullText: !!detections?.[0]?.description,
-            fullTextLength: detections?.[0]?.description?.length || 0
-        });
-        
-        if (!detections || detections.length === 0) {
-            logger.error('[Google Cloud Vision ERROR] No text detected in document - KEIN FALLBACK!');
-            throw new Error('Google Cloud Vision failed: No text detected in document. NO FALLBACK ALLOWED!');
+        if (isPdf) {
+            // PDF-Verarbeitung: Nutze pdf-parse für native Text-Extraktion
+            // Dies funktioniert für PDFs mit eingebettetem Text (wie die Taskilo-Rechnungen)
+            logger.info(`[Google Cloud Vision DEBUG] Using pdf-parse for native PDF text extraction...`);
+            
+            try {
+                // pdf-parse extrahiert Text direkt aus dem PDF ohne OCR
+                const pdfData = await pdfParse(fileBuffer, {
+                    // Keine Bilder parsen, nur Text
+                    max: 0 // Alle Seiten
+                });
+                
+                if (pdfData && pdfData.text && pdfData.text.trim().length > 0) {
+                    fullText = pdfData.text;
+                    averageConfidence = 0.95; // Hohe Konfidenz für nativen Text
+                    
+                    logger.info(`[Google Cloud Vision DEBUG] pdf-parse success:`, {
+                        textLength: fullText.length,
+                        numPages: pdfData.numpages,
+                        confidence: averageConfidence,
+                        textPreview: fullText.substring(0, 200)
+                    });
+                } else {
+                    logger.warn('[Google Cloud Vision] pdf-parse returned no text, PDF might be scanned...');
+                }
+            } catch (pdfError) {
+                logger.warn('[Google Cloud Vision] pdf-parse failed:', pdfError);
+            }
+            
+            // Falls pdf-parse keinen Text findet, ist es ein gescanntes PDF
+            // Dann versuche Vertex AI für OCR auf dem PDF
+            if (!fullText || fullText.trim().length === 0) {
+                logger.info('[Google Cloud Vision] PDF has no embedded text (scanned), trying Vertex AI...');
+                
+                try {
+                    const vertexResult = await processWithVertexAI(fileBuffer, fileName);
+                    return vertexResult;
+                } catch (vertexError) {
+                    logger.error('[Google Cloud Vision] Vertex AI fallback also failed:', vertexError);
+                    throw new Error('PDF text extraction failed: No embedded text found and Vertex AI OCR failed. NO FALLBACK ALLOWED!');
+                }
+            }
+            
+        } else {
+            // Bild-Verarbeitung mit textDetection
+            logger.info(`[Google Cloud Vision DEBUG] Using image processing with textDetection...`);
+            
+            const [result] = await client.textDetection({
+                image: { content: fileBuffer.toString('base64') }
+            });
+            
+            const detections = result.textAnnotations;
+            
+            // EXTENDED DEBUG LOGGING
+            logger.info(`[Google Cloud Vision DEBUG] Detection results:`, {
+                totalDetections: detections?.length || 0,
+                hasFullText: !!detections?.[0]?.description,
+                fullTextLength: detections?.[0]?.description?.length || 0
+            });
+            
+            if (!detections || detections.length === 0) {
+                logger.error('[Google Cloud Vision ERROR] No text detected in image - KEIN FALLBACK!');
+                throw new Error('Google Cloud Vision failed: No text detected in image. NO FALLBACK ALLOWED!');
+            }
+            
+            // The first annotation contains the full text
+            fullText = detections[0]?.description || '';
+            
+            // Calculate average confidence from all detected text elements
+            let totalConfidence = 0;
+            let confidenceCount = 0;
+            
+            for (const detection of detections) {
+                if (detection.confidence !== undefined && detection.confidence !== null) {
+                    totalConfidence += detection.confidence;
+                    confidenceCount++;
+                }
+            }
+            
+            averageConfidence = confidenceCount > 0 ? totalConfidence / confidenceCount : 0.85;
+            
+            // LOG INDIVIDUAL DETECTIONS (first 20)
+            detections.slice(0, 20).forEach((detection, index) => {
+                if (detection.description && detection.description.trim()) {
+                    logger.info(`[Vision Debug] Detection ${index}: "${detection.description}" (confidence: ${detection.confidence || 'N/A'})`);
+                }
+            });
         }
-        
-        // The first annotation contains the full text
-        const fullText = detections[0]?.description || '';
         
         // LOG THE FULL DETECTED TEXT
         logger.info(`[Google Cloud Vision DEBUG] FULL DETECTED TEXT:`, {
             textLength: fullText.length,
             firstLines: fullText.split('\n').slice(0, 10).join('\n'),
-            fullText: fullText // Complete text for debugging
+            isPdf: isPdf
         });
-        
-        // Calculate average confidence from all detected text elements
-        let totalConfidence = 0;
-        let confidenceCount = 0;
-        
-        // LOG INDIVIDUAL DETECTIONS
-        detections.slice(0, 20).forEach((detection, index) => {
-            if (detection.description && detection.description.trim()) {
-                logger.info(`[Vision Debug] Detection ${index}: "${detection.description}" (confidence: ${detection.confidence || 'N/A'})`);
-            }
-        });
-        
-        for (const detection of detections) {
-            if (detection.confidence !== undefined && detection.confidence !== null) {
-                totalConfidence += detection.confidence;
-                confidenceCount++;
-            }
-        }
-        
-        const averageConfidence = confidenceCount > 0 ? totalConfidence / confidenceCount : 0.85;
         
         logger.info(`[Google Cloud Vision DEBUG] Confidence calculation:`, {
-            totalElements: detections.length,
-            elementsWithConfidence: confidenceCount,
-            averageConfidence: averageConfidence
+            averageConfidence: averageConfidence,
+            isPdf: isPdf
         });
         
         logger.info('[Google Cloud Vision] Success:', {
             textLength: fullText.length,
             confidence: averageConfidence,
-            detectionsCount: detections.length,
-            fileSize: fileBuffer.length
+            fileSize: fileBuffer.length,
+            isPdf: isPdf
         });
         
         // Enhance the raw text with structured format for German business documents
@@ -1726,217 +1752,19 @@ STRUKTUR_INFO:
     }
 }
 
-// COST-OPTIMIZED AWS Textract (KEIN FALLBACK - NUR ERROR HANDLING)
-async function performAWSTextractOCR(
-    fileBuffer: Buffer,
-    fileName: string
-): Promise<{ text: string; confidence: number; processingTime: number; blocks: any[] }> {
-    const startTime = Date.now();
-
-    // Cost control: Log usage for monitoring
-    logger.info('[OCR] Using AWS Textract processing', {
-        fileName,
-        fileSize: fileBuffer.length,
-        estimatedCost: '~$0.015 per page'
-    });
-
-    // Validate input parameters
-    if (!fileBuffer || fileBuffer.length === 0) {
-        throw new Error('Invalid file buffer - empty or null');
-    }
-
-    if (fileBuffer.length > 5 * 1024 * 1024) { // Reduced from 10MB to 5MB for cost control
-        throw new Error('File too large for AWS Textract - exceeds 5MB cost control limit');
-    }
-
-    try {
-        logger.info('[OCR] Starting BASIC AWS Textract (cost-optimized)');
-
-        // ENHANCED: Use FORMS and TABLES for structured German invoice data
-        // Essential for extracting VAT breakdown tables and form fields
-        const response = await textractClient.send(new AnalyzeDocumentCommand({
-            Document: { Bytes: fileBuffer },
-            FeatureTypes: ['FORMS', 'TABLES'] // Kritisch für deutsche Rechnungen mit USt-Tabellen
-        }));
-
-        const allBlocks = response.Blocks || [];
-
-        if (!allBlocks.length) {
-            throw new Error('No blocks returned from AWS Textract');
-        }
-
-        // Multi-Pass OCR für maximale Texterkennung
-        let extractedText = await performMultiPassOCR(allBlocks);
-        let averageConfidence = calculateBasicConfidence(allBlocks);
-        
-        // Confidence-based Re-scanning (wenn Qualität zu niedrig)
-        if (averageConfidence < 0.75) {
-            logger.info(`[QUALITY CONTROL] Low confidence detected (${averageConfidence}), attempting enhanced extraction...`);
-            
-            // Zweiter Durchgang mit erweiterten Parametern
-            const enhancedText = await performEnhancedTextractExtraction(allBlocks);
-            if (enhancedText.length > extractedText.length) {
-                extractedText = enhancedText;
-                averageConfidence = Math.min(averageConfidence + 0.1, 0.95); // Leichte Verbesserung
-                logger.info(`[QUALITY CONTROL] Enhanced extraction improved text length from ${extractedText.length} to ${enhancedText.length}`);
-            }
-        }
-
-        const processingTime = Date.now() - startTime;
-
-        logger.info('[OCR] Basic AWS Textract completed (cost-optimized):', {
-            textLength: extractedText.length,
-            confidence: averageConfidence,
-            processingTime,
-            totalBlocks: allBlocks.length,
-            costOptimization: 'Basic text detection only - 60% cost savings'
-        });
-
-        return {
-            text: extractedText,
-            confidence: averageConfidence,
-            processingTime,
-            blocks: allBlocks
-        };
-
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error('[OCR] AWS Textract processing failed:', {
-            message: errorMessage,
-            fileName,
-            region: 'eu-central-1'
-        });
-        
-        throw new Error(`AWS Textract processing failed: ${errorMessage}`);
-    }
-}
-
-// COST-OPTIMIZED: Basic text extraction (no expensive advanced features)
-// ❌ KOMPLETT GELÖSCHT - Alte extractBasicText OCR-Funktion
-
-// COST-OPTIMIZED: Simple confidence calculation
-function calculateBasicConfidence(blocks: any[]): number {
-    const confidenceValues = blocks
-        .filter(block => block.Confidence !== undefined)
-        .map(block => block.Confidence);
-    
-    if (confidenceValues.length === 0) throw new Error('No confidence values found - cannot calculate confidence!');
-    
-    const average = confidenceValues.reduce((sum, conf) => sum + conf, 0) / confidenceValues.length;
-    return average / 100; // Convert to 0-1 range
-}
-
-// REMOVED: Legacy OCR functions for cost optimization
-// - extractStructuredText: Replaced with extractBasicText
-// - calculateWeightedConfidence: Replaced with calculateBasicConfidence  
-// - extractKeyValuePairs: Not needed in cost-optimized version
-// - performMockOCR: Removed to prevent fallback costs
-
-// Cost savings: Simplified processing reduces complexity and API calls
-
-// MULTI-PASS OCR EXTRACTION SYSTEM
-async function performMultiPassOCR(textractBlocks: any[]): Promise<string> {
-    logger.info('[MULTI-PASS OCR] Starting comprehensive text extraction...');
-    
-    // Pass 1: Standard line-by-line extraction - SIMPLIFIED
-    const standardText = textractBlocks.filter(b => b.BlockType === 'LINE').map(b => b.Text).join('\n');
-    logger.info('[MULTI-PASS OCR] Pass 1 - Standard extraction complete, length:', standardText.length);
-    
-    // Pass 2: Word-level extraction for missed content
-    const wordLevelText = textractBlocks.filter(b => b.BlockType === 'WORD').map(b => b.Text).join(' ');
-    logger.info('[MULTI-PASS OCR] Pass 2 - Word-level extraction complete, length:', wordLevelText.length);
-    
-    // Pass 3: Character-level extraction for stubborn content
-    const characterLevelText = textractBlocks.filter(b => b.BlockType === 'SELECTION_ELEMENT').map(b => b.Text).join('');
-    logger.info('[MULTI-PASS OCR] Pass 3 - Character-level extraction complete, length:', characterLevelText.length);
-    
-    // Combine all passes with deduplication
-    const combinedText = combineAndDeduplicateText([standardText, wordLevelText, characterLevelText]);
-    logger.info('[MULTI-PASS OCR] Final combined text length:', combinedText.length);
-    
-    return combinedText;
-}
-
-// ❌ GELÖSCHT
-// ❌ DELETED FUNCTIONS REMOVED - Using inline implementations instead
-
-function combineAndDeduplicateText(textPasses: string[]): string {
-    // Intelligente Kombination der verschiedenen OCR-Passes
-    const combinedLines: string[] = [];
-    const seenLines = new Set<string>();
-    
-    textPasses.forEach((text, passIndex) => {
-        const lines = text.split('\n');
-        lines.forEach(line => {
-            const cleanLine = line.trim();
-            if (cleanLine && !seenLines.has(cleanLine)) {
-                seenLines.add(cleanLine);
-                combinedLines.push(cleanLine);
-            }
-        });
-    });
-    
-    return combinedLines.join('\n');
-}
-
-async function performEnhancedTextractExtraction(blocks: any[]): Promise<string> {
-    logger.info('[ENHANCED EXTRACTION] Starting enhanced text extraction...');
-    
-    // Enhanced extraction mit verschiedenen Strategien
-    const strategies = [
-        extractByConfidenceThreshold(blocks, 0.5), // Niedrigere Schwelle
-        extractByBoundingBoxOverlap(blocks),        // Überlappende Bereiche
-        extractByTextLength(blocks),                // Längere Textsegmente bevorzugen
-    ];
-    
-    const bestResult = strategies.reduce((best, current) => 
-        current.length > best.length ? current : best
-    );
-    
-    logger.info(`[ENHANCED EXTRACTION] Best result length: ${bestResult.length}`);
-    return bestResult;
-}
-
-function extractByConfidenceThreshold(blocks: any[], threshold: number): string {
-    return blocks
-        .filter(block => (block.Confidence || 0) >= threshold * 100)
-        .filter(block => block.BlockType === 'LINE' && block.Text?.trim())
-        .sort((a, b) => {
-            const aTop = a.Geometry?.BoundingBox?.Top || 0;
-            const bTop = b.Geometry?.BoundingBox?.Top || 0;
-            return aTop - bTop;
-        })
-        .map(block => block.Text.trim())
-        .join('\n');
-}
-
-function extractByBoundingBoxOverlap(blocks: any[]): string {
-    // Identifiziere überlappende Textbereiche für bessere Extraktion
-    const lineBlocks = blocks.filter(block => block.BlockType === 'LINE' && block.Text?.trim());
-    
-    return lineBlocks
-        .sort((a, b) => {
-            const aTop = a.Geometry?.BoundingBox?.Top || 0;
-            const bTop = b.Geometry?.BoundingBox?.Top || 0;
-            return aTop - bTop;
-        })
-        .map(block => block.Text.trim())
-        .join('\n');
-}
-
-function extractByTextLength(blocks: any[]): string {
-    // Bevorzuge längere Textsegmente (oft genauer)
-    return blocks
-        .filter(block => block.BlockType === 'LINE' && block.Text?.trim())
-        .filter(block => block.Text.trim().length >= 3) // Mindestlänge
-        .sort((a, b) => {
-            const aTop = a.Geometry?.BoundingBox?.Top || 0;
-            const bTop = b.Geometry?.BoundingBox?.Top || 0;
-            return aTop - bTop;
-        })
-        .map(block => block.Text.trim())
-        .join('\n');
-}
+// ============================================================================
+// AWS TEXTRACT WURDE ENTFERNT (Januar 2026)
+// ============================================================================
+// Die folgenden Funktionen wurden entfernt, da wir nur noch Google Cloud Vision nutzen:
+// - performAWSTextractOCR
+// - calculateBasicConfidence
+// - performMultiPassOCR
+// - combineAndDeduplicateText
+// - performEnhancedTextractExtraction
+// - extractByConfidenceThreshold
+// - extractByBoundingBoxOverlap
+// - extractByTextLength
+// ============================================================================
 
 // [REMOVED] extractReceiptDataFromOCR function - cleaned up unused code
 
@@ -1949,11 +1777,12 @@ function extractByTextLength(blocks: any[]): string {
 // =============================================================================
 
 /**
- * Gemini AI mit deutschem Rechnungsschema - PRIMÄRE STRATEGIE
+ * Vertex AI mit deutschem Rechnungsschema - PRIMÄRE STRATEGIE
+ * Verwendet GCloud Billing (keine Free-Tier Limits)
  */
 async function extractWithGermamInvoiceSchema(text: string, fileName: string): Promise<ExtractedInvoiceData | null> {
-    if (!genAI) {
-        throw new Error('Gemini AI not initialized for German invoice extraction');
+    if (!vertexAI) {
+        throw new Error('Vertex AI not initialized for German invoice extraction');
     }
 
     const prompt = `Extrahiere alle Finanzdaten, Rechnungsdetails, den Rechnungsempfänger und den Lieferanten aus dem folgenden deutschen Rechnungs-/Belegtext.
@@ -1970,19 +1799,21 @@ ${text}
 Antworte NUR mit dem JSON-Objekt, keine zusätzlichen Erklärungen.`;
 
     try {
-        const model = genAI.getGenerativeModel({ 
-            model: GEMINI_PRODUCTION_CONFIG.model,  // Produktive Konfiguration
+        const generativeModel = vertexAI.getGenerativeModel({
+            model: GEMINI_MODEL,
             generationConfig: {
-                ...GEMINI_PRODUCTION_CONFIG.generationConfig,
-                responseMimeType: "application/json"
+                maxOutputTokens: 8192,
+                temperature: 0.1,
+                topP: 0.95,
+                responseMimeType: 'application/json'
             }
         });
         
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const jsonText = response.text().trim();
+        const result = await generativeModel.generateContent(prompt);
+        const response = result.response;
+        const jsonText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
         
-        logger.info('[GEMINI GERMAN] Raw Gemini response:', { jsonText: jsonText.substring(0, 500) });
+        logger.info('[VERTEX AI GERMAN] Raw Vertex AI response:', { jsonText: jsonText.substring(0, 500) });
         
         // Parse und validiere mit Zod
         const parsedData = JSON.parse(jsonText);
@@ -2026,7 +1857,7 @@ Antworte NUR mit dem JSON-Objekt, keine zusätzlichen Erklärungen.`;
             category: ''
         };
         
-        logger.info('[GEMINI GERMAN] ✅ Successfully extracted German invoice data:', {
+        logger.info('[VERTEX AI GERMAN] Erfolgreich deutsche Rechnungsdaten extrahiert:', {
             vendor: extractedData.vendorName,
             totalGross: extractedData.totalGrossAmount,
             taxRatesFound: extractedData.taxBreakdown.length,
@@ -2036,7 +1867,7 @@ Antworte NUR mit dem JSON-Objekt, keine zusätzlichen Erklärungen.`;
         return extractedData;
         
     } catch (error) {
-        logger.error('[GEMINI GERMAN] Extraction failed:', error);
+        logger.error('[VERTEX AI GERMAN] Extraktion fehlgeschlagen:', error);
         return null;
     }
 }
@@ -2659,6 +2490,10 @@ function extractGermanAmounts(text: string): { totalGross: number | null; totalN
     
     // ⚡ GESAMTBETRAG-FOKUSSIERTE PATTERNS: Suchen spezifisch nach dem Gesamtbetrag (inkl. STORNO)
     const grossPatterns = [
+        // 🎯 PRIORITÄT 0: TOTAL: Pattern (englische Bezeichnung, auch auf deutschen Rechnungen)
+        /\bTOTAL[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        /\bTOTAL\s*:\s*([0-9.]{1,6}[,\.]\d{2})\s*€/gi,
+        
         // STORNO-PRIORITÄT 1: Negative Gesamtbeträge (Stornorechnung)
         /(?:gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungs?[-\s]?betrag)[:.\s]*(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
         /(?:zu\s+zahlen|zahlbetrag|endbetrag|fällig|rechnungs?[-\s]?summe)[:.\s]*(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
@@ -2691,6 +2526,11 @@ function extractGermanAmounts(text: string): { totalGross: number | null; totalN
     ];
     
     const netPatterns = [
+        // 🎯 PRIORITÄT 0: NETTO: Pattern (auch für englische Bezeichnungen)
+        /\bNETTO[:.\s]*([0-9]{1,6}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        /\bNETTO\s*:\s*([0-9]{1,6}[,\.]\d{2})\s*€/gi,
+        /\bNET[:.\s]*([0-9]{1,6}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        
         // STORNO-PRIORITÄT 1: Negative Netto-Beträge (Stornorechnung)
         /(?:netto|nettobetrag|zwischensumme|subtotal|net|netto[-\s]?summe|zwischen[-\s]?summe)[:.\s]*(-[0-9]{1,6}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
         /(-[0-9]{1,6}[,\.]\d{2})\s*(?:€|EUR)\s*(?:zzgl\.?|plus|zuzüglich|\+).*(?:mwst\.?|ust\.?|steuer|vat|tax)/gi,
@@ -4017,7 +3857,7 @@ export const _unusedFunctions = {
     extractVendorFromText,
     
     // ⚡ OCR FUNKTIONEN DIE NICHT GELÖSCHT WERDEN SOLLEN
-    processWithGoogleAIStudioDirect,
+    processWithVertexAI,
     processWithGoogleCloudVision
 };
 

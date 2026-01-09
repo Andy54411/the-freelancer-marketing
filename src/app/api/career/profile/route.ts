@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
-import { ApplicantProfileSchema } from '@/types/career';
 
 export async function POST(request: NextRequest) {
   try {
@@ -140,7 +139,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exists: false });
     }
     return NextResponse.json({ exists: true, data: doc.data() });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

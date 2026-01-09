@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, FileText, Euro, Calendar, Send } from 'lucide-react';
+import { AlertTriangle, FileText, Calendar, Send } from 'lucide-react';
 import { useOverdueInvoices } from '@/hooks/useOverdueInvoices';
 
 interface OverdueInvoicesAlertProps {

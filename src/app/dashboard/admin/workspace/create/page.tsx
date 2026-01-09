@@ -5,9 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Plus,
-  Calendar,
-  User,
-  Tag,
   FileText,
   Folder,
   CheckSquare,
@@ -120,7 +117,7 @@ export default function CreateAdminWorkspacePage() {
         } else {
           router.push('/admin/login');
         }
-      } catch (error) {
+      } catch {
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
+      await response.text();
 
       // Check for specific error types
       if (response.status === 401) {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         organization: userData.organization,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         error: 'internal_error',

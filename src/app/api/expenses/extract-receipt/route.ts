@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  findMappingByAccountNumber,
-  getMappingsByCategory,
-} from '@/data/datev-category-mapping-complete';
+import { extractWithHetznerOCR } from '@/lib/hetzner-ocr-client';
 
 // Universelle PDF-Text-Extraktion - findet echte PDF-Inhalte
 const extractPDFText = async (buffer: Buffer): Promise<string> => {
@@ -68,8 +65,7 @@ const extractPDFText = async (buffer: Buffer): Promise<string> => {
     console.log('📄 Sample extracted texts:', extractedTexts.slice(0, 10));
 
     return allText;
-  } catch (error) {
-    console.log('❌ PDF text extraction failed:', error);
+  } catch {
     return '';
   }
 };
@@ -143,7 +139,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(fallbackResult);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,
@@ -171,57 +167,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Try advanced OCR via Firebase Functions - ⚡ FIXED: Cloud Storage Format
+// 🔒 Try Hetzner OCR (DSGVO-konform) - January 2026
 async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
-  const fileBuffer = await file.arrayBuffer();
-  const base64File = Buffer.from(fileBuffer).toString('base64');
+  console.log(`[Hetzner OCR] Processing ${filename} for company ${companyId}`);
+  
+  const result = await extractWithHetznerOCR(file, filename, file.type);
+  
+  console.log(`✅ Hetzner OCR result:`, result);
 
-  // Get Firebase Function URL (use the new Cloud Run URL with secrets)
-  const functionUrl =
-    process.env.FIREBASE_FUNCTION_URL ||
-    'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
-
-  // ⚡ NEUE ARCHITEKTUR: Base64 Data URL Format (Cloud Storage Schema kompatibel)
-  const payload = {
-    fileUrl: `data:${file.type};base64,${base64File}`,  // ✅ Base64 Data URL statt raw base64
-    fileName: filename,
-    mimeType: file.type,
-    maxFileSizeMB: 50,
-    forceReprocess: false
+  return {
+    success: true,
+    data: result,
   };
-
-  console.log(`🔄 [OCR DEBUG] Sending payload to Firebase Function:`, {
-    fileUrlPrefix: payload.fileUrl.substring(0, 50) + '...',
-    fileName: payload.fileName,
-    mimeType: payload.mimeType,
-    payloadSize: JSON.stringify(payload).length
-  });
-
-  const response = await fetch(`${functionUrl}/ocr/extract-receipt`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-id': 'system',
-      'x-company-id': companyId,
-      'x-ocr-provider': 'AWS_TEXTRACT',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`❌ Firebase Function call failed: ${response.status}`, errorText);
-    throw new Error(`Firebase Function call failed: ${response.status} - ${errorText}`);
-  }
-
-  const result = await response.json();
-  console.log(`✅ Firebase Function OCR result:`, result);
-
-  return result;
 }
 
 // Enhanced analysis with PDF text extraction (fallback method)
-async function performEnhancedAnalysisWithPDF(file: File, companyId: string, filename: string) {
+async function performEnhancedAnalysisWithPDF(file: File, _companyId: string, filename: string) {
   let pdfText = '';
 
   // Versuche PDF-Text zu extrahieren, falls es ein PDF ist
@@ -553,7 +514,7 @@ async function performEnhancedAnalysisWithPDF(file: File, companyId: string, fil
         } else {
         }
       }
-    } catch (regexError) {}
+    } catch {}
   }
 
   // Smart vendor detection from filename
@@ -668,7 +629,7 @@ async function performEnhancedAnalysisWithPDF(file: File, companyId: string, fil
 
           break;
         }
-      } catch (e) {
+      } catch {
         // Ignore date parsing errors
       }
     }

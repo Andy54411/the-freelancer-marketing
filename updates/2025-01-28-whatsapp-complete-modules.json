@@ -1,0 +1,77 @@
+{
+  "version": "2.8.0",
+  "date": "2025-01-28",
+  "title": "WhatsApp Business - Vollständige Modul-Integration",
+  "description": "Alle 6 WhatsApp Business Module wurden auf 100% Fertigstellung gebracht. Neue Features: Team-Inbox mit Seat-Integration, CRM-Verknüpfung, Nachrichten planen und DSGVO-Dashboard.",
+  "changes": [
+    {
+      "type": "feature",
+      "category": "WhatsApp Business",
+      "title": "Team-Inbox mit Seat-Integration",
+      "description": "Neue ChatAssignmentDropdown-Komponente für die Zuweisung von Chats an Team-Mitglieder. Integriert mit dem Seat-System (9,90€/Monat pro zusätzlichem Platz). Zeigt Online-Status, Rollen und verfügbare Seats an."
+    },
+    {
+      "type": "feature",
+      "category": "WhatsApp Business",
+      "title": "CRM-Verknüpfung",
+      "description": "Neue ContactLinker-Komponente ermöglicht das Verknüpfen von WhatsApp-Kontakten mit CRM-Kunden. Suche nach Name/Telefon, Ein-Klick-Verknüpfung, direkte Links zum CRM-Profil."
+    },
+    {
+      "type": "feature",
+      "category": "WhatsApp Business",
+      "title": "Nachrichten planen",
+      "description": "Neue MessageScheduler-Komponente und API zum Planen von WhatsApp-Nachrichten. Schnellauswahl (1h, 3h, morgen, nächste Woche) oder manuelles Datum/Uhrzeit. Automatischer Cron-Job alle 5 Minuten für den Versand."
+    },
+    {
+      "type": "feature",
+      "category": "WhatsApp Business",
+      "title": "DSGVO-Dashboard",
+      "description": "Umfassendes DSGVODashboard mit 5 Tabs: Übersicht, Anfragen (Art. 15/17), Einwilligungen, Audit-Log und Einstellungen. Export/Löschung von Personendaten, Compliance-Status, Aufbewahrungsfristen-Verwaltung."
+    },
+    {
+      "type": "api",
+      "category": "Backend",
+      "title": "Neue WhatsApp APIs",
+      "description": "Neue API-Endpunkte: /api/whatsapp/schedule (GET/POST/DELETE), /api/whatsapp/dsgvo/export, /api/whatsapp/dsgvo/delete, /api/whatsapp/dsgvo/consents, /api/whatsapp/dsgvo/requests. Cron-Job für geplante Nachrichten: /api/cron/scheduled-messages."
+    },
+    {
+      "type": "improvement",
+      "category": "WhatsApp Business",
+      "title": "ActiveChatPanel-Erweiterung",
+      "description": "ActiveChatPanel wurde erweitert mit: Zuweisungs-Dropdown, CRM-Verknüpfungs-Button, Nachrichten-Planen-Button und Modals für alle neuen Funktionen."
+    }
+  ],
+  "moduleStatus": {
+    "teamInbox": "100%",
+    "messageTemplates": "100%",
+    "chatbotAutomation": "100%",
+    "crmIntegration": "100%",
+    "scheduledMessages": "100%",
+    "dsgvoCompliance": "100%"
+  },
+  "technicalDetails": {
+    "newFiles": [
+      "src/components/whatsapp/ChatAssignmentDropdown.tsx",
+      "src/components/whatsapp/ContactLinker.tsx",
+      "src/components/whatsapp/MessageScheduler.tsx",
+      "src/components/whatsapp/DSGVODashboard.tsx",
+      "src/app/api/whatsapp/schedule/route.ts",
+      "src/app/api/cron/scheduled-messages/route.ts",
+      "src/app/api/whatsapp/dsgvo/export/route.ts",
+      "src/app/api/whatsapp/dsgvo/delete/route.ts",
+      "src/app/api/whatsapp/dsgvo/consents/route.ts",
+      "src/app/api/whatsapp/dsgvo/requests/route.ts"
+    ],
+    "modifiedFiles": [
+      "src/components/whatsapp/ActiveChatPanel.tsx",
+      "src/components/whatsapp/index.ts",
+      "src/app/dashboard/company/[uid]/whatsapp/page.tsx"
+    ],
+    "firestoreCollections": [
+      "whatsappScheduledMessages",
+      "whatsappConsents",
+      "whatsappDSGVORequests",
+      "whatsappDeletionLog"
+    ]
+  }
+}

@@ -6,13 +6,11 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  Clock,
   Target,
   Award,
   AlertTriangle,
   Download,
   RefreshCw,
-  Calendar,
   PieChart,
   Activity,
   Zap,
@@ -45,7 +43,7 @@ export default function PersonalAnalyticsPage() {
   const companyId = params?.uid as string;
 
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<PersonalStats | null>(null);
+  const [_stats, setStats] = useState<PersonalStats | null>(null);
   const [productivityMetrics, setProductivityMetrics] = useState<ProductivityMetric[]>([]);
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
 
@@ -110,7 +108,7 @@ export default function PersonalAnalyticsPage() {
 
       // Mock Performance Data per Department
       const performance: PerformanceData[] = personalStats.departmentBreakdown.map(
-        (dept, index) => ({
+        (dept, _index) => ({
           department: dept.department,
           productivity: 85 + Math.random() * 15, // 85-100%
           satisfaction: 80 + Math.random() * 20, // 80-100%
@@ -119,7 +117,7 @@ export default function PersonalAnalyticsPage() {
         })
       );
       setPerformanceData(performance);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -150,7 +148,7 @@ export default function PersonalAnalyticsPage() {
       a.download = `personal-analytics-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (error) {}
+    } catch {}
   };
 
   if (loading) {

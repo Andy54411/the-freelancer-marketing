@@ -6,8 +6,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { setDatevTokenCookies } from '@/lib/datev-server-utils';
 import {
   handleDatevOAuthCallback,
-  storeDatevUserToken,
-  getOrCreateDatevUser,
 } from '@/services/datev-user-auth-service';
 
 /**
@@ -54,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Parse state to extract company ID and stored state
     let companyId: string;
     let timestamp: string;
-    let randomPart: string;
+    let _randomPart: string;
     let stateData: any = null;
 
     try {
@@ -66,30 +64,30 @@ export async function GET(request: NextRequest) {
         if (stateData.companyId && stateData.timestamp) {
           companyId = stateData.companyId;
           timestamp = stateData.timestamp.toString();
-          randomPart = 'json_state'; // Placeholder for JSON format
+          _randomPart = 'json_state'; // Placeholder for JSON format
         } else {
           throw new Error('Invalid JSON state format: missing companyId or timestamp');
         }
-      } catch (jsonError) {
+      } catch {
         // Fallback to colon-separated format (old format)
         const stateParts = state.split(':');
 
         if (stateParts.length >= 4 && stateParts[0] === 'company') {
           companyId = stateParts[1];
           timestamp = stateParts[2];
-          randomPart = stateParts[3];
+          _randomPart = stateParts[3];
         } else if (stateParts.length >= 3 && stateParts[0] === 'state') {
           // Fallback für state ohne companyId
           companyId = 'unknown';
           timestamp = stateParts[1];
-          randomPart = stateParts[2];
+          _randomPart = stateParts[2];
         } else {
           throw new Error(
             `Invalid state format: expected Base64 JSON or 'company:id:timestamp:random', got ${stateParts.length} colon parts`
           );
         }
       }
-    } catch (error) {
+    } catch {
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format: ' + state)}`
       );
@@ -98,12 +96,12 @@ export async function GET(request: NextRequest) {
     // Retrieve codeVerifier and nonce from secure storage or JSON state
     let storedAuthData: PKCEData | null = null;
     let codeVerifier: string | undefined = undefined;
-    let nonce: string | undefined = undefined;
+    let _nonce: string | undefined = undefined;
 
     // If we have JSON state data, use it directly
     if (stateData && stateData.codeVerifier) {
       codeVerifier = stateData.codeVerifier;
-      nonce = stateData.nonce; // May be undefined for some flows
+      _nonce = stateData.nonce; // May be undefined for some flows
       companyId = stateData.companyId || companyId;
     } else {
       // Fallback to PKCE storage for colon-format states
@@ -117,7 +115,7 @@ export async function GET(request: NextRequest) {
       }
 
       codeVerifier = storedAuthData.codeVerifier;
-      nonce = storedAuthData.nonce;
+      _nonce = storedAuthData.nonce;
       companyId = storedAuthData.companyId || companyId;
     }
 
@@ -167,12 +165,12 @@ export async function GET(request: NextRequest) {
       const successUrl = `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`;
 
       return NextResponse.redirect(successUrl);
-    } catch (tokenError) {
+    } catch {
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
-  } catch (error) {
+  } catch {
     const errorRedirectUrl =
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
@@ -217,7 +215,7 @@ async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
     }
 
     return tokenData;
-  } catch (error) {
+} catch (error: unknown) {
     throw error;
   }
 }
@@ -276,7 +274,7 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     };
 
     await companyDocRef.set(companyUpdateData, { merge: true });
-  } catch (error) {
+  } catch {
     throw new Error('Failed to store authentication tokens');
   }
 }
@@ -309,7 +307,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
       }
-    } catch (newAuthError) {}
+    } catch {}
 
     // Fallback to legacy processing if new middleware fails
 

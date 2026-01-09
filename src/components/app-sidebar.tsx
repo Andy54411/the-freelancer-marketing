@@ -35,7 +35,6 @@ import {
   SidebarMenu, // SidebarMenu ist eine Komponente, die den Kontext konsumiert
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider, // Dies ist der tatsächliche Kontext-Provider
 } from '@/components/ui/sidebar';
 import { RawFirestoreUserData } from '@/types/settings'; // Import the type
 
@@ -83,7 +82,7 @@ export function AppSidebar({
       } else {
         setProfilePictureURL(null);
       }
-    } catch (err) {
+    } catch {
       setError('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);

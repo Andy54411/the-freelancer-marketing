@@ -108,7 +108,7 @@ export default function GoogleAdsManagerLinkWarning({ companyId }: GoogleAdsMana
             Sie müssen diese nur noch in Google Ads <strong>akzeptieren</strong>:
           </p>
           <ol className="text-sm text-red-800 list-decimal list-inside space-y-2 mb-4 bg-white/50 p-3 rounded">
-            <li>Klicken Sie unten auf <strong>"Verknüpfungsanfrage senden"</strong></li>
+            <li>Klicken Sie unten auf <strong>&quot;Verknüpfungsanfrage senden&quot;</strong></li>
             <li>Öffnen Sie danach <strong>ads.google.com → Einstellungen → Kontozugriff</strong></li>
             <li>Akzeptieren Sie die <strong>ausstehende Einladung von Taskilo ({MANAGER_ID})</strong></li>
           </ol>
@@ -175,9 +175,9 @@ export default function GoogleAdsManagerLinkWarning({ companyId }: GoogleAdsMana
             Taskilo hat die Einladung gesendet. Sie müssen diese JETZT in Ihrem Google Ads Account akzeptieren:
           </p>
           <ol className="text-sm text-yellow-800 list-decimal list-inside space-y-2 mb-4 bg-white/50 p-3 rounded">
-            <li><strong>Klicken Sie unten auf "Kontozugriff öffnen"</strong></li>
+            <li><strong>Klicken Sie unten auf &quot;Kontozugriff öffnen&quot;</strong></li>
             <li>Sie sehen die <strong>ausstehende Einladung von Taskilo ({MANAGER_ID})</strong></li>
-            <li><strong className="text-yellow-900">Klicken Sie auf "Akzeptieren"</strong></li>
+            <li><strong className="text-yellow-900">Klicken Sie auf &quot;Akzeptieren&quot;</strong></li>
             <li>Kommen Sie zurück zu Taskilo und laden Sie die Seite neu</li>
           </ol>
           <a
@@ -210,7 +210,7 @@ export default function GoogleAdsManagerLinkWarning({ companyId }: GoogleAdsMana
           Manager Account ({MANAGER_ID}) verknüpft werden.
         </p>
         <p className="text-sm text-red-800 font-semibold mb-3">
-          1. Klicken Sie unten auf "Verknüpfungsanfrage senden"
+          1. Klicken Sie unten auf &quot;Verknüpfungsanfrage senden&quot;
         </p>
         <p className="text-sm text-red-800 mb-4">
           2. Danach öffnen Sie Google Ads und akzeptieren die Einladung

@@ -12,7 +12,6 @@ import {
   UserProfileData,
   AnbieterDetails,
   ApiAnbieter,
-  RatingInfo,
 } from '@/types/types';
 
 import { SEARCH_API_URL } from '@/lib/constants';

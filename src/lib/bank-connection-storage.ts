@@ -91,7 +91,7 @@ export async function storeBankConnection(
     }
 
     // Speichere Bankverbindung mit verbesserter Struktur
-    const bankConnectionData: StoredBankConnection = {
+    const _bankConnectionData: StoredBankConnection = {
       ...connectionData,
       createdAt: now,
       updatedAt: now,
@@ -280,7 +280,7 @@ export async function getUserBankConnections(firebaseUid: string): Promise<Store
 
     const connectionsData = companyDoc.data()!.banking.connections;
     return Object.values(connectionsData) as StoredBankConnection[];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -304,7 +304,7 @@ export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBa
 
     const accountsData = companyDoc.data()!.banking.accounts;
     return Object.values(accountsData) as StoredBankAccount[];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -330,7 +330,7 @@ export async function getUserBankAccountsByBank(
     });
 
     return accountsByBank;
-  } catch (error) {
+  } catch {
     return {};
   }
 }
@@ -377,7 +377,7 @@ export async function getUserBankingOverview(firebaseUid: string): Promise<{
         activeConnections: bankingData.activeConnections || 0,
       },
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -392,7 +392,7 @@ export async function getAccountsByBank(
   try {
     const accounts = await getUserBankAccounts(firebaseUid);
     return accounts.filter(account => account.bankId === bankId);
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -411,7 +411,7 @@ export async function hasUserBankingSetup(firebaseUid: string): Promise<boolean>
       companyDoc.data()?.banking?.isSetup === true &&
       Object.keys(companyDoc.data()?.banking?.connections || {}).length > 0
     );
-  } catch (error) {
+  } catch {
     return false;
   }
 }

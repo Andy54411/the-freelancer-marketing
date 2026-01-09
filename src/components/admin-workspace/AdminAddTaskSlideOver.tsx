@@ -110,7 +110,7 @@ export function AdminAddTaskSlideOver({
       });
 
       onClose();
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

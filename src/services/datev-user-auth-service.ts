@@ -276,12 +276,12 @@ function generateDatefUserId(firebaseUserId: string): string {
   return `datev_${firebaseUserId}_${Date.now()}`;
 }
 
-function validateOAuthState(state: string, userId: string): boolean {
+function validateOAuthState(_state: string, _userId: string): boolean {
   // Implement state validation logic
   return true; // Simplified for now
 }
 
-async function exchangeCodeForToken(code: string): Promise<any> {
+async function exchangeCodeForToken(_code: string): Promise<any> {
   // Implement OAuth code exchange
   return { success: false, error: 'Not implemented yet' };
 }
@@ -290,7 +290,7 @@ function generateSecureState(userId: string): string {
   return Buffer.from(`${userId}_${Date.now()}_${Math.random()}`).toString('base64');
 }
 
-function storeAuthState(state: string, userId: string): void {
+function storeAuthState(_state: string, _userId: string): void {
   // Store state for OAuth flow verification
 }
 

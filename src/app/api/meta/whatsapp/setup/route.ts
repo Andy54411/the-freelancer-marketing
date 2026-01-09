@@ -25,7 +25,7 @@ async function getMetaConfig(): Promise<MetaConfig | null> {
   return doc.data() as MetaConfig;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const config = await getMetaConfig();
     

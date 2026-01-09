@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle, History, Users, FileText, Receipt, CreditCard, Upload, Printer, Download, Edit, User, Check, File, Folder, Book, Mail, DollarSign, MoreHorizontal } from 'lucide-react';
+import { Plus, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle, History, Users, FileText, Receipt, CreditCard, Upload, Printer, Download, Edit, User, Check, File, Folder, Book, Mail, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateVATNumber, getVATFormat } from '@/utils/vatValidation';
 
@@ -394,7 +393,7 @@ function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSupplierNumbe
                   name="contactType"
                   value="customer"
                   checked={contactType === 'customer'}
-                  onChange={(e) => setContactType('customer')}
+                  onChange={() => setContactType('customer')}
                   className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
                 />
                 <span className="ml-2 text-sm text-gray-700">Kunde</span>
@@ -405,7 +404,7 @@ function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSupplierNumbe
                   name="contactType"
                   value="supplier"
                   checked={contactType === 'supplier'}
-                  onChange={(e) => setContactType('supplier')}
+                  onChange={() => setContactType('supplier')}
                   className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
                 />
                 <span className="ml-2 text-sm text-gray-700">Lieferant</span>

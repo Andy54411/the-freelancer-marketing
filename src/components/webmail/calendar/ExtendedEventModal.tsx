@@ -187,7 +187,7 @@ export function ExtendedEventModal({
             coOrganizers: settings.coOrganizers,
           }),
         });
-      } catch (error) {
+      } catch {
         // Fehler ignorieren - Einstellungen sind lokal gespeichert
       }
     }
@@ -767,7 +767,7 @@ export function ExtendedEventModal({
                     <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-medium">
                       {email.charAt(0).toUpperCase()}
                     </div>
-                    <span className={`text-sm truncate max-w-[160px] ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                    <span className={`text-sm truncate max-w-40 ${isDark ? 'text-white' : 'text-gray-800'}`}>
                       {email}
                     </span>
                   </div>

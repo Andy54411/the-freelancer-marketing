@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { replacePlaceholders as systemReplacePlaceholders } from '@/utils/placeholderSystem';
 import { Button } from '@/components/ui/button';
 import {
   InvoiceTemplateRenderer,
@@ -69,12 +70,8 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
-  deleteDoc,
-  FieldValue,
-  DocumentData,
-  QuerySnapshot,
 } from 'firebase/firestore';
-import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
@@ -111,9 +108,7 @@ import {
 import { UserPreferencesService } from '@/lib/userPreferences';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import InvoiceHeaderTextSection from '@/components/finance/InvoiceHeaderTextSection';
-import { SimpleTaxRuleSelector } from '@/components/finance/SimpleTaxRuleSelector';
 import { TaxRuleSelector } from '@/components/finance/TaxRuleSelector';
-import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 // Import der zentralen Platzhalter-Engine
 import {
   replacePlaceholders as centralReplacePlaceholders,
@@ -583,9 +578,9 @@ export default function EditInvoicePage() {
   const [showNet, setShowNet] = useState(true);
   const [taxRate, setTaxRate] = useState(19);
   const [showDetailedOptions, setShowDetailedOptions] = useState(false);
-  const [taxDEOpen, setTaxDEOpen] = useState(true);
-  const [taxEUOpen, setTaxEUOpen] = useState(false);
-  const [taxNonEUOpen, setTaxNonEUOpen] = useState(false);
+  const [_taxDEOpen, setTaxDEOpen] = useState(true);
+  const [_taxEUOpen, setTaxEUOpen] = useState(false);
+  const [_taxNonEUOpen, setTaxNonEUOpen] = useState(false);
   const [company, setCompany] = useState<any | null>(null);
   // E-Mail Versand UI
   const [emailCardOpen, setEmailCardOpen] = useState(false);
@@ -600,7 +595,7 @@ export default function EditInvoicePage() {
   // On-demand PDF creation
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
-  const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
+  const [_creatingPdf, setCreatingPdf] = useState<boolean>(false);
 
   // Template Auswahl & User Preferences - entfernt, da doppelt deklariert
 
@@ -630,7 +625,7 @@ export default function EditInvoicePage() {
 
   // Kunden-anlegen Modal State
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [creatingCustomer, _setCreatingCustomer] = useState(false);
   const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
 
   // Kontakttyp State (neu für SevDesk-Style Interface)
@@ -645,11 +640,11 @@ export default function EditInvoicePage() {
   const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
 
   // Textvorlagen State
-  const [textTemplates, setTextTemplates] = useState<any[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [_textTemplates, setTextTemplates] = useState<any[]>([]);
+  const [_loadingTemplates, setLoadingTemplates] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
-  const [selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
+  const [_selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
+  const [_selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
 
   // Nummernkreis Modal State
   const [showNumberingModal, setShowNumberingModal] = useState(false);
@@ -715,7 +710,7 @@ export default function EditInvoicePage() {
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
     Number.isFinite(net) ? net * (1 + Math.max(0, rate) / 100) : 0;
-  const syncNetFromGross = (gross: number, rate: number) =>
+  const _syncNetFromGross = (gross: number, rate: number) =>
     Number.isFinite(gross) ? gross / (1 + Math.max(0, rate) / 100) : 0;
 
   // Popover-Open-Status pro Zeile und Debounce-Timer pro Item
@@ -826,6 +821,7 @@ export default function EditInvoicePage() {
 
   // Form state
   const [formData, setFormData] = useState({
+    customerId: '' as string | undefined,
     customerName: '',
     customerFirstName: '',
     customerLastName: '',
@@ -1006,7 +1002,7 @@ export default function EditInvoicePage() {
         if (response.success && response.customers) {
           setCustomers(response.customers);
         }
-      } catch (e) {
+      } catch {
         toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
@@ -1082,7 +1078,7 @@ export default function EditInvoicePage() {
             });
           }
         }
-      } catch (e) {
+      } catch {
         // still render, but without company info
       }
     };
@@ -1281,7 +1277,7 @@ export default function EditInvoicePage() {
         } else {
           setEInvoiceEnabled(false);
         }
-      } catch (error) {
+      } catch {
         setEInvoiceEnabled(false);
       }
     };
@@ -1850,9 +1846,6 @@ export default function EditInvoicePage() {
   // Platzhalter in Textvorlagen ersetzen
   const getProcessedPreviewData = (): PreviewTemplateData => {
     const data = buildPreviewData();
-
-    // Import der richtigen replacePlaceholders Funktion mit Sprach-Support aus placeholderSystem
-    const { replacePlaceholders: systemReplacePlaceholders } = require('@/utils/placeholderSystem');
 
     // Platzhalter in Kopf- und Fußtext ersetzen mit Sprach-Unterstützung
     // Deutsch als Standard, da das ein deutsches System ist
@@ -3213,7 +3206,7 @@ export default function EditInvoicePage() {
                         <Info className="h-5 w-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <div className="flex-1">
                           <p className="text-sm text-gray-700">
-                            <span className="font-semibold text-[#14ad9f]">"{formData.customerName}"</span> ist noch nicht in Ihrer Kundenverwaltung.
+                            <span className="font-semibold text-[#14ad9f]">&quot;{formData.customerName}&quot;</span> ist noch nicht in Ihrer Kundenverwaltung.
                           </p>
                         </div>
                       </div>

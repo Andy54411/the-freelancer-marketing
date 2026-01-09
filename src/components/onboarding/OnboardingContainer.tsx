@@ -10,19 +10,11 @@ interface OnboardingContainerProps {
   initialStep?: number;
 }
 
-const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, initialStep }) => {
+const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid }) => {
   const {
     currentStep,
     totalSteps,
-    completionPercentage,
     stepsData,
-    canGoNext,
-    canGoBack,
-    goToNextStep,
-    goToPreviousStep,
-    isSaving,
-    lastSaved,
-    onboardingStatus,
   } = useOnboarding();
 
   return (
@@ -73,7 +65,7 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
 const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ companyUid, initialStep }) => {
   return (
     <OnboardingProvider companyId={companyUid} initialStep={initialStep}>
-      <OnboardingContent companyUid={companyUid} initialStep={initialStep} />
+      <OnboardingContent companyUid={companyUid} />
     </OnboardingProvider>
   );
 };

@@ -355,7 +355,7 @@ export class FinAPIService {
   async testConnection(): Promise<{ status: string; message: string }> {
     try {
       await this.ensureAuthenticated();
-      const user = await this.getUser();
+      const _user = await this.getUser();
       return {
         status: 'success',
         message: `Verbindung erfolgreich. Environment: ${this.config.environment}`,
@@ -410,7 +410,7 @@ export class FinAPIService {
   }
 
   // High-level integration methods
-  async syncAccountsAndTransactions(companyId: string): Promise<{
+  async syncAccountsAndTransactions(_companyId: string): Promise<{
     accounts: any[];
     transactions: any[];
     success: boolean;

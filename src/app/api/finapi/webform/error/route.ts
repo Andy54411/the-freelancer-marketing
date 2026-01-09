@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         errorMessage,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Error Callbacks' },
       { status: 500 }

@@ -21,8 +21,6 @@ import {
   List,
   ListOrdered,
   ChevronDown,
-  FileText,
-  Hash,
   Strikethrough,
   Palette,
   AlignLeft,
@@ -30,11 +28,10 @@ import {
   AlignRight,
   Indent,
   Outdent,
-  Table as TableIcon,
-  Link as LinkIcon,
-  Minus,
-  Type,
   Plus,
+  TableIcon,
+  LinkIcon,
+  Minus,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -219,7 +216,7 @@ export default function FooterTextEditor({
     );
   }
 
-  const insertPlaceholder = (token: string) => {
+  const _insertPlaceholder = (token: string) => {
     editor.chain().focus().insertContent(token).run();
   };
 

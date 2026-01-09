@@ -8,8 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, Calendar, Clock, ArrowLeft, Share2, Printer, Star, Building2 } from 'lucide-react';
-import Image from 'next/image';
+import { MapPin, Calendar, Clock, ArrowLeft, Share2, Printer, Star } from 'lucide-react';
 import Link from 'next/link';
 import { GallerySlider } from '@/components/ui/gallery-slider';
 

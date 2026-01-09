@@ -86,6 +86,13 @@ export async function GET(request: NextRequest) {
 
     const analytics = analyticsResponse.data;
 
+    if (!analytics) {
+      return NextResponse.json(
+        { success: false, error: 'Keine Analytics-Daten verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // Berechne zusätzliche Taskilo-spezifische Metriken
     const taskiloMetrics = {
       efficiency:
@@ -100,22 +107,22 @@ export async function GET(request: NextRequest) {
       recommendedActions: [] as string[],
 
       insights: {
-        topPerformingDay: analytics.daily.reduce(
-          (prev: any, curr: any) => (curr.conversions > (prev?.conversions || 0) ? curr : prev),
+        topPerformingDay: analytics.dailyData.reduce(
+          (prev: any, curr: any) => ((curr.metrics?.conversions || 0) > (prev?.metrics?.conversions || 0) ? curr : prev),
           {}
         ),
 
         costTrend:
-          analytics.daily.length > 1
-            ? analytics.daily[analytics.daily.length - 1].cost > analytics.daily[0].cost
+          analytics.dailyData.length > 1
+            ? (analytics.dailyData[analytics.dailyData.length - 1].metrics?.cost || 0) > (analytics.dailyData[0].metrics?.cost || 0)
               ? 'increasing'
               : 'decreasing'
             : 'stable',
 
         conversionTrend:
-          analytics.daily.length > 1
-            ? analytics.daily[analytics.daily.length - 1].conversions >
-              analytics.daily[0].conversions
+          analytics.dailyData.length > 1
+            ? (analytics.dailyData[analytics.dailyData.length - 1].metrics?.conversions || 0) >
+              (analytics.dailyData[0].metrics?.conversions || 0)
               ? 'improving'
               : 'declining'
             : 'stable',
@@ -137,8 +144,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         summary: analytics.summary,
-        daily: analytics.daily,
-        dateRange: analytics.dateRange,
+        daily: analytics.dailyData,
+        dateRange: { startDate, endDate },
         taskiloInsights: taskiloMetrics,
         account: {
           id: customerId,

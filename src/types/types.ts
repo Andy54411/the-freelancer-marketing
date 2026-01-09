@@ -72,6 +72,7 @@ export interface AnbieterDetails {
   profilbildUrl?: string;
   hourlyRate?: number | string;
   description?: string;
+  stripeAccountId?: string;
   selectedSubcategory?: string;
   subCategory?: string;
   languages?: string;
@@ -113,6 +114,7 @@ export interface ApiAnbieter {
   profilePictureURL?: string;
   hourlyRate?: number | string;
   description?: string;
+  stripeAccountId?: string;
   // Hier können bei Bedarf weitere API-Felder hinzugefügt werden
 }
 

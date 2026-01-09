@@ -121,7 +121,7 @@ export const hasAnalyticsConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.analytics === true;
     }
-  } catch (e) {}
+  } catch {}
   return false;
 };
 
@@ -135,7 +135,7 @@ export const hasMarketingConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.marketing === true;
     }
-  } catch (e) {}
+  } catch {}
   return false;
 };
 
@@ -159,7 +159,7 @@ export const hasFunctionalConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.functional === true;
     }
-  } catch (e) {}
+  } catch {}
   return false;
 };
 

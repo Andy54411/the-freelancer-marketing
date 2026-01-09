@@ -3,17 +3,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   FiExternalLink,
   FiCheck,
   FiAlertCircle,
   FiRefreshCw,
-  FiShield,
-  FiDatabase,
-  FiUsers,
-  FiFileText,
   FiInfo,
   FiSettings,
   FiZap,
@@ -50,19 +45,6 @@ interface DatevDebugInfo {
   };
 }
 
-interface DatevOAuthResponse {
-  success: boolean;
-  authUrl?: string;
-  error?: string;
-  debug?: {
-    authUrl: {
-      fullUrl: string;
-      baseUrl: string;
-      params: Record<string, string>;
-    };
-  };
-}
-
 interface DatevSandboxTestProps {
   companyId: string;
 }
@@ -84,7 +66,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
       } else {
         toast.error('DATEV Sandbox-Test fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       toast.error('Verbindungstest fehlgeschlagen');
       setDebugInfo({ success: false });
     } finally {
@@ -138,7 +120,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
         try {
           await navigator.clipboard.writeText(data.debug.authUrl.fullUrl);
           toast.success('OAuth URL in die Zwischenablage kopiert');
-        } catch (clipboardError) {
+        } catch {
           // Fallback für ältere Browser oder unsichere Kontexte
           const textArea = document.createElement('textarea');
           textArea.value = data.debug.authUrl.fullUrl;
@@ -150,7 +132,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
           try {
             document.execCommand('copy');
             toast.success('OAuth URL in die Zwischenablage kopiert (Fallback)');
-          } catch (fallbackError) {
+          } catch {
             toast.info('OAuth URL wurde in der Konsole ausgegeben');
           }
 

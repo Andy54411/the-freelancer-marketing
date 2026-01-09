@@ -112,7 +112,7 @@ export function EmailThreadAccordion({
 
   return (
     <div className="mb-6 space-y-2">
-      {sortedEmails.map((email, index) => {
+      {sortedEmails.map((email) => {
         const isCurrent = email.id === currentEmailId;
         const isUnread = !email.isRead;
         const isOpen = openThreads.has(email.id);

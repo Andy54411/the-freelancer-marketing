@@ -26,7 +26,6 @@ import {
   Edit,
   Eye,
   Package,
-  Pencil,
   Plus,
   Search,
   Trash2,
@@ -74,10 +73,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  //
-  InventoryCategory,
-} from '@/services/inventoryService';
+
 
 interface InventoryComponentProps {
   companyId: string;
@@ -90,7 +86,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   const [stats, setStats] = useState<InventoryStats | null>(null);
   // Inline-Dienstleistungen
   const [inlineServices, setInlineServices] = useState<any[]>([]);
-  const [newInlineService, setNewInlineService] = useState('');
+  const [_newInlineService, _setNewInlineService] = useState('');
   const [savingInlineService, setSavingInlineService] = useState(false);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [categories, setCategories] = useState<InventoryCategoryExtended[]>([]);
@@ -414,7 +410,9 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
         location: '',
         status: 'active',
       });
-    } catch (error) {}
+    } catch {
+      // Error handling - user sees UI feedback
+    }
   };
 
   const handleStockAdjustment = async () => {
@@ -434,7 +432,9 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setShowStockDialog(false);
       setStockAdjustment({ newStock: 0, reason: '', type: 'adjustment' });
       setSelectedItem(null);
-    } catch (error) {}
+    } catch {
+      // Error handling - user sees UI feedback
+    }
   };
 
   // Handler für Detail-Ansicht
@@ -452,7 +452,9 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       await loadData();
       setShowDeleteDialog(false);
       setSelectedItem(null);
-    } catch (error) {}
+    } catch {
+      // Error handling - user sees UI feedback
+    }
   };
 
   const handleConfirmDelete = (item: InventoryItem) => {

@@ -11,7 +11,7 @@ interface RouteParams {
   }>;
 }
 
-export async function POST(req: NextRequest, { params }: RouteParams) {
+export async function POST(_req: NextRequest, { params }: RouteParams) {
   try {
     const { uid: companyId, employeeId } = await params;
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     try {
       const authUser = await adminAuth.getUser(authUid);
       currentAuthEmail = authUser.email || '';
-    } catch (authError) {
+    } catch {
       return NextResponse.json(
         { success: false, error: 'Verknüpfter Benutzer nicht gefunden' },
         { status: 404 }

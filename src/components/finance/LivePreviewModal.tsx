@@ -7,45 +7,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Send,
   Download,
   Printer,
-  Eye,
-  X,
   AlertTriangle,
   FileText,
   Loader2,
   ChevronDown,
-  ChevronUp,
-  ZoomIn,
-  ZoomOut,
   CheckCircle,
   Palette,
   Layout,
   Settings,
-  Image,
-  ChevronRight,
-  Upload,
-  Minus,
-  Plus } from
+  ChevronRight } from
 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import PDFTemplate from './PDFTemplates';
 import { DocumentType } from '@/lib/document-utils';
-import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 import { SimplePDFViewer } from './SimplePDFViewer';
 import { A4_DIMENSIONS } from '@/utils/a4-page-utils';
-import { useTemplatePageDetection } from '@/hooks/useTemplatePageDetection';
 
 interface LivePreviewModalProps {
   isOpen: boolean;
@@ -81,12 +66,12 @@ export function LivePreviewModal({
 
   const templateRef = useRef<HTMLDivElement>(null);
 
-  const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
+  const [_activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
   const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(
     new Set(['download', 'layout'])
   );
   const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4 in zoomLevels)
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [_logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(50); // Logo size in percentage
   const [selectedLayout, setSelectedLayout] = useState('TEMPLATE_NEUTRAL');
@@ -132,7 +117,6 @@ export function LivePreviewModal({
 
     }
   }, [document]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Document Settings States
   const [documentSettings, setDocumentSettings] = useState({
@@ -157,11 +141,6 @@ export function LivePreviewModal({
   const [realDocumentData, setRealDocumentData] = useState<InvoiceData | null>(null);
 
   // Template Page Detection
-  const templatePageInfo = useTemplatePageDetection({
-    templateId: selectedLayout,
-    documentData: { items: (realDocumentData || document)?.items },
-    enableDynamicAnalysis: true
-  });
 
   // Document type labels
   const documentLabels = {
@@ -272,7 +251,7 @@ export function LivePreviewModal({
 
               // Generiere QR-Code für E-Invoice
               if (realDocument.eInvoiceData.guid) {
-                await generateQRCode(realDocument.eInvoiceData.guid, realDocument);
+                await generateQRCode();
               }
             }
           } else {
@@ -320,9 +299,7 @@ export function LivePreviewModal({
   // Generate QR Code when showQRCode is enabled
   useEffect(() => {
     if (documentSettings.showQRCode && (realDocumentData || document)) {
-      const docData = realDocumentData || document;
-      const guid = docData?.id || docData?.guid || `preview-${Date.now()}`;
-      generateQRCode(guid, docData);
+      generateQRCode();
     } else {
       setQrCodeUrl(null); // Clear QR code when disabled
     }
@@ -339,7 +316,7 @@ export function LivePreviewModal({
   }, [documentSettings.showEPCQRCode, realDocumentData, document, companyId]);
 
   // Generate QR Code for Document (Quote/Invoice)
-  const generateQRCode = async (guid: string, invoiceData: InvoiceData) => {
+  const generateQRCode = async () => {
     try {
       let qrContent: string;
 
@@ -636,7 +613,6 @@ export function LivePreviewModal({
 
   // Zoom levels matching SevDesk
   const zoomLevels = [2, 1.75, 1.5, 1.25, 1, 0.75, 0.5];
-  const zoomLabels = ['200%', '175%', '150%', '125%', '100%', '75%', '50%'];
 
   const toggleSection = (section: SendOption) => {
     setExpandedSections((prev) => {
@@ -701,12 +677,12 @@ export function LivePreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogPrimitive.Content className="max-w-7xl h-[90vh] w-[95vw] p-0 overflow-hidden flex flex-col fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+      <DialogPrimitive.Content className="max-w-7xl h-[90vh] w-[95vw] p-0 overflow-hidden flex flex-col fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
         <DialogHeader className="px-6 py-4 border-b bg-[#14ad9f] text-white shrink-0 relative">
           {/* Weißes X-Icon */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-[9999] p-2 rounded transition-colors"
+            className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-9999 p-2 rounded transition-colors"
             style={{ color: '#FFFFFF !important', fontSize: '20px', fontWeight: 'bold' }}>
 
             ✕
@@ -1309,10 +1285,6 @@ export function LivePreviewModal({
 
                 <div ref={templateRef} data-pdf-template>
                   {(() => {
-                  const finalDoc = {
-                    ...(realDocumentData || document),
-                    companyId: companyId
-                  };
 
                   return null;
                 })()}

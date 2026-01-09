@@ -49,7 +49,7 @@ const chartConfigStatic = {
 
 export function ChartExpensesInteractive({ companyUid }: { companyUid: string }) {
   const { user } = useAuth();
-  const isMobile = useIsMobile();
+  const _isMobile = useIsMobile();
 
   const [timeRange, setTimeRange] = React.useState('90d');
   const [expenses, setExpenses] = React.useState<ExpenseData[]>([]);
@@ -181,7 +181,7 @@ export function ChartExpensesInteractive({ companyUid }: { companyUid: string })
             value={timeRange}
             onValueChange={setTimeRange}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+            className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
             <ToggleGroupItem value="90d">90 Tage</ToggleGroupItem>
             <ToggleGroupItem value="30d">30 Tage</ToggleGroupItem>

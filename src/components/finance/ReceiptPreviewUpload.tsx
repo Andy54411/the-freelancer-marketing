@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ExtractedReceiptData {
@@ -56,11 +56,11 @@ export default function ReceiptPreviewUpload({
 }: ReceiptPreviewUploadProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [processingOCR, setProcessingOCR] = useState(false);
-  const [extractedData, setExtractedData] = useState<ExtractedReceiptData | null>(null);
+  const [_extractedData, setExtractedData] = useState<ExtractedReceiptData | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [storageUrl, setStorageUrl] = useState<string | null>(null); // 🎯 NEU: Storage-URL speichern
-  const [ocrProgress, setOcrProgress] = useState<string>('');
+  const [_storageUrl, setStorageUrl] = useState<string | null>(null); // 🎯 NEU: Storage-URL speichern
+  const [_ocrProgress, setOcrProgress] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file upload and PDF parsing

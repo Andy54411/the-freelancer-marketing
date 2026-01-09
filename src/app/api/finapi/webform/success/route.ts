@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
             await storeBankAccounts(userId, storedAccounts);
           }
         }
-      } catch (error) {
+      } catch {
         // Weiter zum Redirect - Speicher-Fehler soll User nicht blockieren
       }
     }
@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
         'Content-Type': 'text/html',
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Success Callbacks' },
       { status: 500 }

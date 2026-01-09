@@ -394,7 +394,7 @@ export class EInvoiceTransmissionService {
 
     try {
       // Webservice-Aufruf simulieren
-      const requestPayload = {
+      const _requestPayload = {
         method: 'POST',
         url: recipientSettings.edi.endpointUrl,
         headers: {
@@ -416,9 +416,9 @@ export class EInvoiceTransmissionService {
    * Versendet E-Rechnung über Portal (z.B. ZRE, OZG-RE für B2G)
    */
   private static async sendViaPortal(
-    logId: string,
-    recipientSettings: EInvoiceRecipientSettings,
-    xmlContent: string
+    _logId: string,
+    _recipientSettings: EInvoiceRecipientSettings,
+    _xmlContent: string
   ): Promise<void> {
     // Portal-Integration würde hier implementiert
 
@@ -439,7 +439,7 @@ export class EInvoiceTransmissionService {
       });
 
       // Wiederholung planen (in echter Implementierung mit Queue/Scheduler)
-    } catch (updateError) {}
+    } catch {}
   }
 
   /**
@@ -464,7 +464,7 @@ export class EInvoiceTransmissionService {
         createdAt: doc.data().createdAt.toDate(),
         updatedAt: doc.data().updatedAt.toDate(),
       })) as EInvoiceTransmissionLog[];
-    } catch (error) {
+    } catch {
       throw new Error('Übertragungsprotokolle konnten nicht geladen werden');
     }
   }
@@ -624,7 +624,7 @@ export class EInvoiceTransmissionService {
     );
   }
 
-  private static buildAuthHeader(auth: EInvoiceRecipientSettings['edi']['authentication']): string {
+  private static buildAuthHeader(auth: NonNullable<EInvoiceRecipientSettings['edi']>['authentication']): string {
     switch (auth.type) {
       case 'api_key':
         return `Bearer ${auth.credentials.apiKey}`;

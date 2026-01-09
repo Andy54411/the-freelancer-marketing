@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Plus, Loader2, Phone, ChevronDown, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Loader2, Phone, ChevronDown, Trash2, MoreVertical, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -185,10 +185,13 @@ export default function WhatsAppConnectionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full bg-linear-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Verbindungen laden...</p>
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Link2 className="h-8 w-8 text-white" />
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-[#25D366] mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-600">Verbindungen werden geladen...</p>
         </div>
       </div>
     );
@@ -197,15 +200,15 @@ export default function WhatsAppConnectionsPage() {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">WhatsApp Verbindungen</h1>
-            <p className="text-sm text-gray-600 max-w-3xl">
-              Verwalte deine WhatsApp for Business Verbindungen.
+      <div className="bg-white border-b border-gray-200 px-6 py-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Verbindungen</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Verwalte deine WhatsApp for Business Verbindungen
             </p>
           </div>
-          <Button className="bg-teal-600 hover:bg-teal-700">
+          <Button className="bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm">
             <Plus className="h-4 w-4 mr-2" />
             Neue Verbindung
           </Button>

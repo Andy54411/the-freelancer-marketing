@@ -103,8 +103,8 @@ export function useTemplatePageDetection({
     const multiPage: string[] = [];
     const singlePage: string[] = [];
 
-    Object.entries(TEMPLATE_PAGE_DEFINITIONS).forEach(([id, info]) => {
-      if (info.pageType === 'multi-page') {
+    Object.entries(TEMPLATE_PAGE_DEFINITIONS).forEach(([id, _info]) => {
+      if (_info.pageType === 'multi-page') {
         multiPage.push(id);
       } else {
         singlePage.push(id);

@@ -22,11 +22,9 @@ import {
   FileText,
   Clock,
   Users,
-  Euro,
-  Calendar,
   BarChart3
 } from 'lucide-react';
-import { GoBDComplianceReport, GoBDComplianceIssue } from '@/types/gobdTypes';
+import { GoBDComplianceReport } from '@/types/gobdTypes';
 import { GoBDService } from '@/services/gobdService';
 import { toast } from 'sonner';
 import { format, subMonths } from 'date-fns';

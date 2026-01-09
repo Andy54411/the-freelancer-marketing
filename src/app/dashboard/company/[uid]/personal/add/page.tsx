@@ -68,7 +68,7 @@ export default function AddEmployeePage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [_errors, setErrors] = useState<Record<string, string>>({});
 
   // Tab-Management
   const [activeTab, setActiveTab] = useState('basic');
@@ -163,7 +163,7 @@ export default function AddEmployeePage() {
     try {
       // Debug: Test Firebase Auth & Token
       if (auth.currentUser) {
-        const idTokenResult = await auth.currentUser.getIdTokenResult(true);
+        await auth.currentUser.getIdTokenResult(true);
       }
 
       // Bereinige undefined Werte für Firebase und füge erweiterte Daten hinzu
@@ -236,7 +236,7 @@ export default function AddEmployeePage() {
               newEmployee.id,
               employee.vacation.settings
             );
-          } catch (error) {}
+          } catch {}
         }
 
         // Hier können weitere Tab-spezifische Speichervorgänge hinzugefügt werden
@@ -250,7 +250,7 @@ export default function AddEmployeePage() {
       // Zurück zur Übersicht
 
       router.push(`/dashboard/company/${companyId}/personal/employees`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern des Mitarbeiters');
     } finally {
       setLoading(false);

@@ -43,7 +43,7 @@ export default function AdminCompaniesPage() {
         const data = await response.json();
         setCompanies(data.companies || []);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function AdminCompaniesPage() {
         const data = await response.json();
         alert(`Fehler beim Löschen: ${data.error || 'Unbekannter Fehler'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Fehler beim Löschen des Unternehmens');
     } finally {
       setDeletingId(null);

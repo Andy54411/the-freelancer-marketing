@@ -7,11 +7,10 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { type EventInput, type EventClickArg, type EventContentArg } from '@fullcalendar/core';
-import { type DateClickArg } from '@fullcalendar/interaction';
 import deLocale from '@fullcalendar/core/locales/de';
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 as FiLoader, AlertCircle as FiAlertCircle, Lock } from 'lucide-react';
+import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -132,7 +131,7 @@ const getStatusColor = (status: string) => {
 
 const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ companyUid, selectedOrderId, onDateClick, onEventClick, enableBlockedDates = false }, ref) => {
   const router = useRouter();
-  const { user, loading: authLoading, firebaseUser } = useAuth();
+  const { user, loading: authLoading, firebaseUser: _firebaseUser } = useAuth();
 
   const [allOrders, setAllOrders] = useState<OrderData[]>([]); // Speichert die Rohdaten der Aufträge
   const [allProjects, setAllProjects] = useState<ProjectData[]>([]); // Speichert die Rohdaten der Projekte
@@ -188,7 +187,7 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
       });
       
       setBlockedDates(loadedBlockedDates);
-    } catch (err) {
+    } catch {
       // Fehler stillschweigend ignorieren - blockierte Tage sind optional
     }
   };
@@ -537,7 +536,7 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
 
   // NEU: Funktion zum Rendern des Event-Inhalts mit Tooltip
   const renderEventContent = (eventInfo: EventContentArg) => {
-    const { status, customerName, type, total, invoiceNumber } = eventInfo.event.extendedProps;
+    const { status, customerName, type, total, invoiceNumber: _invoiceNumber } = eventInfo.event.extendedProps;
 
     // Deutsche Status-Labels
     const getStatusLabel = (status: string) => {

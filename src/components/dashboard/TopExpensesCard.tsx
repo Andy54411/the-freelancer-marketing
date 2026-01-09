@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface Expense {
   id: string;
@@ -32,7 +32,7 @@ const EXPENSE_COLORS = [
 ];
 
 export default function TopExpensesCard() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [_expenses, setExpenses] = useState<Expense[]>([]);
   const [chartData, setChartData] = useState<ExpenseData[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     // AUTOMATISCH: Short-Lived Token in Long-Lived Token umtauschen (60 Tage gültig!)
     let tokenType = 'short-lived';
-    let tokenExpiresAt = null;
+    let tokenExpiresAt: string | null = null;
     
     try {
       const longLivedResponse = await fetch(
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     // Bei Embedded Signup gibt Meta die Daten DIREKT zurück!
     // Siehe: https://developers.facebook.com/docs/whatsapp/embedded-signup/handle-response
 
-    const wabaId = tokenData.granted_scopes?.includes('whatsapp_business_management')
+    const wabaId: string | null = tokenData.granted_scopes?.includes('whatsapp_business_management')
       ? tokenData.id // User ID oder Business ID
       : null;
 

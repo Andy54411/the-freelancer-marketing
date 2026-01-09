@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatevConfig } from '@/lib/datev-config';
-import { DatevCookieManager } from '@/lib/datev-cookie-manager';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const _errorText = await response.text();
 
       return NextResponse.json(
         {
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
       scope: tokenData.scope,
       token_type: tokenData.token_type || 'Bearer',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

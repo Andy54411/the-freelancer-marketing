@@ -21,14 +21,12 @@ import {
   Shield, 
   Calendar, 
   Search,
-  Filter,
   PlayCircle,
   FileText,
-  ExternalLink,
   User,
   Clock
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 const getCategoryIcon = (category: string) => {
@@ -83,7 +81,7 @@ interface ChangelogPageProps {
 }
 
 export default function ChangelogPage({ params }: ChangelogPageProps) {
-  const resolvedParams = React.use(params);
+  React.use(params);
   const [updates, setUpdates] = useState<UpdateNotification[]>([]);
   const [filteredUpdates, setFilteredUpdates] = useState<UpdateNotification[]>([]);
   const [loading, setLoading] = useState(true);

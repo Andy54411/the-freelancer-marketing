@@ -227,7 +227,7 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
 
       // Redirect to success page or job list
       router.push(`/dashboard/user/${userId}/career/jobs`);
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Senden der Bewerbung');
     } finally {
       setIsSubmitting(false);

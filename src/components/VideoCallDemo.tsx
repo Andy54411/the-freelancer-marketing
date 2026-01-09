@@ -48,7 +48,7 @@ export default function VideoCallDemo({
     handleConsentResponse,
     
     // Utilities
-    isCallActive
+    isCallActive: _isCallActive
   } = useVideoCall({
     chatId,
     userId,

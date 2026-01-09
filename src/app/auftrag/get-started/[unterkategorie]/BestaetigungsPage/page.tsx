@@ -87,7 +87,7 @@ export default function BestaetigungsPage() {
             companyName: data.companyName,
           });
         }
-      } catch (err) {
+      } catch {
         // Fehler beim Laden der Kundendaten - UI zeigt Fallback
       }
     };

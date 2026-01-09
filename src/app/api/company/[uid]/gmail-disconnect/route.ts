@@ -54,7 +54,7 @@ export async function POST(
         deletedSyncStatuses = syncStatusSnapshot.size;
         console.log(`✅ ${deletedSyncStatuses} Gmail Watch Status gelöscht`);
       }
-    } catch (syncError) {
+    } catch {
       console.log('⚠️ Gmail sync status bereits gelöscht oder nicht vorhanden');
     }
 
@@ -76,7 +76,7 @@ export async function POST(
         deletedCacheEntries = cacheSnapshot.size;
         console.log(`✅ ${deletedCacheEntries} E-Mail Cache Einträge für User ${userId} gelöscht`);
       }
-    } catch (cacheError) {
+    } catch {
       console.log('⚠️ Email cache bereits gelöscht oder nicht vorhanden');
     }
 

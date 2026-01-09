@@ -107,9 +107,9 @@ function DefaultFallback({
   showBlurred?: boolean;
   children?: ReactNode;
 }) {
-  const module = PREMIUM_MODULES[moduleId];
+  const moduleConfig = PREMIUM_MODULES[moduleId];
   
-  if (!module) return null;
+  if (!moduleConfig) return null;
 
   return (
     <div className="relative">
@@ -121,23 +121,23 @@ function DefaultFallback({
       
       <div className={`${showBlurred ? 'absolute inset-0' : ''} flex items-center justify-center`}>
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#14ad9f] to-teal-700 flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#14ad9f] to-teal-700 flex items-center justify-center mx-auto mb-6">
             <Lock className="w-8 h-8 text-white" />
           </div>
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {module.name} freischalten
+            {moduleConfig.name} freischalten
           </h2>
           
           <p className="text-gray-600 mb-6">
-            Dieses Feature ist Teil des Premium-Moduls „{module.name}". 
+            Dieses Feature ist Teil des Premium-Moduls &quot;{moduleConfig.name}&quot;. 
             Testen Sie es 7 Tage kostenlos.
           </p>
           
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-3xl font-bold text-gray-900">
-                {module.price.monthly.toFixed(2).replace('.', ',')} €
+                {moduleConfig.price.monthly.toFixed(2).replace('.', ',')} €
               </span>
               <span className="text-gray-500">/Monat</span>
             </div>

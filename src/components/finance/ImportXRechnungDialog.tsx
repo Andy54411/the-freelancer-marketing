@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, FileText, CheckCircle, AlertCircle, X, Info, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, X, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { XRechnungParserService } from '@/services/xrechnungParserService';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { useRouter } from 'next/navigation';
@@ -127,8 +127,7 @@ export function ImportXRechnungDialog({
         // 🔧 STEP 2: Convert to InvoiceData
         const invoiceData = XRechnungParserService.convertToInvoiceData(
           previewData,
-          companyId,
-          matchedCustomer?.id
+          companyId
         );
 
         // 💾 STEP 3: Save invoice
@@ -162,7 +161,7 @@ export function ImportXRechnungDialog({
           throw new Error('Fehler beim Speichern der Ausgabe');
         }
 
-        const result = await response.json();
+        const _result = await response.json();
 
         toast.success('📉 Ausgabe erfolgreich importiert!');
         

@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'finAPI-Verbindung erfolgreich getrennt',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Fehler beim Trennen der finAPI-Verbindung' },
       { status: 500 }

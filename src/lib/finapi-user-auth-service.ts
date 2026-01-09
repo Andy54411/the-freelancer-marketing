@@ -1,5 +1,5 @@
 import { FinAPISDKService, createFinAPIService, FinAPIUser } from './finapi-sdk-service';
-import { auth, db } from '@/firebase/clients';
+import { db } from '@/firebase/clients';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
 // Lokaler User-Typ mit password für Rückgabe-Kompatibilität
@@ -64,7 +64,7 @@ export class FinAPIUserAuthService {
               isAutoUpdateEnabled: true,
             } as User;
           }
-        } catch (error) {}
+        } catch {}
       }
 
       // 2. Erstelle neuen finAPI User
@@ -94,7 +94,7 @@ export class FinAPIUserAuthService {
         ...user,
         password: password,
       } as User;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -153,13 +153,13 @@ export class FinAPIUserAuthService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       // FALLBACK: Use legacy finAPI system for authentication if available
       try {
         // Legacy system doesn't maintain user-specific tokens
         // Return null to indicate authentication should be handled elsewhere
         return null;
-      } catch (fallbackError) {
+      } catch {
         return null;
       }
     }
@@ -184,7 +184,7 @@ export class FinAPIUserAuthService {
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

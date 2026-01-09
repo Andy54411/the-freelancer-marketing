@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/firebase/clients';
-import { Calendar, ChevronDown, Search, Plus, Info, ArrowLeft } from 'lucide-react';
+import { Calendar, ChevronDown, Plus, Info, ArrowLeft } from 'lucide-react';
 
 import ReceiptPreviewUpload from '@/components/finance/ReceiptPreviewUpload';
 import CategorySelectionModal from '@/components/finance/CategorySelectionModal';
@@ -12,7 +12,7 @@ import NewCustomerModal from '@/components/finance/NewCustomerModal';
 import AssignTransactionModal from '@/components/finance/AssignTransactionModal';
 import DifferenceReasonModal from '@/components/finance/DifferenceReasonModal';
 import { DatevCardService } from '@/services/datevCardService';
-import { TAX_RULES, getTaxRule } from '@/config/taxRules';
+import { TAX_RULES } from '@/config/taxRules';
 import { TaxRuleType } from '@/types/taxRules';
 import { ReceiptLinkingService, OCRReceiptData } from '@/services/ReceiptLinkingService';
 // Use the same Category interface as CategorySelectionModal
@@ -135,7 +135,7 @@ export default function ReceiptPage() {
   const [showAssignTransactionModal, setShowAssignTransactionModal] = useState(false); // 🎯 NEU: Zuordnungs-Modal
   const [showDifferenceReasonModal, setShowDifferenceReasonModal] = useState(false); // 🎯 NEU: Differenzgrund-Modal
   const [differenceAmount, setDifferenceAmount] = useState<number>(0); // 🎯 NEU: Betragsdifferenz
-  const [selectedDifferenceReason, setSelectedDifferenceReason] = useState<string>(''); // 🎯 NEU: Gewählter Differenzgrund
+  const [_selectedDifferenceReason, setSelectedDifferenceReason] = useState<string>(''); // 🎯 NEU: Gewählter Differenzgrund
 
   // Customer States
   const [customers, setCustomers] = useState<
@@ -429,7 +429,7 @@ export default function ReceiptPage() {
             finalBelegdatum = invoiceDate.toLocaleDateString('de-DE');
             finalLieferdatum = invoiceDate.toLocaleDateString('de-DE'); // Standardmäßig gleiches Datum
           }
-        } catch (error) {
+        } catch {
           console.warn('⚠️ Invalid OCR date, keeping previous:', data.date);
         }
       }
@@ -441,7 +441,7 @@ export default function ReceiptPage() {
           if (!isNaN(dueDate.getTime()) && dueDate.getFullYear() >= 2000) {
             finalFaelligkeit = dueDate.toLocaleDateString('de-DE');
           }
-        } catch (error) {
+        } catch {
           console.warn('⚠️ Invalid OCR due date:', data.dueDate);
         }
       } else if (
@@ -804,7 +804,7 @@ export default function ReceiptPage() {
   // 🎯 NEU: Callback für neuen Kunden
   const handleNewCustomerCreated = async (customerId: string) => {
     // Lade Kunden neu, um den neuen Kunden in der Liste zu haben (forceReload = true)
-    const updatedCustomers = await loadCustomers(true);
+    await loadCustomers(true);
 
     // Verknüpfe den neu erstellten Kunden automatisch
     setFormData(prev => ({
@@ -945,7 +945,7 @@ export default function ReceiptPage() {
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#129488] border border-transparent rounded-md hover:bg-[#0f7a70] transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-taskilo-hover border border-transparent rounded-md hover:bg-[#0f7a70] transition-colors"
             >
               Fertigstellen
             </button>

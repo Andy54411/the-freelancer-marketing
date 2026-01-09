@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { useAuth } from '@/contexts/AuthContext';
+import { replacePlaceholders as systemReplacePlaceholders } from '@/utils/placeholderSystem';
 import { Button } from '@/components/ui/button';
 import {
   InvoiceTemplateRenderer,
@@ -1911,9 +1912,6 @@ export default function CreateRecurringInvoicePage() {
   // Platzhalter in Textvorlagen ersetzen
   const getProcessedPreviewData = (): PreviewTemplateData => {
     const data = buildPreviewData();
-
-    // Import der richtigen replacePlaceholders Funktion mit Sprach-Support aus placeholderSystem
-    const { replacePlaceholders: systemReplacePlaceholders } = require('@/utils/placeholderSystem');
 
     // Platzhalter in Kopf- und Fußtext ersetzen mit Sprach-Unterstützung
     // Deutsch als Standard, da das ein deutsches System ist

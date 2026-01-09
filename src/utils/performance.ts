@@ -128,8 +128,8 @@ export const registerServiceWorker = () => {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
-      .then(registration => {})
-      .catch(registrationError => {});
+      .then(_registration => {})
+      .catch(_registrationError => {});
   });
 };
 

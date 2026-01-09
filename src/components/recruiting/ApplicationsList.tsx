@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { JobApplication, ApplicantProfile } from '@/types/career';
+import { JobApplication } from '@/types/career';
 import {
   Table,
   TableBody,
@@ -17,17 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Eye, FileText } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import EmployeeCreationModal from '@/components/recruiting/EmployeeCreationModal';
 
 import Link from 'next/link';

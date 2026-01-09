@@ -13,7 +13,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Eye, Plus, Bold, Italic, Smile, Shield, X, Loader2 } from 'lucide-react';
+import { 
+  Eye, 
+  Plus, 
+  Bold, 
+  Italic, 
+  Smile, 
+  Shield, 
+  Loader2,
+  ShoppingCart,
+  Receipt,
+  Calendar,
+  FileCheck,
+  Clock,
+  MessageSquare,
+  Sparkles,
+  ArrowLeft
+} from 'lucide-react';
 import { DsgvoSettingsDialog } from '@/components/whatsapp/DsgvoSettingsDialog';
 import { toast } from 'sonner';
 
@@ -24,6 +40,272 @@ interface CreateTemplateDialogProps {
   companyId: string;
 }
 
+// Vordefinierte Vorlagen für Automatisierungen - zweisprachig
+const predefinedTemplates = {
+  de: [
+    {
+      id: 'order_confirmation',
+      name: 'auftragsbestaetigung',
+      label: 'Auftragsbestätigung',
+      description: 'Automatische Bestätigung nach Bestelleingang',
+      icon: ShoppingCart,
+      color: 'bg-green-100 text-green-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+vielen Dank für deine Bestellung bei [%FIRMENNAME%]!
+
+Wir haben deine Bestellung erhalten und werden sie schnellstmöglich bearbeiten.
+
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'invoice_sent',
+      name: 'rechnung_versendet',
+      label: 'Rechnung versendet',
+      description: 'Benachrichtigung bei neuer Rechnung',
+      icon: Receipt,
+      color: 'bg-blue-100 text-blue-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+deine Rechnung [%RECHNUNGSNUMMER%] über [%GESAMTSUMME%] wurde erstellt.
+
+Zahlbar bis: [%FAELLIGKEITSDATUM%]
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'payment_received',
+      name: 'zahlung_eingegangen',
+      label: 'Zahlung eingegangen',
+      description: 'Bestätigung bei Zahlungseingang',
+      icon: MessageSquare,
+      color: 'bg-emerald-100 text-emerald-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+vielen Dank! Deine Zahlung für Rechnung [%RECHNUNGSNUMMER%] über [%GESAMTSUMME%] ist bei uns eingegangen.
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'payment_reminder',
+      name: 'zahlungserinnerung',
+      label: 'Zahlungserinnerung',
+      description: 'Freundliche Erinnerung bei überfälligen Rechnungen',
+      icon: Clock,
+      color: 'bg-amber-100 text-amber-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+wir möchten dich freundlich an die offene Rechnung [%RECHNUNGSNUMMER%] über [%GESAMTSUMME%] erinnern.
+
+Die Rechnung war fällig am [%FAELLIGKEITSDATUM%].
+
+Bitte überweise den Betrag zeitnah.
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'appointment_reminder',
+      name: 'terminerinnerung',
+      label: 'Terminerinnerung',
+      description: 'Erinnerung vor einem Termin',
+      icon: Calendar,
+      color: 'bg-purple-100 text-purple-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+dies ist eine Erinnerung an deinen Termin:
+
+[%TERMINTITEL%]
+Datum: [%TERMINDATUM%]
+Uhrzeit: [%TERMINUHRZEIT%]
+Ort: [%TERMINORT%]
+
+Wir freuen uns auf dich!
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'quote_sent',
+      name: 'angebot_versendet',
+      label: 'Angebot versendet',
+      description: 'Benachrichtigung bei neuem Angebot',
+      icon: FileCheck,
+      color: 'bg-indigo-100 text-indigo-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+dein Angebot [%ANGEBOTSNUMMER%] über [%ANGEBOTSSUMME%] wurde erstellt.
+
+Gültig bis: [%GUELTIGBIS%]
+
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'quote_expiring',
+      name: 'angebot_laeuft_ab',
+      label: 'Angebot läuft ab',
+      description: 'Erinnerung vor Ablauf eines Angebots',
+      icon: Clock,
+      color: 'bg-orange-100 text-orange-600',
+      category: 'UTILITY' as const,
+      body: `Hallo [%KUNDENNAME%],
+
+dein Angebot [%ANGEBOTSNUMMER%] über [%ANGEBOTSSUMME%] läuft am [%GUELTIGBIS%] ab.
+
+Möchtest du das Angebot annehmen? Wir beraten dich gerne.
+
+Mit freundlichen Grüßen
+[%FIRMENNAME%]`,
+    },
+  ],
+  en: [
+    {
+      id: 'order_confirmation',
+      name: 'order_confirmation',
+      label: 'Order Confirmation',
+      description: 'Automatic confirmation after order received',
+      icon: ShoppingCart,
+      color: 'bg-green-100 text-green-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+Thank you for your order at [%FIRMENNAME%]!
+
+We have received your order and will process it as soon as possible.
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'invoice_sent',
+      name: 'invoice_sent',
+      label: 'Invoice Sent',
+      description: 'Notification for new invoice',
+      icon: Receipt,
+      color: 'bg-blue-100 text-blue-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+Your invoice [%RECHNUNGSNUMMER%] for [%GESAMTSUMME%] has been created.
+
+Due date: [%FAELLIGKEITSDATUM%]
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'payment_received',
+      name: 'payment_received',
+      label: 'Payment Received',
+      description: 'Confirmation when payment is received',
+      icon: MessageSquare,
+      color: 'bg-emerald-100 text-emerald-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+Thank you! Your payment for invoice [%RECHNUNGSNUMMER%] of [%GESAMTSUMME%] has been received.
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'payment_reminder',
+      name: 'payment_reminder',
+      label: 'Payment Reminder',
+      description: 'Friendly reminder for overdue invoices',
+      icon: Clock,
+      color: 'bg-amber-100 text-amber-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+We would like to kindly remind you about the outstanding invoice [%RECHNUNGSNUMMER%] for [%GESAMTSUMME%].
+
+The invoice was due on [%FAELLIGKEITSDATUM%].
+
+Please transfer the amount at your earliest convenience.
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'appointment_reminder',
+      name: 'appointment_reminder',
+      label: 'Appointment Reminder',
+      description: 'Reminder before an appointment',
+      icon: Calendar,
+      color: 'bg-purple-100 text-purple-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+This is a reminder about your appointment:
+
+[%TERMINTITEL%]
+Date: [%TERMINDATUM%]
+Time: [%TERMINUHRZEIT%]
+Location: [%TERMINORT%]
+
+We look forward to seeing you!
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'quote_sent',
+      name: 'quote_sent',
+      label: 'Quote Sent',
+      description: 'Notification for new quote',
+      icon: FileCheck,
+      color: 'bg-indigo-100 text-indigo-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+Your quote [%ANGEBOTSNUMMER%] for [%ANGEBOTSSUMME%] has been created.
+
+Valid until: [%GUELTIGBIS%]
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+    {
+      id: 'quote_expiring',
+      name: 'quote_expiring',
+      label: 'Quote Expiring',
+      description: 'Reminder before quote expires',
+      icon: Clock,
+      color: 'bg-orange-100 text-orange-600',
+      category: 'UTILITY' as const,
+      body: `Hello [%KUNDENNAME%],
+
+Your quote [%ANGEBOTSNUMMER%] for [%ANGEBOTSSUMME%] expires on [%GUELTIGBIS%].
+
+Would you like to accept the quote? We're happy to assist you.
+
+Best regards
+[%FIRMENNAME%]`,
+    },
+  ],
+};
+
+type TemplateType = typeof predefinedTemplates.de[0];
+
 const MAX_CHARS = 1000;
 
 export function CreateTemplateDialog({
@@ -32,9 +314,11 @@ export function CreateTemplateDialog({
   onSuccess,
   companyId,
 }: CreateTemplateDialogProps) {
+  const [step, setStep] = useState<'select' | 'edit'>('select');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('de');
-  const [category, setCategory] = useState<'MARKETING' | 'UTILITY' | 'AUTHENTICATION'>('MARKETING');
+  const [category, setCategory] = useState<'MARKETING' | 'UTILITY' | 'AUTHENTICATION'>('UTILITY');
   const [bodyText, setBodyText] = useState('');
   const [charCount, setCharCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,9 +362,14 @@ export function CreateTemplateDialog({
     { label: 'Firmenname', value: '[%FIRMENNAME%]', category: 'Firma' },
     { label: 'Firmenemail', value: '[%FIRMENEMAIL%]', category: 'Firma' },
     { label: 'Firmentelefon', value: '[%FIRMENTELEFON%]', category: 'Firma' },
-    { label: 'Rechnungsnummer', value: '[%RECHNUNGSNUMMER%]', category: 'Dokument' },
-    { label: 'Dokumentdatum', value: '[%DOKUMENTDATUM%]', category: 'Dokument' },
-    { label: 'Fälligkeitsdatum', value: '[%FAELLIGKEITSDATUM%]', category: 'Dokument' },
+    { label: 'Rechnungsnummer', value: '[%RECHNUNGSNUMMER%]', category: 'Rechnung' },
+    { label: 'Dokumentdatum', value: '[%DOKUMENTDATUM%]', category: 'Rechnung' },
+    { label: 'Fälligkeitsdatum', value: '[%FAELLIGKEITSDATUM%]', category: 'Rechnung' },
+    { label: 'Angebotsnummer', value: '[%ANGEBOTSNUMMER%]', category: 'Angebot' },
+    { label: 'Angebotsdatum', value: '[%ANGEBOTSDATUM%]', category: 'Angebot' },
+    { label: 'Gültig bis', value: '[%GUELTIGBIS%]', category: 'Angebot' },
+    { label: 'Angebotssumme', value: '[%ANGEBOTSSUMME%]', category: 'Angebot' },
+    { label: 'Angebotsnetto', value: '[%ANGEBOTSNETTO%]', category: 'Angebot' },
     { label: 'Gesamtsumme', value: '[%GESAMTSUMME%]', category: 'Beträge' },
     { label: 'Nettobetrag', value: '[%NETTOBETRAG%]', category: 'Beträge' },
     { label: 'Kontaktperson', value: '[%KONTAKTPERSON%]', category: 'Allgemein' },
@@ -91,6 +380,51 @@ export function CreateTemplateDialog({
   useEffect(() => {
     setCharCount(bodyText.length);
   }, [bodyText]);
+
+  // Reset beim Schließen
+  useEffect(() => {
+    if (!open) {
+      setStep('select');
+      setSelectedTemplateId(null);
+      setName('');
+      setBodyText('');
+      setCategory('UTILITY');
+      setLanguage('de');
+    }
+  }, [open]);
+
+  // Aktualisiere Text bei Sprachwechsel
+  useEffect(() => {
+    if (selectedTemplateId) {
+      const templates = language === 'en' ? predefinedTemplates.en : predefinedTemplates.de;
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        setName(template.name);
+        setBodyText(template.body);
+      }
+    }
+  }, [language, selectedTemplateId]);
+
+  // Hole aktuelle Vorlagen basierend auf Sprache
+  const currentTemplates = language === 'en' ? predefinedTemplates.en : predefinedTemplates.de;
+  const selectedTemplate = selectedTemplateId 
+    ? currentTemplates.find(t => t.id === selectedTemplateId) || null 
+    : null;
+
+  const handleSelectTemplate = (template: TemplateType | null) => {
+    if (template) {
+      setSelectedTemplateId(template.id);
+      setName(template.name);
+      setBodyText(template.body);
+      setCategory(template.category);
+    } else {
+      setSelectedTemplateId(null);
+      setName('');
+      setBodyText('');
+      setCategory('MARKETING');
+    }
+    setStep('edit');
+  };
 
   const handleSubmit = async () => {
     if (!name || !bodyText || charCount > MAX_CHARS) return;
@@ -121,6 +455,7 @@ export function CreateTemplateDialog({
           bodyText: convertedBody,
           variableMapping,
           originalBodyText: bodyText,
+          isDsgvoTemplate,
         }),
       });
       
@@ -255,80 +590,160 @@ export function CreateTemplateDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[85vh] p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">Vorlage erstellen</DialogTitle>
+        
+        {/* Header */}
         <div className="px-6 py-5 flex items-center gap-3 bg-white border-b">
+          {step === 'edit' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep('select')}
+              className="mr-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
           <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-            <Plus className="w-5 h-5 text-gray-600" />
+            {step === 'select' ? (
+              <Sparkles className="w-5 h-5 text-[#25D366]" />
+            ) : selectedTemplate ? (
+              <selectedTemplate.icon className="w-5 h-5 text-gray-600" />
+            ) : (
+              <Plus className="w-5 h-5 text-gray-600" />
+            )}
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Vorlage erstellen</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {step === 'select' ? 'Vorlage auswählen' : selectedTemplate ? selectedTemplate.label : 'Eigene Vorlage'}
+            </h2>
+            {step === 'select' && (
+              <p className="text-sm text-gray-500">Wähle eine vordefinierte Vorlage oder erstelle eine eigene</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex h-full overflow-hidden">
-          <div className="w-[38%] bg-gray-50 p-8 overflow-y-auto">
-            <div className="flex items-center gap-2 text-gray-500 mb-4">
-              <Eye className="w-5 h-5" />
-              <span className="text-sm font-medium">Vorschau</span>
-            </div>
-            <div className="bg-white rounded-lg p-6">
-              <div className="inline-block bg-[#dcf8c6] rounded-lg px-3 py-2.5 text-sm whitespace-pre-wrap text-gray-900 max-w-[85%]">
-                {renderFormattedPreview()}
+        {/* Step 1: Template Selection */}
+        {step === 'select' && (
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Vordefinierte Vorlagen für Automatisierungen */}
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#25D366]" />
+                Vorlagen für Automatisierungen
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {predefinedTemplates.de.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => handleSelectTemplate(template)}
+                    className="text-left p-4 rounded-xl border-2 border-gray-200 hover:border-[#25D366] hover:bg-[#25D366]/5 transition-all group"
+                  >
+                    <div className={`w-10 h-10 rounded-lg ${template.color} flex items-center justify-center mb-3`}>
+                      <template.icon className="w-5 h-5" />
+                    </div>
+                    <h4 className="font-medium text-gray-900 group-hover:text-[#25D366] mb-1">
+                      {template.label}
+                    </h4>
+                    <p className="text-xs text-gray-500 line-clamp-2">
+                      {template.description}
+                    </p>
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden bg-white">
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Name der Vorlage
-                  </Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder="z.B. bestellbestaetigung"
-                    className="h-11"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Nur Kleinbuchstaben und Unterstriche</p>
+            {/* Eigene Vorlage erstellen */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Oder eigene Vorlage erstellen</h3>
+              <button
+                onClick={() => handleSelectTemplate(null)}
+                className="w-full p-6 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#25D366] hover:bg-[#25D366]/5 transition-all group flex items-center justify-center gap-3"
+              >
+                <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-[#25D366]/10 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-gray-400 group-hover:text-[#25D366]" />
                 </div>
-                <div>
-                  <Label
-                    htmlFor="category"
-                    className="text-sm font-medium text-gray-700 mb-2 block"
-                  >
-                    Kategorie
-                  </Label>
-                  <Select value={category} onValueChange={(v) => setCategory(v as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION')}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MARKETING">
-                        Marketing
-                      </SelectItem>
-                      <SelectItem value="UTILITY">
-                        Dienstprogramm
-                      </SelectItem>
-                      <SelectItem value="AUTHENTICATION">
-                        Authentifizierung
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-500 mt-1">Beeinflusst Kosten und Limits</p>
+                <div className="text-left">
+                  <h4 className="font-medium text-gray-900 group-hover:text-[#25D366]">
+                    Eigene Vorlage
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    Erstelle eine komplett individuelle Nachrichtenvorlage
+                  </p>
                 </div>
-                <div>
-                  <Label
-                    htmlFor="language"
-                    className="text-sm font-medium text-gray-700 mb-2 block"
-                  >
-                    Sprache
-                  </Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue>
-                        <div className="flex items-center gap-2">
-                          <span>🇩🇪</span>
-                          <span>Deutsch</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Edit Template */}
+        {step === 'edit' && (
+          <div className="flex h-full overflow-hidden">
+            <div className="w-[38%] bg-gray-50 p-8 overflow-y-auto">
+              <div className="flex items-center gap-2 text-gray-500 mb-4">
+                <Eye className="w-5 h-5" />
+                <span className="text-sm font-medium">Vorschau</span>
+              </div>
+              <div className="bg-white rounded-lg p-6">
+                <div className="inline-block bg-[#dcf8c6] rounded-lg px-3 py-2.5 text-sm whitespace-pre-wrap text-gray-900 max-w-[85%]">
+                  {renderFormattedPreview()}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col overflow-hidden bg-white">
+              <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Name der Vorlage
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="z.B. bestellbestaetigung"
+                      className="h-11"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Nur Kleinbuchstaben und Unterstriche</p>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="category"
+                      className="text-sm font-medium text-gray-700 mb-2 block"
+                    >
+                      Kategorie
+                    </Label>
+                    <Select value={category} onValueChange={(v) => setCategory(v as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION')}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MARKETING">
+                          Marketing
+                        </SelectItem>
+                        <SelectItem value="UTILITY">
+                          Dienstprogramm
+                        </SelectItem>
+                        <SelectItem value="AUTHENTICATION">
+                          Authentifizierung
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">Beeinflusst Kosten und Limits</p>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="language"
+                      className="text-sm font-medium text-gray-700 mb-2 block"
+                    >
+                      Sprache
+                    </Label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue>
+                          <div className="flex items-center gap-2">
+                            <span>🇩🇪</span>
+                            <span>Deutsch</span>
                         </div>
                       </SelectValue>
                     </SelectTrigger>
@@ -414,10 +829,25 @@ export function CreateTemplateDialog({
                               </button>
                             ))}
                           <div className="text-xs font-semibold text-gray-500 px-2 py-1 mt-2">
-                            Dokument
+                            Rechnung
                           </div>
                           {placeholders
-                            .filter(p => p.category === 'Dokument')
+                            .filter(p => p.category === 'Rechnung')
+                            .map(p => (
+                              <button
+                                key={p.value}
+                                type="button"
+                                onClick={() => insertPlaceholder(p.value)}
+                                className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-100 rounded"
+                              >
+                                {p.label}
+                              </button>
+                            ))}
+                          <div className="text-xs font-semibold text-gray-500 px-2 py-1 mt-2">
+                            Angebot
+                          </div>
+                          {placeholders
+                            .filter(p => p.category === 'Angebot')
                             .map(p => (
                               <button
                                 key={p.value}
@@ -529,11 +959,11 @@ export function CreateTemplateDialog({
               <Button
                 type="button"
                 variant="ghost"
-                onClick={onClose}
+                onClick={() => setStep('select')}
                 disabled={isSubmitting}
                 className="font-medium text-gray-700 hover:bg-gray-100"
               >
-                Abbrechen
+                Zurück
               </Button>
               <Button
                 type="button"
@@ -553,6 +983,7 @@ export function CreateTemplateDialog({
             </div>
           </div>
         </div>
+        )}
       </DialogContent>
 
       <DsgvoSettingsDialog

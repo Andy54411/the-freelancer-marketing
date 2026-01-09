@@ -12,7 +12,6 @@ import {
   BarChart3,
   CheckCircle,
   AlertTriangle,
-  Plus,
   MoreHorizontal,
   Settings,
 } from 'lucide-react';
@@ -32,8 +31,6 @@ import {
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type {
   AdminWorkspace,
-  AdminWorkspaceBoardColumn,
-  AdminWorkspaceTask,
 } from '@/services/AdminWorkspaceService';
 import { AdminWorkspaceBoard } from '@/components/admin-workspace/AdminWorkspaceBoard';
 
@@ -68,7 +65,7 @@ export default function AdminWorkspaceDetailPage() {
         } else {
           router.push('/admin/login');
         }
-      } catch (error) {
+      } catch {
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -105,7 +102,7 @@ export default function AdminWorkspaceDetailPage() {
       // Use realtime update method
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
-    } catch (error) {}
+    } catch {}
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
@@ -114,7 +111,7 @@ export default function AdminWorkspaceDetailPage() {
     try {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/admin/workspace`);
-    } catch (error) {}
+    } catch {}
   };
 
   const formatDate = (date: Date) => {

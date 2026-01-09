@@ -43,7 +43,7 @@ export default function DatevAuthComponent({
         try {
           const token = await auth.currentUser.getIdToken();
           setFirebaseToken(token);
-        } catch (error) {}
+        } catch {}
       }
     };
     getToken();
@@ -88,10 +88,11 @@ export default function DatevAuthComponent({
       } else {
         throw new Error(result.error || 'Invalid OAuth response');
       }
-    } catch (error: any) {
-      setStatusMessage(error.message || 'Authentication failed');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Authentication failed';
+      setStatusMessage(message);
       setAuthStatus('error');
-      onAuthError?.(error.message || 'Authentication failed');
+      onAuthError?.(message);
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +109,7 @@ export default function DatevAuthComponent({
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const _data = await response.json();
         setStatusMessage('DATEV authentication is active');
         setAuthStatus('success');
         onAuthSuccess?.({
@@ -125,7 +126,7 @@ export default function DatevAuthComponent({
           setAuthStatus('error');
         }
       }
-    } catch (error: any) {
+    } catch {
       setStatusMessage('Failed to check authentication status');
       setAuthStatus('error');
     }

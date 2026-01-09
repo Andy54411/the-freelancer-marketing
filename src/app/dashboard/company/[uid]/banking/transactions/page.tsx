@@ -243,33 +243,11 @@ export default function TransactionsPage() {
 
         if (!isNaN(transactionDate.getTime())) {
           const today = new Date();
-          const currentYear = today.getFullYear();
 
           if (dateRange === '365') {
             // "Letztes Jahr" = Letzte 365 Tage von heute zurück
             const cutoffDate = new Date(today);
             cutoffDate.setDate(today.getDate() - 365);
-
-            // Debug logging for first transaction
-            if (transaction.id === transactions[0]?.id) {
-              const debugData = {
-                dateRange: 'Letzte 365 Tage',
-                today: today.toDateString(),
-                cutoffDate: cutoffDate.toDateString(),
-                transactionDate: isNaN(transactionDate.getTime())
-                  ? 'Invalid Date'
-                  : transactionDate.toDateString(),
-                isAfterCutoff:
-                  !isNaN(transactionDate.getTime()) &&
-                  !isNaN(cutoffDate.getTime()) &&
-                  transactionDate >= cutoffDate,
-                totalTransactions: transactions.length,
-                last365DaysTransactions: transactions.filter(t => {
-                  const td = new Date(t.bankBookingDate || t.valueDate);
-                  return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
-                }).length,
-              };
-            }
 
             matchesDateRange =
               !isNaN(transactionDate.getTime()) &&
@@ -294,38 +272,6 @@ export default function TransactionsPage() {
               59,
               59
             );
-
-            // Debug logging for first transaction
-            if (transaction.id === transactions[0]?.id) {
-              const debugData = {
-                dateRange: `Benutzerdefiniert (${customDate})`,
-                selectedDate: isNaN(selectedDate.getTime())
-                  ? 'Invalid Date'
-                  : selectedDate.toDateString(),
-                dayStart: isNaN(dayStart.getTime()) ? 'Invalid Date' : dayStart.toDateString(),
-                dayEnd: isNaN(dayEnd.getTime()) ? 'Invalid Date' : dayEnd.toDateString(),
-                transactionDate: isNaN(transactionDate.getTime())
-                  ? 'Invalid Date'
-                  : transactionDate.toDateString(),
-                isExactDay:
-                  !isNaN(transactionDate.getTime()) &&
-                  !isNaN(dayStart.getTime()) &&
-                  !isNaN(dayEnd.getTime()) &&
-                  transactionDate >= dayStart &&
-                  transactionDate <= dayEnd,
-                totalTransactions: transactions.length,
-                dayTransactions: transactions.filter(t => {
-                  const td = new Date(t.bankBookingDate || t.valueDate);
-                  return (
-                    !isNaN(td.getTime()) &&
-                    !isNaN(dayStart.getTime()) &&
-                    !isNaN(dayEnd.getTime()) &&
-                    td >= dayStart &&
-                    td <= dayEnd
-                  );
-                }).length,
-              };
-            }
 
             matchesDateRange =
               !isNaN(transactionDate.getTime()) &&

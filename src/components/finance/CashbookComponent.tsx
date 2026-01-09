@@ -21,7 +21,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -48,9 +47,7 @@ import {
   CheckCircle,
   Circle,
   AlertCircle,
-  ArrowLeftRight,
   Filter,
-  Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OpenCashRegisterModal } from './OpenCashRegisterModal';
@@ -96,9 +93,9 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('current-month');
+  const [selectedPeriod, _setSelectedPeriod] = useState('current-month');
   const [cashBalance, setCashBalance] = useState(0);
-  const [openingBalance, setOpeningBalance] = useState(0);
+  const [_openingBalance, setOpeningBalance] = useState(0);
   const [isCashRegisterOpen, setIsCashRegisterOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
@@ -821,7 +818,7 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
           <div className="px-6 py-4 bg-gray-50">
             <div className="flex gap-3 mb-3">
               {/* Search Field - Big */}
-              <div className="flex-[2]">
+              <div className="flex-2">
                 <Label className="text-xs font-medium text-gray-700 mb-1 block">Suche</Label>
                 <div className="flex gap-2">
                   <Input

@@ -12,7 +12,7 @@ export async function POST(_request: NextRequest) {
       success: true,
       message: 'Erfolgreich abgemeldet',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Logout-Fehler' }, { status: 500 });
   }
 }

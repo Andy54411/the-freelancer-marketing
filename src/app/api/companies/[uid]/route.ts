@@ -18,7 +18,7 @@ async function getFirebaseDb(): Promise<any> {
     }
 
     return firebaseModule.db;
-  } catch (error) {
+  } catch {
     throw new Error('Firebase database unavailable');
   }
 }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           decoded = decodeURIComponent(decoded);
         }
         return decoded;
-      } catch (error) {
+      } catch {
         return url;
       }
     };
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ...companyData,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Company-Daten' },
       { status: 500 }
@@ -132,7 +132,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     return NextResponse.json({ error: 'Keine gültigen Update-Daten' }, { status: 400 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Update der Company-Daten' },
       { status: 500 }
@@ -190,7 +190,7 @@ export async function PATCH(
       message: 'Firmendaten erfolgreich aktualisiert',
       data: updateData,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Update der Company-Daten' },
       { status: 500 }

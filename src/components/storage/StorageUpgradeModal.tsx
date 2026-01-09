@@ -94,7 +94,7 @@ export function StorageUpgradeModal({
   currentStorage,
   usedStorage,
   companyId,
-  onSelectPlan,
+  onSelectPlan: _onSelectPlan,
 }: StorageUpgradeModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -129,7 +129,7 @@ export function StorageUpgradeModal({
           );
           setHasActiveSubscription(hasSubscription);
         }
-      } catch (error) {
+      } catch {
         toast.error('Fehler beim Laden der Unternehmensdaten');
       }
     };

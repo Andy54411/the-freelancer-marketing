@@ -7,12 +7,10 @@ import { ItemsTable } from './common/ItemsTable';
 import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 import { FooterText } from './common/FooterText';
-import { PDFSection } from './common/PDFSection';
 import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getTranslatedDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 import { DocumentSettings } from '@/hooks/pdf/usePDFTemplateData';
-import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface StandardTemplateProps {
   data: ProcessedPDFData;
@@ -40,7 +38,7 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
   const config = getTranslatedDocumentTypeConfig(detectedType, t, color);
 
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
-  const footerData = {
+  const _footerData = {
     companyName: (data as any).companyName,
     phoneNumber: (data as any).phoneNumber,
     email: (data as any).contactEmail,

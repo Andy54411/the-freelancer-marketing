@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Star, Clock, Euro, Zap, RotateCcw } from 'lucide-react';
+import { Clock, Euro, Zap, RotateCcw } from 'lucide-react';
 import { categoryNeedsRevisions, getDefaultRevisions } from '@/lib/categoryHelpers';
 
 interface StandardPackageProps {

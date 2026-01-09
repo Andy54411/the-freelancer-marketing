@@ -18,7 +18,7 @@ export default function RevolutConnectModal({
   isOpen,
   onClose,
   onSuccess,
-  onError,
+  onError: _onError,
   userId,
   companyEmail,
   title = 'Revolut Business verbinden',

@@ -70,7 +70,7 @@ export function UserProfileSettingsForm({
             jobCountry: '',
           });
         }
-      } catch (error) {
+      } catch {
         setErrorMessage('Fehler beim Laden deines Profils. Bitte versuche es später erneut.');
       } finally {
         setIsLoading(false);
@@ -123,7 +123,7 @@ export function UserProfileSettingsForm({
       setSaveStatus('success');
 
       if (onSaveSuccess) onSaveSuccess();
-    } catch (error) {
+    } catch {
       setSaveStatus('error');
       const msg = 'Fehler beim Speichern deines Profils. Bitte versuche es erneut.';
       setErrorMessage(msg);

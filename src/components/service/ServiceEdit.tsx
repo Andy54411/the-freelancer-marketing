@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save, Plus, Trash2, Package, Euro, Clock, FileText, Star } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Euro, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -294,7 +294,7 @@ export const ServiceEdit: React.FC<ServiceEditProps> = ({
             <div>
               <Label
                 htmlFor="deliveryTime"
-                className="text-sm font-medium text-[#14ad9f] mb-1 block flex items-center"
+                className="text-sm font-medium text-[#14ad9f] mb-1 flex items-center"
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Lieferzeit

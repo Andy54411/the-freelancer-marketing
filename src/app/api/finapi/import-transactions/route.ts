@@ -10,7 +10,7 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, credentialType, forceSync } = body;
+    const { userId, credentialType: _credentialType, forceSync: _forceSync } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
           if (updateResponse.ok) {
             updatedConnections++;
           } else {
-            const errorText = await updateResponse.text();
+            await updateResponse.text();
           }
-        } catch (updateError: any) {}
+        } catch {}
       }
 
       // After updates, get fresh transaction data
