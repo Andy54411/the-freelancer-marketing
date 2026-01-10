@@ -1,0 +1,61 @@
+{
+  "version": "2.15.0",
+  "date": "2025-01-09",
+  "title": "OCR-Erweiterung: Zusätzliche Rechnungsfelder",
+  "description": "Das Ausgaben-OCR-System unterstützt jetzt erweiterte Rechnungsfelder für vollständige Belegerfassung.",
+  "type": "feature",
+  "category": "Buchhaltung",
+  "changes": [
+    {
+      "type": "feature",
+      "title": "Fälligkeitsdatum (dueDate)",
+      "description": "Das Fälligkeitsdatum wird aus Belegen automatisch extrahiert."
+    },
+    {
+      "type": "feature",
+      "title": "Zahlungsbedingungen (paymentTerms)",
+      "description": "Zahlungsbedingungen wie 'Zahlbar innerhalb 14 Tage' werden erkannt."
+    },
+    {
+      "type": "feature",
+      "title": "Steuerfreie Rechnungen (isTaxExempt)",
+      "description": "Rechnungen ohne MwSt (0% bzw. Netto = Brutto) werden als steuerfrei markiert."
+    },
+    {
+      "type": "feature",
+      "title": "Reverse-Charge-Verfahren (isReverseCharge)",
+      "description": "§13b UStG / Reverse-Charge-Rechnungen werden automatisch erkannt."
+    },
+    {
+      "type": "feature",
+      "title": "IBAN und BIC",
+      "description": "Bankdaten werden aus Belegen extrahiert."
+    },
+    {
+      "type": "feature",
+      "title": "Steuernummer des Lieferanten",
+      "description": "Die Steuernummer (companyTaxNumber) wird zusätzlich zur USt-IdNr erfasst."
+    }
+  ],
+  "affectedAreas": [
+    "Ausgabenverwaltung",
+    "Belegerfassung",
+    "OCR-Verarbeitung"
+  ],
+  "technicalDetails": {
+    "filesModified": [
+      "src/lib/hetzner-ocr-client.ts",
+      "src/app/api/expenses/ocr-extract/route.ts",
+      "src/components/finance/ExpenseReceiptUpload.tsx"
+    ],
+    "newFields": [
+      "dueDate",
+      "paymentTerms",
+      "isTaxExempt",
+      "isReverseCharge",
+      "iban",
+      "bic",
+      "companyTaxNumber"
+    ]
+  }
+}

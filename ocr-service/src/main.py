@@ -131,6 +131,7 @@ async def extract_text_json(
         processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
         
         print(f"[OCR JSON] Erfolgreich: {len(text)} Zeichen, {pages} Seiten, {processing_time}ms")
+        print(f"[OCR JSON] Extrahierte Daten: {extracted_data}")
         
         return {
             "success": True,
@@ -139,11 +140,16 @@ async def extract_text_json(
                 "invoiceNumber": extracted_data.get("invoice_number"),
                 "invoiceDate": extracted_data.get("invoice_date"),
                 "dueDate": extracted_data.get("due_date"),
+                "paymentTerms": extracted_data.get("payment_terms"),
                 "vendor": {
                     "name": extracted_data.get("vendor_name"),
                     "address": extracted_data.get("vendor_address"),
+                    "zip": extracted_data.get("vendor_zip"),
+                    "city": extracted_data.get("vendor_city"),
                     "vatId": extracted_data.get("vendor_vat_id"),
                     "taxNumber": extracted_data.get("vendor_tax_number"),
+                    "email": extracted_data.get("vendor_email"),
+                    "phone": extracted_data.get("vendor_phone"),
                 },
                 "amounts": {
                     "net": extracted_data.get("total_net"),
@@ -154,6 +160,7 @@ async def extract_text_json(
                 "vatRate": extracted_data.get("tax_rate"),
                 "iban": extracted_data.get("iban"),
                 "bic": extracted_data.get("bic"),
+                "description": extracted_data.get("description"),
             },
             "confidence": 0.85,
             "processing_time_ms": processing_time,
@@ -229,15 +236,73 @@ def process_pdf(pdf_bytes: bytes) -> tuple[str, int]:
 
 
 def process_image(image_bytes: bytes) -> str:
-    """Extrahiert Text aus einem Bild."""
+    """Extrahiert Text aus einem Bild mit OCR-Optimierung."""
     image = Image.open(io.BytesIO(image_bytes))
     
     # Konvertiere zu RGB falls nötig
     if image.mode != 'RGB':
         image = image.convert('RGB')
     
-    # Tesseract OCR mit deutscher Sprache
-    text = pytesseract.image_to_string(image, lang='deu+eng', config='--psm 6')
+    # === EXIF-ORIENTIERUNG KORRIGIEREN (wichtig für iPhone-Fotos!) ===
+    try:
+        from PIL import ExifTags
+        exif = image._getexif()
+        if exif:
+            for tag, value in exif.items():
+                if ExifTags.TAGS.get(tag) == 'Orientation':
+                    if value == 3:
+                        image = image.rotate(180, expand=True)
+                    elif value == 6:
+                        image = image.rotate(270, expand=True)
+                    elif value == 8:
+                        image = image.rotate(90, expand=True)
+                    print(f"[OCR] EXIF-Rotation angewendet: Orientation={value}")
+                    break
+    except Exception as e:
+        print(f"[OCR] EXIF-Orientierung nicht lesbar: {e}")
+    
+    # === INTELLIGENTE ROTATION für Querformat-Bilder ===
+    # Belege/Rechnungen sind fast immer höher als breit (Portrait)
+    # Wenn das Bild breiter als hoch ist, drehe um 90°
+    width, height = image.size
+    if width > height * 1.2:
+        print(f"[OCR] Querformat erkannt ({width}x{height}), drehe um 90° für OCR")
+        image = image.rotate(90, expand=True)
+    
+    # === OCR-OPTIMIERUNG für Kassenbelege/iPhone-Fotos ===
+    # 1. Graustufen für bessere Texterkennung
+    gray_image = image.convert('L')
+    
+    # 2. Kontrast und Schärfe verbessern
+    from PIL import ImageEnhance, ImageFilter
+    
+    # Kontrast erhöhen (wichtig für Kassenbelege)
+    enhancer = ImageEnhance.Contrast(gray_image)
+    gray_image = enhancer.enhance(2.0)  # 2x Kontrast
+    
+    # Schärfe erhöhen
+    enhancer = ImageEnhance.Sharpness(gray_image)
+    gray_image = enhancer.enhance(2.0)  # 2x Schärfe
+    
+    # 3. Optional: Binarisierung für noch bessere Ergebnisse
+    # Threshold bei 128 für klare Schwarz/Weiß-Trennung
+    gray_image = gray_image.point(lambda x: 0 if x < 140 else 255, '1')
+    
+    # Tesseract OCR mit deutscher Sprache und optimierter Konfiguration
+    # --psm 4: Einzelne Spalte mit Text
+    # --psm 6: Einheitlicher Textblock
+    # OEM 3: Default, LSTM + Legacy
+    text = pytesseract.image_to_string(
+        gray_image, 
+        lang='deu+eng', 
+        config='--psm 4 --oem 3 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß€.,:-/@ '
+    )
+    
+    # Fallback: Wenn zu wenig Text, nochmal mit anderem PSM versuchen
+    if len(text.strip()) < 50:
+        print("[OCR] Wenig Text erkannt, versuche PSM 6...")
+        text = pytesseract.image_to_string(gray_image, lang='deu+eng', config='--psm 6')
+    
     return text
 
 
@@ -248,14 +313,22 @@ def extract_german_invoice_data(text: str) -> dict:
     """
     data = {}
     
+    # Debug: Ersten Teil des Textes ausgeben
+    print(f"[OCR DEBUG] Text-Auszug (erste 500 Zeichen):\n{text[:500]}")
+    
     # === RECHNUNGSNUMMER ===
     invoice_patterns = [
         r'[Rr]echnungsnummer\s*:?\s*([A-Za-z0-9\-\.\/]+)',
         r'[Rr]echnung\s*[Nn]r\.?\s*:?\s*([A-Za-z0-9\-\.\/]+)',
         r'[Ii]nvoice\s*(?:[Nn]o\.?|[Nn]umber)\s*:?\s*([A-Za-z0-9\-\.\/]+)',
+        r'\b(TWEB-\d{4}-\d{4})\b',  # Taskilo Webmail Format
+        r'\b([A-Z]{2,4}-\d{4}-\d{4})\b',  # Allgemeines Format XXX-YYYY-NNNN
         r'\b(RE-\d{3,6})\b',
         r'\b(INV-\d{3,6})\b',
-        r'\b(\d{4,8})\b'  # Fallback: Reine Zahlen
+        r'\b(RG-\d{6,10})\b',  # RG-Format
+        r'\b(CT\d{11,12}DE)\b',  # DHL/Post Sendungsnummer
+        r'[Ss]endungsnummer\s*:?\s*([A-Z0-9]{10,20})',  # Sendungsnummer
+        r'[Bb]elegnummer\s*:?\s*([A-Z0-9\-\.]+)',  # Belegnummer
     ]
     for pattern in invoice_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -279,9 +352,12 @@ def extract_german_invoice_data(text: str) -> dict:
     
     # === FÄLLIGKEITSDATUM ===
     due_patterns = [
+        r'[Ff]ällig\s+am\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
         r'[Ff]ällig(?:keit)?(?:sdatum)?\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
         r'[Zz]ahlbar\s+bis\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
-        r'[Dd]ue\s*[Dd]ate\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})'
+        r'[Zz]ahlungsziel\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
+        r'[Dd]ue\s*[Dd]ate\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
+        r'[Bb]is\s+zum\s*:?\s*(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4})',
     ]
     for pattern in due_patterns:
         match = re.search(pattern, text)
@@ -292,12 +368,14 @@ def extract_german_invoice_data(text: str) -> dict:
     # === BETRÄGE ===
     # TOTAL / Gesamtbetrag
     total_patterns = [
-        r'[Gg]esamtbetrag\s*(?:brutto)?\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Tt]otal\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Ss]umme\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Zz]u\s+zahlen\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Bb]rutto\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Ee]ndbetrag\s*:?\s*(-?[\d.,]+)\s*€'
+        r'[Gg]esamtbetrag\s*(?:brutto)?\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Tt]otal\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Ss]umme\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Zz]u\s+zahlen\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Bb]rutto\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Ee]ndbetrag\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'TOTAL\s*:?\s*(-?[\d.,]+)\s*€?',  # Englisches Label
+        r'Rechnungsbetrag\s*:?\s*(-?[\d.,]+)\s*€?',
     ]
     for pattern in total_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -305,11 +383,21 @@ def extract_german_invoice_data(text: str) -> dict:
             data['total_gross'] = parse_german_amount(match.group(1))
             break
     
+    # Fallback: Suche nach alleinstehenden Beträgen mit €
+    if 'total_gross' not in data:
+        amount_matches = re.findall(r'(-?[\d.,]+)\s*€', text)
+        if amount_matches:
+            amounts = [parse_german_amount(a) for a in amount_matches if parse_german_amount(a)]
+            if amounts:
+                # Nimm den größten Betrag als Gesamtbetrag
+                data['total_gross'] = max(amounts)
+    
     # NETTO
     net_patterns = [
-        r'[Nn]etto\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Zz]wischensumme\s*:?\s*(-?[\d.,]+)\s*€',
-        r'[Ss]ubtotal\s*:?\s*(-?[\d.,]+)\s*€'
+        r'[Nn]etto\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Zz]wischensumme\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'[Ss]ubtotal\s*:?\s*(-?[\d.,]+)\s*€?',
+        r'NETTO\s*:?\s*(-?[\d.,]+)\s*€?',  # Englisches Label
     ]
     for pattern in net_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -338,49 +426,124 @@ def extract_german_invoice_data(text: str) -> dict:
     # Steuersatz erkennen
     tax_rate_patterns = [
         r'(\d+)\s*%\s*(?:MwSt|USt|Mehrwertsteuer|Umsatzsteuer)',
-        r'(?:MwSt|USt)\s*\(?\s*(\d+)\s*%\s*\)?'
+        r'(?:MwSt|USt)\s*\(?\s*(\d+)\s*%\s*\)?',
+        r'(\d+)\s*%',  # Fallback: Beliebiger Prozentsatz
     ]
     if 'tax_rate' not in data:
         for pattern in tax_rate_patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                data['tax_rate'] = float(match.group(1))
-                break
+                rate = float(match.group(1))
+                if rate in [7, 19]:  # Nur gültige deutsche MwSt-Sätze
+                    data['tax_rate'] = rate
+                    break
+    
+    # Standard Steuersatz falls nicht erkannt
+    if 'tax_rate' not in data:
+        data['tax_rate'] = 19.0
+    
+    # === NETTO-RECHNUNG / STEUERFREIE RECHNUNG ERKENNEN ===
+    # Prüfe ob es eine Netto-Rechnung ist (kein MwSt-Ausweis)
+    text_lower = text.lower()
+    is_net_invoice = (
+        'netto rechnung' in text_lower or
+        'nettorechnung' in text_lower or
+        'ohne mwst' in text_lower or
+        'ohne mehrwertsteuer' in text_lower or
+        'steuerfrei' in text_lower or
+        'reverse charge' in text_lower or
+        'steuerschuldnerschaft' in text_lower or
+        '§13b' in text_lower or
+        'kleinunternehmer' in text_lower or
+        '§19 ustg' in text_lower or
+        'nicht steuerbar' in text_lower
+    )
+    
+    # Wenn Netto = Brutto oder keine MwSt gefunden
+    if is_net_invoice or (data.get('total_gross') and data.get('total_net') and 
+                          abs(data['total_gross'] - data['total_net']) < 0.01):
+        data['tax_rate'] = 0.0
+        data['total_vat'] = 0.0
+        data['is_net_invoice'] = True
+        print(f"[OCR] Netto-Rechnung erkannt: Betrag {data.get('total_gross', data.get('total_net'))}€ ohne MwSt")
     
     # Wenn nur Netto und Brutto bekannt, berechne MwSt
     if 'total_gross' in data and 'total_net' in data and 'total_vat' not in data:
         data['total_vat'] = round(data['total_gross'] - data['total_net'], 2)
     
+    # Wenn nur Brutto bekannt und KEINE Netto-Rechnung, berechne Netto und MwSt
+    if 'total_gross' in data and 'total_net' not in data and not data.get('is_net_invoice'):
+        tax_rate = data.get('tax_rate', 19.0)
+        data['total_net'] = round(data['total_gross'] / (1 + tax_rate / 100), 2)
+        data['total_vat'] = round(data['total_gross'] - data['total_net'], 2)
+        print(f"[OCR] MwSt berechnet: Brutto {data['total_gross']}€ → Netto {data['total_net']}€ + MwSt {data['total_vat']}€ ({tax_rate}%)")
+    
     # === LIEFERANT / VENDOR ===
-    # USt-IdNr
+    # USt-IdNr - erweiterte Patterns für verschiedene Formate
     vat_id_patterns = [
         r'[Uu][Ss]t\.?-?[Ii]d\.?(?:-?[Nn]r\.?)?\s*:?\s*(DE\s?\d{9})',
-        r'(DE\s?\d{9})',
-        r'[Ss]teuer-?[Nn]r\.?\s*:?\s*(\d{2,3}/\d{3}/\d{5})'
+        r'[Vv][Aa][Tt]\s*:?\s*(DE\s?\d{9})',  # VAT: DE...
+        r'[Vv][Aa][Tt]\s*[Ii][Dd]\s*:?\s*(DE\s?\d{9})',  # VAT ID: DE...
+        r'[Vv][Aa][Tt]\s*[Nn][Oo]\.?\s*:?\s*(DE\s?\d{9})',  # VAT No: DE...
+        r'(DE\s?\d{9})',  # Nur DE-Nummer
+        r'(CY\d{8}[A-Z])',  # Zypern VAT
+        r'(AT\s?U\d{8})',  # Österreich VAT
+        r'[Ss]teuer-?[Nn]r\.?\s*:?\s*(\d{2,3}/\d{3}/\d{5})',  # Steuernummer
+        r'[Ss]t\.?-?[Nn]r\.?\s*:?\s*(\d{2,3}/\d{3}/\d{5})',  # St.-Nr.
     ]
     for pattern in vat_id_patterns:
         match = re.search(pattern, text)
         if match:
-            data['vendor_vat_id'] = match.group(1).replace(' ', '')
+            vat_id = match.group(1).replace(' ', '')
+            data['vendor_vat_id'] = vat_id
+            print(f"[OCR] USt-IdNr gefunden: {vat_id}")
             break
     
-    # E-Mail
-    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
-    if email_match:
-        data['vendor_email'] = email_match.group(0)
+    # E-Mail - sehr flexibles Pattern für verschiedene OCR-Artefakte
+    email_patterns = [
+        r'[Ee]-?[Mm]ail\s*:?\s*([\w\.\-]+@[\w\.\-]+\.[a-zA-Z]{2,})',  # E-Mail: label
+        r'[Mm]ail\s*:?\s*([\w\.\-]+@[\w\.\-]+\.[a-zA-Z]{2,})',  # Mail: label
+        r'([\w\.\-]+@[\w\.\-]+\.[a-zA-Z]{2,})',  # Standard
+        r'([a-zA-Z0-9][a-zA-Z0-9\.\-\_]*@[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,})',  # Flexibler
+    ]
+    for pattern in email_patterns:
+        email_match = re.search(pattern, text)
+        if email_match:
+            email = email_match.group(1) if email_match.lastindex else email_match.group(0)
+            # Validiere dass es wirklich eine E-Mail ist
+            if '@' in email and '.' in email.split('@')[-1]:
+                # Ignoriere bestimmte System-E-Mails
+                if not any(x in email.lower() for x in ['noreply', 'no-reply', 'mailer-daemon']):
+                    data['vendor_email'] = email
+                    print(f"[OCR] E-Mail gefunden: {email}")
+                    break
+                data['vendor_email'] = email
+                break
     
-    # Telefon
+    # Telefon - +49 und Tel: priorisieren (NICHT Rechnungsnummern fangen!)
     phone_patterns = [
-        r'[Tt]el\.?\s*:?\s*([\d\s\-\/\(\)]+)',
-        r'[Tt]elefon\s*:?\s*([\d\s\-\/\(\)]+)',
-        r'(\+49[\d\s\-\/]+)',
-        r'(0\d{2,4}[\s\-\/]?\d{3,8})'
+        r'(\+49[\d\s\-\/]+)',  # +49 Präfix hat höchste Priorität
+        r'[Tt]el\.?\s*:?\s*(\+?[\d\s\-\/\(\)]{10,})',  # Tel: Label
+        r'[Tt]elefon\s*:?\s*(\+?[\d\s\-\/\(\)]{10,})',  # Telefon: Label
+        r'[Pp]hone\s*:?\s*(\+?[\d\s\-\/\(\)]{10,})',  # Phone: Label
+        r'[Mm]obil\s*:?\s*(\+?[\d\s\-\/\(\)]{10,})',  # Mobil: Label
+        r'[Ff]ax\s*:?\s*([\d\s\-\/\(\)]{10,})',  # Fax als Fallback
     ]
     for pattern in phone_patterns:
         match = re.search(pattern, text)
         if match:
-            phone = re.sub(r'[^\d\+\-\/\(\)\s]', '', match.group(1)).strip()
-            if len(phone) >= 8:
+            phone = re.sub(r'[^\d\+]', '', match.group(1)).strip()
+            # Telefonnummer muss mindestens 10 Ziffern haben (deutsche Nummern)
+            if len(phone) >= 10:
+                data['vendor_phone'] = phone
+                print(f"[OCR] Telefon gefunden: {phone}")
+                break
+    for pattern in phone_patterns:
+        match = re.search(pattern, text)
+        if match:
+            phone = re.sub(r'[^\d\+]', '', match.group(1)).strip()
+            # Telefonnummer muss mindestens 10 Ziffern haben (deutsche Nummern)
+            if len(phone) >= 10:
                 data['vendor_phone'] = phone
                 break
     
@@ -396,13 +559,108 @@ def extract_german_invoice_data(text: str) -> dict:
     
     # === FIRMENNAME (erste Zeilen) ===
     lines = text.strip().split('\n')
-    for line in lines[:10]:
-        line = line.strip()
-        if len(line) > 5 and len(line) < 100:
-            # Deutsche Rechtsformen
-            if re.search(r'\b(GmbH|AG|KG|UG|OHG|GbR|e\.K\.|eK|mbH)\b', line, re.IGNORECASE):
-                data['vendor_name'] = line
+    
+    # Bekannte Firmennamen Pattern
+    known_companies = [
+        (r'Deutsche\s*Post\s*AG', 'Deutsche Post AG'),
+        (r'DHL\s*Paket', 'DHL'),
+        (r'Amazon', 'Amazon'),
+        (r'REWE', 'REWE'),
+        (r'EDEKA', 'EDEKA'),
+        (r'Lidl', 'Lidl'),
+        (r'Aldi', 'Aldi'),
+        (r'dm-drogerie', 'dm-drogerie markt'),
+        (r'Rossmann', 'Rossmann'),
+        (r'MediaMarkt', 'MediaMarkt'),
+        (r'Saturn', 'Saturn'),
+        (r'IKEA', 'IKEA'),
+        (r'H\s*&\s*M', 'H&M'),
+    ]
+    
+    # Prüfe zuerst bekannte Firmennamen
+    for pattern, name in known_companies:
+        if re.search(pattern, text, re.IGNORECASE):
+            data['vendor_name'] = name
+            print(f"[OCR] Bekannte Firma erkannt: {name}")
+            break
+    
+    # Falls keine bekannte Firma gefunden, suche nach Rechtsformen
+    if 'vendor_name' not in data:
+        for line in lines[:10]:
+            line = line.strip()
+            if len(line) > 5 and len(line) < 100:
+                # Deutsche Rechtsformen
+                if re.search(r'\b(GmbH|AG|KG|UG|OHG|GbR|e\.K\.|eK|mbH)\b', line, re.IGNORECASE):
+                    data['vendor_name'] = line
+                    break
+    
+    # === ADRESSE ===
+    # PLZ + Ort Pattern (deutsche Postleitzahlen sind 5-stellig)
+    # WICHTIG: PLZ muss am Zeilenanfang oder nach Whitespace stehen, NICHT in Telefonnummern!
+    # Negativer Lookbehind verhindert Match wenn Ziffer davor steht
+    plz_ort_patterns = [
+        # PLZ am Zeilenanfang einer neuen Zeile
+        r'(?:^|\n)\s*(\d{5})\s+([A-ZÄÖÜ][a-zäöüß]+)\b',
+        # PLZ nach Komma oder Zeilenumbruch
+        r'[,\n]\s*(\d{5})\s+([A-ZÄÖÜ][a-zäöüß]+)\b',
+    ]
+    for pattern in plz_ort_patterns:
+        plz_ort_match = re.search(pattern, text, re.MULTILINE)
+        if plz_ort_match:
+            plz = plz_ort_match.group(1)
+            city = plz_ort_match.group(2)
+            # Validierung: PLZ muss mit 0-9 beginnen (nicht Teil einer größeren Zahl)
+            # Deutsche PLZ: 01000-99999
+            if plz[0] in '0123456789' and city.lower() not in ['zeitraum', 'rechnung', 'datum', 'nummer', 'betrag', 'gesamt', 'netto', 'brutto', 'eur', 'euro']:
+                data['vendor_zip'] = plz
+                data['vendor_city'] = city
                 break
+    
+    # Straße + Hausnummer Pattern - erweiterte Patterns für verschiedene Straßennamen
+    street_patterns = [
+        # "Siedlung am/an/im" Patterns - PRIORITÄT da speziell
+        r'(Siedlung\s+am\s+\w+)\s+(\d+[a-zA-Z]?)',
+        r'(Siedlung\s+an\s+\w+)\s+(\d+[a-zA-Z]?)',
+        r'(Siedlung\s+\w+)\s+(\d+[a-zA-Z]?)',
+        # "Am", "An der", "Im" Patterns
+        r'(Am\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ]?[a-zäöüß]+)?)\s+(\d+[a-zA-Z]?)',
+        r'(An\s+der\s+[A-ZÄÖÜ][a-zäöüß]+)\s+(\d+[a-zA-Z]?)',
+        r'(Im\s+[A-ZÄÖÜ][a-zäöüß]+)\s+(\d+[a-zA-Z]?)',
+        r'(Auf\s+(?:der|dem)\s+[A-ZÄÖÜ][a-zäöüß]+)\s+(\d+[a-zA-Z]?)',
+        # Standard-Endungen (mit straße UND strasse - OCR erkennt ß oft als ss)
+        r'([A-ZÄÖÜ][a-zäöüß]+(?:straße|strasse|str\.|weg|allee|platz|gasse|ring|damm|ufer|hof|park))\s+(\d+[a-zA-Z]?)',
+        r'([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+(?:straße|strasse|str\.|weg|allee|platz))\s+(\d+[a-zA-Z]?)',
+        # Straße vor PLZ (Zeile endet mit Hausnummer, nächste Zeile PLZ)
+        r'([A-ZÄÖÜ][a-zäöüß\s\-]+)\s+(\d+[a-zA-Z]?)\s*\n\s*\d{5}',
+        # Generisches Pattern: Wort + Hausnummer gefolgt von PLZ
+        r'([A-ZÄÖÜ][a-zäöüß]+)\s+(\d+[a-zA-Z]?)\s*\n\s*\d{5}',
+    ]
+    for pattern in street_patterns:
+        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+        if match:
+            street = match.group(1).strip()
+            number = match.group(2).strip()
+            # Validiere dass es kein falscher Match ist
+            if len(street) > 3 and street.lower() not in ['rechnung', 'datum', 'nummer', 'betrag']:
+                data['vendor_address'] = f"{street} {number}"
+                break
+    
+    # Fallback: Suche nach Zeilen die wie Adressen aussehen
+    if 'vendor_address' not in data:
+        for i, line in enumerate(lines[:20]):
+            line = line.strip()
+            # Zeile mit Hausnummer am Ende
+            addr_match = re.search(r'^([A-ZÄÖÜ][a-zäöüß\s]+)\s+(\d+[a-zA-Z]?)\s*$', line)
+            if addr_match and len(line) < 60 and len(line) > 5:
+                street = addr_match.group(1).strip()
+                # Prüfe ob nächste Zeile eine PLZ hat (dann ist es wahrscheinlich Adresse)
+                if i + 1 < len(lines) and re.match(r'\d{5}', lines[i + 1].strip()):
+                    data['vendor_address'] = f"{street} {addr_match.group(2)}"
+                    break
+                # Oder prüfe auf typische Straßenendungen
+                if re.search(r'(straße|str\.|weg|allee|platz|gasse|siedlung|am\s|an\s|im\s)', line, re.IGNORECASE):
+                    data['vendor_address'] = f"{street} {addr_match.group(2)}"
+                    break
     
     # === BESCHREIBUNG ===
     desc_patterns = [
@@ -414,6 +672,27 @@ def extract_german_invoice_data(text: str) -> dict:
         match = re.search(pattern, text)
         if match:
             data['description'] = match.group(1).strip()[:200]
+            break
+    
+    # === ZAHLUNGSBEDINGUNGEN ===
+    payment_patterns = [
+        r'[Zz]ahlungsbedingungen?\s*:?\s*(.+?)(?:\n|$)',
+        r'[Zz]ahlbar\s+(?:innerhalb\s+)?(\d+)\s*[Tt]age',
+        r'[Zz]ahlungsziel\s*:?\s*(\d+)\s*[Tt]age',
+        r'(\d+)\s*[Tt]age\s+[Nn]etto',
+        r'[Ss]ofort\s+[Ff]ällig',
+        r'[Bb]ei\s+[Ee]rhalt',
+    ]
+    for pattern in payment_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            if match.groups():
+                if match.group(1).isdigit():
+                    data['payment_terms'] = f"{match.group(1)} Tage netto"
+                else:
+                    data['payment_terms'] = match.group(1).strip()[:100]
+            else:
+                data['payment_terms'] = match.group(0).strip()
             break
     
     return data

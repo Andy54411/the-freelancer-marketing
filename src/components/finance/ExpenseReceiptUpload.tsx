@@ -66,6 +66,8 @@ interface ExtractedExpenseData {
   netAmount?: number;
   vatRate?: number;
   paymentTerms?: string;
+  isTaxExempt?: boolean;
+  isReverseCharge?: boolean;
   lineItems?: LineItem[]; // NEW: Line items from invoice
   // Firmeninformationen aus OCR
   companyName?: string;
@@ -74,8 +76,11 @@ interface ExtractedExpenseData {
   companyZip?: string;
   companyCountry?: string;
   companyVatNumber?: string;
+  companyTaxNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
+  iban?: string;
+  bic?: string;
 }
 
 interface ExpenseReceiptUploadProps {

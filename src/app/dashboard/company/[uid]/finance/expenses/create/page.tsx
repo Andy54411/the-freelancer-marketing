@@ -103,6 +103,16 @@ export default function CreateExpensePage() {
   const [currentReceipt, _setCurrentReceipt] = useState<File | null>(null);
   const [currentReceipts, setCurrentReceipts] = useState<string[]>([]); // Multiple receipts support - stores URLs
   const [extractedLineItems, setExtractedLineItems] = useState<LineItem[]>([]); // Store extracted line items
+  
+  // 🧠 OCR Learning: Speichere originale OCR-Daten für Vergleich
+  const [originalOcrData, setOriginalOcrData] = useState<{
+    vendor?: string;
+    invoiceNumber?: string;
+    email?: string;
+    phone?: string;
+    vatId?: string;
+    address?: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     title: '',
@@ -269,6 +279,43 @@ export default function CreateExpensePage() {
       const result = await response.json();
 
       if (result.success) {
+        // 🧠 OCR Learning: Sende Korrekturen an Lernsystem
+        if (originalOcrData && formData.vendor) {
+          try {
+            const correctedData = {
+              vendor: formData.vendor,
+              invoiceNumber: formData.invoiceNumber,
+              email: formData.contactEmail,
+              phone: formData.contactPhone,
+              vatId: formData.companyVatNumber,
+              address: formData.companyAddress,
+            };
+            
+            // Nur senden wenn es Unterschiede gibt
+            const hasChanges = Object.keys(correctedData).some(key => {
+              const corrected = correctedData[key as keyof typeof correctedData];
+              const original = originalOcrData[key as keyof typeof originalOcrData];
+              return corrected && corrected !== original;
+            });
+            
+            if (hasChanges) {
+              await fetch('/api/ocr/learn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  companyId: uid,
+                  ocrData: originalOcrData,
+                  correctedData,
+                }),
+              });
+              console.log('🧠 [OCR Learning] Korrekturen gespeichert');
+            }
+          } catch (learnError) {
+            // Lernen ist optional, Fehler nicht kritisch
+            console.error('🧠 [OCR Learning] Fehler:', learnError);
+          }
+        }
+        
         toast.success('Ausgabe erfolgreich gespeichert!');
         router.push(`/dashboard/company/${uid}/finance/expenses`);
       } else {
@@ -623,6 +670,16 @@ export default function CreateExpensePage() {
                     setExtractedLineItems(data.lineItems);
                     console.log(`📋 Extracted ${data.lineItems.length} line items`);
                   }
+
+                  // 🧠 OCR Learning: Speichere originale OCR-Daten für Vergleich
+                  setOriginalOcrData({
+                    vendor: data.vendor,
+                    invoiceNumber: data.invoiceNumber,
+                    email: data.contactEmail,
+                    phone: data.contactPhone,
+                    vatId: data.companyVatNumber,
+                    address: data.companyAddress,
+                  });
 
                   setFormData(prev => ({
                     ...prev,
