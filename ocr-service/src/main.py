@@ -561,17 +561,49 @@ def extract_german_invoice_data(text: str) -> dict:
     # Statt statischer Liste: Erkennung über Rechtsformen und Briefkopf-Muster
     lines = text.strip().split('\n')
     
-    # 1. PRIORITÄT: Deutsche Rechtsformen im Text finden
+    # Höflichkeitsfloskeln und Schlussformeln die KEINE Firmennamen sind
+    exclude_phrases = [
+        r'vielen\s*dank',
+        r'danke\s*(für|fuer)',
+        r'ihr\s*besuch',
+        r'ihren?\s*besuch',
+        r'auf\s*wiedersehen',
+        r'besuchen\s*sie',
+        r'wir\s*freuen\s*uns',
+        r'bis\s*bald',
+        r'mit\s*freundlichen',
+        r'herzlichen\s*dank',
+        r'guten\s*tag',
+        r'willkommen',
+        r'sendungsverfolgung',
+        r'www\.',
+        r'http',
+    ]
+    
+    def is_excluded_phrase(text_to_check):
+        """Prüft ob der Text eine Höflichkeitsfloskel enthält"""
+        text_lower = text_to_check.lower()
+        for pattern in exclude_phrases:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+    
+    # 1. PRIORITÄT: Deutsche Rechtsformen im Text finden (ERSTE Erwähnung!)
     # Das funktioniert für ALLE deutschen Firmen mit korrekter Rechtsform
     rechtsform_pattern = r'\b([A-ZÄÖÜ][A-Za-zäöüÄÖÜß\s\-&\.]+(?:GmbH|AG|KG|UG|OHG|GbR|e\.K\.|eK|mbH|SE|KGaA|gGmbH|e\.V\.|eV|Ltd\.|Inc\.|Co\.))\b'
-    rechtsform_match = re.search(rechtsform_pattern, text)
-    if rechtsform_match:
-        vendor = rechtsform_match.group(1).strip()
+    
+    # Suche alle Matches und nimm den ersten der KEINE Höflichkeitsfloskel ist
+    for match in re.finditer(rechtsform_pattern, text):
+        vendor = match.group(1).strip()
         # Bereinige: Entferne führende Kleinbuchstaben und Sonderzeichen
         vendor = re.sub(r'^[a-z\s\-\.]+', '', vendor).strip()
-        if len(vendor) > 5:
+        # Prüfe ob es eine Höflichkeitsfloskel ist
+        if len(vendor) > 5 and not is_excluded_phrase(vendor):
+            # Extrahiere nur den Firmennamen (ohne "Ihre", "Ihr", etc.)
+            vendor = re.sub(r'^(Ihre?|Ihr)\s*', '', vendor).strip()
             data['vendor_name'] = vendor
             print(f"[OCR] Firma via Rechtsform erkannt: {vendor}")
+            break
     
     # 2. FALLBACK: Erste aussagekräftige Zeile (typischer Briefkopf)
     if 'vendor_name' not in data:
@@ -579,6 +611,9 @@ def extract_german_invoice_data(text: str) -> dict:
             line = line.strip()
             # Überspringe leere Zeilen und sehr kurze Zeilen
             if len(line) < 5 or len(line) > 100:
+                continue
+            # Überspringe Höflichkeitsfloskeln
+            if is_excluded_phrase(line):
                 continue
             # Überspringe Zeilen die wie Datum/Nummer/Betreff aussehen
             if re.match(r'^(Rechnung|Invoice|Datum|Date|Nr\.|Beleg|Quittung|Kasse|\d)', line, re.IGNORECASE):
@@ -614,7 +649,7 @@ def extract_german_invoice_data(text: str) -> dict:
             match = re.search(pattern, text)
             if match:
                 vendor = match.group(1).strip()[:100]
-                if len(vendor) > 3:
+                if len(vendor) > 3 and not is_excluded_phrase(vendor):
                     data['vendor_name'] = vendor
                     print(f"[OCR] Firma via Label erkannt: {vendor}")
                     break
