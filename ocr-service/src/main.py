@@ -557,41 +557,66 @@ def extract_german_invoice_data(text: str) -> dict:
     if bic_match:
         data['bic'] = bic_match.group(1)
     
-    # === FIRMENNAME (erste Zeilen) ===
+    # === FIRMENNAME - INTELLIGENTE ERKENNUNG ===
+    # Statt statischer Liste: Erkennung über Rechtsformen und Briefkopf-Muster
     lines = text.strip().split('\n')
     
-    # Bekannte Firmennamen Pattern
-    known_companies = [
-        (r'Deutsche\s*Post\s*AG', 'Deutsche Post AG'),
-        (r'DHL\s*Paket', 'DHL'),
-        (r'Amazon', 'Amazon'),
-        (r'REWE', 'REWE'),
-        (r'EDEKA', 'EDEKA'),
-        (r'Lidl', 'Lidl'),
-        (r'Aldi', 'Aldi'),
-        (r'dm-drogerie', 'dm-drogerie markt'),
-        (r'Rossmann', 'Rossmann'),
-        (r'MediaMarkt', 'MediaMarkt'),
-        (r'Saturn', 'Saturn'),
-        (r'IKEA', 'IKEA'),
-        (r'H\s*&\s*M', 'H&M'),
-    ]
+    # 1. PRIORITÄT: Deutsche Rechtsformen im Text finden
+    # Das funktioniert für ALLE deutschen Firmen mit korrekter Rechtsform
+    rechtsform_pattern = r'\b([A-ZÄÖÜ][A-Za-zäöüÄÖÜß\s\-&\.]+(?:GmbH|AG|KG|UG|OHG|GbR|e\.K\.|eK|mbH|SE|KGaA|gGmbH|e\.V\.|eV|Ltd\.|Inc\.|Co\.))\b'
+    rechtsform_match = re.search(rechtsform_pattern, text)
+    if rechtsform_match:
+        vendor = rechtsform_match.group(1).strip()
+        # Bereinige: Entferne führende Kleinbuchstaben und Sonderzeichen
+        vendor = re.sub(r'^[a-z\s\-\.]+', '', vendor).strip()
+        if len(vendor) > 5:
+            data['vendor_name'] = vendor
+            print(f"[OCR] Firma via Rechtsform erkannt: {vendor}")
     
-    # Prüfe zuerst bekannte Firmennamen
-    for pattern, name in known_companies:
-        if re.search(pattern, text, re.IGNORECASE):
-            data['vendor_name'] = name
-            print(f"[OCR] Bekannte Firma erkannt: {name}")
-            break
-    
-    # Falls keine bekannte Firma gefunden, suche nach Rechtsformen
+    # 2. FALLBACK: Erste aussagekräftige Zeile (typischer Briefkopf)
     if 'vendor_name' not in data:
-        for line in lines[:10]:
+        for line in lines[:15]:
             line = line.strip()
-            if len(line) > 5 and len(line) < 100:
-                # Deutsche Rechtsformen
-                if re.search(r'\b(GmbH|AG|KG|UG|OHG|GbR|e\.K\.|eK|mbH)\b', line, re.IGNORECASE):
-                    data['vendor_name'] = line
+            # Überspringe leere Zeilen und sehr kurze Zeilen
+            if len(line) < 5 or len(line) > 100:
+                continue
+            # Überspringe Zeilen die wie Datum/Nummer/Betreff aussehen
+            if re.match(r'^(Rechnung|Invoice|Datum|Date|Nr\.|Beleg|Quittung|Kasse|\d)', line, re.IGNORECASE):
+                continue
+            # Überspringe Zeilen die nur Zahlen und Sonderzeichen enthalten
+            if re.match(r'^[\d\s\-\./]+$', line):
+                continue
+            # Überspringe Adressen (PLZ + Ort)
+            if re.match(r'^\d{5}\s+[A-Z]', line):
+                continue
+            # Überspringe Zeilen mit Email/Web
+            if '@' in line or 'www.' in line.lower() or 'http' in line.lower():
+                continue
+            # Überspringe Zeilen die hauptsächlich Kleinbuchstaben sind (Fließtext)
+            if sum(1 for c in line if c.isupper()) < len(line) * 0.15:
+                continue
+            # Gute Kandidaten: Beginnen mit Großbuchstaben, enthalten nicht zu viele Zahlen
+            if line[0].isupper() and sum(1 for c in line if c.isdigit()) < len(line) * 0.3:
+                data['vendor_name'] = line
+                print(f"[OCR] Firma via Briefkopf erkannt: {line}")
+                break
+    
+    # 3. LETZTER FALLBACK: Suche nach Labels wie "Von:", "Absender:", etc.
+    if 'vendor_name' not in data:
+        label_patterns = [
+            r'[Vv]on\s*:\s*(.+)',
+            r'[Aa]bsender\s*:\s*(.+)',
+            r'[Ff]irma\s*:\s*(.+)',
+            r'[Ll]ieferant\s*:\s*(.+)',
+            r'[Hh]ersteller\s*:\s*(.+)',
+        ]
+        for pattern in label_patterns:
+            match = re.search(pattern, text)
+            if match:
+                vendor = match.group(1).strip()[:100]
+                if len(vendor) > 3:
+                    data['vendor_name'] = vendor
+                    print(f"[OCR] Firma via Label erkannt: {vendor}")
                     break
     
     # === ADRESSE ===
