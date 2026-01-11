@@ -209,10 +209,11 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       ];
 
       // Aktualisiere Stats mit deduplizierten Daten
+      // stockValue = currentStock * purchasePrice (Bestandswert)
       const updatedStats = {
         ...statsData,
         totalItems: combinedItems.length,
-        totalValue: combinedItems.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+        totalValue: combinedItems.reduce((sum, item) => sum + (item.stockValue || 0), 0),
         serviceItems: inlineServicesData.length,
         inventoryItems: itemsData.length,
       };
@@ -227,7 +228,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
           description: 'Dienstleistungen und Services',
           companyId,
           itemCount: inlineServicesData.length,
-          totalValue: inlineServicesData.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+          totalValue: inlineServicesData.reduce((sum, item) => sum + (item.stockValue || 0), 0),
           lastUpdate: getMaxTimestamp(inlineServicesData),
         } as InventoryCategoryExtended,
         {
@@ -238,7 +239,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
           itemCount: itemsData.filter(i => i.category === 'Artikel').length,
           totalValue: itemsData
             .filter(i => i.category === 'Artikel')
-            .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+            .reduce((sum, item) => sum + (item.stockValue || 0), 0),
           lastUpdate: getMaxTimestamp(itemsData.filter(i => i.category === 'Artikel')),
         } as InventoryCategoryExtended,
         ...categoriesData
@@ -250,7 +251,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                 itemCount: items.filter(i => i.category === cat.name).length,
                 totalValue: items
                   .filter(i => i.category === cat.name)
-                  .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+                  .reduce((sum, item) => sum + (item.stockValue || 0), 0),
                 lastUpdate: getMaxTimestamp(items.filter(i => i.category === cat.name)),
               }) as InventoryCategoryExtended
           ),
