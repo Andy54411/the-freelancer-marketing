@@ -87,3 +87,6 @@ firebase_functions/deploy-lambda.sh
 .whatsapp-auth/
 public/Video/*.mov
 public/Video/*.mp4
+
+# Taskilo-KI (separat auf Hetzner deployt)
+taskilo-ki/
