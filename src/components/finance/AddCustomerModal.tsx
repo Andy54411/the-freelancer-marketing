@@ -58,6 +58,7 @@ export interface Customer {
   vatId?: string;
   vatValidated?: boolean;
   isSupplier?: boolean; // Unterscheidung zwischen Kunde und Lieferant
+  organizationType?: 'Kunde' | 'Lieferant' | 'Partner' | 'Interessenten'; // Kontakttyp
   totalInvoices: number;
   totalAmount: number;
   createdAt: string | Date | { toDate: () => Date; seconds: number; nanoseconds: number };

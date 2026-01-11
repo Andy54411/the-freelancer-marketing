@@ -23,6 +23,31 @@ import { storage } from '@/firebase/clients';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 import Link from 'next/link';
 
+// Konvertiert deutsches Datum (DD.MM.YYYY) zu ISO-Format (YYYY-MM-DD) für HTML date input
+const convertGermanDateToISO = (germanDate: string | undefined | null): string => {
+  if (!germanDate) return '';
+  
+  // Prüfe ob bereits ISO-Format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(germanDate)) {
+    return germanDate;
+  }
+  
+  // Deutsches Format DD.MM.YYYY
+  const match = germanDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  // Falls anderes Format, versuche zu parsen
+  const parsed = new Date(germanDate);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+  
+  return '';
+};
+
 // Upload PDF to Firebase Storage
 const uploadPdfToStorage = async (file: File, companyId: string): Promise<string> => {
   try {
@@ -688,8 +713,8 @@ export default function CreateExpensePage() {
                     category: data.category || prev.category,
                     description: data.description || prev.description,
                     vendor: data.vendor || prev.vendor,
-                    date: data.date || prev.date,
-                    dueDate: data.dueDate || prev.dueDate,
+                    date: convertGermanDateToISO(data.date) || prev.date,
+                    dueDate: convertGermanDateToISO(data.dueDate) || prev.dueDate,
                     paymentTerms: data.paymentTerms || prev.paymentTerms,
                     invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
                     vatAmount:

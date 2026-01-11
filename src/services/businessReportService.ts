@@ -621,46 +621,58 @@ export class BusinessReportService {
       
       const orders: Array<{
         status: string;
-        totalAmountPaidByBuyer?: number;
-        createdAt?: { _seconds: number };
+        totalAmount?: number;
+        price?: number;
+        createdAt?: Date;
       }> = [];
 
-      ordersSnapshot.forEach(doc => {
-        const data = doc.data();
-        const createdAt = data.createdAt?._seconds 
-          ? new Date(data.createdAt._seconds * 1000)
-          : new Date();
+      ordersSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        // Firestore Timestamp korrekt konvertieren
+        let createdAt: Date;
+        if (data.createdAt?.toDate) {
+          createdAt = data.createdAt.toDate();
+        } else if (data.createdAt?._seconds) {
+          createdAt = new Date(data.createdAt._seconds * 1000);
+        } else {
+          createdAt = new Date();
+        }
         
         if (createdAt >= startDate && createdAt <= endDate) {
           orders.push({
-            status: data.status,
-            totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
-            createdAt: data.createdAt,
+            status: (data.status || '').toLowerCase(), // Normalisiere auf Kleinbuchstaben
+            totalAmount: data.totalAmount || data.price || 0,
+            price: data.price || 0,
+            createdAt,
           });
         }
       });
 
+      // Status-Prüfungen mit Kleinbuchstaben
       const activeOrders = orders.filter(o => 
-        o.status === 'AKTIV' || o.status === 'IN BEARBEITUNG'
+        o.status === 'aktiv' || o.status === 'in bearbeitung' || o.status === 'active' || o.status === 'in_progress'
       );
       const inProgressOrders = orders.filter(o => 
-        o.status === 'IN BEARBEITUNG' || o.status === 'IN_PROGRESS'
+        o.status === 'in bearbeitung' || o.status === 'in_progress' || o.status === 'in progress'
       );
       const completedOrders = orders.filter(o => 
-        o.status === 'ABGESCHLOSSEN' || o.status === 'COMPLETED' || o.status === 'BEZAHLT'
+        o.status === 'abgeschlossen' || o.status === 'completed' || o.status === 'bezahlt' || o.status === 'paid'
       );
-      const cancelledOrders = orders.filter(o => o.status === 'STORNIERT');
+      const cancelledOrders = orders.filter(o => 
+        o.status === 'storniert' || o.status === 'cancelled' || o.status === 'canceled'
+      );
 
+      // Berechne Umsatz aus allen abgeschlossenen Aufträgen
       const totalValue = completedOrders.reduce(
-        (sum, o) => sum + ((o.totalAmountPaidByBuyer || 0) / 100), 
+        (sum, o) => sum + (o.totalAmount || o.price || 0), 
         0
       );
 
       const pendingOrders = orders.filter(o => 
-        o.status === 'zahlung_erhalten_clearing' || o.status === 'FEHLENDE DETAILS'
+        o.status === 'zahlung_erhalten_clearing' || o.status === 'fehlende details' || o.status === 'pending'
       );
       const pendingAmount = pendingOrders.reduce(
-        (sum, o) => sum + ((o.totalAmountPaidByBuyer || 0) / 100), 
+        (sum, o) => sum + (o.totalAmount || o.price || 0), 
         0
       );
 

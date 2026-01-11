@@ -25,12 +25,12 @@ export class CustomerService {
     try {
       // NEUE SUBCOLLECTION STRUKTUR - lade alle und filtere client-seitig
       // Grund: where('isSupplier', '!=', true) schließt auch Dokumente ohne isSupplier Feld aus!
+      // WICHTIG: Kein orderBy() - Sortierung erfolgt client-seitig (Projektregeln!)
       const customersRef = collection(db, 'companies', companyId, 'customers');
-      const q = query(customersRef, orderBy('name', 'asc'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(customersRef);
 
       // Client-seitige Filterung: isSupplier === false ODER undefined/null
-      return snapshot.docs
+      const customers = snapshot.docs
         .filter(doc => {
           const data = doc.data();
           return data.isSupplier !== true; // Schließt nur explizit true aus
@@ -62,6 +62,9 @@ export class CustomerService {
             companyId: data.companyId || companyId,
           } as Customer;
         });
+      
+      // Client-seitige Sortierung nach Name
+      return customers.sort((a, b) => a.name.localeCompare(b.name, 'de'));
     } catch (error) {
       throw error;
     }
@@ -73,11 +76,12 @@ export class CustomerService {
   static async getSuppliers(companyId: string): Promise<Customer[]> {
     try {
       // NEUE SUBCOLLECTION STRUKTUR - lade alle und filtere Lieferanten
+      // WICHTIG: Kein orderBy() - Sortierung erfolgt client-seitig (Projektregeln!)
       const customersRef = collection(db, 'companies', companyId, 'customers');
-      const q = query(customersRef, where('isSupplier', '==', true), orderBy('name', 'asc'));
+      const q = query(customersRef, where('isSupplier', '==', true));
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map(doc => {
+      const suppliers = snapshot.docs.map(doc => {
         const data = doc.data();
         // Lieferanten haben meist LF- Prefix
         const customerNumber = data.customerNumber || 'LF-PENDING';
@@ -104,6 +108,9 @@ export class CustomerService {
           companyId: data.companyId || companyId,
         } as Customer;
       });
+      
+      // Client-seitige Sortierung nach Name
+      return suppliers.sort((a, b) => a.name.localeCompare(b.name, 'de'));
     } catch (error) {
       throw error;
     }

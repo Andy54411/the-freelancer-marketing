@@ -17,6 +17,41 @@ const CustomerSchema = z.object({
   notes: z.string().optional(),
   customerNumber: z.string().optional(),
   companyName: z.string().optional(),
+  // Lieferanten-Felder
+  isSupplier: z.boolean().optional(),
+  organizationType: z.enum(['Kunde', 'Lieferant', 'Partner', 'Interessenten']).optional(),
+  // Buchhaltungskonten
+  debitorNumber: z.string().optional(),
+  creditorNumber: z.string().optional(),
+  // Person-Felder
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  title: z.string().optional(),
+  position: z.string().optional(),
+  // Geschäftsdaten
+  website: z.string().optional(),
+  companySize: z.string().optional(),
+  industry: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  discount: z.number().optional(),
+  creditLimit: z.number().optional(),
+  currency: z.string().optional(),
+  language: z.string().optional(),
+  // Bankdaten
+  bankName: z.string().optional(),
+  iban: z.string().optional(),
+  bic: z.string().optional(),
+  accountHolder: z.string().optional(),
+  // Zahlungsbedingungen
+  preferredPaymentMethod: z.string().optional(),
+  defaultInvoiceDueDate: z.number().optional(),
+  earlyPaymentDiscount: z.number().optional(),
+  earlyPaymentDays: z.number().optional(),
+  // E-Rechnung
+  eInvoiceEnabled: z.boolean().optional(),
+  customerReference: z.string().optional(),
+  leitwegId: z.string().optional(),
+  vatValidated: z.boolean().optional(),
 });
 
 // Runtime Firebase initialization to prevent build-time issues
@@ -171,28 +206,43 @@ export async function POST(
       }
     }
 
-    // Generiere fortlaufende Kundennummer mit Transaktion (atomar)
+    // Generiere fortlaufende Nummer basierend auf organizationType
     const companyRef = db.collection('companies').doc(uid);
-    const customerNumber = await db.runTransaction(async (transaction) => {
+    const isSupplier = validatedData.isSupplier === true || validatedData.organizationType === 'Lieferant';
+    const organizationType = validatedData.organizationType || (isSupplier ? 'Lieferant' : 'Kunde');
+    
+    // Bestimme Präfix basierend auf Typ
+    const prefixMap: Record<string, string> = {
+      'Kunde': 'KD',
+      'Lieferant': 'LF',
+      'Partner': 'PA',
+      'Interessenten': 'IN',
+    };
+    const prefix = prefixMap[organizationType] || 'KD';
+    const sequenceField = `${prefix.toLowerCase()}NumberSequence`;
+    
+    const customerNumber = await db.runTransaction(async (transaction: FirebaseFirestore.Transaction) => {
       const companyDoc = await transaction.get(companyRef) as FirebaseFirestore.DocumentSnapshot;
       
-      // Hole aktuelle Kundennummer-Sequenz oder starte bei 1000
-      const currentSequence = companyDoc.exists && companyDoc.data()?.customerNumberSequence
-        ? companyDoc.data()?.customerNumberSequence
+      // Hole aktuelle Sequenz für diesen Typ oder starte bei 1000
+      const currentSequence = companyDoc.exists && companyDoc.data()?.[sequenceField]
+        ? companyDoc.data()?.[sequenceField]
         : 1000;
       
       const nextSequence = currentSequence + 1;
       
       // Update die Sequenz in der Company
-      transaction.update(companyRef, { customerNumberSequence: nextSequence });
+      transaction.update(companyRef, { [sequenceField]: nextSequence });
       
-      return `KD-${nextSequence}`;
+      return `${prefix}-${nextSequence}`;
     });
 
-    // Erstelle neuen Kunden (nur vorhandene Felder, keine leeren Strings)
+    // Erstelle neuen Kontakt mit allen Feldern
     const newCustomer: Record<string, unknown> = {
       companyId: uid,
       customerNumber,
+      isSupplier,
+      organizationType,
       name: validatedData.name,
       vatValidated: false,
       totalInvoices: 0,
@@ -211,11 +261,49 @@ export async function POST(
     if (validatedData.address) newCustomer.address = validatedData.address;
     if (validatedData.taxNumber) newCustomer.taxNumber = validatedData.taxNumber;
     if (validatedData.vatId) newCustomer.vatId = validatedData.vatId;
+    if (validatedData.vatValidated) newCustomer.vatValidated = validatedData.vatValidated;
     if (validatedData.contactPersons && validatedData.contactPersons.length > 0) {
       newCustomer.contactPersons = validatedData.contactPersons;
     }
     if (validatedData.notes) newCustomer.notes = validatedData.notes;
     if (validatedData.companyName) newCustomer.companyName = validatedData.companyName;
+    
+    // Person-spezifische Felder
+    if (validatedData.firstName) newCustomer.firstName = validatedData.firstName;
+    if (validatedData.lastName) newCustomer.lastName = validatedData.lastName;
+    if (validatedData.title) newCustomer.title = validatedData.title;
+    if (validatedData.position) newCustomer.position = validatedData.position;
+    
+    // Buchhaltungskonten
+    if (validatedData.debitorNumber) newCustomer.debitorNumber = validatedData.debitorNumber;
+    if (validatedData.creditorNumber) newCustomer.creditorNumber = validatedData.creditorNumber;
+    
+    // Geschäftsdaten
+    if (validatedData.website) newCustomer.website = validatedData.website;
+    if (validatedData.companySize) newCustomer.companySize = validatedData.companySize;
+    if (validatedData.industry) newCustomer.industry = validatedData.industry;
+    if (validatedData.paymentTerms) newCustomer.paymentTerms = validatedData.paymentTerms;
+    if (validatedData.discount !== undefined) newCustomer.discount = validatedData.discount;
+    if (validatedData.creditLimit !== undefined) newCustomer.creditLimit = validatedData.creditLimit;
+    if (validatedData.currency) newCustomer.currency = validatedData.currency;
+    if (validatedData.language) newCustomer.language = validatedData.language;
+    
+    // Bankdaten
+    if (validatedData.bankName) newCustomer.bankName = validatedData.bankName;
+    if (validatedData.iban) newCustomer.iban = validatedData.iban;
+    if (validatedData.bic) newCustomer.bic = validatedData.bic;
+    if (validatedData.accountHolder) newCustomer.accountHolder = validatedData.accountHolder;
+    
+    // Zahlungsbedingungen
+    if (validatedData.preferredPaymentMethod) newCustomer.preferredPaymentMethod = validatedData.preferredPaymentMethod;
+    if (validatedData.defaultInvoiceDueDate !== undefined) newCustomer.defaultInvoiceDueDate = validatedData.defaultInvoiceDueDate;
+    if (validatedData.earlyPaymentDiscount !== undefined) newCustomer.earlyPaymentDiscount = validatedData.earlyPaymentDiscount;
+    if (validatedData.earlyPaymentDays !== undefined) newCustomer.earlyPaymentDays = validatedData.earlyPaymentDays;
+    
+    // E-Rechnung
+    if (validatedData.eInvoiceEnabled !== undefined) newCustomer.eInvoiceEnabled = validatedData.eInvoiceEnabled;
+    if (validatedData.customerReference) newCustomer.customerReference = validatedData.customerReference;
+    if (validatedData.leitwegId) newCustomer.leitwegId = validatedData.leitwegId;
 
     const docRef = await db
       .collection('companies')

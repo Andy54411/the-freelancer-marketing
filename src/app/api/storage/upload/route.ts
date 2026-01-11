@@ -166,10 +166,12 @@ export async function POST(request: NextRequest) {
 
       console.log('[STORAGE] ✅ File uploaded to Firebase Storage successfully');
 
-      // Generate signed URL for download (valid for 7 days)
+      // Generate signed URL for download (valid for 10 YEARS to avoid expiration issues)
+      // Alte Dauer von 7 Tagen führte zu abgelaufenen Logo-URLs
+      const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000; // 10 Jahre in Millisekunden
       const [signedUrl] = await fileRef.getSignedUrl({
         action: 'read',
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+        expires: Date.now() + TEN_YEARS_MS,
       });
 
       uploadResult = {

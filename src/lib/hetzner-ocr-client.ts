@@ -3,12 +3,16 @@
  *
  * DSGVO-konformer OCR-Service auf eigenem Hetzner-Server.
  * Nutzt Tesseract OCR mit deutschen Sprachpaketen.
+ * 
+ * WICHTIG: Dieser Client nutzt jetzt die integrierte taskilo-ki API (Port 8000)
+ * statt des separaten ocr-service (Port 8090).
  *
  * Vorteile:
  * - Keine Datenübertragung in USA
  * - Keine API-Limits
  * - Volle Kontrolle
  * - Kostenlos (nur Server-Kosten)
+ * - PostgreSQL für persistentes ML-Learning
  */
 
 interface HetznerOCRResponse {
@@ -81,16 +85,44 @@ interface ExtractedExpenseData {
   bic: string;
 }
 
-const HETZNER_OCR_URL = 'https://mail.taskilo.de/ocr';
+// Integrierte taskilo-ki API (Port 8000 über Nginx /ki/)
+// Der Nginx-Proxy leitet /ki/ an den taskilo-ki Container (Port 8000) weiter
+const HETZNER_KI_URL = process.env.NEXT_PUBLIC_HETZNER_KI_URL || 'https://mail.taskilo.de/ki';
 const HETZNER_OCR_API_KEY = process.env.HETZNER_OCR_API_KEY;
 
 /**
- * Extrahiert Beleg-Daten mittels Hetzner OCR-Service
+ * Unternehmenskontext für präzisere OCR-Erkennung
+ * Wird aus Firestore abgerufen und an die KI übergeben
+ */
+export interface CompanyContext {
+  companyId: string;
+  companyName: string;
+  vatId?: string;
+  taxNumber?: string;
+  address?: string;
+  zip?: string;
+  city?: string;
+  iban?: string;
+}
+
+/**
+ * Extrahiert Beleg-Daten mittels Hetzner OCR-Service (ML-basiert)
+ * 
+ * Nutzt die integrierte taskilo-ki API mit ML-Lernsystem.
+ * Das System lernt aus Trainingsbelegen und verbessert sich kontinuierlich.
+ * 
+ * API-Endpunkt: /ki/api/v1/dokumente/ocr/extract
+ * 
+ * @param file - Datei oder Buffer
+ * @param fileName - Dateiname
+ * @param mimeType - MIME-Type
+ * @param companyContext - Optional: Unternehmensdaten für präzisere Erkennung
  */
 export async function extractWithHetznerOCR(
   file: File | Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  companyContext?: CompanyContext
 ): Promise<ExtractedExpenseData> {
   const apiKey = HETZNER_OCR_API_KEY;
   if (!apiKey) {
@@ -106,24 +138,28 @@ export async function extractWithHetznerOCR(
     buffer = file;
   }
 
-  const base64Content = buffer.toString('base64');
+  // FormData für den Upload erstellen (die neue API erwartet FormData, nicht JSON)
+  const formData = new FormData();
+  const blob = new Blob([buffer], { type: mimeType });
+  formData.append('file', blob, fileName);
+  
+  // Company-Kontext hinzufügen (für präzisere Vendor/Customer-Erkennung)
+  if (companyContext) {
+    formData.append('company_context', JSON.stringify(companyContext));
+    console.log('[Hetzner OCR] Mit Company-Kontext:', companyContext.companyName);
+  }
 
+  const ocrUrl = `${HETZNER_KI_URL}/api/v1/dokumente/ocr/extract`;
   console.log(
-    `[Hetzner OCR] Sende ${fileName} (${(buffer.length / 1024).toFixed(1)} KB) an ${HETZNER_OCR_URL}/extract`
+    `[Hetzner OCR] Sende ${fileName} (${(buffer.length / 1024).toFixed(1)} KB) an ${ocrUrl}`
   );
 
-  const response = await fetch(`${HETZNER_OCR_URL}/extract`, {
+  const response = await fetch(ocrUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       'X-Api-Key': apiKey,
     },
-    body: JSON.stringify({
-      file: base64Content,
-      filename: fileName,
-      content_type: mimeType,
-      language: 'deu',
-    }),
+    body: formData,
   });
 
   if (!response.ok) {
@@ -133,6 +169,9 @@ export async function extractWithHetznerOCR(
   }
 
   const result: HetznerOCRResponse = await response.json();
+
+  // DEBUG: Zeige rohe API-Antwort
+  console.log('[Hetzner OCR] RAW API Response:', JSON.stringify(result, null, 2));
 
   if (!result.success) {
     throw new Error(result.error ?? 'OCR fehlgeschlagen');
@@ -144,6 +183,15 @@ export async function extractWithHetznerOCR(
 
   // Map Hetzner response to expense format
   const data = result.data;
+  
+  // DEBUG: Zeige vendor-Daten
+  console.log('[Hetzner OCR] Vendor data:', {
+    vendorName: data?.vendor?.name,
+    vendorAddress: data?.vendor?.address,
+    vendorVatId: data?.vendor?.vatId,
+    amounts: data?.amounts,
+  });
+  
   if (!data) {
     return {
       vendor: '',
@@ -236,11 +284,11 @@ export async function extractWithHetznerOCR(
 }
 
 /**
- * Prüft ob der Hetzner OCR-Service erreichbar ist
+ * Prüft ob der Hetzner OCR-Service (taskilo-ki) erreichbar ist
  */
 export async function checkHetznerOCRHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${HETZNER_OCR_URL}/health`, {
+    const response = await fetch(`${HETZNER_KI_URL}/api/v1/health/`, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     });

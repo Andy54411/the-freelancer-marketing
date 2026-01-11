@@ -3,6 +3,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   addDoc,
   updateDoc,
@@ -14,7 +15,28 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '@/firebase/clients';
+
+// Gewichts- und Volumeneinheiten für Inventur
+export type WeightVolumeUnit = 'kg' | 'g' | 'mg' | 'L' | 'ml' | 'cl' | 'm' | 'cm' | 'mm' | 'Stück';
+
+// Verkaufs-/Lagereinheiten
+export type SalesUnit = 'Stück' | 'Flasche' | 'Dose' | 'Packung' | 'Karton' | 'Kiste' | 'Palette' | 'Beutel' | 'Sack' | 'Rolle' | 'Meter' | 'Liter' | 'kg';
+
+// Verpackungshierarchie für Gebinde (z.B. 0,33L Flaschen in 24er Kasten)
+export interface PackagingUnit {
+  name: string; // z.B. "6er-Pack", "24er-Kasten", "Palette"
+  quantity: number; // Anzahl der Basiseinheiten pro Verpackung
+  barcode?: string; // EAN für diese Verpackungseinheit
+  weight?: number; // Gewicht der Verpackungseinheit inkl. Verpackung
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+    unit: 'cm' | 'mm' | 'm';
+  };
+}
 
 export interface InventoryItem {
   id: string;
@@ -22,32 +44,59 @@ export interface InventoryItem {
   description?: string;
   sku: string; // Artikelnummer/SKU
   category: string;
-  unit: string; // Einheit (Stück, kg, Liter, etc.)
-  currentStock: number;
+  unit: string; // Basiseinheit (Stück, Flasche, Dose, etc.)
+  currentStock: number; // Bestand in Basiseinheiten
   reservedStock: number; // Reserviert für offene Angebote
   availableStock: number; // currentStock - reservedStock
   minStock: number; // Mindestbestand
   maxStock?: number; // Maximalbestand
-  purchasePrice: number; // Einkaufspreis
-  sellingPrice: number; // Verkaufspreis
+  purchasePrice: number; // Einkaufspreis pro Basiseinheit
+  sellingPrice: number; // Verkaufspreis pro Basiseinheit
   supplierName?: string;
+  supplierId?: string; // Referenz zum Lieferanten in customers Collection
+  supplierEmail?: string; // E-Mail für Nachbestellungen
   supplierContact?: string;
   location?: string; // Lagerort
-  barcode?: string;
+  barcode?: string; // EAN/Barcode der Basiseinheit
   image?: string;
+  images?: string[]; // Array für mehrere Artikelbilder
   status: 'active' | 'inactive' | 'discontinued';
   createdAt: Date;
   updatedAt: Date;
   companyId: string;
 
-  // Zusätzliche Felder
-  weight?: number;
+  // === INHALT PRO EINHEIT (für Flaschen, Dosen, etc.) ===
+  contentAmount?: number; // Inhaltsmenge pro Basiseinheit (z.B. 0.33, 0.5, 1)
+  contentUnit?: WeightVolumeUnit; // Einheit des Inhalts (L, ml, kg, g, etc.)
+  totalContent?: number; // Gesamtinhalt (berechnet: contentAmount * currentStock)
+  
+  // === VERPACKUNGSHIERARCHIE ===
+  packagingUnits?: PackagingUnit[]; // z.B. [{name: "6er-Pack", quantity: 6}, {name: "Kasten", quantity: 24}]
+  
+  // === GEWICHT/VOLUMEN DER VERPACKUNG ===
+  unitWeight?: number; // Gewicht pro Basiseinheit inkl. Verpackung (z.B. Flasche mit Inhalt)
+  weightUnit?: WeightVolumeUnit; // Einheit für Gewicht (kg, g)
+  totalWeight?: number; // Gesamtgewicht (berechnet: unitWeight * currentStock)
+  
+  // === INVENTUR-FELDER ===
+  batchNumber?: string; // Chargennummer / Lot
+  expiryDate?: Date; // Mindesthaltbarkeitsdatum (MHD)
+  productionDate?: Date; // Herstellungsdatum
+  serialNumbers?: string[]; // Seriennummern für einzelne Einheiten
+  
+  // === ABMESSUNGEN ===
   dimensions?: {
     length: number;
     width: number;
     height: number;
+    unit: 'cm' | 'mm' | 'm';
   };
+  
+  // === ZUSÄTZLICHE FELDER ===
   notes?: string;
+  taxRate?: number; // Steuersatz (7% oder 19%)
+  origin?: string; // Herkunftsland
+  manufacturer?: string; // Hersteller
 
   // Automatisch berechnete Felder
   stockValue: number; // currentStock * purchasePrice
@@ -91,16 +140,168 @@ export interface InventoryCategory {
   itemCount: number;
 }
 
+// Konstante für erlaubte Gewichts-/Volumeneinheiten (für Inhalt und Gewicht)
+export const WEIGHT_VOLUME_UNITS: { value: WeightVolumeUnit; label: string; type: 'weight' | 'volume' | 'length' | 'count' }[] = [
+  { value: 'kg', label: 'Kilogramm (kg)', type: 'weight' },
+  { value: 'g', label: 'Gramm (g)', type: 'weight' },
+  { value: 'mg', label: 'Milligramm (mg)', type: 'weight' },
+  { value: 'L', label: 'Liter (L)', type: 'volume' },
+  { value: 'ml', label: 'Milliliter (ml)', type: 'volume' },
+  { value: 'cl', label: 'Zentiliter (cl)', type: 'volume' },
+  { value: 'm', label: 'Meter (m)', type: 'length' },
+  { value: 'cm', label: 'Zentimeter (cm)', type: 'length' },
+  { value: 'mm', label: 'Millimeter (mm)', type: 'length' },
+  { value: 'Stück', label: 'Stück', type: 'count' },
+];
+
+// Konstante für Basiseinheiten (Verkaufs-/Lagereinheit)
+export const SALES_UNITS: { value: SalesUnit; label: string }[] = [
+  { value: 'Stück', label: 'Stück' },
+  { value: 'Flasche', label: 'Flasche' },
+  { value: 'Dose', label: 'Dose' },
+  { value: 'Packung', label: 'Packung' },
+  { value: 'Karton', label: 'Karton' },
+  { value: 'Kiste', label: 'Kiste/Kasten' },
+  { value: 'Palette', label: 'Palette' },
+  { value: 'Beutel', label: 'Beutel' },
+  { value: 'Sack', label: 'Sack' },
+  { value: 'Rolle', label: 'Rolle' },
+  { value: 'Meter', label: 'Meter' },
+  { value: 'Liter', label: 'Liter' },
+  { value: 'kg', label: 'Kilogramm' },
+];
+
+// Vordefinierte Verpackungsgrößen für Getränke
+export const COMMON_CONTENT_SIZES = [
+  { amount: 0.2, unit: 'L', label: '0,2 L (200 ml)' },
+  { amount: 0.25, unit: 'L', label: '0,25 L (250 ml)' },
+  { amount: 0.33, unit: 'L', label: '0,33 L (330 ml)' },
+  { amount: 0.5, unit: 'L', label: '0,5 L (500 ml)' },
+  { amount: 0.7, unit: 'L', label: '0,7 L (700 ml)' },
+  { amount: 0.75, unit: 'L', label: '0,75 L (750 ml)' },
+  { amount: 1, unit: 'L', label: '1 L (1000 ml)' },
+  { amount: 1.5, unit: 'L', label: '1,5 L (1500 ml)' },
+  { amount: 2, unit: 'L', label: '2 L (2000 ml)' },
+];
+
+// Vordefinierte Gebindegrößen
+export const COMMON_PACKAGING_SIZES = [
+  { name: '6er-Pack', quantity: 6 },
+  { name: '12er-Pack', quantity: 12 },
+  { name: '20er-Kasten', quantity: 20 },
+  { name: '24er-Kasten', quantity: 24 },
+  { name: 'Palette (kleine)', quantity: 480 },
+  { name: 'Europalette', quantity: 960 },
+];
+
 export class InventoryService {
+  /**
+   * Bild für Inventarartikel hochladen
+   */
+  static async uploadItemImage(
+    companyId: string,
+    itemId: string,
+    file: File,
+    imageIndex: number
+  ): Promise<string> {
+    try {
+      // Validiere Dateityp
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Ungültiger Dateityp. Erlaubt: JPEG, PNG, WebP, GIF');
+      }
+
+      // Validiere Dateigröße (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        throw new Error('Datei zu groß. Maximale Größe: 5 MB');
+      }
+
+      // Generiere eindeutigen Dateinamen
+      const extension = file.name.split('.').pop() || 'jpg';
+      const fileName = `${itemId}_${imageIndex}_${Date.now()}.${extension}`;
+      const storagePath = `inventory/${companyId}/${itemId}/${fileName}`;
+
+      // Upload zu Firebase Storage
+      const storageRef = ref(storage, storagePath);
+      const metadata = {
+        contentType: file.type,
+        customMetadata: {
+          companyId,
+          itemId,
+          imageIndex: String(imageIndex),
+          uploadedAt: new Date().toISOString(),
+        },
+      };
+
+      await uploadBytes(storageRef, file, metadata);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      return downloadUrl;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Bild für Inventarartikel löschen
+   */
+  static async deleteItemImage(imageUrl: string): Promise<void> {
+    try {
+      // Extrahiere den Storage-Pfad aus der URL
+      const storageRef = ref(storage, imageUrl);
+      await deleteObject(storageRef);
+    } catch (error) {
+      // Wenn das Bild nicht existiert, ignorieren wir den Fehler
+      if ((error as any)?.code !== 'storage/object-not-found') {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Berechne Gesamtgewicht/-volumen basierend auf Einzelgewicht und Bestand
+   */
+  static calculateTotalWeight(unitWeight: number | undefined, currentStock: number): number {
+    if (!unitWeight || unitWeight <= 0) return 0;
+    return Math.round((unitWeight * currentStock) * 1000) / 1000; // 3 Nachkommastellen
+  }
+
+  /**
+   * Berechne Gesamtinhalt basierend auf Inhalt pro Einheit und Bestand
+   * z.B. 100 Flaschen à 0,33L = 33L Gesamtinhalt
+   */
+  static calculateTotalContent(contentAmount: number | undefined, currentStock: number): number {
+    if (!contentAmount || contentAmount <= 0) return 0;
+    return Math.round((contentAmount * currentStock) * 1000) / 1000; // 3 Nachkommastellen
+  }
+
+  /**
+   * Konvertiere Bestand zwischen Einheiten
+   * z.B. 2 Kästen à 24 Flaschen = 48 Flaschen
+   */
+  static convertToBaseUnits(quantity: number, packagingQuantity: number): number {
+    return quantity * packagingQuantity;
+  }
+
+  /**
+   * Konvertiere Basiseinheiten zu Verpackungseinheiten
+   * z.B. 48 Flaschen ÷ 24 = 2 Kästen
+   */
+  static convertToPackagingUnits(baseQuantity: number, packagingQuantity: number): { full: number; remainder: number } {
+    const full = Math.floor(baseQuantity / packagingQuantity);
+    const remainder = baseQuantity % packagingQuantity;
+    return { full, remainder };
+  }
+
   /**
    * Alle Inventar-Artikel einer Firma abrufen
    */
   static async getInventoryItems(companyId: string): Promise<InventoryItem[]> {
     try {
-      // NEUE SUBCOLLECTION STRUKTUR
+      // NEUE SUBCOLLECTION STRUKTUR - KEINE orderBy (Projektregeln)
       const itemsQuery = query(
-        collection(db, 'companies', companyId, 'inventory'),
-        orderBy('name', 'asc')
+        collection(db, 'companies', companyId, 'inventory')
       );
 
       const querySnapshot = await getDocs(itemsQuery);
@@ -111,6 +312,8 @@ export class InventoryService {
         const currentStock = data.currentStock || 0;
         const reservedStock = data.reservedStock || 0;
         const availableStock = currentStock - reservedStock;
+        const unitWeight = data.unitWeight || 0;
+        const contentAmount = data.contentAmount || 0;
 
         const item: InventoryItem = {
           id: doc.id,
@@ -127,17 +330,38 @@ export class InventoryService {
           purchasePrice: data.purchasePrice || 0,
           sellingPrice: data.sellingPrice || 0,
           supplierName: data.supplierName,
+          supplierId: data.supplierId,
+          supplierEmail: data.supplierEmail,
           supplierContact: data.supplierContact,
           location: data.location,
           barcode: data.barcode,
           image: data.image,
+          images: data.images || [],
           status: data.status || 'active',
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           companyId: data.companyId || companyId,
-          weight: data.weight,
+          // Inhalt pro Einheit (für Flaschen etc.)
+          contentAmount: contentAmount,
+          contentUnit: data.contentUnit || 'L',
+          totalContent: this.calculateTotalContent(contentAmount, currentStock),
+          // Verpackungshierarchie
+          packagingUnits: data.packagingUnits || [],
+          // Gewicht
+          unitWeight: unitWeight,
+          weightUnit: data.weightUnit || 'kg',
+          totalWeight: this.calculateTotalWeight(unitWeight, currentStock),
+          // Inventur-Felder
+          batchNumber: data.batchNumber,
+          expiryDate: data.expiryDate?.toDate(),
+          productionDate: data.productionDate?.toDate(),
+          serialNumbers: data.serialNumbers,
           dimensions: data.dimensions,
           notes: data.notes,
+          // Zusätzliche Felder
+          taxRate: data.taxRate,
+          origin: data.origin,
+          manufacturer: data.manufacturer,
           // Berechnete Felder
           stockValue: currentStock * (data.purchasePrice || 0),
           isLowStock: availableStock <= (data.minStock || 0),
@@ -147,6 +371,9 @@ export class InventoryService {
         items.push(item);
       });
 
+      // Client-seitige Sortierung (keine orderBy in Firestore gemäß Projektregeln)
+      items.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
       return items;
     } catch (error) {
       throw error;
@@ -154,7 +381,77 @@ export class InventoryService {
   }
 
   /**
-   * Einzelnen Inventar-Artikel laden
+   * Einzelnen Inventar-Artikel laden (korrigierte Version mit Subcollection)
+   */
+  static async getInventoryItemById(companyId: string, itemId: string): Promise<InventoryItem | null> {
+    try {
+      const itemRef = doc(db, 'companies', companyId, 'inventory', itemId);
+      const itemSnapshot = await getDoc(itemRef);
+
+      if (!itemSnapshot.exists()) {
+        return null;
+      }
+
+      const data = itemSnapshot.data();
+      const currentStock = data.currentStock || 0;
+      const reservedStock = data.reservedStock || 0;
+      const availableStock = currentStock - reservedStock;
+      const unitWeight = data.unitWeight || 0;
+      const contentAmount = data.contentAmount || 0;
+
+      return {
+        id: itemSnapshot.id,
+        name: data.name || '',
+        description: data.description,
+        sku: data.sku || '',
+        category: data.category || 'Allgemein',
+        unit: data.unit || 'Stück',
+        currentStock,
+        reservedStock,
+        availableStock,
+        minStock: data.minStock || 0,
+        maxStock: data.maxStock,
+        purchasePrice: data.purchasePrice || 0,
+        sellingPrice: data.sellingPrice || 0,
+        supplierName: data.supplierName,
+        supplierId: data.supplierId,
+        supplierEmail: data.supplierEmail,
+        supplierContact: data.supplierContact,
+        location: data.location,
+        barcode: data.barcode,
+        image: data.image,
+        images: data.images || [],
+        status: data.status || 'active',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        companyId: data.companyId || companyId,
+        // Inhalt pro Einheit
+        contentAmount: contentAmount,
+        contentUnit: data.contentUnit || 'L',
+        totalContent: this.calculateTotalContent(contentAmount, currentStock),
+        // Gewicht
+        unitWeight: unitWeight,
+        weightUnit: data.weightUnit || 'kg',
+        totalWeight: this.calculateTotalWeight(unitWeight, currentStock),
+        // Inventur-Felder
+        batchNumber: data.batchNumber,
+        manufacturer: data.manufacturer,
+        taxRate: data.taxRate || 19,
+        expiryDate: data.expiryDate?.toDate(),
+        serialNumbers: data.serialNumbers,
+        dimensions: data.dimensions,
+        notes: data.notes,
+        stockValue: currentStock * (data.purchasePrice || 0),
+        isLowStock: availableStock <= (data.minStock || 0),
+        isOutOfStock: availableStock <= 0,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Einzelnen Inventar-Artikel laden (DEPRECATED - verwendet alte Collection)
    */
   static async getInventoryItem(companyId: string, itemId: string): Promise<InventoryItem | null> {
     try {
@@ -175,6 +472,7 @@ export class InventoryService {
       const currentStock = data.currentStock || 0;
       const reservedStock = data.reservedStock || 0;
       const availableStock = currentStock - reservedStock;
+      const unitWeight = data.unitWeight || 0;
 
       return {
         id: itemSnapshot.docs[0].id,
@@ -191,15 +489,24 @@ export class InventoryService {
         purchasePrice: data.purchasePrice || 0,
         sellingPrice: data.sellingPrice || 0,
         supplierName: data.supplierName,
+        supplierId: data.supplierId,
+        supplierEmail: data.supplierEmail,
         supplierContact: data.supplierContact,
         location: data.location,
         barcode: data.barcode,
         image: data.image,
+        images: data.images || [],
         status: data.status || 'active',
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
         companyId: data.companyId || companyId,
-        weight: data.weight,
+        // Inventur-Felder
+        unitWeight: unitWeight,
+        weightUnit: data.weightUnit || 'kg',
+        totalWeight: this.calculateTotalWeight(unitWeight, currentStock),
+        batchNumber: data.batchNumber,
+        expiryDate: data.expiryDate?.toDate(),
+        serialNumbers: data.serialNumbers,
         dimensions: data.dimensions,
         notes: data.notes,
         stockValue: currentStock * (data.purchasePrice || 0),
@@ -250,6 +557,8 @@ export class InventoryService {
           purchasePrice: data.purchasePrice || 0,
           sellingPrice: data.sellingPrice || 0,
           supplierName: data.supplierName,
+          supplierId: data.supplierId,
+          supplierEmail: data.supplierEmail,
           supplierContact: data.supplierContact,
           location: data.location,
           barcode: data.barcode,
@@ -372,7 +681,8 @@ export class InventoryService {
         Object.entries(newItem).filter(([, v]) => v !== undefined)
       );
 
-      const docRef = await addDoc(collection(db, 'inventory'), cleanedNewItem);
+      // NEUE SUBCOLLECTION STRUKTUR
+      const docRef = await addDoc(collection(db, 'companies', companyId, 'inventory'), cleanedNewItem);
 
       // Stock-Movement für Initial-Bestand hinzufügen
       if (itemData.currentStock > 0) {
@@ -487,18 +797,17 @@ export class InventoryService {
    */
   static async getStockMovements(companyId: string, itemId?: string): Promise<StockMovement[]> {
     try {
+      // KEINE orderBy - client-seitige Sortierung (Projektregeln)
       let movementsQuery = query(
         collection(db, 'stockMovements'),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
+        where('companyId', '==', companyId)
       );
 
       if (itemId) {
         movementsQuery = query(
           collection(db, 'stockMovements'),
           where('companyId', '==', companyId),
-          where('itemId', '==', itemId),
-          orderBy('createdAt', 'desc')
+          where('itemId', '==', itemId)
         );
       }
 
@@ -523,6 +832,9 @@ export class InventoryService {
           companyId: data.companyId || companyId,
         });
       });
+
+      // Client-seitige Sortierung nach createdAt (neueste zuerst)
+      movements.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
       return movements;
     } catch (error) {

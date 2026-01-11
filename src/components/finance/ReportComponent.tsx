@@ -28,6 +28,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { auth } from '@/firebase/clients';
 import { BusinessReportService, type BusinessReportData } from '@/services/businessReportService';
 import { DatevAuswertungsService, type BWAData, type SuSaData, type EURData } from '@/services/datevAuswertungsService';
 
@@ -83,12 +84,12 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
       else if (selectedPeriod === 'current-quarter') periodType = 'quarter';
       else if (selectedPeriod === 'current-year' || selectedPeriod === 'last-year') periodType = 'year';
 
-      // Lade alle Daten parallel
+      // Lade alle Daten parallel mit individueller Fehlerbehandlung
       const [report, bwa, susa, eur] = await Promise.all([
-        BusinessReportService.getBusinessReport(companyId, { startDate, endDate, type: periodType }),
-        DatevAuswertungsService.generateBWA(companyId, year, endDate.getMonth() + 1),
-        DatevAuswertungsService.generateSuSa(companyId, year, endDate.getMonth() + 1),
-        DatevAuswertungsService.generateEUR(companyId, year),
+        BusinessReportService.getBusinessReport(companyId, { startDate, endDate, type: periodType }).catch(() => null),
+        DatevAuswertungsService.generateBWA(companyId, year, endDate.getMonth() + 1).catch(() => null),
+        DatevAuswertungsService.generateSuSa(companyId, year, endDate.getMonth() + 1).catch(() => null),
+        DatevAuswertungsService.generateEUR(companyId, year).catch(() => null),
       ]);
 
       setBusinessReport(report);
@@ -100,24 +101,84 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
     } finally {
       setLoading(false);
     }
-  }, [companyId, getDateRange]);
+  }, [companyId, getDateRange, selectedPeriod]);
 
   useEffect(() => {
     loadReportData();
   }, [loadReportData]);
 
-  const handleGenerateReport = async (reportType: string) => {
+  // PDF-Download-Funktion
+  const downloadReportPdf = async (reportType: 'bwa' | 'susa' | 'eur') => {
     try {
       setGenerating(true);
-      // Hier würde die Berichtsgenerierung implementiert werden
-      toast.success(`${reportType} wird generiert und heruntergeladen`);
+      const { startDate, endDate } = getDateRange();
+      const year = endDate.getFullYear();
+      const month = endDate.getMonth() + 1;
 
-      // Simulation eines Downloads
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch {
-      toast.error('Bericht konnte nicht generiert werden');
+      // Auth-Token holen
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        toast.error('Nicht authentifiziert');
+        return;
+      }
+
+      // API-Aufruf für PDF-Generierung
+      const response = await fetch(
+        `/api/company/${companyId}/reports/pdf?type=${reportType}&year=${year}&month=${month}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+      }
+
+      // PDF herunterladen
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const reportNames: Record<string, string> = {
+        bwa: 'BWA',
+        susa: 'SuSa',
+        eur: 'EUR',
+      };
+      link.download = `${reportNames[reportType]}_${year}_${month.toString().padStart(2, '0')}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${reportNames[reportType]} wurde heruntergeladen`);
+    } catch (error) {
+      console.error('PDF Download Fehler:', error);
+      toast.error(error instanceof Error ? error.message : 'PDF konnte nicht erstellt werden');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateReport = async (reportType: string) => {
+    // Mapping von UI-Namen zu API-Typen
+    const typeMapping: Record<string, 'bwa' | 'susa' | 'eur'> = {
+      'BWA': 'bwa',
+      'BWA Detail': 'bwa',
+      'SuSa': 'susa',
+      'EÜR': 'eur',
+    };
+
+    const apiType = typeMapping[reportType];
+    if (apiType) {
+      await downloadReportPdf(apiType);
+    } else {
+      // Für andere Report-Typen (UStVA, etc.) - noch nicht implementiert
+      toast.info(`${reportType} Export wird bald verfügbar sein`);
     }
   };
 
@@ -659,6 +720,16 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
 
         {/* Module KPIs Tab */}
         <TabsContent value="modules" className="space-y-4">
+          {!businessReport ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-500">Keine Moduldaten verfügbar.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Daten werden angezeigt, sobald Mitarbeiter, Inventar oder Zeiteinträge erfasst wurden.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* HR KPIs */}
             <Card>
@@ -672,33 +743,33 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Mitarbeiter gesamt</p>
-                    <p className="text-xl font-bold">{businessReport?.hr.totalEmployees}</p>
+                    <p className="text-xl font-bold">{businessReport.hr.totalEmployees}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Aktive Mitarbeiter</p>
-                    <p className="text-xl font-bold text-green-600">{businessReport?.hr.activeEmployees}</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport.hr.activeEmployees}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Vollzeit</p>
-                    <p className="text-xl font-bold">{businessReport?.hr.fullTimeEmployees}</p>
+                    <p className="text-xl font-bold">{businessReport.hr.fullTimeEmployees}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Teilzeit</p>
-                    <p className="text-xl font-bold">{businessReport?.hr.partTimeEmployees}</p>
+                    <p className="text-xl font-bold">{businessReport.hr.partTimeEmployees}</p>
                   </div>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Brutto-Gehälter</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.hr.totalGrossSalary ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.hr.totalGrossSalary)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Arbeitgeberkosten</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.hr.totalEmployerCosts ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.hr.totalEmployerCosts)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Krankheitstage</span>
-                    <span className="font-medium">{businessReport?.hr.sickDays} Tage</span>
+                    <span className="font-medium">{businessReport.hr.sickDays} Tage</span>
                   </div>
                 </div>
               </CardContent>
@@ -716,29 +787,29 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Artikel gesamt</p>
-                    <p className="text-xl font-bold">{businessReport?.inventory.totalItems}</p>
+                    <p className="text-xl font-bold">{businessReport.inventory.totalItems}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Lagerwert</p>
-                    <p className="text-xl font-bold">{formatCurrency(businessReport?.inventory.totalValue ?? 0)}</p>
+                    <p className="text-xl font-bold">{formatCurrency(businessReport.inventory.totalValue)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Niedriger Bestand</p>
-                    <p className="text-xl font-bold text-orange-500">{businessReport?.inventory.lowStockItems}</p>
+                    <p className="text-xl font-bold text-orange-500">{businessReport.inventory.lowStockItems}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Nicht vorrätig</p>
-                    <p className="text-xl font-bold text-red-500">{businessReport?.inventory.outOfStockItems}</p>
+                    <p className="text-xl font-bold text-red-500">{businessReport.inventory.outOfStockItems}</p>
                   </div>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Verkaufswert</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.inventory.totalRetailValue ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.inventory.totalRetailValue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Potenzielle Marge</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.inventory.potentialProfit ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.inventory.potentialProfit)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -756,29 +827,29 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Stunden gesamt</p>
-                    <p className="text-xl font-bold">{businessReport?.timeTracking.totalHours.toFixed(1)}h</p>
+                    <p className="text-xl font-bold">{businessReport.timeTracking.totalHours.toFixed(1)}h</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Abrechenbar</p>
-                    <p className="text-xl font-bold text-green-600">{businessReport?.timeTracking.billableHours.toFixed(1)}h</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport.timeTracking.billableHours.toFixed(1)}h</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Abrechenbar %</p>
-                    <p className="text-xl font-bold">{businessReport?.timeTracking.billablePercentage.toFixed(1)}%</p>
+                    <p className="text-xl font-bold">{businessReport.timeTracking.billablePercentage.toFixed(1)}%</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Stundensatz</p>
-                    <p className="text-xl font-bold">{formatCurrency(businessReport?.timeTracking.averageHourlyRate ?? 0)}</p>
+                    <p className="text-xl font-bold">{formatCurrency(businessReport.timeTracking.averageHourlyRate)}</p>
                   </div>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Abrechenbarer Umsatz</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.timeTracking.totalBillableAmount ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.timeTracking.totalBillableAmount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Aktive Projekte</span>
-                    <span className="font-medium">{businessReport?.timeTracking.activeProjects}</span>
+                    <span className="font-medium">{businessReport.timeTracking.activeProjects}</span>
                   </div>
                 </div>
               </CardContent>
@@ -796,38 +867,39 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Aufträge gesamt</p>
-                    <p className="text-xl font-bold">{businessReport?.orders.totalOrders}</p>
+                    <p className="text-xl font-bold">{businessReport.orders.totalOrders}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Abgeschlossen</p>
-                    <p className="text-xl font-bold text-green-600">{businessReport?.orders.completedOrders}</p>
+                    <p className="text-xl font-bold text-green-600">{businessReport.orders.completedOrders}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">In Bearbeitung</p>
-                    <p className="text-xl font-bold text-blue-500">{businessReport?.orders.inProgressOrders}</p>
+                    <p className="text-xl font-bold text-blue-500">{businessReport.orders.inProgressOrders}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Storniert</p>
-                    <p className="text-xl font-bold text-red-500">{businessReport?.orders.cancelledOrders}</p>
+                    <p className="text-xl font-bold text-red-500">{businessReport.orders.cancelledOrders}</p>
                   </div>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Umsatz aus Aufträgen</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.orders.totalOrderValue ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.orders.totalOrderValue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Durchschnittswert</span>
-                    <span className="font-medium">{formatCurrency(businessReport?.orders.averageOrderValue ?? 0)}</span>
+                    <span className="font-medium">{formatCurrency(businessReport.orders.averageOrderValue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Abschlussrate</span>
-                    <span className="font-medium">{businessReport?.orders.completionRate.toFixed(1)}%</span>
+                    <span className="font-medium">{businessReport.orders.completionRate.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="tax" className="space-y-4">

@@ -7,21 +7,25 @@
  * 1. Benutzer lädt Rechnung hoch → OCR extrahiert Daten
  * 2. Benutzer korrigiert Fehler → System speichert Korrektur
  * 3. Bei nächster Rechnung vom gleichen Lieferanten → Gelernte Regeln anwenden
+ * 
+ * DUAL-LEARNING-ARCHITEKTUR:
+ * - Firebase Firestore: Vendor-Patterns pro Company (schneller Lookup)
+ * - Hetzner Taskilo-KI: ML-basiertes Lernen mit PostgreSQL (NER, Anomalie-Detection)
  */
 
 import { db } from '@/firebase/clients';
 import { 
   collection, 
   doc, 
-  getDoc, 
   setDoc, 
-  updateDoc, 
-  query, 
-  where, 
   getDocs,
-  increment,
   Timestamp 
 } from 'firebase/firestore';
+
+// Taskilo-KI API URL (integrierter Service mit PostgreSQL)
+const HETZNER_KI_URL = process.env.NEXT_PUBLIC_HETZNER_KI_URL || 'https://mail.taskilo.de/ki';
+// Legacy: Alte OCR Service URL (wird nicht mehr verwendet)
+const HETZNER_OCR_URL = process.env.NEXT_PUBLIC_HETZNER_OCR_URL || 'https://mail.taskilo.de/ocr';
 
 // ==================== TYPES ====================
 
@@ -110,6 +114,96 @@ export interface OCRCorrectionInput {
     iban?: string;
     bic?: string;
   };
+  
+  // Optional: Original OCR-Text für ML-Training
+  ocrText?: string;
+}
+
+// ==================== TASKILO-KI INTEGRATION ====================
+
+/**
+ * Sendet Korrekturen an die Taskilo-KI für ML-Training
+ * Die KI nutzt NER, Anomalie-Detection und speichert in PostgreSQL
+ */
+async function sendToTaskiloKI(
+  ocrText: string,
+  feldtyp: string,
+  original: string,
+  korrigiert: string
+): Promise<boolean> {
+  try {
+    // Neue integrierte taskilo-ki API
+    const response = await fetch(`${HETZNER_KI_URL}/api/v1/dokumente/ocr/learn`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ocr_text: ocrText,
+        feldtyp,
+        original,
+        korrigiert,
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[OCR Learning] Taskilo-KI Fehler:', error);
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log('[OCR Learning] Taskilo-KI trainiert (PostgreSQL):', result);
+    return true;
+  } catch (error) {
+    console.error('[OCR Learning] Taskilo-KI nicht erreichbar:', error);
+    // Nicht blockierend - Firebase-Speicherung funktioniert weiterhin
+    return false;
+  }
+}
+
+/**
+ * Trainiert die Taskilo-KI mit allen Korrekturen aus einem Formular
+ */
+async function trainTaskiloKIWithCorrections(
+  ocrText: string,
+  ocrData: OCRCorrectionInput['ocrData'],
+  correctedData: OCRCorrectionInput['correctedData']
+): Promise<void> {
+  const fields: Array<{ key: keyof typeof ocrData; feldtyp: string }> = [
+    { key: 'vendor', feldtyp: 'firma' },
+    { key: 'invoiceNumber', feldtyp: 'rechnungsnummer' },
+    { key: 'email', feldtyp: 'email' },
+    { key: 'phone', feldtyp: 'telefon' },
+    { key: 'vatId', feldtyp: 'ust_id' },
+    { key: 'address', feldtyp: 'adresse' },
+    { key: 'city', feldtyp: 'ort' },
+    { key: 'zip', feldtyp: 'plz' },
+    { key: 'iban', feldtyp: 'iban' },
+    { key: 'bic', feldtyp: 'bic' },
+  ];
+  
+  // Sende alle Korrekturen parallel an Taskilo-KI
+  const promises = fields
+    .filter(({ key }) => {
+      const original = ocrData[key] || '';
+      const corrected = correctedData[key] || '';
+      return corrected && corrected !== original;
+    })
+    .map(({ key, feldtyp }) => 
+      sendToTaskiloKI(
+        ocrText,
+        feldtyp,
+        ocrData[key] || '',
+        correctedData[key] || ''
+      )
+    );
+  
+  if (promises.length > 0) {
+    const results = await Promise.all(promises);
+    const successCount = results.filter(Boolean).length;
+    console.log(`[OCR Learning] ${successCount}/${promises.length} Korrekturen an Taskilo-KI gesendet`);
+  }
 }
 
 // ==================== HELPER FUNCTIONS ====================

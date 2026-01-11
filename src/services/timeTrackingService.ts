@@ -390,27 +390,13 @@ export class TimeTrackingService {
     }
   ): Promise<TimeEntry[]> {
     try {
-      let q = query(
+      // KEINE orderBy - client-seitige Sortierung (Projektregeln)
+      const baseQuery = query(
         collection(db, this.TIME_ENTRIES_COLLECTION),
-        where('companyId', '==', companyId),
-        orderBy('startTime', 'desc')
+        where('companyId', '==', companyId)
       );
 
-      // Filter anwenden
-      if (filters?.userId) {
-        q = query(q, where('userId', '==', filters.userId));
-      }
-      if (filters?.projectId) {
-        q = query(q, where('projectId', '==', filters.projectId));
-      }
-      if (filters?.customerId) {
-        q = query(q, where('customerId', '==', filters.customerId));
-      }
-      if (filters?.status) {
-        q = query(q, where('status', '==', filters.status));
-      }
-
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(baseQuery);
       let entries = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -421,7 +407,21 @@ export class TimeTrackingService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as TimeEntry[];
 
-      // Datumsfilter anwenden (clientseitig, da Firestore Limits hat)
+      // Filter anwenden (clientseitig)
+      if (filters?.userId) {
+        entries = entries.filter(e => e.userId === filters.userId);
+      }
+      if (filters?.projectId) {
+        entries = entries.filter(e => e.projectId === filters.projectId);
+      }
+      if (filters?.customerId) {
+        entries = entries.filter(e => e.customerId === filters.customerId);
+      }
+      if (filters?.status) {
+        entries = entries.filter(e => e.status === filters.status);
+      }
+
+      // Datumsfilter anwenden (clientseitig)
       if (filters?.startDate || filters?.endDate) {
         entries = entries.filter(entry => {
           const entryDate = entry.startTime;
@@ -430,6 +430,9 @@ export class TimeTrackingService {
           return true;
         });
       }
+
+      // Client-seitige Sortierung nach startTime (neueste zuerst)
+      entries.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
 
       return entries;
     } catch (error) {
@@ -518,14 +521,14 @@ export class TimeTrackingService {
    */
   static async getProjectsByCompany(companyId: string): Promise<Project[]> {
     try {
+      // KEINE orderBy - client-seitige Sortierung (Projektregeln)
       const q = query(
         collection(db, this.PROJECTS_COLLECTION),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
+        where('companyId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
+      const projects = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -549,6 +552,11 @@ export class TimeTrackingService {
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
         } as Project;
       });
+
+      // Client-seitige Sortierung nach createdAt (neueste zuerst)
+      projects.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      return projects;
     } catch (error) {
       throw new Error('Projekte konnten nicht geladen werden');
     }

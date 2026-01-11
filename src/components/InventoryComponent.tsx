@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   addDoc,
   serverTimestamp,
@@ -15,7 +17,9 @@ import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
 import type { InventoryItem, InventoryStats, StockMovement } from '@/services/inventoryService';
 import type { InventoryCategoryExtended } from '@/services/types';
-import { InventoryService } from '@/services/inventoryService';
+import { InventoryService, WEIGHT_VOLUME_UNITS, SALES_UNITS } from '@/services/inventoryService';
+import { CustomerService } from '@/services/customerService';
+import type { Customer } from '@/components/finance/AddCustomerModal';
 import {
   AlertCircle,
   AlertTriangle,
@@ -25,6 +29,7 @@ import {
   ChevronsUpDown,
   Edit,
   Eye,
+  Mail,
   Package,
   Plus,
   Search,
@@ -62,7 +67,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -90,32 +94,48 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   const [savingInlineService, setSavingInlineService] = useState(false);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [categories, setCategories] = useState<InventoryCategoryExtended[]>([]);
+  const [suppliers, setSuppliers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [uploadingImages, setUploadingImages] = useState<{ [key: number]: boolean }>({});
 
-  // Form-States für neuen Artikel
-  const [newItem, setNewItem] = useState({
+  // Form-States für Artikel bearbeiten
+  const [editItem, setEditItem] = useState({
     name: '',
     description: '',
     sku: '',
     category: '',
-    unit: 'Stück',
+    unit: 'Flasche',
     currentStock: 0,
     minStock: 0,
     maxStock: 0,
     purchasePrice: 0,
     sellingPrice: 0,
     supplierName: '',
+    supplierId: '',
+    supplierEmail: '',
     location: '',
-    status: 'active' as const,
+    barcode: '',
+    // Inhalt pro Einheit (z.B. 0,33L Flasche)
+    contentAmount: 0,
+    contentUnit: 'L' as 'kg' | 'g' | 'mg' | 'L' | 'ml' | 'cl' | 'm' | 'cm' | 'mm' | 'Stück',
+    // Gewicht der Einheit inkl. Verpackung
+    unitWeight: 0,
+    weightUnit: 'g' as 'kg' | 'g' | 'mg' | 'L' | 'ml' | 'cl' | 'm' | 'cm' | 'mm' | 'Stück',
+    images: [] as string[],
+    batchNumber: '',
+    // Zusätzliche Inventur-Felder
+    manufacturer: '',
+    taxRate: 19,
+    status: 'active' as 'active' | 'inactive' | 'discontinued',
   });
 
   // Stock-Adjustment States
@@ -134,15 +154,19 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       if (!companyId) return; // Früher Return wenn keine companyId
 
       setLoading(true);
-      // Lade Daten aus beiden Collections parallel
-      const [itemsData, statsData, movementsData, categoriesData, inlineServicesSnap] =
+      // Lade Daten aus allen Collections parallel inkl. Lieferanten
+      const [itemsData, statsData, movementsData, categoriesData, inlineServicesSnap, suppliersData] =
         await Promise.all([
           InventoryService.getInventoryItems(companyId),
           InventoryService.getInventoryStats(companyId),
           InventoryService.getStockMovements(companyId),
           InventoryService.getCategories(companyId),
           getDocs(collection(db, 'companies', companyId, 'inlineInvoiceServices')),
+          CustomerService.getSuppliers(companyId).catch(() => []),
         ]);
+
+      // Setze Lieferanten
+      setSuppliers(suppliersData);
 
       // Konvertiere inline Services zu ServiceItem Format
       const inlineServicesData = inlineServicesSnap.docs.map(doc => {
@@ -381,38 +405,49 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setInlineServices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       toast.success('Dienstleistung gelöscht');
     } catch (e) {
-      console.error('Fehler beim Löschen:', e);
       toast.error('Fehler beim Löschen der Dienstleistung');
     }
   }
 
-  const handleAddItem = async () => {
+  // Bild-Upload-Handler für bearbeiteten Artikel
+  const handleEditItemImageUpload = async (file: File, index: number) => {
+    if (!selectedItem) return;
+    
     try {
-      await InventoryService.addInventoryItem(companyId, {
-        ...newItem,
-        reservedStock: 0,
-        availableStock: newItem.currentStock,
+      setUploadingImages(prev => ({ ...prev, [index]: true }));
+      
+      const imageUrl = await InventoryService.uploadItemImage(companyId, selectedItem.id, file, index);
+      
+      setEditItem(prev => {
+        const updatedImages = [...prev.images];
+        updatedImages[index] = imageUrl;
+        return { ...prev, images: updatedImages };
       });
-      await loadData();
-      setShowAddDialog(false);
-      setNewItem({
-        name: '',
-        description: '',
-        sku: '',
-        category: '',
-        unit: 'Stück',
-        currentStock: 0,
-        minStock: 0,
-        maxStock: 0,
-        purchasePrice: 0,
-        sellingPrice: 0,
-        supplierName: '',
-        location: '',
-        status: 'active',
-      });
-    } catch {
-      // Error handling - user sees UI feedback
+      
+      toast.success('Bild erfolgreich hochgeladen');
+    } catch (error) {
+      toast.error((error as Error).message || 'Fehler beim Hochladen des Bildes');
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [index]: false }));
     }
+  };
+
+  // Bild löschen Handler für bearbeiteten Artikel
+  const handleEditItemImageDelete = async (index: number) => {
+    const imageUrl = editItem.images[index];
+    if (imageUrl) {
+      try {
+        await InventoryService.deleteItemImage(imageUrl);
+      } catch {
+        // Ignoriere Fehler beim Löschen, falls Bild nicht existiert
+      }
+    }
+    
+    setEditItem(prev => {
+      const updatedImages = [...prev.images];
+      updatedImages[index] = '';
+      return { ...prev, images: updatedImages.filter(img => img !== '') };
+    });
   };
 
   const handleStockAdjustment = async () => {
@@ -460,6 +495,100 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   const handleConfirmDelete = (item: InventoryItem) => {
     setSelectedItem(item);
     setShowDeleteDialog(true);
+  };
+
+  // Handler für Artikel bearbeiten - öffnet das Edit-Modal mit vorausgefüllten Daten
+  const handleEditItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setEditItem({
+      name: item.name,
+      description: item.description || '',
+      sku: item.sku || '',
+      category: item.category || '',
+      unit: item.unit || 'Stück',
+      currentStock: item.currentStock,
+      minStock: item.minStock,
+      maxStock: item.maxStock || 0,
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.sellingPrice,
+      supplierName: item.supplierName || '',
+      supplierId: item.supplierId || '',
+      supplierEmail: item.supplierEmail || '',
+      location: item.location || '',
+      barcode: item.barcode || '',
+      contentAmount: (item as any).contentAmount || 0,
+      contentUnit: (item as any).contentUnit || 'L',
+      unitWeight: item.unitWeight || 0,
+      weightUnit: item.weightUnit || 'kg',
+      images: item.images || [],
+      batchNumber: (item as any).batchNumber || '',
+      manufacturer: (item as any).manufacturer || '',
+      taxRate: (item as any).taxRate || 19,
+      status: item.status || 'active',
+    });
+    setShowEditDialog(true);
+  };
+
+  // Handler für Speichern der Bearbeitung
+  const handleSaveEdit = async () => {
+    if (!selectedItem) return;
+
+    try {
+      const itemRef = doc(db, 'companies', companyId, 'inventory', selectedItem.id);
+      
+      // Berechne die Bestandsdifferenz für die Historie
+      const stockDifference = editItem.currentStock - selectedItem.currentStock;
+      
+      // Berechne Gesamtgewicht
+      const totalWeight = InventoryService.calculateTotalWeight(editItem.unitWeight, editItem.currentStock);
+      
+      await updateDoc(itemRef, {
+        name: editItem.name,
+        description: editItem.description,
+        sku: editItem.sku,
+        category: editItem.category,
+        unit: editItem.unit,
+        currentStock: editItem.currentStock,
+        minStock: editItem.minStock,
+        maxStock: editItem.maxStock,
+        purchasePrice: editItem.purchasePrice,
+        sellingPrice: editItem.sellingPrice,
+        supplierName: editItem.supplierName,
+        supplierId: editItem.supplierId,
+        supplierEmail: editItem.supplierEmail,
+        location: editItem.location,
+        barcode: editItem.barcode,
+        unitWeight: editItem.unitWeight,
+        weightUnit: editItem.weightUnit,
+        totalWeight: totalWeight,
+        batchNumber: editItem.batchNumber,
+        images: editItem.images,
+        status: editItem.status,
+        availableStock: editItem.currentStock,
+        stockValue: editItem.currentStock * editItem.purchasePrice,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Falls Bestand geändert wurde, füge einen Eintrag zur Historie hinzu
+      if (stockDifference !== 0) {
+        await InventoryService.adjustStock(
+          companyId,
+          selectedItem.id,
+          editItem.name,
+          editItem.currentStock,
+          editItem.unit,
+          'Bestandsanpassung durch Artikelbearbeitung',
+          stockDifference > 0 ? 'in' : 'out'
+        );
+      }
+
+      await loadData();
+      setShowEditDialog(false);
+      setSelectedItem(null);
+      toast.success('Artikel erfolgreich aktualisiert');
+    } catch (error) {
+      toast.error('Fehler beim Speichern der Änderungen');
+    }
   };
 
   const filteredItems = items.filter(item => {
@@ -908,7 +1037,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle Kategorien</SelectItem>
-                  {categories.map(category => (
+                  {categories.filter(cat => cat.name).map(category => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name} ({category.itemCount})
                     </SelectItem>
@@ -935,171 +1064,388 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                 Export
               </Button>
 
-              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-                <DialogTrigger asChild>
-                  <Button className="bg-[#14ad9f] hover:bg-taskilo-hover">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Artikel hinzufügen
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Neuen Artikel hinzufügen</DialogTitle>
-                    <DialogDescription>
-                      Fügen Sie einen neuen Artikel zu Ihrem Lagerbestand hinzu.
+              <Link href={`/dashboard/company/${companyId}/inventory/new`}>
+                <Button className="bg-[#14ad9f] hover:bg-teal-700 transition-colors">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Artikel hinzufügen
+                </Button>
+              </Link>
+
+              {/* Edit-Dialog */}
+              <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="border-b border-gray-100 pb-4">
+                    <DialogTitle className="text-xl font-semibold text-gray-900">Artikel bearbeiten</DialogTitle>
+                    <DialogDescription className="text-gray-500">
+                      Bearbeiten Sie die Artikeldaten. Änderungen am Bestand werden protokolliert.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Artikelname *</Label>
-                      <Input
-                        id="name"
-                        value={newItem.name}
-                        onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                        placeholder="z.B. Schrauben M8"
-                      />
+                  
+                  <div className="space-y-6 py-4">
+                    {/* Grunddaten */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Package className="h-4 w-4 text-[#14ad9f]" />
+                        Grunddaten
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-xl p-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Artikelname *</Label>
+                          <Input
+                            value={editItem.name}
+                            onChange={e => setEditItem({ ...editItem, name: e.target.value })}
+                            placeholder="z.B. Schrauben M8"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Artikelnummer (SKU)</Label>
+                          <Input
+                            value={editItem.sku}
+                            onChange={e => setEditItem({ ...editItem, sku: e.target.value })}
+                            placeholder="z.B. SCR-M8-100"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Beschreibung</Label>
+                          <Textarea
+                            value={editItem.description}
+                            onChange={e => setEditItem({ ...editItem, description: e.target.value })}
+                            placeholder="Detaillierte Beschreibung des Artikels..."
+                            rows={2}
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Kategorie</Label>
+                          <Select
+                            value={editItem.category}
+                            onValueChange={value => setEditItem({ ...editItem, category: value })}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue placeholder="Kategorie wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Dienstleistung">Dienstleistung</SelectItem>
+                              <SelectItem value="Artikel">Artikel</SelectItem>
+                              <SelectItem value="none">Keine Kategorie</SelectItem>
+                              {categories
+                                .filter(cat => cat.name && cat.name !== 'Dienstleistung' && cat.name !== 'Artikel')
+                                .map(category => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name} ({category.itemCount})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Einheit</Label>
+                          <Select
+                            value={editItem.unit}
+                            onValueChange={value => setEditItem({ ...editItem, unit: value })}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Stück">Stück</SelectItem>
+                              <SelectItem value="kg">Kilogramm</SelectItem>
+                              <SelectItem value="g">Gramm</SelectItem>
+                              <SelectItem value="Liter">Liter</SelectItem>
+                              <SelectItem value="m">Meter</SelectItem>
+                              <SelectItem value="m²">Quadratmeter</SelectItem>
+                              <SelectItem value="m³">Kubikmeter</SelectItem>
+                              <SelectItem value="Paket">Paket</SelectItem>
+                              <SelectItem value="Box">Box</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Status</Label>
+                          <Select
+                            value={editItem.status}
+                            onValueChange={(value: 'active' | 'inactive' | 'discontinued') => setEditItem({ ...editItem, status: value })}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Aktiv</SelectItem>
+                              <SelectItem value="inactive">Inaktiv</SelectItem>
+                              <SelectItem value="discontinued">Eingestellt</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sku">Artikelnummer (SKU)</Label>
-                      <Input
-                        id="sku"
-                        value={newItem.sku}
-                        onChange={e => setNewItem({ ...newItem, sku: e.target.value })}
-                        placeholder="z.B. SCR-M8-100"
-                      />
+
+                    {/* Bestand & Preise */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-[#14ad9f]" />
+                        Bestand & Preise
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 rounded-xl p-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Aktueller Bestand</Label>
+                          <Input
+                            type="number"
+                            value={editItem.currentStock}
+                            onChange={e => setEditItem({ ...editItem, currentStock: Number(e.target.value) })}
+                            min="0"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                          {selectedItem && editItem.currentStock !== selectedItem.currentStock && (
+                            <p className={`text-xs font-medium ${editItem.currentStock > selectedItem.currentStock ? 'text-green-600' : 'text-red-600'}`}>
+                              {editItem.currentStock > selectedItem.currentStock ? '+' : ''}
+                              {editItem.currentStock - selectedItem.currentStock} {editItem.unit}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Mindestbestand</Label>
+                          <Input
+                            type="number"
+                            value={editItem.minStock}
+                            onChange={e => setEditItem({ ...editItem, minStock: Number(e.target.value) })}
+                            min="0"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Maximalbestand</Label>
+                          <Input
+                            type="number"
+                            value={editItem.maxStock}
+                            onChange={e => setEditItem({ ...editItem, maxStock: Number(e.target.value) })}
+                            min="0"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Lagerort</Label>
+                          <Input
+                            value={editItem.location}
+                            onChange={e => setEditItem({ ...editItem, location: e.target.value })}
+                            placeholder="z.B. Regal A3"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Einkaufspreis (€)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editItem.purchasePrice}
+                            onChange={e => setEditItem({ ...editItem, purchasePrice: Number(e.target.value) })}
+                            min="0"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Verkaufspreis (€)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editItem.sellingPrice}
+                            onChange={e => setEditItem({ ...editItem, sellingPrice: Number(e.target.value) })}
+                            min="0"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor="description">Beschreibung</Label>
-                      <Textarea
-                        id="description"
-                        value={newItem.description}
-                        onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                        placeholder="Detaillierte Beschreibung des Artikels..."
-                      />
+
+                    {/* Inventur & Maße */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <BoxIcon className="h-4 w-4 text-[#14ad9f]" />
+                        Inventur & Maße
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 rounded-xl p-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Einzelgewicht/-volumen</Label>
+                          <Input
+                            type="number"
+                            step="0.001"
+                            value={editItem.unitWeight}
+                            onChange={e => setEditItem({ ...editItem, unitWeight: Number(e.target.value) })}
+                            min="0"
+                            placeholder="0.000"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Einheit</Label>
+                          <Select
+                            value={editItem.weightUnit}
+                            onValueChange={(value: any) => setEditItem({ ...editItem, weightUnit: value })}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {WEIGHT_VOLUME_UNITS.map(unit => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Gesamtgewicht/-volumen</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="text"
+                              value={InventoryService.calculateTotalWeight(editItem.unitWeight, editItem.currentStock).toFixed(3)}
+                              readOnly
+                              className="border-gray-200 bg-gray-100 text-gray-600"
+                            />
+                            <span className="text-sm text-gray-500 min-w-10">{editItem.weightUnit}</span>
+                          </div>
+                          <p className="text-xs text-gray-400">Automatisch berechnet</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Barcode / EAN</Label>
+                          <Input
+                            value={editItem.barcode}
+                            onChange={e => setEditItem({ ...editItem, barcode: e.target.value })}
+                            placeholder="z.B. 4001234567890"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label className="text-sm font-medium text-gray-700">Chargennummer / Lot</Label>
+                          <Input
+                            value={editItem.batchNumber}
+                            onChange={e => setEditItem({ ...editItem, batchNumber: e.target.value })}
+                            placeholder="z.B. LOT-2026-001"
+                            className="border-gray-200 focus:border-[#14ad9f] focus:ring-[#14ad9f]/20"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Kategorie</Label>
-                      <Select
-                        value={newItem.category}
-                        onValueChange={value => setNewItem({ ...newItem, category: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kategorie wählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Dienstleistung">Dienstleistung</SelectItem>
-                          <SelectItem value="Artikel">Artikel</SelectItem>
-                          <SelectItem value="">Keine Kategorie</SelectItem>
-                          {/* Dynamische Kategorien aus bestehenden Kategorien */}
-                          {categories
-                            .filter(cat => cat.name !== 'Dienstleistung' && cat.name !== 'Artikel')
-                            .map(category => (
-                              <SelectItem key={category.id} value={category.name}>
-                                {category.name} ({category.itemCount})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+
+                    {/* Lieferant */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Package className="h-4 w-4 text-[#14ad9f]" />
+                        Lieferant
+                      </h3>
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Lieferant auswählen</Label>
+                          <Select
+                            value={editItem.supplierId || 'none'}
+                            onValueChange={value => {
+                              if (value === 'none') {
+                                setEditItem({ ...editItem, supplierId: '', supplierName: '', supplierEmail: '' });
+                              } else {
+                                const supplier = suppliers.find(s => s.id === value);
+                                if (supplier) {
+                                  setEditItem({
+                                    ...editItem,
+                                    supplierId: supplier.id,
+                                    supplierName: supplier.name,
+                                    supplierEmail: supplier.email,
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue placeholder="Lieferant auswählen..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Kein Lieferant</SelectItem>
+                              {suppliers.map(supplier => (
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                  {supplier.name} {supplier.customerNumber ? `(${supplier.customerNumber})` : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {editItem.supplierName && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Aktuell verknüpft: <span className="font-medium text-[#14ad9f]">{editItem.supplierName}</span>
+                              {editItem.supplierEmail && <span className="ml-1">({editItem.supplierEmail})</span>}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="unit">Einheit</Label>
-                      <Select
-                        value={newItem.unit}
-                        onValueChange={value => setNewItem({ ...newItem, unit: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Stück">Stück</SelectItem>
-                          <SelectItem value="kg">Kilogramm</SelectItem>
-                          <SelectItem value="g">Gramm</SelectItem>
-                          <SelectItem value="Liter">Liter</SelectItem>
-                          <SelectItem value="m">Meter</SelectItem>
-                          <SelectItem value="m²">Quadratmeter</SelectItem>
-                          <SelectItem value="m³">Kubikmeter</SelectItem>
-                          <SelectItem value="Paket">Paket</SelectItem>
-                          <SelectItem value="Box">Box</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="currentStock">Aktueller Bestand</Label>
-                      <Input
-                        id="currentStock"
-                        type="number"
-                        value={newItem.currentStock}
-                        onChange={e =>
-                          setNewItem({ ...newItem, currentStock: Number(e.target.value) })
-                        }
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="minStock">Mindestbestand</Label>
-                      <Input
-                        id="minStock"
-                        type="number"
-                        value={newItem.minStock}
-                        onChange={e => setNewItem({ ...newItem, minStock: Number(e.target.value) })}
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="purchasePrice">Einkaufspreis (€)</Label>
-                      <Input
-                        id="purchasePrice"
-                        type="number"
-                        step="0.01"
-                        value={newItem.purchasePrice}
-                        onChange={e =>
-                          setNewItem({ ...newItem, purchasePrice: Number(e.target.value) })
-                        }
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sellingPrice">Verkaufspreis (€)</Label>
-                      <Input
-                        id="sellingPrice"
-                        type="number"
-                        step="0.01"
-                        value={newItem.sellingPrice}
-                        onChange={e =>
-                          setNewItem({ ...newItem, sellingPrice: Number(e.target.value) })
-                        }
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="supplier">Lieferant</Label>
-                      <Input
-                        id="supplier"
-                        value={newItem.supplierName}
-                        onChange={e => setNewItem({ ...newItem, supplierName: e.target.value })}
-                        placeholder="Name des Lieferanten"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Lagerort</Label>
-                      <Input
-                        id="location"
-                        value={newItem.location}
-                        onChange={e => setNewItem({ ...newItem, location: e.target.value })}
-                        placeholder="z.B. Regal A3"
-                      />
+
+                    {/* Bilder */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <FolderIcon className="h-4 w-4 text-[#14ad9f]" />
+                        Artikelbilder (max. 3)
+                      </h3>
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          {[0, 1, 2].map((index) => (
+                            <div key={index} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-white hover:border-[#14ad9f] transition-colors group relative overflow-hidden">
+                              {uploadingImages[index] ? (
+                                <div className="flex flex-col items-center justify-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+                                  <p className="text-xs text-gray-500 mt-2">Hochladen...</p>
+                                </div>
+                              ) : editItem.images[index] ? (
+                                <div className="relative w-full h-full">
+                                  <img src={editItem.images[index]} alt={`Bild ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditItemImageDelete(index)}
+                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="cursor-pointer w-full h-full flex items-center justify-center">
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        handleEditItemImageUpload(file, index);
+                                      }
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  <div className="text-center p-4">
+                                    <Plus className="h-8 w-8 text-gray-400 mx-auto group-hover:text-[#14ad9f] transition-colors" />
+                                    <p className="text-xs text-gray-500 mt-2">Bild {index + 1}</p>
+                                    <p className="text-xs text-gray-400">Max. 5 MB</p>
+                                  </div>
+                                </label>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-3 text-center">
+                          Erlaubte Formate: JPEG, PNG, WebP, GIF (max. 5 MB pro Bild)
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <Button variant="outline" onClick={() => setShowEditDialog(false)} className="px-6">
                       Abbrechen
                     </Button>
                     <Button
-                      onClick={handleAddItem}
-                      className="bg-[#14ad9f] hover:bg-taskilo-hover"
-                      disabled={!newItem.name}
+                      onClick={handleSaveEdit}
+                      className="bg-[#14ad9f] hover:bg-teal-700 transition-colors px-6"
+                      disabled={!editItem.name}
                     >
-                      Artikel hinzufügen
+                      <Check className="h-4 w-4 mr-2" />
+                      Änderungen speichern
                     </Button>
                   </div>
                 </DialogContent>
@@ -1122,6 +1468,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     <TableHead>Artikel</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Kategorie</TableHead>
+                    <TableHead>Lieferant</TableHead>
                     <TableHead>Bestand</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Wert</TableHead>
@@ -1154,6 +1501,20 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                           <Badge variant="outline">{item.category}</Badge>
                         </TableCell>
                         <TableCell>
+                          {item.supplierName ? (
+                            <div className="text-sm">
+                              <div className="font-medium">{item.supplierName}</div>
+                              {item.supplierEmail && (
+                                <div className="text-xs text-muted-foreground">
+                                  {item.supplierEmail}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">
                               {item.currentStock} {item.unit}
@@ -1182,29 +1543,24 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setStockAdjustment({
-                                  newStock: item.currentStock,
-                                  reason: '',
-                                  type: 'adjustment',
-                                });
-                                setShowStockDialog(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(item)}
-                              title="Details anzeigen"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <Link href={`/dashboard/company/${companyId}/inventory/${item.id}/edit`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Artikel bearbeiten"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/dashboard/company/${companyId}/inventory/${item.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Details anzeigen"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1430,69 +1786,113 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
       {/* Stock-Adjustment Dialog */}
       <Dialog open={showStockDialog} onOpenChange={setShowStockDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Bestand anpassen</DialogTitle>
             <DialogDescription>
-              {selectedItem?.name} - Aktueller Bestand: {selectedItem?.currentStock}{' '}
-              {selectedItem?.unit}
+              {selectedItem?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="adjustmentType">Typ der Anpassung</Label>
-              <Select
-                value={stockAdjustment.type}
-                onValueChange={value =>
-                  setStockAdjustment({
-                    ...stockAdjustment,
-                    type: value as 'in' | 'out' | 'adjustment',
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="in">Zugang</SelectItem>
-                  <SelectItem value="out">Abgang</SelectItem>
-                  <SelectItem value="adjustment">Korrektur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          
+          {selectedItem && (
+            <div className="space-y-4 py-2">
+              {/* Artikelinformationen */}
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-gray-500">SKU:</span>
+                    <span className="ml-2 font-medium">{selectedItem.sku || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Kategorie:</span>
+                    <span className="ml-2 font-medium">{selectedItem.category || '-'}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-gray-500">Aktuell:</span>
+                    <span className="ml-2 font-bold text-[#14ad9f]">{selectedItem.currentStock} {selectedItem.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Min:</span>
+                    <span className="ml-2 font-medium">{selectedItem.minStock} {selectedItem.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Max:</span>
+                    <span className="ml-2 font-medium">{selectedItem.maxStock || '-'} {selectedItem.unit}</span>
+                  </div>
+                </div>
+                {selectedItem.supplierName && (
+                  <div>
+                    <span className="text-gray-500">Lieferant:</span>
+                    <span className="ml-2 font-medium">{selectedItem.supplierName}</span>
+                  </div>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="newStock">Neuer Bestand</Label>
-              <Input
-                id="newStock"
-                type="number"
-                value={stockAdjustment.newStock}
-                onChange={e =>
-                  setStockAdjustment({
-                    ...stockAdjustment,
-                    newStock: Number(e.target.value),
-                  })
-                }
-                min="0"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="adjustmentType">Typ der Anpassung</Label>
+                <Select
+                  value={stockAdjustment.type}
+                  onValueChange={value =>
+                    setStockAdjustment({
+                      ...stockAdjustment,
+                      type: value as 'in' | 'out' | 'adjustment',
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Zugang</SelectItem>
+                    <SelectItem value="out">Abgang</SelectItem>
+                    <SelectItem value="adjustment">Korrektur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="reason">Grund der Anpassung</Label>
-              <Textarea
-                id="reason"
-                value={stockAdjustment.reason}
-                onChange={e =>
-                  setStockAdjustment({
-                    ...stockAdjustment,
-                    reason: e.target.value,
-                  })
-                }
-                placeholder="Grund für die Bestandsänderung..."
-              />
+              <div className="space-y-2">
+                <Label htmlFor="newStock">Neuer Bestand</Label>
+                <Input
+                  id="newStock"
+                  type="number"
+                  value={stockAdjustment.newStock}
+                  onChange={e =>
+                    setStockAdjustment({
+                      ...stockAdjustment,
+                      newStock: Number(e.target.value),
+                    })
+                  }
+                  min="0"
+                />
+                {stockAdjustment.newStock !== selectedItem.currentStock && (
+                  <p className={`text-sm ${stockAdjustment.newStock > selectedItem.currentStock ? 'text-green-600' : 'text-red-600'}`}>
+                    {stockAdjustment.newStock > selectedItem.currentStock ? '+' : ''}
+                    {stockAdjustment.newStock - selectedItem.currentStock} {selectedItem.unit} Differenz
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reason">Grund der Anpassung *</Label>
+                <Textarea
+                  id="reason"
+                  value={stockAdjustment.reason}
+                  onChange={e =>
+                    setStockAdjustment({
+                      ...stockAdjustment,
+                      reason: e.target.value,
+                    })
+                  }
+                  placeholder="Grund für die Bestandsänderung..."
+                  rows={2}
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
+          )}
+          
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowStockDialog(false)}>
               Abbrechen
             </Button>
@@ -1615,11 +2015,40 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       </p>
                     </div>
                     <div>
+                      <Label className="font-medium">E-Mail:</Label>
+                      <p className="text-gray-900">
+                        {selectedItem.supplierEmail || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
                       <Label className="font-medium">Kontakt:</Label>
                       <p className="text-gray-900">
                         {selectedItem.supplierContact || 'Nicht angegeben'}
                       </p>
                     </div>
+                    {selectedItem.supplierEmail && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const subject = encodeURIComponent(`Nachbestellung: ${selectedItem.name}`);
+                          const body = encodeURIComponent(
+                            `Sehr geehrte Damen und Herren,\n\nhiermit möchten wir folgende Artikel nachbestellen:\n\n` +
+                            `Artikel: ${selectedItem.name}\n` +
+                            `SKU: ${selectedItem.sku || '-'}\n` +
+                            `Aktueller Bestand: ${selectedItem.currentStock} ${selectedItem.unit}\n` +
+                            `Mindestbestand: ${selectedItem.minStock} ${selectedItem.unit}\n\n` +
+                            `Bitte senden Sie uns ein Angebot.\n\n` +
+                            `Mit freundlichen Grüßen`
+                          );
+                          window.open(`mailto:${selectedItem.supplierEmail}?subject=${subject}&body=${body}`);
+                        }}
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Nachbestellung anfragen
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -1637,7 +2066,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     <div>
                       <Label className="font-medium">Gewicht:</Label>
                       <p className="text-gray-900">
-                        {selectedItem.weight ? `${selectedItem.weight} kg` : 'Nicht angegeben'}
+                        {selectedItem.unitWeight ? `${selectedItem.unitWeight} ${selectedItem.weightUnit || 'kg'}` : 'Nicht angegeben'}
                       </p>
                     </div>
                     {selectedItem.notes && (

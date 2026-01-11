@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractWithHetznerOCR } from '@/lib/hetzner-ocr-client';
+import { extractWithHetznerOCR, CompanyContext } from '@/lib/hetzner-ocr-client';
 import { applyLearnedPatterns } from '@/lib/ocr-learning-service';
+import { db } from '@/firebase/server';
 
 /**
  * 💰 EXPENSE-SPEZIFISCHE OCR-EXTRAKTION
@@ -13,6 +14,51 @@ import { applyLearnedPatterns } from '@/lib/ocr-learning-service';
  * - Fallback mit Dateinamen-Parsing
  *
  * 🔒 DSGVO-KONFORM: Nutzt Hetzner OCR (Januar 2026)
+ * 
+ * 🧠 FIREBASE-INTEGRATION (Januar 2026):
+ * - Lädt Unternehmensdaten aus Firestore
+ * - Übergibt Company-Kontext an KI für präzisere Erkennung
+ * - Ermöglicht automatische Unterscheidung: Ausgangsrechnung vs Eingangsrechnung
+ */
+
+/**
+ * Lädt Unternehmensdaten aus Firestore für OCR-Kontext
+ */
+async function getCompanyContext(companyId: string): Promise<CompanyContext | undefined> {
+  if (!db) return undefined;
+  
+  try {
+    const companyDoc = await db.collection('companies').doc(companyId).get();
+    if (!companyDoc.exists) return undefined;
+    
+    const data = companyDoc.data();
+    if (!data) return undefined;
+    
+    // Company-Kontext für die KI zusammenstellen
+    // Die Daten können auf Root-Ebene oder in step1/step2/step3 liegen
+    const context: CompanyContext = {
+      companyId,
+      companyName: data.companyName || data.step1?.companyName || data.name || '',
+      vatId: data.vatId || data.step1?.vatId || data.step2?.vatId || '',
+      taxNumber: data.taxNumber || data.step1?.taxNumber || data.step2?.taxNumber || '',
+      address: data.address || data.companyStreet || data.step1?.address?.street || '',
+      zip: data.postalCode || data.companyPostalCode || data.step1?.address?.postalCode || '',
+      city: data.city || data.companyCity || data.step1?.address?.city || '',
+      iban: data.iban || data.step3?.bankDetails?.iban || data.step4?.iban || data.bankDetails?.iban || '',
+    };
+    
+    console.log('[OCR] Company-Kontext geladen:', {
+      companyName: context.companyName,
+      vatId: context.vatId ? 'vorhanden' : 'fehlt',
+      iban: context.iban ? 'vorhanden' : 'fehlt',
+    });
+    
+    return context;
+  } catch (error) {
+    console.error('[OCR] Fehler beim Laden der Company-Daten:', error);
+    return undefined;
+  }
+}
  */
 
 interface LineItem {
@@ -165,8 +211,26 @@ export async function POST(request: NextRequest) {
       const ocrData = await tryOCREnhancement(singleFile, companyId, filename);
       enhancedData = mergeExpenseData(localData, ocrData);
       
-      // 🧠 Gelernte Muster anwenden (Feedback-Loop-System)
-      if (enhancedData.vendor) {
+      console.log('✅ [Expense OCR] Enhanced with Hetzner OCR:', {
+        vendor: enhancedData.vendor,
+        amount: enhancedData.amount,
+        category: enhancedData.category,
+        dueDate: enhancedData.dueDate,
+        paymentTerms: enhancedData.paymentTerms,
+        companyVatNumber: enhancedData.companyVatNumber,
+        netAmount: enhancedData.netAmount,
+      });
+    } catch (ocrError: unknown) {
+      const errorMessage = ocrError instanceof Error ? ocrError.message : String(ocrError);
+      console.log(
+        '⚠️ [Expense OCR] Hetzner OCR unavailable, using local parsing:',
+        errorMessage.substring(0, 100)
+      );
+    }
+    
+    // 🧠 Gelernte Muster anwenden (Feedback-Loop-System) - SEPARATER try/catch
+    if (enhancedData.vendor) {
+      try {
         console.log('🧠 [OCR Learning] Applying learned patterns for vendor:', enhancedData.vendor);
         const learnedData = await applyLearnedPatterns(companyId, {
           vendor: enhancedData.vendor,
@@ -179,36 +243,26 @@ export async function POST(request: NextRequest) {
         
         // Gelernte Daten einfügen wenn OCR nichts gefunden hat
         if (learnedData.email && !enhancedData.contactEmail) {
-          enhancedData.contactEmail = learnedData.email;
+          enhancedData.contactEmail = learnedData.email as string;
           console.log('🧠 [OCR Learning] Applied learned email:', learnedData.email);
         }
         if (learnedData.phone && !enhancedData.contactPhone) {
-          enhancedData.contactPhone = learnedData.phone;
+          enhancedData.contactPhone = learnedData.phone as string;
           console.log('🧠 [OCR Learning] Applied learned phone:', learnedData.phone);
         }
         if (learnedData.vatId && !enhancedData.companyVatNumber) {
-          enhancedData.companyVatNumber = learnedData.vatId;
+          enhancedData.companyVatNumber = learnedData.vatId as string;
           console.log('🧠 [OCR Learning] Applied learned vatId:', learnedData.vatId);
         }
         if (learnedData.address && !enhancedData.companyAddress) {
-          enhancedData.companyAddress = learnedData.address;
+          enhancedData.companyAddress = learnedData.address as string;
           console.log('🧠 [OCR Learning] Applied learned address:', learnedData.address);
         }
+      } catch (learningError: unknown) {
+        const errorMessage = learningError instanceof Error ? learningError.message : String(learningError);
+        console.log('⚠️ [OCR Learning] Learning patterns unavailable:', errorMessage.substring(0, 50));
+        // Kein Problem - OCR-Daten bleiben erhalten!
       }
-      
-      console.log('✅ [Expense OCR] Enhanced with Hetzner OCR:', {
-        vendor: enhancedData.vendor,
-        amount: enhancedData.amount,
-        category: enhancedData.category,
-        dueDate: enhancedData.dueDate,
-        paymentTerms: enhancedData.paymentTerms,
-      });
-    } catch (ocrError: unknown) {
-      const errorMessage = ocrError instanceof Error ? ocrError.message : String(ocrError);
-      console.log(
-        '⚠️ [Expense OCR] Hetzner OCR unavailable, using local parsing:',
-        errorMessage.substring(0, 100)
-      );
     }
 
     console.log('💰 [Expense OCR] Final extracted data:', {
@@ -336,28 +390,39 @@ async function extractExpenseFromFile(file: File, filename: string): Promise<Ext
 /**
  * 🔒 HETZNER OCR - Single File Processing
  * DSGVO-konform auf eigenem Hetzner-Server (Januar 2026)
+ * 
+ * 🧠 Mit Firebase Company-Kontext für präzisere Erkennung:
+ * - KI weiß, welches Unternehmen die Rechnung hochlädt
+ * - Automatische Unterscheidung: Vendor (Rechnungssteller) vs. Customer (wir selbst)
  */
 async function processFileWithHetznerOCR(
   file: File,
-  _companyId: string
+  companyId: string,
+  companyContext?: CompanyContext
 ): Promise<Partial<ExtractedExpenseData>> {
   console.log(`[Hetzner OCR] Processing file: ${file.name}`);
+  
+  if (companyContext) {
+    console.log(`[Hetzner OCR] Mit Company-Kontext: ${companyContext.companyName}`);
+  }
 
   // Convert file to buffer
   const fileBuffer = await file.arrayBuffer();
   let buffer = Buffer.from(fileBuffer);
   let mimeType = file.type;
 
-  // Image validation and conversion for OCR compatibility
-  // WICHTIG: Sharp-Verarbeitung ist optional - Hetzner OCR macht eigene Bildoptimierung
+  // WICHTIG: Keine Bildverarbeitung auf Vercel!
+  // Die Hetzner-KI macht ihre eigene Optimierung mit PIL.
+  // Das ML-System wurde mit Originalbildern trainiert.
+  // Grayscale/Normalize/Sharpen zerstört die OCR-Qualität!
+  
   if (file.type.includes('image')) {
     console.log('[Image Processing] Validating image...');
 
     try {
-      // Versuche Sharp für optimale Bildverarbeitung
       const sharp = (await import('sharp')).default;
-
       const metadata = await sharp(buffer).metadata();
+      
       console.log('[Image Metadata]:', {
         format: metadata.format,
         width: metadata.width,
@@ -371,54 +436,21 @@ async function processFileWithHetznerOCR(
         );
       }
 
-      // OCR-optimierte Bildverarbeitung:
-      // 1. rotate() - EXIF-Orientierung korrigieren (wichtig für iPhone-Bilder!)
-      // 2. Intelligente Rotation für Querformat-Bilder (Belege sind typischerweise hochkant)
-      // 3. grayscale() - Bessere OCR-Erkennung
-      // 4. normalize() - Kontrast optimieren
-      // 5. sharpen() - Schärfe erhöhen für bessere Texterkennung
-      
-      let sharpInstance = sharp(buffer).rotate(); // Erst EXIF-Auto-Rotation
-      
-      // Prüfe nach EXIF-Rotation das Seitenverhältnis
-      const rotatedMetadata = await sharpInstance.metadata();
-      const width = rotatedMetadata.width || 0;
-      const height = rotatedMetadata.height || 0;
-      
-      // Wenn Bild breiter als hoch ist UND deutlich Querformat (>1.2 Ratio),
-      // dann drehe um 90° - Belege/Rechnungen sind fast immer höher als breit
-      if (width > height * 1.2) {
-        console.log('[Image Processing] Querformat erkannt, drehe um 90° für OCR');
-        sharpInstance = sharp(buffer).rotate(90);
-      }
-      
-      const processedBuffer = await sharpInstance
-        .resize(4000, 4000, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .grayscale() // OCR funktioniert besser mit Graustufen
-        .normalize() // Kontrast automatisch optimieren
-        .sharpen({ sigma: 1.5 }) // Leichte Schärfung für Text
-        .jpeg({
-          quality: 95,
-          progressive: false,
-        })
+      // NUR EXIF-Rotation korrigieren (iPhone-Bilder) - KEINE weitere Verarbeitung!
+      // Hetzner-KI macht eigene Bildoptimierung mit PIL
+      const processedBuffer = await sharp(buffer)
+        .rotate() // Nur EXIF-Auto-Rotation
         .toBuffer();
 
       buffer = Buffer.from(processedBuffer);
-      mimeType = 'image/jpeg';
-
-      console.log('[Image Processing] OCR-optimiert:', {
-        originalSize: `${(fileBuffer.byteLength / 1024).toFixed(2)} KB`,
-        processedSize: `${(buffer.length / 1024).toFixed(2)} KB`,
-        format: 'JPEG (grayscale, normalized, sharpened)',
-        rotation: 'EXIF-auto',
+      
+      console.log('[Image Processing] EXIF-Rotation korrigiert, Originalbild wird an Hetzner-KI gesendet:', {
+        size: `${(buffer.length / 1024).toFixed(2)} KB`,
+        format: metadata.format,
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      // Bei HEIF/HEIC Fehlern direkt abbrechen (Benutzer muss konvertieren)
       if (errorMessage.includes('HEIF') || errorMessage.includes('heif')) {
         console.error('[Image Processing] HEIF not supported:', errorMessage);
         throw new Error(
@@ -426,15 +458,13 @@ async function processFileWithHetznerOCR(
         );
       }
       
-      // Bei anderen Sharp-Fehlern (z.B. in Vercel): Bild direkt an OCR senden
-      // Hetzner OCR macht eigene Bildoptimierung mit PIL
-      console.warn('[Image Processing] Sharp failed, sending raw image to OCR:', errorMessage);
-      console.log('[Image Processing] Fallback: Sende Originalbild an Hetzner OCR (macht eigene Optimierung)');
+      // Bei Sharp-Fehlern: Originalbild senden
+      console.warn('[Image Processing] Sharp failed, sending raw image:', errorMessage);
     }
   }
 
-  // Call Hetzner OCR Service (DSGVO-konform)
-  const result = await extractWithHetznerOCR(buffer, file.name, mimeType);
+  // Call Hetzner OCR Service (DSGVO-konform) MIT Company-Kontext
+  const result = await extractWithHetznerOCR(buffer, file.name, mimeType, companyContext);
   
   console.log('[Hetzner OCR] Response:', result);
 
@@ -467,12 +497,20 @@ async function processFileWithHetznerOCR(
 /**
  * MULTI-PAGE OCR ENHANCEMENT
  * Process multiple files as ONE document using Hetzner OCR
+ * 
+ * 🧠 MIT FIREBASE COMPANY-KONTEXT für präzisere Erkennung
  */
 async function tryMultiPageOCREnhancement(
   files: File[],
   companyId: string
 ): Promise<ExtractedExpenseData> {
   console.log(`[Multi-Page OCR] Processing ${files.length} files as one document...`);
+
+  // 🧠 Company-Kontext aus Firebase laden
+  const companyContext = await getCompanyContext(companyId);
+  if (companyContext) {
+    console.log(`[Multi-Page OCR] Mit Company-Kontext: ${companyContext.companyName}`);
+  }
 
   // FILES ARE UPLOADED IN REVERSE ORDER!
   // First file (files[0]) = Account statement/summary with amounts (Kontoblatt)
@@ -482,7 +520,7 @@ async function tryMultiPageOCREnhancement(
   const summaryFile = files[0];
   console.log(`[Multi-Page OCR] Processing file 1 (${summaryFile.name}) for amounts`);
 
-  const summaryPageData = await processFileWithHetznerOCR(summaryFile, companyId);
+  const summaryPageData = await processFileWithHetznerOCR(summaryFile, companyId, companyContext);
 
   console.log('[Multi-Page OCR] Summary page data:', {
     amount: summaryPageData.amount,
@@ -496,7 +534,7 @@ async function tryMultiPageOCREnhancement(
   const headerFile = files[files.length - 1];
   console.log(`[Multi-Page OCR] Processing file ${files.length} (${headerFile.name}) for vendor`);
 
-  const headerPageData = await processFileWithHetznerOCR(headerFile, companyId);
+  const headerPageData = await processFileWithHetznerOCR(headerFile, companyId, companyContext);
 
   console.log('[Multi-Page OCR] Header page data:', {
     vendor: headerPageData.vendor,
@@ -546,6 +584,7 @@ async function tryMultiPageOCREnhancement(
 
 /**
  * 🔒 OCR MIT HETZNER SERVICE (DSGVO-konform)
+ * 🧠 MIT FIREBASE COMPANY-KONTEXT für präzisere Erkennung
  */
 async function tryOCREnhancement(
   file: File,
@@ -554,7 +593,13 @@ async function tryOCREnhancement(
 ): Promise<Partial<ExtractedExpenseData>> {
   console.log('[Expense OCR] Starting Hetzner OCR extraction (DSGVO-konform)...');
 
-  const result = await processFileWithHetznerOCR(file, companyId);
+  // 🧠 Company-Kontext aus Firebase laden
+  const companyContext = await getCompanyContext(companyId);
+  if (companyContext) {
+    console.log(`[Expense OCR] Mit Company-Kontext: ${companyContext.companyName}`);
+  }
+
+  const result = await processFileWithHetznerOCR(file, companyId, companyContext);
 
   console.log('[Expense OCR] Hetzner OCR response:', {
     vendor: result.vendor,

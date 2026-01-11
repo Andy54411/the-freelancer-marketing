@@ -501,7 +501,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                                 : 'bg-orange-100 text-orange-800 hover:bg-orange-100'
                             }
                           >
-                            {contact.type === 'customer' ? 'Kunde' : 'Lieferant'}
+                            {(contact as any).organizationType || (contact.type === 'customer' ? 'Kunde' : 'Lieferant')}
                           </Badge>
                         </TableCell>
 
