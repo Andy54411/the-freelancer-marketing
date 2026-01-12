@@ -2,8 +2,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+const HETZNER_API_URL = process.env.HETZNER_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
+
 /**
- * Generiert ein Apple .mobileconfig Profil für die E-Mail-Einrichtung auf iPhone/iPad
+ * Generiert ein signiertes Apple .mobileconfig Profil für die E-Mail-Einrichtung auf iPhone/iPad
+ * Leitet die Anfrage an den Hetzner-Server weiter, wo das Profil signiert wird.
  * 
  * Query-Parameter:
  * - email: Die E-Mail-Adresse des Benutzers
@@ -12,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const email = searchParams.get('email');
-  const displayName = searchParams.get('name') || email?.split('@')[0] || 'Benutzer';
+  const name = searchParams.get('name') || email?.split('@')[0] || 'Benutzer';
 
   if (!email) {
     return NextResponse.json({ error: 'E-Mail-Adresse fehlt' }, { status: 400 });
@@ -24,11 +27,46 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Ungültige E-Mail-Adresse' }, { status: 400 });
   }
 
-  // Generiere eine eindeutige UUID für das Profil
+  try {
+    // Anfrage an Hetzner-Server für signiertes Profil
+    const response = await fetch(`${HETZNER_API_URL}/api/mobileconfig`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, name }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Hetzner API Fehler: ${response.status}`);
+    }
+
+    // Profil als ArrayBuffer holen (kann binär sein wenn signiert)
+    const profileData = await response.arrayBuffer();
+
+    // Sende das Profil als Download
+    return new NextResponse(profileData, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/x-apple-aspen-config',
+        'Content-Disposition': `attachment; filename="taskilo-mail-${email.split('@')[0]}.mobileconfig"`,
+      },
+    });
+  } catch (error) {
+    console.error('Fehler beim Abrufen des signierten Profils:', error);
+    
+    // Fallback: Unsigniertes Profil generieren
+    return generateUnsignedProfile(email, name);
+  }
+}
+
+/**
+ * Fallback: Generiert ein unsigniertes Profil wenn Hetzner nicht erreichbar
+ */
+function generateUnsignedProfile(email: string, displayName: string) {
   const profileUUID = crypto.randomUUID();
   const payloadUUID = crypto.randomUUID();
 
-  // Apple Configuration Profile im XML-Format
   const mobileConfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -93,7 +131,7 @@ export async function GET(request: NextRequest) {
     <key>PayloadIdentifier</key>
     <string>de.taskilo.mail.profile.${profileUUID}</string>
     <key>PayloadOrganization</key>
-    <string>Taskilo</string>
+    <string>Taskilo GmbH</string>
     <key>PayloadRemovalDisallowed</key>
     <false/>
     <key>PayloadType</key>
@@ -105,7 +143,6 @@ export async function GET(request: NextRequest) {
 </dict>
 </plist>`;
 
-  // Sende das Profil als Download
   return new NextResponse(mobileConfig, {
     status: 200,
     headers: {

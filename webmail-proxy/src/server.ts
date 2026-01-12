@@ -22,6 +22,7 @@ import profileRouter from './routes/profile';
 import phoneVerificationRouter from './routes/phone-verification';
 import newsletterRouter from './routes/newsletter';
 import { revolutProxyRouter } from './routes/revolut-proxy';
+import { mobileconfigRouter } from './routes/mobileconfig';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -127,8 +128,8 @@ app.use('/api/newsletter', newsletterRouter);
 
 // API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
-  // Registration-, Profile-, Phone-Verification- und Newsletter-Endpunkte überspringen (sind öffentlich)
-  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter')) {
+  // Registration-, Profile-, Phone-Verification-, Newsletter- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/mobileconfig')) {
     return next();
   }
   
@@ -183,6 +184,9 @@ app.use('/api/payment', paymentRouter);
 
 // API Routes - Revolut Proxy (alle Revolut API-Aufrufe über Hetzner)
 app.use('/api/revolut-proxy', revolutProxyRouter);
+
+// API Routes - Mobileconfig (signierte Apple Profile, ÖFFENTLICH)
+app.use('/api/mobileconfig', mobileconfigRouter);
 
 // Error Handler (ohne Stack Trace in Production)
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
