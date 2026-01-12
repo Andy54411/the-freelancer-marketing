@@ -2027,7 +2027,6 @@ export default function CreateCustomerPage() {
                 </div>
               }
             </div>
-          </div>
         </div>
       </div>
 
