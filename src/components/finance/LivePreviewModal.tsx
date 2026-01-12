@@ -39,6 +39,8 @@ interface LivePreviewModalProps {
   documentType: DocumentType;
   companyId: string;
   onSend?: (method: 'email' | 'download' | 'print', options?: any) => Promise<void>;
+  onSaveAsDraft?: () => void; // Callback für "Als Entwurf speichern"
+  mode?: 'preview' | 'view'; // preview = nur Vorschau (Create), view = alle Aktionen (Detail)
 }
 
 type SendOption =
@@ -58,17 +60,22 @@ export function LivePreviewModal({
   document,
   documentType,
   companyId,
-  onSend
+  onSend,
+  onSaveAsDraft,
+  mode = 'view' // Standard: view (alle Aktionen), bei Create-Seiten: preview
 }: LivePreviewModalProps) {
   const { user } = useAuth(); // User-Daten aus Auth Context
   const [sending, setSending] = useState(false);
   const [showCompanySettings, setShowCompanySettings] = useState(false);
 
+  // Preview-Modus: Nur Vorschau ohne Download/Drucken (für Create-Seiten)
+  const isPreviewMode = mode === 'preview';
+
   const templateRef = useRef<HTMLDivElement>(null);
 
-  const [_activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
+  const [_activeOption, setActiveOption] = useState<SendOption>('save'); // Start with save
   const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(
-    new Set(['download', 'layout'])
+    new Set(['save', 'layout'])
   );
   const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4 in zoomLevels)
   const [_logoFile, setLogoFile] = useState<File | null>(null);
@@ -76,9 +83,7 @@ export function LivePreviewModal({
   const [logoSize, setLogoSize] = useState(50); // Logo size in percentage
   const [selectedLayout, setSelectedLayout] = useState('TEMPLATE_NEUTRAL');
   const [selectedColor, setSelectedColor] = useState('#14ad9f');
-  const [pageMode, setPageMode] = useState<'single' | 'multi'>(
-    documentType === 'quote' ? 'single' : 'multi'
-  ); // Default: Single für Quotes, Multi für Rechnungen
+  const [pageMode, setPageMode] = useState<'single' | 'multi'>('single'); // Default: IMMER single (einseitig)
 
   // ✅ Template-Einstellungen aus übergebenen Daten initialisieren
   useEffect(() => {
@@ -728,112 +733,122 @@ export function LivePreviewModal({
                   <h3 className="text-sm font-medium text-gray-700">Aktionen</h3>
                 </div>
 
-                {/* Download Option - Default active like SevDesk */}
-                <div className="border-b">
-                  <div
-                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                    isExpanded('download') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
-                    }
-                    onClick={() => toggleSection('download')}>
-
-                    <div className="flex items-center gap-3">
-                      <Download className="h-5 w-5 text-gray-600" />
-                      <span className="font-medium">Herunterladen</span>
-                    </div>
-                    {isExpanded('download') ?
-                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
-
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                    }
-                  </div>
-                  {isExpanded('download') &&
-                  <div className="px-4 pb-4 bg-gray-50">
-                      <Button
-                      onClick={() => handleSend('download')}
-                      disabled={sending}
-                      className="w-full bg-[#14ad9f] hover:bg-taskilo-hover">
-
-                        {sending ?
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-                      <Download className="w-4 h-4 mr-2" />
+                {/* Preview Mode: Nur "Als Entwurf speichern" */}
+                {isPreviewMode && (
+                  <div className="border-b">
+                    <div
+                      className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('save') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
                       }
-                        PDF herunterladen
-                      </Button>
-                    </div>
-                  }
-                </div>
+                      onClick={() => toggleSection('save')}>
 
-                {/* Print Option */}
-                <div className="border-b">
-                  <div
-                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                    isExpanded('print') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
-                    }
-                    onClick={() => toggleSection('print')}>
-
-                    <div className="flex items-center gap-3">
-                      <Printer className="h-5 w-5 text-gray-600" />
-                      <span className="font-medium">Drucken</span>
-                    </div>
-                    {isExpanded('print') ?
-                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
-
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                    }
-                  </div>
-                  {isExpanded('print') &&
-                  <div className="px-4 pb-4 bg-gray-50">
-                      <Button
-                      variant="outline"
-                      onClick={() => handleSend('print')}
-                      disabled={sending}
-                      className="w-full">
-
-                        <Printer className="w-4 h-4 mr-2" />
-                        Drucken
-                      </Button>
-                    </div>
-                  }
-                </div>
-
-                {/* Save Option */}
-                <div className="border-b">
-                  <div
-                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                    isExpanded('save') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
-                    }
-                    onClick={() => toggleSection('save')}>
-
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-gray-600" />
-                      <span className="font-medium">Speichern</span>
-                    </div>
-                    {isExpanded('save') ?
-                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
-
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                    }
-                  </div>
-                  {isExpanded('save') &&
-                  <div className="px-4 pb-4 bg-gray-50">
-                      <div className="text-sm text-gray-600 mb-3">
-                        {documentLabel} als finalisiertes Dokument speichern.
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-gray-600" />
+                        <span className="font-medium">Als Entwurf speichern</span>
                       </div>
-                      <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        toast.success(`${documentLabel} gespeichert`);
-                        onClose();
-                      }}>
+                      {isExpanded('save') ?
+                      <ChevronDown className="h-4 w-4 text-gray-400" /> :
 
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Speichern
-                      </Button>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                      }
                     </div>
-                  }
-                </div>
+                    {isExpanded('save') &&
+                    <div className="px-4 pb-4 bg-gray-50">
+                        <div className="text-sm text-gray-600 mb-3">
+                          {documentLabel} als Entwurf speichern. Sie können das Dokument später bearbeiten und finalisieren.
+                        </div>
+                        <Button
+                        className="w-full bg-[#14ad9f] hover:bg-teal-700"
+                        onClick={() => {
+                          if (onSaveAsDraft) {
+                            onSaveAsDraft();
+                          } else {
+                            toast.success(`${documentLabel} als Entwurf gespeichert`);
+                            onClose();
+                          }
+                        }}>
+
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Als Entwurf speichern
+                        </Button>
+                      </div>
+                    }
+                  </div>
+                )}
+
+                {/* View Mode: Alle Aktionen (Download, Drucken, Speichern) */}
+                {!isPreviewMode && (
+                  <>
+                    {/* Download Option */}
+                    <div className="border-b">
+                      <div
+                        className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                        isExpanded('download') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                        }
+                        onClick={() => toggleSection('download')}>
+
+                        <div className="flex items-center gap-3">
+                          <Download className="h-5 w-5 text-gray-600" />
+                          <span className="font-medium">Herunterladen</span>
+                        </div>
+                        {isExpanded('download') ?
+                        <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        }
+                      </div>
+                      {isExpanded('download') &&
+                      <div className="px-4 pb-4 bg-gray-50">
+                          <Button
+                          onClick={() => handleSend('download')}
+                          disabled={sending}
+                          className="w-full bg-[#14ad9f] hover:bg-teal-700">
+
+                            {sending ?
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+
+                          <Download className="w-4 h-4 mr-2" />
+                          }
+                            PDF herunterladen
+                          </Button>
+                        </div>
+                      }
+                    </div>
+
+                    {/* Print Option */}
+                    <div className="border-b">
+                      <div
+                        className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                        isExpanded('print') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                        }
+                        onClick={() => toggleSection('print')}>
+
+                        <div className="flex items-center gap-3">
+                          <Printer className="h-5 w-5 text-gray-600" />
+                          <span className="font-medium">Drucken</span>
+                        </div>
+                        {isExpanded('print') ?
+                        <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        }
+                      </div>
+                      {isExpanded('print') &&
+                      <div className="px-4 pb-4 bg-gray-50">
+                          <Button
+                          variant="outline"
+                          onClick={() => handleSend('print')}
+                          disabled={sending}
+                          className="w-full">
+
+                            <Printer className="w-4 h-4 mr-2" />
+                            Drucken
+                          </Button>
+                        </div>
+                      }
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Layout Section - Always visible */}

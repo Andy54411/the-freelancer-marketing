@@ -25,9 +25,15 @@ import {
   Tag,
 } from 'lucide-react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { db, storage } from '@/firebase/clients';
-import { ref, getDownloadURL } from 'firebase/storage';
+import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
+
+interface ReceiptFile {
+  url: string;
+  name: string;
+  type: string;
+  uploadedAt?: string;
+}
 
 interface ExpenseData {
   id: string;
@@ -51,6 +57,7 @@ interface ExpenseData {
     fileName: string;
     downloadURL: string;
   };
+  receipts?: ReceiptFile[]; // Multiple receipts support
   createdAt?: any;
   updatedAt?: any;
 }
@@ -65,7 +72,8 @@ export default function ExpenseDetailPage() {
   const [expense, setExpense] = useState<ExpenseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [selectedReceiptIndex, setSelectedReceiptIndex] = useState(0);
+  const [allReceipts, setAllReceipts] = useState<ReceiptFile[]>([]);
 
   useEffect(() => {
     if (user && user.uid === uid && expenseId) {
@@ -94,76 +102,33 @@ export default function ExpenseDetailPage() {
 
       setExpense(expenseData);
 
-      // Load PDF - Verwende die bestehende PDF-Proxy API
-      const fileName = (rawData as any).fileName;
-      const storageUrl = (rawData as any).storageUrl;
-      const receiptDownloadUrl = expenseData.receipt?.downloadURL;
+      // Sammle alle Belege aus verschiedenen Quellen
+      const receipts: ReceiptFile[] = [];
 
-      let originalUrl: string | null = null;
-
-      // 1. Versuche receipt.downloadURL (modernste Variante)
-      if (receiptDownloadUrl && receiptDownloadUrl.includes('firebasestorage.googleapis.com')) {
-        originalUrl = receiptDownloadUrl;
-      }
-      // 2. Versuche storageUrl (legacy)
-      else if (storageUrl && storageUrl.includes('firebasestorage.googleapis.com')) {
-        try {
-          // Extract path from storage URL
-          const match = storageUrl.match(/\/o\/(.+?)\?/);
-          if (match && match[1]) {
-            const storagePath = decodeURIComponent(match[1]);
-            const storageRef = ref(storage, storagePath);
-            originalUrl = await getDownloadURL(storageRef);
-          } else {
-            originalUrl = storageUrl;
-          }
-        } catch {
-          originalUrl = storageUrl;
-        }
-      }
-      // 3. Versuche fileName (construct path)
-      else if (fileName) {
-        try {
-          // Verschiedene mögliche Pfade probieren
-          const possiblePaths = [
-            `companies/${uid}/expenses/${fileName}`,
-            `expense-receipts/${uid}/${fileName}`, // Legacy support
-            `uploads/${uid}/${fileName}`,
-          ];
-
-          for (const path of possiblePaths) {
-            try {
-              const storageRef = ref(storage, path);
-              originalUrl = await getDownloadURL(storageRef);
-              break;
-            } catch {
-              // Continue to next path
-            }
-          }
-        } catch {
-          // Path construction failed
-        }
+      // 1. Neue receipts Array (mehrere Dateien)
+      if (rawData.receipts && Array.isArray(rawData.receipts)) {
+        receipts.push(...rawData.receipts);
       }
 
-      // Verwende die sichere Expense-PDF API
-      const secureUrl = `/api/expenses/${uid}/${expenseId}/pdf`;
-
-      // Lade die signierte URL von der API
-      try {
-        const pdfResponse = await fetch(secureUrl);
-        if (pdfResponse.ok) {
-          const pdfData = await pdfResponse.json();
-          if (pdfData.success && pdfData.url) {
-            setPdfUrl(pdfData.url);
-          } else {
-            setPdfUrl(secureUrl); // Fallback
-          }
-        } else {
-          setPdfUrl(secureUrl); // Fallback
-        }
-      } catch {
-        setPdfUrl(secureUrl); // Fallback
+      // 2. Legacy receipt Objekt
+      if (rawData.receipt?.downloadURL) {
+        receipts.push({
+          url: rawData.receipt.downloadURL,
+          name: rawData.receipt.fileName || 'Beleg',
+          type: rawData.receipt.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+        });
       }
+
+      // 3. Legacy storageUrl
+      if (rawData.storageUrl && receipts.length === 0) {
+        receipts.push({
+          url: rawData.storageUrl,
+          name: rawData.fileName || 'Beleg',
+          type: rawData.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+        });
+      }
+
+      setAllReceipts(receipts);
     } catch (err: any) {
       setError(err.message || 'Fehler beim Laden der Ausgabe');
     } finally {
@@ -190,10 +155,23 @@ export default function ExpenseDetailPage() {
   };
 
   const handleDownloadReceipt = () => {
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
+    const currentReceipt = allReceipts[selectedReceiptIndex];
+    if (currentReceipt?.url) {
+      window.open(currentReceipt.url, '_blank');
       toast.success('Beleg wird heruntergeladen');
     }
+  };
+
+  const isImageFile = (receipt: ReceiptFile): boolean => {
+    const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
+    if (imageTypes.includes(receipt.type)) return true;
+    const name = receipt.name.toLowerCase();
+    return name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.gif') || name.endsWith('.webp');
+  };
+
+  const isPdfFile = (receipt: ReceiptFile): boolean => {
+    if (receipt.type === 'application/pdf') return true;
+    return receipt.name.toLowerCase().endsWith('.pdf');
   };
 
   // Auth check
@@ -272,7 +250,7 @@ export default function ExpenseDetailPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                {pdfUrl && (
+                {allReceipts.length > 0 && (
                   <Button
                     onClick={handleDownloadReceipt}
                     className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
@@ -405,19 +383,83 @@ export default function ExpenseDetailPage() {
             </div>
           </div>
 
-          {/* PDF Preview */}
+          {/* Receipt Preview */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 rounded-lg h-[800px] overflow-hidden">
-              {pdfUrl ? (
-                <iframe src={pdfUrl} className="w-full h-full border-0" title="Beleg Vorschau" />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-gray-500">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Kein Beleg verfügbar</p>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {/* Receipt Navigation */}
+              {allReceipts.length > 1 && (
+                <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    Beleg {selectedReceiptIndex + 1} von {allReceipts.length}
+                  </span>
+                  <div className="flex gap-2">
+                    {allReceipts.map((receipt, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedReceiptIndex(index)}
+                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                          selectedReceiptIndex === index
+                            ? 'bg-[#14ad9f] text-white'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:border-[#14ad9f]'
+                        }`}
+                      >
+                        {receipt.name.length > 15 ? receipt.name.substring(0, 15) + '...' : receipt.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
+
+              {/* Receipt Display */}
+              <div className="h-[700px]">
+                {allReceipts.length > 0 ? (
+                  (() => {
+                    const currentReceipt = allReceipts[selectedReceiptIndex];
+                    if (isImageFile(currentReceipt)) {
+                      return (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 p-4">
+                          <img
+                            src={currentReceipt.url}
+                            alt={currentReceipt.name}
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                          />
+                        </div>
+                      );
+                    } else if (isPdfFile(currentReceipt)) {
+                      return (
+                        <iframe
+                          src={currentReceipt.url}
+                          className="w-full h-full border-0"
+                          title="PDF Vorschau"
+                        />
+                      );
+                    } else {
+                      return (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center text-gray-500">
+                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p className="mb-2">{currentReceipt.name}</p>
+                            <Button
+                              onClick={() => window.open(currentReceipt.url, '_blank')}
+                              variant="outline"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Datei öffnen
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Kein Beleg verfügbar</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -91,7 +91,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
 
   const handleCreateStorno = async () => {
     if (!stornoReason.trim()) {
-      toast.error('Bitte geben Sie einen Grund für die Stornierung an');
+      toast.error('Bitte geben Sie einen Grund für die Stornorechnung an');
       return;
     }
 
@@ -266,16 +266,16 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="stornoReason">Grund für Stornierung *</Label>
+            <Label htmlFor="stornoReason">Grund für die Stornorechnung *</Label>
             <Textarea
               id="stornoReason"
-              placeholder="Geben Sie hier den Grund für die Stornierung ein..."
+              placeholder="Geben Sie hier den Grund für die Stornorechnung ein..."
               value={stornoReason}
               onChange={e => setStornoReason(e.target.value)}
               className="min-h-[100px]"
             />
             <p className="text-sm text-gray-500">
-              Der Stornierungsgrund wird auf der Storno-Rechnung vermerkt und ist für die
+              Der Stornogrund wird auf der Stornorechnung vermerkt und ist für die
               Buchhaltung erforderlich.
             </p>
           </div>
@@ -284,7 +284,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
             <div className="flex gap-3">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-red-800 mb-1">Wichtige Hinweise zur Stornierung</h4>
+                <h4 className="font-medium text-red-800 mb-1">Wichtige Hinweise zur Stornorechnung</h4>
                 <ul className="text-sm text-red-700 space-y-1">
                   <li>• Die Storno-Rechnung erhält eine neue, fortlaufende Rechnungsnummer</li>
                   <li>• Alle Beträge werden negativ ausgewiesen (Gutschrift)</li>
@@ -311,7 +311,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2 text-red-600">
                     <AlertTriangle className="w-5 h-5" />
-                    Stornierung bestätigen
+                    Stornorechnung erstellen
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     Sind Sie sicher, dass Sie die Rechnung{' '}
@@ -331,7 +331,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                     className="bg-red-600 hover:bg-red-700"
                     disabled={isCreatingStorno}
                   >
-                    {isCreatingStorno ? 'Erstelle...' : 'Stornierung bestätigen'}
+                    {isCreatingStorno ? 'Erstelle...' : 'Stornorechnung erstellen'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

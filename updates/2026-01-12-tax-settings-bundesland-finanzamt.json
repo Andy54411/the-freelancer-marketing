@@ -1,0 +1,61 @@
+{
+  "date": "2026-01-12",
+  "version": "2.48.0",
+  "title": "Steuermodul: Erweiterte Steuereinstellungen",
+  "category": "feature",
+  "description": "Erweiterung der Steuereinstellungen um Bundesland, Finanzamt, Rechtsform, Gründungsjahr und hauptberufliche Tätigkeit für vollständige Steuerdokumentation.",
+  "changes": [
+    {
+      "type": "feature",
+      "component": "Settings/Buchhaltung & Steuern",
+      "description": "Neue Felder: Bundesland (Dropdown mit allen 16 deutschen Bundesländern), Finanzamt (Freitextfeld), Rechtsform (Dropdown), Gründungsjahr und Hauptberuflich/Nebenberuflich Auswahl"
+    },
+    {
+      "type": "feature",
+      "component": "Steuerzentrale",
+      "description": "Anzeige von Bundesland, Finanzamt, Steuernummer und USt-ID im Header der Steuerzentrale für schnellen Überblick"
+    },
+    {
+      "type": "improvement",
+      "component": "TypeScript Types",
+      "description": "Erweiterung der Settings-Interfaces um finanzamt, bundesland und hauptberuflich Felder"
+    }
+  ],
+  "affectedFiles": [
+    "src/types/settings.ts",
+    "src/components/dashboard_setting/buchhaltung&steuern.tsx",
+    "src/app/dashboard/company/[uid]/finance/taxes/page.tsx"
+  ],
+  "technicalDetails": {
+    "newFields": {
+      "bundesland": "Dropdown-Auswahl mit allen 16 deutschen Bundesländern",
+      "finanzamt": "Freitextfeld für das zuständige Finanzamt",
+      "legalForm": "Dropdown mit allen deutschen Rechtsformen (Einzelunternehmen, Freiberufler:in, GmbH, UG, etc.)",
+      "foundingDate": "Gründungsjahr des Unternehmens",
+      "hauptberuflich": "Boolean/String für Haupt- oder Nebenberuflich"
+    },
+    "rechtsformen": [
+      "Einzelunternehmen",
+      "Freiberufler:in",
+      "GbR",
+      "GmbH",
+      "UG (haftungsbeschränkt)",
+      "AG",
+      "OHG",
+      "KG",
+      "GmbH & Co. KG",
+      "e.K.",
+      "PartG",
+      "Sonstige"
+    ],
+    "dataPath": {
+      "bundesland": "companies/{uid}/step3/bundesland",
+      "finanzamt": "companies/{uid}/step3/finanzamt",
+      "legalForm": "companies/{uid}/legalForm oder companies/{uid}/step2/legalForm",
+      "foundingDate": "companies/{uid}/step2/foundingDate",
+      "hauptberuflich": "companies/{uid}/step2/hauptberuflich"
+    }
+  },
+  "author": "Taskilo AI",
+  "status": "completed"
+}

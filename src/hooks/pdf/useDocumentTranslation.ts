@@ -62,6 +62,7 @@ export interface DocumentTranslations {
   customerNumber: string;
   contact: string;
   vatId: string;
+  reference: string; // Referenznummer / Bestellnummer
 
   // Tax information
   taxTreatment: string;
@@ -143,6 +144,7 @@ const translations: Record<string, DocumentTranslations> = {
     customerNumber: 'Kundennummer',
     contact: 'Kontakt',
     vatId: 'USt-IdNr.',
+    reference: 'Referenz',
 
     // Tax information
     taxTreatment: 'Steuerliche Behandlung',
@@ -225,6 +227,7 @@ const translations: Record<string, DocumentTranslations> = {
     customerNumber: 'Customer Number',
     contact: 'Contact',
     vatId: 'VAT ID',
+    reference: 'Reference',
 
     // Tax information
     taxTreatment: 'Tax Treatment',
@@ -296,6 +299,7 @@ const translations: Record<string, DocumentTranslations> = {
     asQuote: 'comme devis',
     inInvoice: 'en facture',
     bestRegards: 'Meilleures salutations',
+    reference: 'Référence',
 
     // Standard texts
     dearCustomer: 'Mesdames et Messieurs',

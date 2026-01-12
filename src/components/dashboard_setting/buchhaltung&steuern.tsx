@@ -3,6 +3,42 @@
 import React, { useEffect, useState } from 'react';
 import { UserDataForSettings } from '@/types/settings';
 
+// Liste aller deutschen Bundesländer
+const BUNDESLAENDER = [
+  'Baden-Württemberg',
+  'Bayern',
+  'Berlin',
+  'Brandenburg',
+  'Bremen',
+  'Hamburg',
+  'Hessen',
+  'Mecklenburg-Vorpommern',
+  'Niedersachsen',
+  'Nordrhein-Westfalen',
+  'Rheinland-Pfalz',
+  'Saarland',
+  'Sachsen',
+  'Sachsen-Anhalt',
+  'Schleswig-Holstein',
+  'Thüringen',
+];
+
+// Liste der Rechtsformen
+const RECHTSFORMEN = [
+  'Einzelunternehmen',
+  'Freiberufler:in',
+  'GbR (Gesellschaft bürgerlichen Rechts)',
+  'GmbH (Gesellschaft mit beschränkter Haftung)',
+  'UG (haftungsbeschränkt)',
+  'AG (Aktiengesellschaft)',
+  'OHG (Offene Handelsgesellschaft)',
+  'KG (Kommanditgesellschaft)',
+  'GmbH & Co. KG',
+  'e.K. (eingetragener Kaufmann)',
+  'PartG (Partnerschaftsgesellschaft)',
+  'Sonstige',
+];
+
 export interface AccountingFormProps {
   formData: UserDataForSettings;
   handleChange: (path: string, value: string) => void;
@@ -46,10 +82,66 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
   const labelClass = 'block font-medium mb-1 text-gray-900 dark:text-gray-200';
   const inputClass =
     'w-full p-3 border rounded text-black dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600';
+  const selectClass =
+    'w-full p-3 border rounded text-black dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600';
   const helperTextClass = 'text-sm mt-1 text-gray-600 dark:text-gray-400';
 
   return (
     <div className="space-y-8 bg-gray-50 dark:bg-gray-900 p-6 rounded-lg">
+      {/* Hauptberufliche Tätigkeit */}
+      <div className="space-y-3">
+        <label className={labelClass}>Ist dies deine hauptberufliche Tätigkeit?</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            onClick={() => handleChange('step2.hauptberuflich', 'true')}
+            className={getBoxClass(formData?.step2?.hauptberuflich === true || formData?.step2?.hauptberuflich === 'true' as unknown as boolean)}
+          >
+            <h3 className="font-semibold text-lg">Hauptberuflich</h3>
+            <p className="text-sm opacity-80">Diese Tätigkeit ist meine Haupteinnahmequelle</p>
+          </div>
+          <div
+            onClick={() => handleChange('step2.hauptberuflich', 'false')}
+            className={getBoxClass(formData?.step2?.hauptberuflich === false || formData?.step2?.hauptberuflich === 'false' as unknown as boolean)}
+          >
+            <h3 className="font-semibold text-lg">Nebenberuflich</h3>
+            <p className="text-sm opacity-80">Ich habe eine andere Hauptbeschäftigung</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bundesland und Finanzamt */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className={labelClass}>Bundesland</label>
+          <select
+            value={formData?.step3?.bundesland || ''}
+            onChange={e => handleChange('step3.bundesland', e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Bitte wählen...</option>
+            {BUNDESLAENDER.map(land => (
+              <option key={land} value={land}>
+                {land}
+              </option>
+            ))}
+          </select>
+          <p className={helperTextClass}>In welchem Bundesland ist dein Unternehmen ansässig?</p>
+        </div>
+        <div>
+          <label className={labelClass}>Finanzamt</label>
+          <input
+            type="text"
+            value={formData?.step3?.finanzamt || ''}
+            onChange={e => handleChange('step3.finanzamt', e.target.value)}
+            className={inputClass}
+            placeholder="z.B. Finanzamt München"
+          />
+          <p className={helperTextClass}>
+            Das zuständige Finanzamt für deine Steuererklärungen.
+          </p>
+        </div>
+      </div>
+
       {/* Umsatzsteuer-ID und Steuernummer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>

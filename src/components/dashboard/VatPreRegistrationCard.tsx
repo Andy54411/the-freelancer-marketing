@@ -1,27 +1,108 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { TaxService } from '@/services/taxService';
 
-interface VatPreRegistrationCardProps {
-  taxLiability?: number;
-  dueDate?: string;
-  vatAmount?: number;
-  inputTax?: number;
+interface UStVAData {
+  umsatzsteuerSchuld: number;
+  vorsteuerGuthaben: number;
+  zahllast: number;
+  erstattung: number;
 }
 
-export default function VatPreRegistrationCard({
-  taxLiability = 0,
-  dueDate = '10.01.2026',
-  vatAmount = 0,
-  inputTax = 0,
-}: VatPreRegistrationCardProps) {
+export default function VatPreRegistrationCard() {
+  const params = useParams();
+  const uid = typeof params?.uid === 'string' ? params.uid : '';
+  
+  const [ustVAData, setUstVAData] = useState<UStVAData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [quarterLabel, setQuarterLabel] = useState('');
+  const [dueDate, setDueDate] = useState('');
+
+  useEffect(() => {
+    const loadUStVAData = async () => {
+      if (!uid) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+        
+        // Zeige das vorherige Quartal (das zur Abgabe fällig ist)
+        const displayQuarter = currentQuarter === 1 ? 4 : currentQuarter - 1;
+        const displayYear = currentQuarter === 1 ? currentYear - 1 : currentYear;
+        
+        const data = await TaxService.calculateUStVA(uid, displayYear, displayQuarter);
+        
+        if (data) {
+          setUstVAData({
+            umsatzsteuerSchuld: data.umsatzsteuerSchuld,
+            vorsteuerGuthaben: data.vorsteuerGuthaben,
+            zahllast: data.zahllast,
+            erstattung: data.erstattung,
+          });
+        }
+
+        // Quartalslabel setzen
+        const quarterMonths: Record<number, string> = {
+          1: 'Jan - Mär',
+          2: 'Apr - Jun',
+          3: 'Jul - Sep',
+          4: 'Okt - Dez',
+        };
+        setQuarterLabel(quarterMonths[displayQuarter] || '');
+
+        // Fälligkeitsdatum berechnen (10. des Folgemonats nach Quartalsende)
+        const dueDateObj = new Date(displayYear, displayQuarter * 3, 10);
+        setDueDate(dueDateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+      } catch (error) {
+        // Fehler wird nicht in der Konsole ausgegeben (keine console.log)
+        setUstVAData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUStVAData();
+  }, [uid]);
+
   const formatAmount = (amount: number) => {
     return `${amount.toFixed(2).replace('.', ',')}\u00A0€`;
   };
 
-  const calculateNetLiability = () => {
-    return vatAmount - inputTax;
-  };
+  const taxLiability = ustVAData?.zahllast || ustVAData?.erstattung || 0;
+  const vatAmount = ustVAData?.umsatzsteuerSchuld || 0;
+  const inputTax = ustVAData?.vorsteuerGuthaben || 0;
+  const isRefund = (ustVAData?.erstattung || 0) > 0;
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Umsatzsteuer-Voranmeldung</h2>
+          </div>
+          <div className="animate-pulse space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-32"></div>
+              </div>
+              <div>
+                <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded w-28"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -32,17 +113,16 @@ export default function VatPreRegistrationCard({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-600">Zahllast Okt - Dez</div>
-              <div className="text-2xl font-bold text-gray-900">{formatAmount(taxLiability)}</div>
+              <div className="text-sm text-gray-600">
+                {isRefund ? 'Erstattung' : 'Zahllast'} {quarterLabel}
+              </div>
+              <div className={`text-2xl font-bold ${isRefund ? 'text-green-600' : 'text-gray-900'}`}>
+                {isRefund ? '-' : ''}{formatAmount(taxLiability)}
+              </div>
             </div>
             <div>
               <div className="text-sm text-gray-600">Fällig am</div>
               <div className="text-xl font-semibold text-gray-900">{dueDate}</div>
-              <button className="mt-2 p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M8.14236 3.89973C9.25672 3.16986 10.5856 2.75 12 2.75C15.458 2.75 18.4048 5.2596 18.9554 8.67345L20.1168 15.8742M18.25 18.25H4.67421C4.05839 18.25 3.58891 17.6987 3.68697 17.0908L5.04461 8.67345C5.19977 7.71144 5.54521 6.82123 6.03875 6.03875M18.25 18.25L6.03875 6.03875M18.25 18.25L21 21M3 3L6.03875 6.03875M16 18.25C15.3267 20.0159 13.7891 21.25 12 21.25C10.2109 21.25 8.67327 20.0159 8 18.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
             </div>
           </div>
           
@@ -68,9 +148,13 @@ export default function VatPreRegistrationCard({
             </div>
             
             <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer border-t border-gray-200 pt-3 transition-colors">
-              <div className="text-sm font-semibold text-gray-900">= Zahllast</div>
+              <div className="text-sm font-semibold text-gray-900">
+                = {isRefund ? 'Erstattung' : 'Zahllast'}
+              </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">{formatAmount(calculateNetLiability())}</span>
+                <span className={`text-sm font-bold ${isRefund ? 'text-green-600' : 'text-gray-900'}`}>
+                  {isRefund ? '-' : ''}{formatAmount(vatAmount - inputTax > 0 ? vatAmount - inputTax : Math.abs(vatAmount - inputTax))}
+                </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
                   <path d="M10 16L13.6464 12.3536C13.8417 12.1583 13.8417 11.8417 13.6464 11.6464L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -80,12 +164,15 @@ export default function VatPreRegistrationCard({
         </div>
       </div>
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-        <button className="text-sm text-[#14ad9f] hover:text-[#129a8f] font-medium flex items-center gap-2 transition-colors">
+        <Link 
+          href={`/dashboard/company/${uid}/finance/taxes`}
+          className="text-sm text-[#14ad9f] hover:text-[#129a8f] font-medium flex items-center gap-2 transition-colors"
+        >
           UStVA erstellen
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M14.3322 5.83209L19.8751 11.375C20.2656 11.7655 20.2656 12.3987 19.8751 12.7892L14.3322 18.3321M19.3322 12.0821H3.83218" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </button>
+        </Link>
       </div>
     </div>
   );

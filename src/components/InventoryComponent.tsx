@@ -863,21 +863,15 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       <CommandEmpty>
                         <div className="p-2 text-sm">
                           Keine Dienstleistung gefunden.
-                          <Button
-                            variant="ghost"
-                            className="w-full mt-2 text-[#14ad9f]"
-                            onClick={() => {
-                              setIsCreatingNewService(true);
-                              setNewServiceForm({
-                                ...newServiceForm,
-                                name: selectedService,
-                              });
-                              setInlineServiceDialogOpen(true);
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Neue Dienstleistung erstellen
-                          </Button>
+                          <Link href={`/dashboard/company/${companyId}/inventory/services/new`}>
+                            <Button
+                              variant="ghost"
+                              className="w-full mt-2 text-[#14ad9f]"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Neue Dienstleistung erstellen
+                            </Button>
+                          </Link>
                         </div>
                       </CommandEmpty>
                       <CommandGroup>
@@ -907,23 +901,12 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <Button
-                  onClick={() => {
-                    setEditingService(null);
-                    setNewServiceForm({
-                      name: '',
-                      description: '',
-                      price: '',
-                      unit: 'Stk',
-                    });
-                    setIsCreatingNewService(true);
-                    setInlineServiceDialogOpen(true);
-                  }}
-                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Neue Dienstleistung
-                </Button>
+                <Link href={`/dashboard/company/${companyId}/inventory/services/new`}>
+                  <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Neue Dienstleistung
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -978,22 +961,13 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
+                          <Link
+                            href={`/dashboard/company/${companyId}/inventory/services/new?edit=${service.id}`}
                             className="text-[#14ad9f] hover:text-taskilo-hover p-1"
                             title="Bearbeiten"
-                            onClick={() => {
-                              setEditingService(service);
-                              setNewServiceForm({
-                                name: service.name || '',
-                                description: service.description || '',
-                                price: service.price?.toString() || '',
-                                unit: service.unit || 'Stk',
-                              });
-                              setInlineServiceDialogOpen(true);
-                            }}
                           >
                             <Edit className="h-4 w-4" />
-                          </button>
+                          </Link>
                           <button
                             className="text-red-500 hover:text-red-600 p-1"
                             title="Löschen"
@@ -1544,30 +1518,55 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Link href={`/dashboard/company/${companyId}/inventory/${item.id}/edit`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Artikel bearbeiten"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/dashboard/company/${companyId}/inventory/${item.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Details anzeigen"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
+                            {item.category === 'Dienstleistung' ? (
+                              <>
+                                <Link href={`/dashboard/company/${companyId}/inventory/services/new?edit=${item.id}`}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Dienstleistung bearbeiten"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                                <Link href={`/dashboard/company/${companyId}/inventory/services/new?edit=${item.id}`}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Details anzeigen"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </>
+                            ) : (
+                              <>
+                                <Link href={`/dashboard/company/${companyId}/inventory/${item.id}/edit`}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Artikel bearbeiten"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                                <Link href={`/dashboard/company/${companyId}/inventory/${item.id}`}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Details anzeigen"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleConfirmDelete(item)}
                               className="text-red-600 hover:text-red-800"
-                              title="Artikel löschen"
+                              title={item.category === 'Dienstleistung' ? 'Dienstleistung löschen' : 'Artikel löschen'}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

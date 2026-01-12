@@ -16,6 +16,7 @@ import {
   Moon,
   Bell,
   Mail,
+  Smartphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAppUrl } from '@/lib/webmail-urls';
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
+import { MobileSetupModal } from './MobileSetupModal';
 
 // Debug-Logging für Hydration
 const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
@@ -102,6 +104,7 @@ export function MailHeader({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showMobileSetup, setShowMobileSetup] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   
   mailHeaderLog('STATE_INITIALIZED', {
@@ -520,9 +523,14 @@ export function MailHeader({
                 <HelpCircle className={cn("h-6 w-6", isDark ? "text-white" : "text-[#5f6368]")} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem>Hilfe</DropdownMenuItem>
               <DropdownMenuItem>Tastenkuerzel</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setShowMobileSetup(true)}>
+                <Smartphone className="h-4 w-4 mr-2" />
+                E-Mail auf Handy einrichten
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Feedback senden</DropdownMenuItem>
             </DropdownMenuContent>
@@ -638,6 +646,14 @@ export function MailHeader({
               <DropdownMenuItem>Weiteres Konto hinzufuegen</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
+                onSelect={() => setShowMobileSetup(true)}
+                className="cursor-pointer"
+              >
+                <Smartphone className="h-4 w-4 mr-2" />
+                E-Mail auf Handy einrichten
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
                 onSelect={(e) => {
                   e.preventDefault();
                   if (onLogout) onLogout();
@@ -651,6 +667,14 @@ export function MailHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Mobile Setup Modal */}
+      <MobileSetupModal
+        isOpen={showMobileSetup}
+        onClose={() => setShowMobileSetup(false)}
+        userEmail={userEmail}
+        userName={userEmail.split('@')[0]}
+      />
     </header>
   );
 }

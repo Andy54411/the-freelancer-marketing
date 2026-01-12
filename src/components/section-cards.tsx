@@ -214,20 +214,16 @@ export function SectionCards() {
 
     const uid = currentUser.uid;
 
-    // Real-time listener für Ausgaben
-    const expensesQuery = query(
-      collection(db, 'customers'),
-      where('companyId', '==', uid),
-      where('isSupplier', '==', true)
-    );
+    // Real-time listener für Ausgaben aus expenses Subcollection
+    const expensesRef = collection(db, 'companies', uid, 'expenses');
 
-    const unsubscribe = onSnapshot(expensesQuery, expensesSnapshot => {
+    const unsubscribe = onSnapshot(expensesRef, expensesSnapshot => {
       let totalExpenses = 0;
 
       expensesSnapshot.forEach(doc => {
-        const supplier = doc.data();
-        if (supplier.totalAmount && supplier.totalAmount > 0) {
-          totalExpenses += supplier.totalAmount;
+        const expense = doc.data();
+        if (expense.amount && expense.amount > 0) {
+          totalExpenses += expense.amount;
         }
       });
 
@@ -379,7 +375,7 @@ export function SectionCards() {
 
       {/* Ausgaben Card */}
       <Link
-        href={`/dashboard/company/${currentUser?.uid}/finance?tab=suppliers`}
+        href={`/dashboard/company/${currentUser?.uid}/finance/expenses`}
         className="block group"
       >
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-red-200 dark:border-red-800 cursor-pointer">

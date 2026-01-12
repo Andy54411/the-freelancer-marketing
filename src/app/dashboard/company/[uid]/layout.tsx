@@ -1,4 +1,3 @@
-// /Users/andystaudinger/Taskilo/src/app/dashboard/company/[uid]/layout.tsx
 'use client';
 
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
@@ -61,7 +60,6 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     const handleResize = () => {
       const shouldCollapse = window.innerWidth < 1536;
       setIsSidebarCollapsed(shouldCollapse);
-      // Speichere den neuen State
       localStorage.setItem('sidebar-collapsed', shouldCollapse.toString());
     };
 
@@ -97,31 +95,28 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   }, [uid]);
 
   // Ermittle ob User der Owner dieser Company ist
-  // Owner = user_type 'firma' UND uid stimmt mit URL überein
   const isOwner = user?.user_type === 'firma' && user?.uid === uid;
-  
+
   // Mitarbeiter-Daten aus Custom Claims (companyId, employeeId)
   const [employeeData, setEmployeeData] = useState<{
     companyId: string;
     employeeId: string;
     permissions?: Record<string, boolean>;
   } | null>(null);
-  
+
   // Lade Mitarbeiter-Daten aus Custom Claims und Employee-Subcollection
   useEffect(() => {
     const loadEmployeeData = async () => {
       if (!firebaseUser || isOwner) return;
-      
+
       try {
-        // Hole Custom Claims vom Firebase Auth Token
         const tokenResult = await firebaseUser.getIdTokenResult();
         const claims = tokenResult.claims as { role?: string; companyId?: string; employeeId?: string };
-        
+
         if (claims.role === 'mitarbeiter' && claims.companyId && claims.employeeId) {
-          // Lade Berechtigungen aus Employee-Subcollection
           const employeeRef = doc(db, 'companies', claims.companyId, 'employees', claims.employeeId);
           const employeeSnap = await getDoc(employeeRef);
-          
+
           if (employeeSnap.exists()) {
             const empData = employeeSnap.data();
             setEmployeeData({
@@ -135,54 +130,44 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         console.error('[Layout] Error loading employee data:', error);
       }
     };
-    
+
     loadEmployeeData();
   }, [firebaseUser, isOwner]);
-  
+
   // Ermittle ob User ein Mitarbeiter ist
   const isEmployee = !!employeeData && employeeData.companyId === uid;
-  
+
   // Redirect Mitarbeiter zur richtigen Company wenn auf falscher URL
   useEffect(() => {
     if (employeeData && employeeData.companyId !== uid) {
-      console.log('[Layout] Redirecting employee to correct company:', employeeData.companyId);
       router.replace(`/dashboard/company/${employeeData.companyId}`);
     }
   }, [employeeData, uid, router]);
-  
+
   // Berechtigungen aus Employee-Subcollection
-  // Wenn keine Permissions gesetzt sind, standardmäßig ALLE aktivieren (volles Dashboard wie Inhaber)
-  const employeePermissions: EmployeePermissions | undefined = employeeData?.permissions 
-    ? (employeeData.permissions as unknown as EmployeePermissions) 
-    : (isEmployee ? {
-    overview: true,
-    personal: true,
-    employees: true,
-    shiftPlanning: true,
-    timeTracking: true,
-    absences: true,
-    evaluations: true,
-    orders: true,
-    quotes: true,
-    invoices: true,
-    customers: true,
-    calendar: true,
-    workspace: true,
-    finance: true,
-    expenses: true,
-    inventory: true,
-    settings: true, // Volle Einstellungen wie Inhaber
-  } : undefined);
-  
-  // Debug-Log für Mitarbeiter-Berechtigungen
-  if (isEmployee) {
-    console.log('[Layout] Employee Mode:', {
-      isEmployee,
-      employeeId: employeeData?.employeeId,
-      hasCustomPermissions: !!employeeData?.permissions,
-      permissions: employeePermissions,
-    });
-  }
+  const employeePermissions: EmployeePermissions | undefined = employeeData?.permissions
+    ? (employeeData.permissions as unknown as EmployeePermissions)
+    : isEmployee
+      ? {
+          overview: true,
+          personal: true,
+          employees: true,
+          shiftPlanning: true,
+          timeTracking: true,
+          absences: true,
+          evaluations: true,
+          orders: true,
+          quotes: true,
+          invoices: true,
+          customers: true,
+          calendar: true,
+          workspace: true,
+          finance: true,
+          expenses: true,
+          inventory: true,
+          settings: true,
+        }
+      : undefined;
 
   // Update Notifications
   const {
@@ -203,7 +188,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   const _isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
-  // Auto-expand Finance section when on finance pages
+  // Auto-expand sections when on specific pages
   useEffect(() => {
     if (
       pathname?.includes('/finance') &&
@@ -245,13 +230,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/personal') && !expandedItems.includes('personal')) {
       setExpandedItems(prev => [...prev, 'personal']);
     }
-    if (
-      pathname?.includes('/taskilo-advertising') &&
-      !expandedItems.includes('taskilo-advertising')
-    ) {
+    if (pathname?.includes('/taskilo-advertising') && !expandedItems.includes('taskilo-advertising')) {
       setExpandedItems(prev => [...prev, 'taskilo-advertising']);
     }
-    // Steuerportal automatisch ausklappen bei /steuerportal/*, /datev/* oder finance Steuern/Auswertung
     if (
       (pathname?.includes('/steuerportal') ||
         pathname?.includes('/datev') ||
@@ -263,11 +244,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     }
   }, [pathname, expandedItems]);
 
-  // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
+  // Hook für Unternehmensdaten und -zustand
   const { isChecking, isAuthorized, userData, view, setView } = useCompanyDashboard();
 
-  // Zentrale Weiterleitung: Ist die Prüfung abgeschlossen und der Nutzer nicht autorisiert,
-  // leite auf die Login-Seite weiter und bewahre den Rückkehrpfad.
+  // Zentrale Weiterleitung wenn nicht autorisiert
   useEffect(() => {
     if (!isChecking && !isAuthorized) {
       const currentPath =
@@ -278,7 +258,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     }
   }, [isChecking, isAuthorized, router, pathname]);
 
-  // Bestimme den aktuellen Pfad für die Navigation
+  // Bestimme den aktuellen View für die Navigation
   const getCurrentView = useCallback(() => {
     if (pathname?.includes('/banking')) return 'banking';
     if (
@@ -313,33 +293,23 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     return view;
   }, [pathname, view]);
 
-  // Unternehmensdaten für die Header-Komponente vorbereiten - VERBESSERTE FALLBACK-LOGIK
+  // Unternehmensdaten für die Header-Komponente
   const companyDataForHeader = useMemo(() => {
     if (!uid) return null;
 
-    // Verschiedene Datenquellen für den Firmennamen prüfen
-    let companyName = 'Unbekannte Firma'; // Standard-Fallback
+    let companyName = 'Unbekannte Firma';
 
-    // 1. Priorität: step2.companyName (aus Onboarding)
     if (isNonEmptyString(userData?.step2?.companyName)) {
       companyName = userData.step2.companyName;
-    }
-    // 2. Priorität: direktes companyName Feld
-    else if (isNonEmptyString(userData?.companyName)) {
+    } else if (isNonEmptyString(userData?.companyName)) {
       companyName = userData.companyName;
-    }
-    // 3. Priorität: AuthContext User-Daten (Name als Firmenname)
-    else if (user && isNonEmptyString(user.firstName) && isNonEmptyString(user.lastName)) {
+    } else if (user && isNonEmptyString(user.firstName) && isNonEmptyString(user.lastName)) {
       companyName = `${user.firstName} ${user.lastName}`;
     } else if (user && isNonEmptyString(user.firstName)) {
       companyName = user.firstName;
+    } else if (user && isNonEmptyString(user.email)) {
+      companyName = user.email.split('@')[0];
     }
-    // 5. Priorität: E-Mail als letzter Fallback (vor "Unbekannte Firma")
-    else if (user && isNonEmptyString(user.email)) {
-      companyName = user.email.split('@')[0]; // Nutze Teil vor @
-    }
-
-    // Debug-Log entfernt: Company Name Resolution
 
     return {
       uid: uid,
@@ -351,37 +321,26 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Navigation handler
   const handleNavigation = useCallback(
     (value: string, href?: string) => {
-      console.log('📡 Navigation called:', {
-        value,
-        href,
-        uid,
-        fullURL: href ? `/dashboard/company/${uid}/${href}` : 'NO_HREF',
-      });
       setIsSidebarOpen(false);
 
-      // Wenn href definiert ist, verwende echte Navigation
       if (href) {
         const fullURL = `/dashboard/company/${uid}/${href}`;
-        console.log('🚀 Navigating to:', fullURL);
         router.push(fullURL);
         return;
       }
 
-      // Settings-Unterseiten behandeln
       if (value.startsWith('settings-')) {
         const settingsView = value.replace('settings-', '');
         router.push(`/dashboard/company/${uid}/settings?view=${settingsView}`);
         return;
       }
 
-      // Für View-basierte Navigation
       if (value === 'settings' || value === 'reviews') {
         router.push(`/dashboard/company/${uid}?view=${value}`);
         setView(value);
         return;
       }
 
-      // Standard Dashboard
       if (value === 'dashboard') {
         router.push(`/dashboard/company/${uid}`);
         setView('dashboard');
@@ -391,7 +350,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     [router, uid, setView]
   );
 
-  // Lade- und Autorisierungszustand auf Layout-Ebene behandeln
+  // Loading State
   if (isChecking) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -401,7 +360,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     );
   }
 
-  // Nicht autorisiert: zeige kurzen Redirect-Hinweis (die useEffect oben führt die Weiterleitung aus)
+  // Nicht autorisiert
   if (!isAuthorized) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -411,7 +370,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     );
   }
 
-  // Navigation Items für den aktuellen Header
+  // Header Icon basierend auf aktuellem View
   const getHeaderIcon = () => {
     const currentView = getCurrentView();
     switch (currentView) {
@@ -446,6 +405,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     }
   };
 
+  // Header Label basierend auf aktuellem View
   const getHeaderLabel = () => {
     const currentView = getCurrentView();
     switch (currentView) {
@@ -482,120 +442,126 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   const HeaderIcon = getHeaderIcon();
 
+  // Prüfe ob spezielle Seiten die volle Höhe brauchen
+  const isFullHeightPage =
+    pathname?.includes('/email-integration') ||
+    pathname?.includes('/emails') ||
+    pathname?.includes('/whatsapp');
+
+  // Berechne Header-Höhe (MailHeader + Navigation = ca. 112px, UserHeader = 64px)
+  const headerHeight = isWebmailConnected ? 'h-28' : 'h-16';
+  const headerHeightPx = isWebmailConnected ? '112px' : '64px';
+
   return (
     <SidebarVisibilityProvider>
-      <div className="flex flex-col h-screen overflow-hidden">
-        <div className="print:hidden shrink-0">
-          {isWebmailConnected && webmailEmail ? (
-            <>
-              <MailHeader
-                userEmail={webmailEmail}
-                userInitial={webmailEmail.charAt(0).toUpperCase()}
-                searchPlaceholder="Dienstleistung auswählen..."
-                hideSearch={false}
-                companyId={uid}
-                isDashboard={true}
-                onMenuToggle={() => {
-                  // Mobile: Öffne Mobile Sidebar
-                  if (window.innerWidth < 768) {
-                    setIsSidebarOpen(!isSidebarOpen);
-                  } else {
-                    // Desktop: Toggle Sidebar Collapsed State
-                    setIsSidebarCollapsed(!isSidebarCollapsed);
-                    localStorage.setItem('sidebar-collapsed', (!isSidebarCollapsed).toString());
-                  }
-                }}
-                onSearch={(query) => {
-                  router.push(`/services?search=${encodeURIComponent(query)}`);
-                }}
-                onLogout={async () => {
-                  try {
-                    await signOut(auth);
-                    router.push('/');
-                  } catch {
-                    window.location.href = '/';
-                  }
-                }}
-              />
-              <AppHeaderNavigation />
-            </>
-          ) : (
-            <UserHeader currentUid={uid} />
-          )}
-        </div>
-
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop Sidebar - Dynamic width based on collapsed state */}
-          <div
-            className={`hidden md:block md:shrink-0 transition-all duration-300 print:hidden ${
-              isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
-            }`}
-          >
-            <aside className="sticky top-0 h-screen bg-white overflow-hidden border-r border-gray-200 flex flex-col">
-              <div className="h-16 shrink-0"></div>
-              <div className="flex-1 overflow-y-auto">
-                <CompanySidebar
-                  companyName={companyDataForHeader?.companyName}
-                  uid={uid}
-                  expandedItems={expandedItems}
-                  onToggleExpanded={toggleExpanded}
-                  onNavigate={handleNavigation}
-                  getCurrentView={getCurrentView}
-                  isCollapsed={isSidebarCollapsed}
-                  onToggleCollapsed={setIsSidebarCollapsed}
-                  isEmployee={isEmployee}
-                  employeePermissions={employeePermissions}
-                  hideEmailMenu={isWebmailConnected}
-                  hideCollapseButton={isWebmailConnected}
-                />
-              </div>
-            </aside>
-          </div>
-
-          {/* Mobile Sidebar */}
-          <div className="print:hidden">
-            <CompanyMobileSidebar
-              isOpen={isSidebarOpen}
-              onOpenChange={setIsSidebarOpen}
-              expandedItems={expandedItems}
-              onToggleExpanded={toggleExpanded}
-              onNavigate={handleNavigation}
-              getCurrentView={getCurrentView}
-              isEmployee={isEmployee}
-              employeePermissions={employeePermissions}
-              hideEmailMenu={isWebmailConnected}
+      {/* Fixed Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 print:hidden">
+        {isWebmailConnected && webmailEmail ? (
+          <>
+            <MailHeader
+              userEmail={webmailEmail}
+              userInitial={webmailEmail.charAt(0).toUpperCase()}
+              searchPlaceholder="Dienstleistung auswählen..."
+              hideSearch={false}
+              companyId={uid}
+              isDashboard={true}
+              onMenuToggle={() => {
+                if (window.innerWidth < 768) {
+                  setIsSidebarOpen(!isSidebarOpen);
+                } else {
+                  setIsSidebarCollapsed(!isSidebarCollapsed);
+                  localStorage.setItem('sidebar-collapsed', (!isSidebarCollapsed).toString());
+                }
+              }}
+              onSearch={query => {
+                router.push(`/services?search=${encodeURIComponent(query)}`);
+              }}
+              onLogout={async () => {
+                try {
+                  await signOut(auth);
+                  router.push('/');
+                } catch {
+                  window.location.href = '/';
+                }
+              }}
             />
-          </div>
+            <AppHeaderNavigation />
+          </>
+        ) : (
+          <UserHeader currentUid={uid} />
+        )}
+      </header>
 
-          {/* Main Content */}
-          <main className={`flex-1 min-h-0 ${pathname?.includes('/email-integration') || pathname?.includes('/emails') || pathname?.includes('/whatsapp') ? 'overflow-hidden' : 'overflow-auto'}`}>
-            {/* Email Integration, Emails und WhatsApp bekommen volle Breite/Höhe */}
-            {pathname?.includes('/email-integration') || pathname?.includes('/emails') || pathname?.includes('/whatsapp') ? (
-              <div className="h-full w-full overflow-hidden">{children}</div>
-            ) : (
-              <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                  <div className="mb-8 print:hidden">
-                    <div className="flex items-center space-x-2">
-                      <HeaderIcon className="h-6 w-6 text-gray-600" />
-                      <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
-                      <span className="text-sm text-gray-500">
-                        {companyDataForHeader?.companyName}
-                      </span>
-                    </div>
-                  </div>
+      {/* Container unter dem Header */}
+      <div className="flex" style={{ paddingTop: headerHeightPx, minHeight: '100vh' }}>
+        {/* Desktop Sidebar */}
+        <aside
+          className={`hidden md:flex md:flex-col md:shrink-0 bg-white border-r border-gray-200 print:hidden transition-all duration-300 ${
+            isSidebarCollapsed ? 'w-16' : 'w-64'
+          }`}
+          style={{ 
+            position: 'sticky',
+            top: headerHeightPx,
+            height: `calc(100vh - ${headerHeightPx})`,
+            overflowY: 'auto'
+          }}
+        >
+          <CompanySidebar
+            companyName={companyDataForHeader?.companyName}
+            uid={uid}
+            expandedItems={expandedItems}
+            onToggleExpanded={toggleExpanded}
+            onNavigate={handleNavigation}
+            getCurrentView={getCurrentView}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapsed={setIsSidebarCollapsed}
+            isEmployee={isEmployee}
+            employeePermissions={employeePermissions}
+            hideEmailMenu={isWebmailConnected}
+            hideCollapseButton={isWebmailConnected}
+          />
+        </aside>
 
-                  {/* Admin Approval Status Banner - nur für Firmeninhaber, nicht für Mitarbeiter */}
-                  {!isEmployee && (
-                    <AdminApprovalStatus companyId={uid} className="mb-6 print:hidden" />
-                  )}
-
-                  {children}
-                </div>
-              </div>
-            )}
-          </main>
+        {/* Mobile Sidebar */}
+        <div className="print:hidden">
+          <CompanyMobileSidebar
+            isOpen={isSidebarOpen}
+            onOpenChange={setIsSidebarOpen}
+            expandedItems={expandedItems}
+            onToggleExpanded={toggleExpanded}
+            onNavigate={handleNavigation}
+            getCurrentView={getCurrentView}
+            isEmployee={isEmployee}
+            employeePermissions={employeePermissions}
+            hideEmailMenu={isWebmailConnected}
+          />
         </div>
+
+        {/* Main Content - nimmt den restlichen Platz */}
+        <main className="flex-1 min-w-0 bg-white">
+          {isFullHeightPage ? (
+            <div style={{ height: `calc(100vh - ${headerHeightPx})` }} className="overflow-hidden">
+              {children}
+            </div>
+          ) : (
+            <div className="py-6">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                <div className="mb-8 print:hidden">
+                  <div className="flex items-center space-x-2">
+                    <HeaderIcon className="h-6 w-6 text-gray-600" />
+                    <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
+                    <span className="text-sm text-gray-500">{companyDataForHeader?.companyName}</span>
+                  </div>
+                </div>
+
+                {/* Admin Approval Status Banner - nur für Firmeninhaber */}
+                {!isEmployee && <AdminApprovalStatus companyId={uid} className="mb-6 print:hidden" />}
+
+                {children}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
 
       {/* Update Notification Modal */}

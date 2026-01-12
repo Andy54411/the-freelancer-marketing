@@ -47,19 +47,11 @@ async function getCompanyContext(companyId: string): Promise<CompanyContext | un
       iban: data.iban || data.step3?.bankDetails?.iban || data.step4?.iban || data.bankDetails?.iban || '',
     };
     
-    console.log('[OCR] Company-Kontext geladen:', {
-      companyName: context.companyName,
-      vatId: context.vatId ? 'vorhanden' : 'fehlt',
-      iban: context.iban ? 'vorhanden' : 'fehlt',
-    });
-    
     return context;
   } catch (error) {
-    console.error('[OCR] Fehler beim Laden der Company-Daten:', error);
     return undefined;
   }
 }
- */
 
 interface LineItem {
   position: string;

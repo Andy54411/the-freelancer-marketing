@@ -3146,9 +3146,10 @@ export default function CreateRecurringInvoicePage() {
         }} />
 
       
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div className="min-h-full bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Header - SevDesk Style */}
-        <header className="w-full" style={{ maxWidth: '1440px' }}>
+        <header className="w-full">
         <div className="flex items-center justify-between py-4 border-b border-gray-200">
           {/* Left side - Title */}
           <div className="flex items-center">
@@ -5464,7 +5465,12 @@ export default function CreateRecurringInvoicePage() {
           onClose={() => setShowLivePreview(false)}
           document={buildInvoiceDataForPreview()}
           documentType="invoice"
-          companyId={uid} />
+          companyId={uid}
+          mode="preview"
+          onSaveAsDraft={() => {
+            setShowLivePreview(false);
+            handleSubmit(true); // Als Entwurf speichern
+          }} />
 
       {/* Recurring Invoice Validation Dialog */}
       <AlertDialog open={showRecurringValidationDialog} onOpenChange={setShowRecurringValidationDialog}>
@@ -5501,6 +5507,7 @@ export default function CreateRecurringInvoicePage() {
         </AlertDialogContent>
       </AlertDialog>
 
+        </div>
       </div>
     </>);
 

@@ -426,35 +426,40 @@ export function ChartAreaInteractive({
 
     const fetchExpenses = () => {
       try {
-        // Verwende Company-Subcollection statt globaler customers Collection
-        const expensesQuery = query(
-          collection(db, 'companies', companyUid, 'customers'),
-          where('isSupplier', '==', true)
-        );
+        // Lade Ausgaben aus der expenses Subcollection
+        const expensesRef = collection(db, 'companies', companyUid, 'expenses');
 
-        // Real-time listener für Ausgaben - dieselbe Logik wie SectionCards
+        // Real-time listener für Ausgaben
         const unsubscribe = onSnapshot(
-          expensesQuery,
+          expensesRef,
           expensesSnapshot => {
             const expenseData: ExpenseData[] = [];
-            let totalAmount = 0;
 
             expensesSnapshot.forEach(doc => {
-              const supplier = doc.data();
-              if (supplier.totalAmount && supplier.totalAmount > 0) {
-                totalAmount += supplier.totalAmount;
+              const expense = doc.data();
+              if (expense.amount && expense.amount > 0) {
+                // Konvertiere Datum
+                let expenseDate = new Date();
+                if (expense.date?.toDate) {
+                  expenseDate = expense.date.toDate();
+                } else if (expense.date?.seconds) {
+                  expenseDate = new Date(expense.date.seconds * 1000);
+                } else if (expense.date?._seconds) {
+                  expenseDate = new Date(expense.date._seconds * 1000);
+                } else if (typeof expense.date === 'string') {
+                  expenseDate = new Date(expense.date);
+                } else if (expense.createdAt?.toDate) {
+                  expenseDate = expense.createdAt.toDate();
+                }
+
+                expenseData.push({
+                  id: doc.id,
+                  amount: expense.amount,
+                  date: expenseDate,
+                  createdAt: expenseDate,
+                });
               }
             });
-
-            // Erstelle einen einzelnen Expense-Eintrag mit der Gesamtsumme für heute
-            if (totalAmount > 0) {
-              expenseData.push({
-                id: 'total-expenses',
-                amount: totalAmount,
-                date: new Date(), // Immer heute
-                createdAt: new Date(),
-              });
-            }
 
             setExpenses(expenseData);
             updateIndicator();

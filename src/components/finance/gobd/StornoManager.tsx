@@ -220,7 +220,7 @@ export function StornoManager({ companyId, document, onStornoCreated, onCreditNo
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
               Erstellen Sie eine Stornorechnung mit negativen Beträgen zur vollständigen 
-              Stornierung des Dokuments.
+              Korrektur der ursprünglichen Rechnung.
             </p>
             
             {!document.gobdStatus.isLocked ? (
@@ -271,7 +271,7 @@ export function StornoManager({ companyId, document, onStornoCreated, onCreditNo
                       <Label htmlFor="storno-reason">Storno-Grund *</Label>
                       <Textarea
                         id="storno-reason"
-                        placeholder="Grund für die Stornierung eingeben..."
+                        placeholder="Grund für die Stornorechnung eingeben..."
                         value={stornoReason}
                         onChange={(e) => setStornoReason(e.target.value)}
                         rows={3}

@@ -71,7 +71,7 @@ export default function AssignTransactionModal({
           {isStorno && (
             <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
               <p className="text-sm text-orange-800">
-                <strong>⚠️ Storno-Rechnung:</strong> Dies ist eine Stornierung (negativer Betrag).
+                <strong>⚠️ Stornorechnung:</strong> Dies ist eine Stornorechnung (negativer Betrag).
               </p>
             </div>
           )}

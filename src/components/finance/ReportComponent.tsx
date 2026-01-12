@@ -905,70 +905,26 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
         <TabsContent value="tax" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Steuerliche Auswertungen</CardTitle>
+              <CardTitle>Steuerliche Übermittlung</CardTitle>
               <CardDescription>
-                UStVA, Steuervorauszahlungen und weitere steuerliche Berichte
+                UStVA erstellen und direkt an ELSTER übermitteln
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Umsatzsteuer</h4>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('UStVA aktuell')}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    UStVA aktueller Monat
+            <CardContent className="text-center py-8">
+              <div className="max-w-md mx-auto">
+                <FileText className="h-12 w-12 text-[#14ad9f] mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Steuerzentrale
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Erstellen Sie Ihre Umsatzsteuer-Voranmeldung und übermitteln Sie diese 
+                  direkt an das Finanzamt über ELSTER.
+                </p>
+                <a href={`/dashboard/company/${companyId}/finance/taxes`}>
+                  <Button className="bg-[#14ad9f] hover:bg-teal-700">
+                    Zur Steuerzentrale
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('UStVA Quartal')}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    UStVA Quartal
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('UStVA Jahr')}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    UStVA Jahreserklärung
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Weitere Berichte</h4>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('Steuervorauszahlung')}
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Steuervorauszahlung
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('Zusammenfassende Meldung')}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Zusammenfassende Meldung
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleGenerateReport('DATEV Export')}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    DATEV Export
-                  </Button>
-                </div>
+                </a>
               </div>
             </CardContent>
           </Card>

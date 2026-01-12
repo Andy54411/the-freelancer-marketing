@@ -1959,11 +1959,10 @@ export default function CreateCustomerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <div className="bg-white border-b border-gray-200 rounded-t-lg -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
             {/* Back Button & Title */}
             <div className="flex items-center gap-4">
               <Button
@@ -2034,7 +2033,7 @@ export default function CreateCustomerPage() {
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8 overflow-x-auto py-4">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -2067,7 +2066,7 @@ export default function CreateCustomerPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="py-4">
         {renderTabContent()}
       </div>
 

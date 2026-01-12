@@ -237,7 +237,10 @@ export default function FooterTextEditor({
   const handleSaveTemplate = async (
     templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!companyId || !userId) return;
+    if (!companyId || !userId) {
+      toast.error(`Fehler: ${!companyId ? 'companyId' : 'userId'} fehlt`);
+      return;
+    }
 
     try {
       // Ensure companyId and createdBy are in the template data
@@ -248,11 +251,11 @@ export default function FooterTextEditor({
       };
 
       await TextTemplateService.createTextTemplate(fullTemplateData);
-      setTemplateModalOpen(false);
       // Template-Liste neu laden
       await loadTextTemplates();
     } catch (error) {
-      console.error('Fehler beim Speichern der Textvorlage:', error);
+      // Re-throw für Modal-Fehlerbehandlung
+      throw error;
     }
   };
 

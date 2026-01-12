@@ -87,6 +87,7 @@ export const DOCUMENT_TYPE_TEMPLATES = {
   reminder: 'TEMPLATE_STANDARD',
   quote: 'TEMPLATE_STANDARD',
   delivery: 'TEMPLATE_STANDARD',
+  cancellation: 'TEMPLATE_STANDARD', // Stornorechnung
 } as const;
 
 export interface InvoiceTemplateRendererProps {

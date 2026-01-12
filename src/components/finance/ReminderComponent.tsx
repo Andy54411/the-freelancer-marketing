@@ -38,6 +38,8 @@ import {
   Euro,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { db } from '@/firebase/clients';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 
 interface Reminder {
   id: string;
@@ -89,60 +91,40 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
   const loadReminders = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Echte Firebase-Daten laden
+      const remindersRef = collection(db, 'companies', companyId, 'reminders');
+      const remindersQuery = query(remindersRef, orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(remindersQuery);
+      
+      const loadedReminders: Reminder[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Berechne Tage seit Fälligkeit
+        const dueDate = data.dueDate ? new Date(data.dueDate) : new Date();
+        const today = new Date();
+        const daysPastDue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        return {
+          id: doc.id,
+          number: data.number || data.reminderNumber || `M${data.reminderLevel || 1}-${doc.id.slice(0, 6)}`,
+          invoiceNumber: data.invoiceNumber || '',
+          customerName: data.customerName || '',
+          customerEmail: data.customerEmail || '',
+          originalAmount: data.originalAmount || 0,
+          outstandingAmount: data.outstandingAmount || data.originalAmount || 0,
+          dueDate: data.dueDate || '',
+          reminderDate: data.createdAt?.toDate?.()?.toISOString?.()?.split('T')[0] || 
+                       data.sentAt?.toDate?.()?.toISOString?.()?.split('T')[0] || '',
+          reminderLevel: (data.reminderLevel || 1) as 1 | 2 | 3,
+          reminderFee: data.reminderFee || 0,
+          status: data.status || 'draft',
+          daysPastDue,
+        };
+      });
 
-      // Mock data
-      const mockReminders: Reminder[] = [
-        {
-          id: '1',
-          number: 'M1-MOCK-001',
-          invoiceNumber: 'R-2025-012',
-          customerName: 'Müller & Co KG',
-          customerEmail: 'buchhaltung@mueller-co.de',
-          originalAmount: 2450.0,
-          outstandingAmount: 2450.0,
-          dueDate: '2025-01-15',
-          reminderDate: '2025-01-22',
-          reminderLevel: 1,
-          reminderFee: 5.0,
-          status: 'sent',
-          daysPastDue: 18,
-        },
-        {
-          id: '2',
-          number: 'M2-MOCK-001',
-          invoiceNumber: 'R-2025-008',
-          customerName: 'Schmidt GmbH',
-          customerEmail: 'info@schmidt.de',
-          originalAmount: 1800.0,
-          outstandingAmount: 1815.0, // Including first reminder fee
-          dueDate: '2025-01-01',
-          reminderDate: '2025-01-25',
-          reminderLevel: 2,
-          reminderFee: 10.0,
-          status: 'sent',
-          daysPastDue: 32,
-        },
-        {
-          id: '3',
-          number: 'M3-MOCK-001',
-          invoiceNumber: 'R-2024-156',
-          customerName: 'Weber AG',
-          customerEmail: 'finanzen@weber.de',
-          originalAmount: 5200.0,
-          outstandingAmount: 5230.0, // Including previous reminder fees
-          dueDate: '2024-12-15',
-          reminderDate: '2025-01-28',
-          reminderLevel: 3,
-          reminderFee: 15.0,
-          status: 'escalated',
-          daysPastDue: 48,
-        },
-      ];
-
-      setReminders(mockReminders);
-    } catch {
+      setReminders(loadedReminders);
+    } catch (error) {
       toast.error('Mahnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);

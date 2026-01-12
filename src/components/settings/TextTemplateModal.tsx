@@ -18,13 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Loader2, Copy } from 'lucide-react';
+import { Loader2, Copy, Info, FileText, Mail, FileEdit, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
   TextTemplate,
@@ -38,6 +43,45 @@ import {
   LETTER_POSITION_OPTIONS,
   PLACEHOLDER_CATEGORIES,
 } from '@/types/textTemplates';
+
+interface TextTemplateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (template: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  template?: TextTemplate | null;
+  companyId: string;
+  userId: string;
+}
+
+// Info-Tooltip Komponente
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="w-4 h-4 text-gray-400 hover:text-[#14ad9f] cursor-help transition-colors" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white text-xs p-2">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// Kategorie-Icon
+function CategoryIcon({ category }: { category: TextTemplateCategory }) {
+  switch (category) {
+    case 'DOCUMENT':
+      return <FileText className="w-4 h-4" />;
+    case 'EMAIL':
+      return <Mail className="w-4 h-4" />;
+    case 'LETTER':
+      return <FileEdit className="w-4 h-4" />;
+    default:
+      return <FileText className="w-4 h-4" />;
+  }
+}
 
 interface TextTemplateModalProps {
   isOpen: boolean;
@@ -103,6 +147,8 @@ export default function TextTemplateModal({
   }, [isOpen, template]);
 
   const handleSave = async () => {
+    toast.info('handleSave aufgerufen - Debug');
+    
     if (!formData.name.trim()) {
       toast.error('Bitte geben Sie einen Namen für die Textvorlage ein.');
       return;
@@ -113,6 +159,8 @@ export default function TextTemplateModal({
       return;
     }
 
+    toast.info(`Speichere Template: ${formData.name} - companyId: ${companyId}, userId: ${userId}`);
+
     try {
       setLoading(true);
       const templateData = {
@@ -121,13 +169,12 @@ export default function TextTemplateModal({
         createdBy: userId,
       };
       await onSave(templateData);
-      onClose();
       toast.success(
         template ? 'Textvorlage erfolgreich aktualisiert!' : 'Textvorlage erfolgreich erstellt!'
       );
+      onClose();
     } catch (error) {
-      console.error('Fehler beim Speichern:', error);
-      toast.error('Fehler beim Speichern der Textvorlage.');
+      toast.error(`Fehler beim Speichern: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }
@@ -148,276 +195,269 @@ export default function TextTemplateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 border-2 border-[#14ad9f]">
-        {/* Header */}
-        <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 px-6 py-5 shrink-0">
-          <DialogTitle className="text-2xl font-bold text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+        {/* Header - Kompakt */}
+        <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 px-6 py-4 shrink-0 rounded-t-lg">
+          <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
             {template ? 'Textvorlage bearbeiten' : 'Neue Textvorlage'}
           </DialogTitle>
-          <DialogDescription className="text-white">
-            Erstellen Sie wiederverwendbare Textbausteine für Ihre Dokumente und E-Mails
+          <DialogDescription className="text-teal-100 text-sm mt-1">
+            Wiederverwendbare Textbausteine für Dokumente und E-Mails
           </DialogDescription>
         </div>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto flex-1 p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-              {/* Basis-Informationen */}
-              <Card className="border-teal-100">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base text-[#14ad9f]">
-                    Basis-Informationen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sm font-medium">
-                        Vorlagen-Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="name"
-                        placeholder="z.B. Angebot Kopf-Text"
-                        value={formData.name}
-                        onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        className="focus-visible:ring-[#14ad9f]"
-                      />
-                    </div>
+        <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="space-y-6">
+            
+            {/* Abschnitt 1: Name & Typ (wichtigste Felder oben) */}
+            <div className="space-y-4">
+              {/* Name - Prominentes Feld */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="name" className="text-sm font-semibold text-gray-900">
+                    Vorlagen-Name
+                  </Label>
+                  <span className="text-red-500 text-xs">*</span>
+                  <InfoTooltip content="Geben Sie einen eindeutigen Namen für die Vorlage ein, z.B. 'Angebot Kopftext Standard' oder 'Mahnung Stufe 1'." />
+                </div>
+                <Input
+                  id="name"
+                  placeholder="z.B. Angebot Standardtext, Mahnung Stufe 1..."
+                  value={formData.name}
+                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="h-11 text-base focus-visible:ring-[#14ad9f] border-gray-300"
+                />
+              </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Typ</Label>
-                      <Select
-                        value={formData.category}
-                        onValueChange={value => {
-                          const category = value as TextTemplateCategory;
-                          setFormData(prev => ({
-                            ...prev,
-                            category: category,
-                            textType: category === 'DOCUMENT' ? 'HEAD' : category === 'EMAIL' ? 'BODY' : 'HEAD',
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORY_OPTIONS.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Verwenden für</Label>
-                      {formData.category === 'DOCUMENT' ? (
-                        <Select
-                          value={formData.objectType}
-                          onValueChange={value =>
-                            setFormData(prev => ({ ...prev, objectType: value as ObjectType }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DOCUMENT_USAGE_OPTIONS.map(option => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : formData.category === 'EMAIL' ? (
-                        <div className="h-10 px-3 py-2 border border-input bg-muted rounded-md flex items-center text-sm text-muted-foreground">
-                          E-Mail Template
-                        </div>
-                      ) : (
-                        <div className="h-10 px-3 py-2 border border-input bg-muted rounded-md flex items-center text-sm text-muted-foreground">
-                          Brief Template
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Position</Label>
-                      <Select
-                        value={formData.textType}
-                        onValueChange={value =>
-                          setFormData(prev => ({ ...prev, textType: value as TextTemplateType }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getPositionOptions().map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Text-Inhalt */}
-              <Card className="border-teal-100">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base text-[#14ad9f]">
-                      Text-Inhalt
-                    </CardTitle>
-                    <Button
+              {/* Typ-Auswahl als Buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold text-gray-900">Vorlagen-Typ</Label>
+                  <InfoTooltip content="Wählen Sie den Typ: Dokument (Rechnungen, Angebote), E-Mail (Versand-Mails) oder Brief (Geschäftsbriefe)." />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATEGORY_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowPlaceholders(!showPlaceholders)}
-                      className="text-xs border-[#14ad9f] text-[#14ad9f] hover:bg-teal-50"
+                      onClick={() => {
+                        const category = option.value as TextTemplateCategory;
+                        setFormData(prev => ({
+                          ...prev,
+                          category: category,
+                          textType: category === 'DOCUMENT' ? 'HEAD' : category === 'EMAIL' ? 'BODY' : 'HEAD',
+                        }));
+                      }}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                        formData.category === option.value
+                          ? 'border-[#14ad9f] bg-teal-50 text-[#14ad9f] font-medium'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
                     >
-                      {showPlaceholders ? 'Platzhalter ausblenden' : 'Platzhalter anzeigen'}
-                    </Button>
+                      <CategoryIcon category={option.value as TextTemplateCategory} />
+                      <span className="text-sm">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-gray-100" />
+
+            {/* Abschnitt 2: Verwendung & Position (nebeneinander) */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold text-gray-900">Verwenden für</Label>
+                  <InfoTooltip content="Legen Sie fest, für welche Dokumentart diese Vorlage verwendet werden soll." />
+                </div>
+                {formData.category === 'DOCUMENT' ? (
+                  <Select
+                    value={formData.objectType}
+                    onValueChange={value => setFormData(prev => ({ ...prev, objectType: value as ObjectType }))}
+                  >
+                    <SelectTrigger className="h-10 focus:ring-[#14ad9f]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_USAGE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="h-10 px-3 py-2 border border-gray-200 bg-gray-50 rounded-md flex items-center text-sm text-gray-500">
+                    {formData.category === 'EMAIL' ? 'E-Mail Template' : 'Brief Template'}
                   </div>
-                  <CardDescription className="text-xs">
-                    HTML-Formatierung und Platzhalter wie [%KUNDENNAME%] sind möglich
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    value={formData.text}
-                    onChange={e => setFormData(prev => ({ ...prev, text: e.target.value }))}
-                    placeholder="Geben Sie hier Ihren Text ein... 
+                )}
+              </div>
 
-Tipp: Verwenden Sie Platzhalter wie [%KUNDENNAME%], [%RECHNUNGSNUMMER%] etc."
-                    className="min-h-[200px] max-h-[400px] resize-y text-sm"
-                    rows={10}
-                  />
-                </CardContent>
-              </Card>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold text-gray-900">Position</Label>
+                  <InfoTooltip content="Kopf-Text erscheint oben im Dokument, Fuß-Text unten. Bei E-Mails: Betreff, Text oder Signatur." />
+                </div>
+                <Select
+                  value={formData.textType}
+                  onValueChange={value => setFormData(prev => ({ ...prev, textType: value as TextTemplateType }))}
+                >
+                  <SelectTrigger className="h-10 focus:ring-[#14ad9f]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getPositionOptions().map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              {/* Einstellungen */}
-              <Card className="border-teal-100">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base text-[#14ad9f]">
-                    Einstellungen
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Legen Sie Sichtbarkeit und Standard-Vorlage fest
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 hover:border-[#14ad9f] transition-colors">
-                    <Checkbox
-                      id="isPrivate"
-                      checked={formData.isPrivate}
-                      onCheckedChange={checked =>
-                        setFormData(prev => ({ ...prev, isPrivate: !!checked }))
-                      }
-                      className="mt-0.5 data-[state=checked]:bg-[#14ad9f] data-[state=checked]:border-[#14ad9f]"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="isPrivate" className="text-sm font-medium cursor-pointer">
-                        Nur für mich sichtbar
-                      </Label>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Diese Vorlage ist nur für Sie sichtbar und nutzbar
-                      </p>
-                    </div>
-                  </div>
+            <Separator className="bg-gray-100" />
 
-                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 hover:border-[#14ad9f] transition-colors">
-                    <Checkbox
-                      id="isDefault"
-                      checked={formData.isDefault}
-                      onCheckedChange={checked =>
-                        setFormData(prev => ({ ...prev, isDefault: !!checked }))
-                      }
-                      className="mt-0.5 data-[state=checked]:bg-[#14ad9f] data-[state=checked]:border-[#14ad9f]"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="isDefault" className="text-sm font-medium cursor-pointer">
-                        Als Standard festlegen
-                      </Label>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Diese Vorlage wird automatisch vorausgewählt
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Abschnitt 3: Text-Eingabe */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold text-gray-900">Text-Inhalt</Label>
+                  <span className="text-red-500 text-xs">*</span>
+                  <InfoTooltip content="Geben Sie den gewünschten Text ein. Verwenden Sie Platzhalter wie [%KUNDENNAME%] für dynamische Inhalte." />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPlaceholders(!showPlaceholders)}
+                  className="text-xs text-[#14ad9f] hover:text-teal-700 hover:bg-teal-50 h-7 px-2"
+                >
+                  {showPlaceholders ? (
+                    <>Platzhalter ausblenden <ChevronUp className="w-3 h-3 ml-1" /></>
+                  ) : (
+                    <>Platzhalter anzeigen <ChevronDown className="w-3 h-3 ml-1" /></>
+                  )}
+                </Button>
+              </div>
+              
+              <Textarea
+                value={formData.text}
+                onChange={e => setFormData(prev => ({ ...prev, text: e.target.value }))}
+                placeholder="Sehr geehrte/r [%ANREDE%] [%KUNDENNAME%],
 
-            {/* Platzhalter */}
+vielen Dank für Ihre Anfrage. Anbei erhalten Sie unser Angebot..."
+                className="min-h-40 max-h-[300px] resize-y text-sm focus-visible:ring-[#14ad9f] border-gray-300"
+              />
+              
+              <p className="text-xs text-gray-500 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Tipp: HTML-Formatierung und Platzhalter wie [%KUNDENNAME%] werden unterstützt
+              </p>
+            </div>
+
+            {/* Platzhalter-Bereich (ausklappbar) */}
             {showPlaceholders && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-[#14ad9f]">Platzhalter</CardTitle>
-                  <CardDescription>
-                    Klicken Sie auf einen Platzhalter, um ihn einzufügen.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-96">
-                      <div className="space-y-4">
-                        {Object.entries(PLACEHOLDER_CATEGORIES).map(([categoryKey, category]) => (
-                          <div key={categoryKey}>
-                            <h4 className="font-medium text-sm text-gray-900 mb-2">
-                              {category.label}
-                            </h4>
-                            <div className="space-y-2">
-                              {Object.entries(category.placeholders).map(([placeholder, info]) => (
-                                <div
-                                  key={placeholder}
-                                  className="group cursor-pointer border rounded-lg p-2 hover:bg-gray-50 transition-colors"
-                                  onClick={() => insertPlaceholder(placeholder)}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <Badge variant="outline" className="font-mono text-xs">
-                                      {placeholder}
-                                    </Badge>
-                                    <Copy className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </div>
-                                  <p className="text-xs text-gray-600 mt-1">{info.description}</p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    Beispiel: {info.example}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                            <Separator className="mt-3" />
-                          </div>
-                        ))}
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Copy className="w-4 h-4 text-[#14ad9f]" />
+                  Verfügbare Platzhalter
+                </h4>
+                <ScrollArea className="h-48">
+                  <div className="space-y-3 pr-4">
+                    {Object.entries(PLACEHOLDER_CATEGORIES).map(([categoryKey, category]) => (
+                      <div key={categoryKey}>
+                        <h5 className="text-xs font-medium text-gray-600 mb-2">{category.label}</h5>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(category.placeholders).map(([placeholder, info]) => (
+                            <TooltipProvider key={placeholder} delayDuration={100}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant="outline"
+                                    className="font-mono text-xs cursor-pointer hover:bg-[#14ad9f] hover:text-white hover:border-[#14ad9f] transition-colors"
+                                    onClick={() => insertPlaceholder(placeholder)}
+                                  >
+                                    {placeholder}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="font-medium">{info.description}</p>
+                                  <p className="text-gray-400 mt-1">Beispiel: {info.example}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ))}
+                        </div>
                       </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
+
+            <Separator className="bg-gray-100" />
+
+            {/* Abschnitt 4: Einstellungen - Kompakte Switches */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-900">Einstellungen</Label>
+              
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">Nur für mich sichtbar</span>
+                    <p className="text-xs text-gray-500">Private Vorlage, andere Teammitglieder sehen sie nicht</p>
+                  </div>
+                  <InfoTooltip content="Aktivieren Sie diese Option, wenn nur Sie diese Vorlage verwenden können sollen. Andere Benutzer Ihres Unternehmens sehen sie dann nicht." />
+                </div>
+                <Switch
+                  checked={formData.isPrivate}
+                  onCheckedChange={checked => setFormData(prev => ({ ...prev, isPrivate: checked }))}
+                  className="data-[state=checked]:bg-[#14ad9f]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">Als Standard festlegen</span>
+                    <p className="text-xs text-gray-500">Wird automatisch in neuen Dokumenten vorausgewählt</p>
+                  </div>
+                  <InfoTooltip content="Wenn aktiviert, wird diese Vorlage automatisch ausgewählt, wenn Sie ein neues Dokument des entsprechenden Typs erstellen." />
+                </div>
+                <Switch
+                  checked={formData.isDefault}
+                  onCheckedChange={checked => setFormData(prev => ({ ...prev, isDefault: checked }))}
+                  className="data-[state=checked]:bg-[#14ad9f]"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <DialogFooter className="gap-2 sm:gap-0 px-6 py-4 border-t shrink-0">
-          <Button 
-            variant="outline" 
-            onClick={onClose} 
-            disabled={loading}
-            className="border-gray-300 hover:bg-gray-50"
-          >
-            Abbrechen
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            disabled={loading}
-            className="bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white shadow-md"
-          >
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {template ? 'Aktualisieren' : 'Erstellen'}
-          </Button>
+        {/* Footer - Kompakt */}
+        <DialogFooter className="px-6 py-4 border-t bg-gray-50 shrink-0 rounded-b-lg">
+          <div className="flex justify-end gap-3 w-full">
+            <Button 
+              variant="outline" 
+              onClick={onClose} 
+              disabled={loading}
+              className="border-gray-300 hover:bg-gray-100"
+            >
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={loading || !formData.name.trim() || !formData.text.trim()}
+              className="bg-[#14ad9f] hover:bg-teal-700 text-white min-w-[120px]"
+            >
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {template ? 'Speichern' : 'Erstellen'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

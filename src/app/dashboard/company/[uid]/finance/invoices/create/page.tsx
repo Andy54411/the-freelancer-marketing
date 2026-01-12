@@ -1637,6 +1637,7 @@ export default function CreateQuotePage() {
       undefined,
       title: formData.title || undefined,
       reference: formData.customerOrderNumber || undefined,
+      customerOrderNumber: formData.customerOrderNumber || undefined, // Für Template-Kompatibilität
       currency:
       formData.currency ||
       company?.defaultCurrency as string ||
@@ -3050,7 +3051,7 @@ export default function CreateQuotePage() {
         }} />
 
       
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Header - SevDesk Style */}
         <header className="w-full" style={{ maxWidth: '1440px' }}>
         <div className="flex items-center justify-between py-4 border-b border-gray-200">
@@ -4674,11 +4675,6 @@ export default function CreateQuotePage() {
                   value={formData.taxRule}
                   onChange={(value) => setFormData((p) => ({ ...p, taxRule: value }))} />
 
-
-                <div className="text-xs text-gray-500">
-                  Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig
-                  → 19%, andere Regeln → 0%).
-                </div>
               </div>
             </div>
           </CardContent>
@@ -4740,17 +4736,9 @@ export default function CreateQuotePage() {
 
         </CardContent>
       </Card>
+      </div>
 
-      {/* E-Rechnung ist ab 2025 PFLICHT - automatisch bei jeder Rechnung */}
-
-      {/* Live-Vorschau Komponente - Removed: Using PDF-only system now */}
-      {/* <LivePreviewComponent
-               isVisible={previewOpen}
-               onClose={() => setPreviewOpen(false)}
-               selectedTemplate={selectedTemplate}
-               buildPreviewData={buildPreviewData}
-               loadingTemplate={loadingTemplate}
-              /> */}
+      {/* === MODALS - Außerhalb des Hauptcontainers === */}
 
       {/* Modal: Neues Produkt */}
       <NewProductModal
@@ -5343,9 +5331,13 @@ export default function CreateQuotePage() {
           onClose={() => setShowLivePreview(false)}
           document={buildInvoiceDataForPreview()}
           documentType="invoice"
-          companyId={uid} />
+          companyId={uid}
+          mode="preview"
+          onSaveAsDraft={() => {
+            setShowLivePreview(false);
+            handleSubmit(true); // Als Entwurf speichern
+          }} />
 
-      </div>
     </>);
 
 }

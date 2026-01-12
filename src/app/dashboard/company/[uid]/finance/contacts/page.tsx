@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CustomerService } from '@/services/customerService';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { db } from '@/firebase/clients';
@@ -59,15 +59,31 @@ interface ContactsPageProps {
 
 export default function ContactsPage({ params }: ContactsPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resolvedParams = React.use(params);
   const [contacts, setContacts] = useState<(Customer & { type: 'customer' | 'supplier' })[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'customers' | 'suppliers'>('all');
+  
+  // URL-Parameter für Tab auslesen (suppliers, customers, all)
+  const tabParam = searchParams.get('tab');
+  const initialFilter = tabParam === 'suppliers' ? 'suppliers' : tabParam === 'customers' ? 'customers' : 'all';
+  const [statusFilter, setStatusFilter] = useState<'all' | 'customers' | 'suppliers'>(initialFilter);
+  
   const [sortBy, setSortBy] = useState<'name' | 'customerNumber' | 'totalAmount' | 'createdAt'>(
     'name'
   );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Aktualisiere Filter wenn URL-Parameter sich ändert
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'suppliers') {
+      setStatusFilter('suppliers');
+    } else if (tab === 'customers') {
+      setStatusFilter('customers');
+    }
+  }, [searchParams]);
 
   // Kontakte laden
   useEffect(() => {

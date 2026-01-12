@@ -147,7 +147,7 @@ export class EInvoiceService {
 
   <rsm:ExchangedDocument>
     <ram:ID>${invoiceData.invoiceNumber}</ram:ID>
-    <ram:TypeCode>380</ram:TypeCode>
+    <ram:TypeCode>${invoiceData.isStorno ? '381' : '380'}</ram:TypeCode>
     <ram:IssueDateTime>
       <udt:DateTimeString format="102">${invoiceData.issueDate.replace(/-/g, '')}</udt:DateTimeString>
     </ram:IssueDateTime>
@@ -255,7 +255,7 @@ export class EInvoiceService {
   <cbc:ID>${invoiceData.invoiceNumber}</cbc:ID>
   <cbc:IssueDate>${invoiceData.issueDate}</cbc:IssueDate>
   <cbc:DueDate>${invoiceData.dueDate}</cbc:DueDate>
-  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:InvoiceTypeCode>${invoiceData.isStorno ? '381' : '380'}</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
   <cbc:BuyerReference>${metadata.buyerReference}</cbc:BuyerReference>
 

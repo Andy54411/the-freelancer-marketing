@@ -239,7 +239,10 @@ export async function POST(request: NextRequest) {
       contactPhone,
       supplierId, // 🔗 Lieferanten-Verknüpfung
       taxDeductible,
+      isRecurring,
+      recurringInterval,
       receipt,
+      receipts, // Multiple receipts support
     } = body;
 
     if (!companyId || !title || !amount || !category) {
@@ -283,7 +286,10 @@ export async function POST(request: NextRequest) {
       contactPhone: contactPhone || '',
       supplierId: supplierId || '', // 🔗 Lieferanten-Verknüpfung
       taxDeductible: taxDeductible || false,
+      isRecurring: isRecurring || false,
+      recurringInterval: isRecurring ? (recurringInterval || 'monthly') : null,
       receipt: receipt || null,
+      receipts: receipts || null, // OCR-gescannte Belege (mehrere)
       updatedAt: new Date(),
     };
 
@@ -369,10 +375,47 @@ export async function POST(request: NextRequest) {
       } else {
       }
 
+      // 🔄 Bei wiederkehrender Ausgabe auch in recurringExpenses speichern
+      let recurringExpenseId: string | null = null;
+      if (isRecurring && recurringInterval) {
+        const recurringData = {
+          name: title,
+          description: description || '',
+          amount: amount,
+          vatRate: vatRate || 19,
+          category: category,
+          interval: recurringInterval,
+          startDate: new Date(date || new Date()),
+          nextDueDate: new Date(date || new Date()),
+          status: 'active',
+          supplier: vendor || '',
+          notes: `Erstellt aus einmaliger Ausgabe (ID: ${docRef.id})`,
+          createdAt: new Date(),
+          sourceExpenseId: docRef.id,
+          receipts: receipts || null, // OCR-gescannte Belege
+        };
+
+        const recurringRef = await db
+          .collection('companies')
+          .doc(companyId)
+          .collection('recurringExpenses')
+          .add(recurringData);
+        
+        recurringExpenseId = recurringRef.id;
+
+        // Aktualisiere die einmalige Ausgabe mit der Referenz zur wiederkehrenden Ausgabe
+        await docRef.update({
+          recurringExpenseId: recurringRef.id,
+        });
+      }
+
       return NextResponse.json({
         success: true,
         expenseId: docRef.id,
-        message: 'Ausgabe erfolgreich erstellt',
+        recurringExpenseId,
+        message: isRecurring 
+          ? 'Ausgabe erfolgreich erstellt und als wiederkehrend gespeichert'
+          : 'Ausgabe erfolgreich erstellt',
         debug: {
           savedData: createData,
           supplierId: supplierId || 'MISSING',

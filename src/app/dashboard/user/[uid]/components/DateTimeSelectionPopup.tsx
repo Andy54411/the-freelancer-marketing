@@ -6,7 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FiX, FiMessageCircle } from 'react-icons/fi';
-import { DateRange, SelectSingleEventHandler, SelectRangeEventHandler } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
 import { format, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -105,11 +105,11 @@ export function DateTimeSelectionPopup({
     characteristics.defaultDurationHours,
   ]);
 
-  const handleSingleDateSelect: SelectSingleEventHandler = day => {
+  const handleSingleDateSelect = (day: Date | undefined) => {
     setSelectedDateValue(day);
   };
 
-  const handleRangeDateSelect: SelectRangeEventHandler = range => {
+  const handleRangeDateSelect = (range: DateRange | undefined) => {
     if (range?.from && !range.to) {
       setSelectedDateValue({ from: range.from, to: range.from });
     } else {

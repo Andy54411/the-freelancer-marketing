@@ -188,6 +188,8 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
           tax: selectedInvoiceData.tax || 0,
           total: selectedInvoiceData.total || 0,
           vatRate: selectedInvoiceData.vatRate || 19,
+          isStorno: selectedInvoiceData.isStorno || selectedInvoiceData.type === 'credit' || false,
+          originalInvoiceNumber: selectedInvoiceData.originalInvoiceNumber,
           items: selectedInvoiceData.items || [
             {
               description: 'Position aus importierter Rechnung',

@@ -175,7 +175,13 @@ const navigationItems: NavigationItem[] = [
     label: 'Buchhaltung',
     icon: FiCalculator,
     value: 'finance',
+    href: 'finance',
     subItems: [
+      {
+        label: 'Übersicht',
+        value: 'finance-overview',
+        href: 'finance',
+      },
       {
         label: 'Angebote',
         value: 'quotes',
@@ -210,14 +216,18 @@ const navigationItems: NavigationItem[] = [
             href: 'finance/invoices/recurring',
           },
           { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
-          { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
+          { label: 'Stornorechnungen', value: 'invoices-credits', href: 'finance/credits' },
         ],
       },
       {
         label: 'Ausgaben',
         value: 'expenses',
-        href: 'finance/expenses',
         subItems: [
+          {
+            label: 'Einmalig',
+            value: 'expenses-single',
+            href: 'finance/expenses',
+          },
           {
             label: 'Wiederkehrend',
             value: 'expenses-recurring',
@@ -1076,24 +1086,9 @@ export default function CompanySidebar({
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [maxHeight, setMaxHeight] = useState('100vh');
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-
-  useEffect(() => {
-    const updateMaxHeight = () => {
-      if (typeof window !== 'undefined') {
-        const viewportHeight = window.innerHeight;
-        const footerOffset = -50; // Abstand zum Footer
-        setMaxHeight(`${viewportHeight - footerOffset}px`);
-      }
-    };
-
-    updateMaxHeight();
-    window.addEventListener('resize', updateMaxHeight);
-    return () => window.removeEventListener('resize', updateMaxHeight);
-  }, []);
 
   // Drag-to-Scroll Handler
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -1121,24 +1116,10 @@ export default function CompanySidebar({
 
   return (
     <>
-      <style jsx>{`
-        .sidebar-scroll::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      <div ref={sidebarRef} className="flex flex-col bg-white h-full w-full" style={{ maxHeight }}>
+      <div ref={sidebarRef} className="flex flex-col bg-white h-full">
         <div
           ref={scrollRef}
-          className="sidebar-scroll flex flex-col flex-1 pt-5 pb-4 overflow-y-auto select-none"
-          style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            cursor: isDragging ? 'grabbing' : 'grab',
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
+          className="flex flex-col flex-1 pt-5 pb-4 select-none overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-center shrink-0 px-4 mb-5 justify-between">

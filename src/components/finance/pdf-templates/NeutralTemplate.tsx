@@ -30,6 +30,13 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   // 🌍 ÜBERSETZUNGSSYSTEM
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
+  // Berechne, ob eine zweite Seite benötigt wird
+  // STANDARD: Immer einseitig, außer der Inhalt ist zu lang
+  const itemCount = data.items?.length || 0;
+  const hasLongDescription = data.items?.some((item: { description?: string }) => (item.description?.length || 0) > 150) || false;
+  const hasHeaderText = !!(data.processedHeaderText || data.processedHeadTextHtml);
+  const needsSecondPage = (itemCount > 6 || (itemCount > 4 && hasLongDescription) || (itemCount > 5 && hasHeaderText));
+
   // 📋 KUNDENNUMMER - Bereits aus LivePreviewModal angereichert
   const _companyId = (data as any).companyId || '';
   const displayCustomerNumber = data.customerNumber;
@@ -67,10 +74,12 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
 
   return (
     <div
-      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
+      className={`bg-white w-full mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
       style={{
         fontFamily: 'Arial, sans-serif',
-        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' })
+        width: '794px',
+        maxWidth: '794px',
+        ...(pageMode === 'single' && { maxHeight: '1123px', overflow: 'hidden' })
       }}>
 
       <style
@@ -121,7 +130,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
 
 
       {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col relative" style={{ minHeight: '297mm' }}>
+      <div className="pdf-page flex flex-col relative" style={{ minHeight: '1123px' }}>
         {/* Wasserzeichen */}
         {documentSettings?.showWatermark &&
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -129,10 +138,6 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               {data.documentLabel}
             </div>
           </div>
-        }
-        {/* Seitenzahl */}
-        {documentSettings?.showPageNumbers &&
-        <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 1</div>
         }
         {/* Simple Header - Seite 1 */}
         <div className="p-6 pb-4">
@@ -160,21 +165,15 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               {/* Rechter Bereich mit QR-Code und Firmendaten */}
               <div className="flex flex-col items-end space-y-2">
                 {/* QR-Code klein oben rechts */}
-                {documentSettings?.showQRCode &&
-                <div className="shrink-0">
-                    {data.qrCodeUrl || documentSettings?.qrCodeUrl ?
-                  <img
-                    src={data.qrCodeUrl || documentSettings?.qrCodeUrl}
-                    alt="QR Code"
-                    className="w-16 h-16 border border-gray-300" /> :
-
-
-                  <div className="w-16 h-16 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                        QR
-                      </div>
-                  }
+                {documentSettings?.showQRCode && (data.qrCodeUrl || documentSettings?.qrCodeUrl) && (
+                  <div className="shrink-0">
+                    <img
+                      src={data.qrCodeUrl || documentSettings?.qrCodeUrl}
+                      alt="QR Code"
+                      className="w-12 h-12 border border-gray-300"
+                    />
                   </div>
-                }
+                )}
 
                 {/* Firmendaten */}
                 <div className="text-right text-xs text-gray-700 leading-relaxed">
@@ -273,6 +272,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                   </div>
                 }
                 {config.showPaymentTerms && <div>Zahlungsziel: {data.paymentTerms}</div>}
+                {data.customerOrderNumber && <div>Referenz: {data.customerOrderNumber}</div>}
               </div>
             </div>
           </div>
@@ -287,32 +287,17 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             </div>
           )}
 
-          {/* Header Text (Kopftext) */}
-          {data.processedHeaderText &&
-          <div
-            className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
-            style={{ borderColor: config.color }}>
-
-              <div
-              className="text-sm text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: data.processedHeaderText
-              }} />
-
-            </div>
-          }
-
-          {/* Head Text / Einleitung (processedHeadTextHtml) */}
-          {data.processedHeadTextHtml &&
+          {/* Kopftext / Einleitung - Nur EIN Text anzeigen (processedHeadTextHtml hat Priorität) */}
+          {(data.processedHeadTextHtml || data.processedHeaderText) && (
             <div className="mb-4">
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: data.processedHeadTextHtml,
+                  __html: data.processedHeadTextHtml || data.processedHeaderText,
                 }}
               />
             </div>
-          }
+          )}
 
           <div className="border-t-2 mb-4" style={{ borderColor: color }}></div>
         </div>
@@ -328,8 +313,8 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             language={documentSettings?.language || 'de'} />
 
 
-          {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' &&
+          {/* Totals und Footer wenn keine zweite Seite benötigt wird */}
+          {!needsSecondPage &&
           <>
               {/* Totals */}
               <div className="flex justify-between items-start gap-8 mb-8 mt-8">
@@ -373,14 +358,20 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
         {/* FOOTER auf Seite 1 - IMMER bei Single, AUCH bei Multi */}
         {documentSettings?.showFooter !== false &&
         <div className="bg-white p-2 mt-1">
-            <SimpleFooter data={data} color={color} />
+            <SimpleFooter 
+              data={data} 
+              color={color}
+              showPageNumbers={documentSettings?.showPageNumbers}
+              currentPage={1}
+              totalPages={needsSecondPage ? 2 : 1}
+            />
           </div>
         }
       </div>
 
       {/* ========= AUTOMATISCHE EIN-/MEHRSEITIG LOGIK ========= */}
-      {/* Zweite Seite IMMER bei mehrseitigem Modus */}
-      {pageMode !== 'single' &&
+      {/* Zweite Seite NUR WENN BENÖTIGT */}
+      {needsSecondPage &&
       <>
           {/* ========= SEITENUMBRUCH ========= */}
           <div style={{ pageBreakBefore: 'always', height: '0' }}></div>
@@ -389,8 +380,8 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           <div
           className="pdf-page flex flex-col bg-white"
           style={{
-            minHeight: '297mm',
-            height: '297mm',
+            minHeight: '1123px',
+            height: '1123px',
             pageBreakAfter: 'avoid',
             breakAfter: 'avoid'
           }}>
@@ -571,7 +562,13 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             {/* === FOOTER AM ENDE DER LETZTEN SEITE === */}
             {documentSettings?.showFooter !== false &&
           <div className="bg-white p-2">
-                <SimpleFooter data={data} color={color} />
+                <SimpleFooter 
+                  data={data} 
+                  color={color}
+                  showPageNumbers={documentSettings?.showPageNumbers}
+                  currentPage={2}
+                  totalPages={2}
+                />
               </div>
           }
           </div>

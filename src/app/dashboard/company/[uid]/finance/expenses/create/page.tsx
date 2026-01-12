@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Receipt, RefreshCcw, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/firebase/clients';
@@ -116,18 +116,53 @@ interface ExpenseFormData {
   contactPhone: string;
   supplierId: string;
   taxDeductible: boolean;
+  isRecurring: boolean;
+  recurringInterval: string;
+  // Anlagen-spezifische Felder
+  depreciationMethod: 'linear' | 'degressive' | 'none';
+  usefulLifeYears: string;
+  residualValue: string;
+  serialNumber: string;
+  location: string;
+  assetCategory: string;
 }
+
+type ExpenseType = 'einmalig' | 'wiederkehrend' | 'anlage';
+
+const ASSET_CATEGORIES = [
+  { value: 'buildings', label: 'Gebäude & Grundstücke' },
+  { value: 'vehicles', label: 'Fahrzeuge' },
+  { value: 'it', label: 'IT & EDV' },
+  { value: 'furniture', label: 'Büroausstattung & Möbel' },
+  { value: 'machinery', label: 'Maschinen & Anlagen' },
+  { value: 'other', label: 'Sonstiges' },
+];
 
 export default function CreateExpensePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
+  // Typ aus URL-Parameter lesen (z.B. ?type=wiederkehrend)
+  const typeFromUrl = searchParams.get('type') as ExpenseType | null;
+  const initialType: ExpenseType = typeFromUrl && ['einmalig', 'wiederkehrend', 'anlage'].includes(typeFromUrl) 
+    ? typeFromUrl 
+    : 'einmalig';
+
   const [isLoading, setIsLoading] = useState(false);
+  const [expenseType, setExpenseType] = useState<ExpenseType>(initialType);
   const [currentReceipt, _setCurrentReceipt] = useState<File | null>(null);
   const [currentReceipts, setCurrentReceipts] = useState<string[]>([]); // Multiple receipts support - stores URLs
   const [extractedLineItems, setExtractedLineItems] = useState<LineItem[]>([]); // Store extracted line items
+  
+  // Aktualisiere expenseType wenn sich URL-Parameter ändert
+  useEffect(() => {
+    if (typeFromUrl && ['einmalig', 'wiederkehrend', 'anlage'].includes(typeFromUrl)) {
+      setExpenseType(typeFromUrl);
+    }
+  }, [typeFromUrl]);
   
   // 🧠 OCR Learning: Speichere originale OCR-Daten für Vergleich
   const [originalOcrData, setOriginalOcrData] = useState<{
@@ -162,6 +197,15 @@ export default function CreateExpensePage() {
     contactPhone: '',
     supplierId: '',
     taxDeductible: false,
+    isRecurring: false,
+    recurringInterval: 'monthly',
+    // Anlagen-Felder
+    depreciationMethod: 'linear',
+    usefulLifeYears: '3',
+    residualValue: '1',
+    serialNumber: '',
+    location: '',
+    assetCategory: 'it',
   });
 
   const categories = [
@@ -289,62 +333,106 @@ export default function CreateExpensePage() {
         contactPhone: formData.contactPhone || '',
         supplierId,
         taxDeductible: formData.taxDeductible,
+        // Typ-spezifische Felder basierend auf expenseType
+        isRecurring: expenseType === 'wiederkehrend',
+        recurringInterval: expenseType === 'wiederkehrend' ? formData.recurringInterval : null,
+        isAsset: expenseType === 'anlage',
         receipts: receipts.length > 0 ? receipts : null, // Multiple receipts support
         receipt: receipts.length > 0 ? receipts[0] : null, // Backward compatibility
       };
 
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expenseData),
-      });
+      // Bei Anlagen: Direkt in fixedAssets speichern
+      if (expenseType === 'anlage') {
+        const assetResponse = await fetch('/api/assets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId: uid,
+            name: formData.title,
+            description: formData.description || '',
+            category: formData.assetCategory,
+            acquisitionDate: formData.date,
+            acquisitionCost: amount,
+            depreciationMethod: formData.depreciationMethod,
+            usefulLifeYears: parseInt(formData.usefulLifeYears) || 3,
+            residualValue: parseFloat(formData.residualValue) || 1,
+            serialNumber: formData.serialNumber || '',
+            location: formData.location || '',
+            supplier: formData.vendor || formData.companyName || '',
+            invoiceNumber: formData.invoiceNumber || '',
+            status: 'active',
+            receipts: receipts.length > 0 ? receipts : null,
+          }),
+        });
 
-      if (!response.ok) throw new Error('API request failed');
-
-      const result = await response.json();
-
-      if (result.success) {
-        // 🧠 OCR Learning: Sende Korrekturen an Lernsystem
-        if (originalOcrData && formData.vendor) {
-          try {
-            const correctedData = {
-              vendor: formData.vendor,
-              invoiceNumber: formData.invoiceNumber,
-              email: formData.contactEmail,
-              phone: formData.contactPhone,
-              vatId: formData.companyVatNumber,
-              address: formData.companyAddress,
-            };
-            
-            // Nur senden wenn es Unterschiede gibt
-            const hasChanges = Object.keys(correctedData).some(key => {
-              const corrected = correctedData[key as keyof typeof correctedData];
-              const original = originalOcrData[key as keyof typeof originalOcrData];
-              return corrected && corrected !== original;
-            });
-            
-            if (hasChanges) {
-              await fetch('/api/ocr/learn', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  companyId: uid,
-                  ocrData: originalOcrData,
-                  correctedData,
-                }),
-              });
-              console.log('🧠 [OCR Learning] Korrekturen gespeichert');
-            }
-          } catch (learnError) {
-            // Lernen ist optional, Fehler nicht kritisch
-            console.error('🧠 [OCR Learning] Fehler:', learnError);
-          }
-        }
+        if (!assetResponse.ok) throw new Error('Anlage konnte nicht gespeichert werden');
         
-        toast.success('Ausgabe erfolgreich gespeichert!');
-        router.push(`/dashboard/company/${uid}/finance/expenses`);
+        const assetResult = await assetResponse.json();
+        if (assetResult.success) {
+          toast.success('Anlage erfolgreich gespeichert!');
+          router.push(`/dashboard/company/${uid}/finance/expenses/assets`);
+        } else {
+          throw new Error(assetResult.error || 'Speichern fehlgeschlagen');
+        }
       } else {
-        throw new Error(result.error || 'Speichern fehlgeschlagen');
+        // Einmalige oder wiederkehrende Ausgabe
+        const response = await fetch('/api/expenses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(expenseData),
+        });
+
+        if (!response.ok) throw new Error('API request failed');
+
+        const result = await response.json();
+
+        if (result.success) {
+          // 🧠 OCR Learning: Sende Korrekturen an Lernsystem
+          if (originalOcrData && formData.vendor) {
+            try {
+              const correctedData = {
+                vendor: formData.vendor,
+                invoiceNumber: formData.invoiceNumber,
+                email: formData.contactEmail,
+                phone: formData.contactPhone,
+                vatId: formData.companyVatNumber,
+                address: formData.companyAddress,
+              };
+              
+              // Nur senden wenn es Unterschiede gibt
+              const hasChanges = Object.keys(correctedData).some(key => {
+                const corrected = correctedData[key as keyof typeof correctedData];
+                const original = originalOcrData[key as keyof typeof originalOcrData];
+                return corrected && corrected !== original;
+              });
+              
+              if (hasChanges) {
+                await fetch('/api/ocr/learn', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    companyId: uid,
+                    ocrData: originalOcrData,
+                    correctedData,
+                  }),
+                });
+              }
+            } catch {
+              // Lernen ist optional, Fehler nicht kritisch
+            }
+          }
+          
+          // Erfolgs-Toast und Navigation basierend auf Typ
+          if (expenseType === 'wiederkehrend') {
+            toast.success('Wiederkehrende Ausgabe erfolgreich gespeichert!');
+            router.push(`/dashboard/company/${uid}/finance/expenses/recurring`);
+          } else {
+            toast.success('Ausgabe erfolgreich gespeichert!');
+            router.push(`/dashboard/company/${uid}/finance/expenses`);
+          }
+        } else {
+          throw new Error(result.error || 'Speichern fehlgeschlagen');
+        }
       }
     } catch {
       toast.error('Fehler beim Speichern der Ausgabe');
@@ -369,7 +457,7 @@ export default function CreateExpensePage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -387,6 +475,81 @@ export default function CreateExpensePage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Ausgabentyp-Auswahl */}
+      <div className="grid grid-cols-3 gap-4">
+        <button
+          type="button"
+          onClick={() => setExpenseType('einmalig')}
+          className={`p-4 rounded-xl border-2 transition-all ${
+            expenseType === 'einmalig'
+              ? 'border-[#14ad9f] bg-[#14ad9f]/10'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              expenseType === 'einmalig' ? 'bg-[#14ad9f]/20' : 'bg-gray-100'
+            }`}>
+              <Receipt className={`w-6 h-6 ${expenseType === 'einmalig' ? 'text-[#14ad9f]' : 'text-gray-500'}`} />
+            </div>
+            <span className={`font-semibold ${expenseType === 'einmalig' ? 'text-[#14ad9f]' : 'text-gray-700'}`}>
+              Einmalige Ausgabe
+            </span>
+            <span className="text-xs text-gray-500 text-center">
+              Einzelne Rechnung oder Beleg
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setExpenseType('wiederkehrend')}
+          className={`p-4 rounded-xl border-2 transition-all ${
+            expenseType === 'wiederkehrend'
+              ? 'border-[#14ad9f] bg-[#14ad9f]/10'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              expenseType === 'wiederkehrend' ? 'bg-[#14ad9f]/20' : 'bg-gray-100'
+            }`}>
+              <RefreshCcw className={`w-6 h-6 ${expenseType === 'wiederkehrend' ? 'text-[#14ad9f]' : 'text-gray-500'}`} />
+            </div>
+            <span className={`font-semibold ${expenseType === 'wiederkehrend' ? 'text-[#14ad9f]' : 'text-gray-700'}`}>
+              Wiederkehrende Ausgabe
+            </span>
+            <span className="text-xs text-gray-500 text-center">
+              Monatliche Abos, Miete, etc.
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setExpenseType('anlage')}
+          className={`p-4 rounded-xl border-2 transition-all ${
+            expenseType === 'anlage'
+              ? 'border-[#14ad9f] bg-[#14ad9f]/10'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              expenseType === 'anlage' ? 'bg-[#14ad9f]/20' : 'bg-gray-100'
+            }`}>
+              <Landmark className={`w-6 h-6 ${expenseType === 'anlage' ? 'text-[#14ad9f]' : 'text-gray-500'}`} />
+            </div>
+            <span className={`font-semibold ${expenseType === 'anlage' ? 'text-[#14ad9f]' : 'text-gray-700'}`}>
+              Anlage / Anschaffung
+            </span>
+            <span className="text-xs text-gray-500 text-center">
+              Abschreibbare Wirtschaftsgüter
+            </span>
+          </div>
+        </button>
       </div>
 
       <Card className="bg-white/30 backdrop-blur-sm border-[#14ad9f]/20">
@@ -580,6 +743,130 @@ export default function CreateExpensePage() {
                   Steuerlich absetzbar
                 </Label>
               </div>
+
+              {/* Typ-spezifische Felder */}
+              {expenseType === 'wiederkehrend' && (
+                <div className="space-y-3 p-4 bg-teal-50 rounded-lg border border-teal-200">
+                  <h4 className="font-semibold text-teal-800">Wiederkehrende Ausgabe</h4>
+                  <div>
+                    <Label htmlFor="recurringInterval">Intervall *</Label>
+                    <Select
+                      value={formData.recurringInterval}
+                      onValueChange={value => setFormData(prev => ({ ...prev, recurringInterval: value }))}
+                    >
+                      <SelectTrigger className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Wöchentlich</SelectItem>
+                        <SelectItem value="monthly">Monatlich</SelectItem>
+                        <SelectItem value="quarterly">Vierteljährlich</SelectItem>
+                        <SelectItem value="yearly">Jährlich</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-teal-600">
+                    Die Ausgabe wird automatisch in der Übersicht für wiederkehrende Ausgaben angezeigt.
+                  </p>
+                </div>
+              )}
+
+              {expenseType === 'anlage' && (
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800">Anlagen-Informationen</h4>
+                  
+                  <div>
+                    <Label htmlFor="assetCategory">Anlagenkategorie *</Label>
+                    <Select
+                      value={formData.assetCategory}
+                      onValueChange={value => setFormData(prev => ({ ...prev, assetCategory: value }))}
+                    >
+                      <SelectTrigger className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ASSET_CATEGORIES.map(cat => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="depreciationMethod">Abschreibungsmethode</Label>
+                      <Select
+                        value={formData.depreciationMethod}
+                        onValueChange={value => setFormData(prev => ({ ...prev, depreciationMethod: value as 'linear' | 'degressive' | 'none' }))}
+                      >
+                        <SelectTrigger className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="linear">Linear (AfA)</SelectItem>
+                          <SelectItem value="degressive">Degressiv</SelectItem>
+                          <SelectItem value="none">Keine Abschreibung</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="usefulLifeYears">Nutzungsdauer (Jahre)</Label>
+                      <Input
+                        id="usefulLifeYears"
+                        type="number"
+                        min="1"
+                        value={formData.usefulLifeYears}
+                        onChange={e => setFormData(prev => ({ ...prev, usefulLifeYears: e.target.value }))}
+                        placeholder="3"
+                        className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="residualValue">Restwert (€)</Label>
+                      <Input
+                        id="residualValue"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.residualValue}
+                        onChange={e => setFormData(prev => ({ ...prev, residualValue: e.target.value }))}
+                        placeholder="1.00"
+                        className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="serialNumber">Seriennummer</Label>
+                      <Input
+                        id="serialNumber"
+                        value={formData.serialNumber}
+                        onChange={e => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
+                        placeholder="z.B. SN-12345"
+                        className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="location">Standort</Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="z.B. Büro Berlin"
+                      className="mt-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                  </div>
+
+                  <p className="text-xs text-blue-600">
+                    Die Anlage wird automatisch in der Anlagenübersicht mit Abschreibungsberechnung angezeigt.
+                  </p>
+                </div>
+              )}
 
               {/* Firmeninformationen */}
               <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">

@@ -23,30 +23,36 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
   data,
   color,
   logoSize,
-  pageMode = 'multi',
+  pageMode = 'single',
   documentType,
   documentSettings,
 }) => {
-  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
-  // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
+  // Dokumenttyp-Konfiguration
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
-  const _config = getDocumentTypeConfig(detectedType, color);
+  const config = getDocumentTypeConfig(detectedType, color);
 
   // Übersetzungsfunktion
-  const { t: _t } = useDocumentTranslation(documentSettings?.language || 'de');
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
+
+  // Berechne, ob eine zweite Seite benötigt wird
+  // STANDARD: Immer einseitig, außer der Inhalt ist zu lang
+  const itemCount = data.items?.length || 0;
+  const hasLongDescription = data.items?.some((item: { description?: string }) => (item.description?.length || 0) > 150) || false;
+  const hasHeaderText = !!(data.processedHeaderText || data.processedHeadTextHtml);
+  const needsSecondPage = (itemCount > 6 || (itemCount > 4 && hasLongDescription) || (itemCount > 5 && hasHeaderText));
 
   return (
     <div
-      className="bg-white w-full max-w-[210mm] mx-auto text-xs font-mono"
-      style={{ fontFamily: 'Courier New, monospace' }}
+      className="bg-white w-full mx-auto text-xs font-mono"
+      style={{ fontFamily: 'Courier New, monospace', width: '794px', maxWidth: '794px' }}
     >
       <style
         dangerouslySetInnerHTML={{
           __html: `
           @page { size: A4; margin: 0; }
           .pdf-page {
-            width: 210mm;
-            min-height: 297mm;
+            width: 794px;
+            min-height: 1123px;
             page-break-after: always;
             break-after: page;
           }
@@ -68,14 +74,10 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             </div>
           </div>
         )}
-        {/* Seitenzahl */}
-        {documentSettings?.showPageNumbers && (
-          <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 1</div>
-        )}
         {/* TECHNICAL HEADER SEITE 1 */}
         <div
-          className="bg-gray-900 text-white p-3 mb-4"
-          style={{ minHeight: data.companyLogo ? '100px' : '80px' }}
+          className="bg-gray-900 text-white p-3 mb-2"
+          style={{ minHeight: data.companyLogo ? '70px' : '60px' }}
         >
           <div className="flex justify-between items-start">
             <div>
@@ -96,20 +98,20 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             )}
           </div>
 
-          <div className="mt-4">
-            <div className="text-lg font-bold" style={{ color }}>
-              {data.documentLabel}
+          <div className="mt-2">
+            <div className="text-base font-bold" style={{ color }}>
+              {config.title}
             </div>
-            <div className="text-sm">#{data.invoiceNumber}</div>
-            <div className="text-sm">{formatDate(data.invoiceDate)}</div>
+            <div className="text-xs">#{data.invoiceNumber}</div>
+            <div className="text-xs">{formatDate(data.invoiceDate)}</div>
           </div>
         </div>
 
         {/* Customer Info Seite 1 */}
-        <div className="p-4 pb-2">
-          <div className="grid grid-cols-2 gap-6 mb-4 border" style={{ borderColor: color }}>
-            <div className="p-4">
-              <div className="font-bold mb-2 border-b pb-1" style={{ borderColor: color }}>
+        <div className="p-3 pb-1">
+          <div className="grid grid-cols-2 gap-4 mb-2 border" style={{ borderColor: color }}>
+            <div className="p-2">
+              <div className="font-bold mb-1 text-xs border-b pb-1" style={{ borderColor: color }}>
                 CLIENT_INFO:
               </div>
               <div className="space-y-1">
@@ -129,8 +131,8 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
               </div>
             </div>
 
-            <div className="p-4">
-              <div className="font-bold mb-2 border-b pb-1" style={{ borderColor: color }}>
+            <div className="p-2">
+              <div className="font-bold mb-1 text-xs border-b pb-1" style={{ borderColor: color }}>
                 DOC_META:
               </div>
               <div className="space-y-1">
@@ -138,25 +140,18 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
                 <div>ISSUED: {formatDate(data.invoiceDate)}</div>
                 <div>DUE_DATE: {formatDate(data.dueDate)}</div>
                 <div>TERMS: {data.paymentTerms}</div>
+                {data.customerOrderNumber && <div>REF: {data.customerOrderNumber}</div>}
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
-              {documentSettings?.showQRCode && (
-                <div className="mt-4">
-                  <div className="font-bold mb-2 border-b pb-1" style={{ borderColor: color }}>
-                    QR_CODE:
-                  </div>
-                  {documentSettings?.qrCodeUrl ? (
-                    <img
-                      src={documentSettings.qrCodeUrl}
-                      alt="QR Code"
-                      className="w-20 h-20 border border-gray-300"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                      QR
-                    </div>
-                  )}
+              {documentSettings?.showQRCode && documentSettings?.qrCodeUrl && (
+                <div className="mt-3">
+                  <div className="font-bold mb-1 text-xs" style={{ color }}>QR_CODE:</div>
+                  <img
+                    src={documentSettings.qrCodeUrl}
+                    alt="QR Code"
+                    className="w-12 h-12 border border-gray-300"
+                  />
                 </div>
               )}
             </div>
@@ -165,48 +160,33 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
 
         {/* Betreff - Nur bei Stornorechnungen */}
         {detectedType === 'cancellation' && data.title && (
-          <div className="mx-4 mb-2 p-2 border" style={{ borderColor: color }}>
-            <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
+          <div className="mx-3 mb-1 p-1 border" style={{ borderColor: color }}>
+            <div className="font-bold mb-1 text-xs border-b pb-1" style={{ borderColor: color }}>
               SUBJECT:
             </div>
-            <div className="font-medium text-sm">{data.title}</div>
+            <div className="font-medium text-xs">{data.title}</div>
           </div>
         )}
 
-        {/* Header Text (Kopftext) */}
-        {data.processedHeaderText && (
-          <div className="mx-4 mb-2 p-2 bg-gray-50 border" style={{ borderColor: color }}>
-            <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
-              HEADER_TEXT:
-            </div>
+        {/* Kopftext / Einleitung - Nur EIN Text anzeigen (processedHeadTextHtml hat Priorität) */}
+        {(data.processedHeadTextHtml || data.processedHeaderText) && (
+          <div className="mx-3 mb-1">
             <div
-              className="text-sm leading-relaxed"
+              className="text-xs leading-tight"
               dangerouslySetInnerHTML={{
-                __html: data.processedHeaderText,
-              }}
-            />
-          </div>
-        )}
-
-        {/* Head Text / Einleitung (processedHeadTextHtml) */}
-        {data.processedHeadTextHtml && (
-          <div className="mx-4 mb-2">
-            <div
-              className="text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: data.processedHeadTextHtml,
+                __html: data.processedHeadTextHtml || data.processedHeaderText,
               }}
             />
           </div>
         )}
 
         {/* Items Table Seite 1 */}
-        <div className="px-4 flex-1">
-          <div className="border mb-3" style={{ borderColor: color }}>
-            <div className="bg-gray-100 p-2 border-b" style={{ borderColor: color }}>
-              <div className="font-bold">SERVICES_LIST:</div>
+        <div className="px-3 flex-1">
+          <div className="border mb-2" style={{ borderColor: color }}>
+            <div className="bg-gray-100 p-1 border-b" style={{ borderColor: color }}>
+              <div className="font-bold text-xs">SERVICES_LIST:</div>
             </div>
-            <div className="p-2">
+            <div className="p-1">
               <ItemsTable
                 data={data}
                 color={color}
@@ -218,14 +198,14 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             </div>
           </div>
 
-          {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' && (
+          {/* Totals und Footer wenn keine zweite Seite benötigt wird */}
+          {!needsSecondPage && (
             <>
               {/* Tax Rules und Totals */}
-              <div className="flex justify-between items-start gap-4 mb-3">
+              <div className="flex justify-between items-start gap-2 mb-2">
                 <div className="flex-1">
-                  <div className="border p-2" style={{ borderColor: color }}>
-                    <div className="font-bold mb-2 border-b pb-1" style={{ borderColor: color }}>
+                  <div className="border p-1" style={{ borderColor: color }}>
+                    <div className="font-bold mb-1 text-xs border-b pb-1" style={{ borderColor: color }}>
                       TAX_INFO:
                     </div>
                     <TaxRulesInfo
@@ -236,10 +216,10 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
                   </div>
                 </div>
                 <div className="border" style={{ borderColor: color }}>
-                  <div className="bg-gray-100 p-2 border-b" style={{ borderColor: color }}>
-                    <div className="font-bold">TOTALS:</div>
+                  <div className="bg-gray-100 p-1 border-b" style={{ borderColor: color }}>
+                    <div className="font-bold text-xs">TOTALS:</div>
                   </div>
-                  <div className="p-3">
+                  <div className="p-2">
                     <TotalsDisplay
                       data={data}
                       color={color}
@@ -251,8 +231,8 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
               </div>
 
               {/* FooterText */}
-              <div className="border p-2 mb-2" style={{ borderColor: color }}>
-                <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
+              <div className="border p-1 mb-1" style={{ borderColor: color }}>
+                <div className="font-bold mb-1 text-xs border-b pb-1" style={{ borderColor: color }}>
                   FOOTER_INFO:
                 </div>
                 <FooterText data={data} language={data.language || 'de'} variant="standard" />
@@ -274,14 +254,20 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
 
         {/* Footer Seite 1 */}
         {documentSettings?.showFooter !== false && (
-          <div className="bg-white p-2 mt-4">
-            <SimpleFooter data={data} color={color} />
+          <div className="bg-white p-1 mt-2">
+            <SimpleFooter 
+              data={data} 
+              color={color}
+              showPageNumbers={documentSettings?.showPageNumbers}
+              currentPage={1}
+              totalPages={needsSecondPage ? 2 : 1}
+            />
           </div>
         )}
       </div>
 
-      {/* ========= MEHRSEITIG MODUS ========= */}
-      {pageMode !== 'single' && (
+      {/* ========= MEHRSEITIG MODUS - NUR WENN BENÖTIGT ========= */}
+      {needsSecondPage && (
         <>
           {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
           <div
@@ -298,10 +284,6 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
 
           {/* ========= SEITE 2 ========= */}
           <div className="pdf-page flex flex-col relative">
-            {/* Seitenzahl Seite 2 */}
-            {documentSettings?.showPageNumbers && (
-              <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 2</div>
-            )}
             {/* Header Seite 2 */}
             <div
               className="bg-gray-900 text-white p-4 mb-8"
@@ -329,7 +311,7 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
               <div className="mt-6 flex justify-between">
                 <div>
                   <div className="text-xl font-bold" style={{ color }}>
-                    {data.documentLabel}
+                    {config.title}
                   </div>
                   <div className="text-sm">#{data.invoiceNumber}</div>
                 </div>
@@ -430,7 +412,13 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             {/* Footer Seite 2 */}
             {documentSettings?.showFooter !== false && (
               <div className="bg-white p-2 mt-3">
-                <SimpleFooter data={data} color={color} />
+                <SimpleFooter 
+                  data={data} 
+                  color={color}
+                  showPageNumbers={documentSettings?.showPageNumbers}
+                  currentPage={2}
+                  totalPages={2}
+                />
               </div>
             )}
           </div>

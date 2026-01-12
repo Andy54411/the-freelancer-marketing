@@ -126,7 +126,7 @@ export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, Omit<DocumentTypeConfig
     showDueDate: false,
   },
   cancellation: {
-    title: 'Storno Rechnung',
+    title: 'Stornorechnung',
     numberLabel: 'Storno-Nr.',
     dateLabel: 'Storno-Datum',
     dueDateLabel: 'Ursprünglich fällig',

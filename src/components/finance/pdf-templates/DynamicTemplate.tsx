@@ -35,12 +35,21 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
+  // Berechne, ob eine zweite Seite benötigt wird
+  // STANDARD: Immer einseitig, außer der Inhalt ist zu lang
+  const itemCount = data.items?.length || 0;
+  const hasLongDescription = data.items?.some((item: { description?: string }) => (item.description?.length || 0) > 150) || false;
+  const hasHeaderText = !!(data.processedHeaderText || data.processedHeadTextHtml);
+  const needsSecondPage = (itemCount > 6 || (itemCount > 4 && hasLongDescription) || (itemCount > 5 && hasHeaderText));
+
   return (
     <div
-      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'} overflow-hidden relative`}
+      className={`bg-white w-full mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'} overflow-hidden relative`}
       style={{
         fontFamily: 'Arial, sans-serif',
-        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
+        width: '794px',
+        maxWidth: '794px',
+        ...(pageMode === 'single' && { maxHeight: '1123px', overflow: 'hidden' }),
       }}
     >
       <style
@@ -105,7 +114,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
       />
 
       {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col dynamic-bg" style={{ minHeight: '297mm' }}>
+      <div className="pdf-page flex flex-col dynamic-bg" style={{ minHeight: '1123px' }}>
         {/* Dynamic shapes background */}
         <div
           className="dynamic-shape"
@@ -207,22 +216,21 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
                 <div>
                   <span className="font-medium">{t('paymentTerms')}:</span> {data.paymentTerms}
                 </div>
+                {data.customerOrderNumber && (
+                  <div>
+                    <span className="font-medium">{t('reference')}:</span> {data.customerOrderNumber}
+                  </div>
+                )}
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
-              {documentSettings?.showQRCode && (
-                <div className="mt-4">
-                  {documentSettings?.qrCodeUrl ? (
-                    <img
-                      src={documentSettings.qrCodeUrl}
-                      alt="QR Code"
-                      className="w-20 h-20 border border-gray-300 rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 border border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                      QR
-                    </div>
-                  )}
+              {documentSettings?.showQRCode && documentSettings?.qrCodeUrl && (
+                <div className="mt-3">
+                  <img
+                    src={documentSettings.qrCodeUrl}
+                    alt="QR Code"
+                    className="w-12 h-12 border border-gray-300 rounded-lg"
+                  />
                 </div>
               )}
             </div>
@@ -236,28 +244,13 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
             </div>
           )}
 
-          {/* Header Text (Kopftext) */}
-          {data.processedHeaderText && (
-            <div
-              className="mb-4 p-4 bg-linear-to-r from-gray-50 to-white rounded-lg border-l-4"
-              style={{ borderColor: color }}
-            >
-              <div
-                className="text-sm text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: data.processedHeaderText,
-                }}
-              />
-            </div>
-          )}
-
-          {/* Head Text / Einleitung (processedHeadTextHtml) */}
-          {data.processedHeadTextHtml && (
+          {/* Kopftext / Einleitung - Nur EIN Text anzeigen (processedHeadTextHtml hat Priorität) */}
+          {(data.processedHeadTextHtml || data.processedHeaderText) && (
             <div className="mb-4">
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: data.processedHeadTextHtml,
+                  __html: data.processedHeadTextHtml || data.processedHeaderText,
                 }}
               />
             </div>
@@ -283,8 +276,8 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
             language={documentSettings?.language || 'de'}
           />
 
-          {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' && (
+          {/* Totals und Footer wenn keine zweite Seite benötigt wird */}
+          {!needsSecondPage && (
             <>
               {/* Totals */}
               <div className="flex justify-between items-start gap-8 mb-8 mt-8">
@@ -323,13 +316,19 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
         {/* FOOTER SEITE 1 */}
         {documentSettings?.showFooter !== false && (
           <div className="bg-white p-2 mt-4">
-            <SimpleFooter data={data} color={color} />
+            <SimpleFooter 
+              data={data} 
+              color={color}
+              showPageNumbers={documentSettings?.showPageNumbers}
+              currentPage={1}
+              totalPages={needsSecondPage ? 2 : 1}
+            />
           </div>
         )}
       </div>
 
-      {/* ========= MEHRSEITIG MODUS ========= */}
-      {pageMode !== 'single' && (
+      {/* ========= MEHRSEITIG MODUS - NUR WENN BENÖTIGT ========= */}
+      {needsSecondPage && (
         <>
           {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
           <div
@@ -348,16 +347,12 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
           <div
             className="flex flex-col dynamic-bg relative"
             style={{
-              minHeight: '297mm',
-              height: '297mm',
+              minHeight: '1123px',
+              height: '1123px',
               pageBreakAfter: 'avoid',
               breakAfter: 'avoid',
             }}
           >
-            {/* Seitenzahl Seite 2 */}
-            {documentSettings?.showPageNumbers && (
-              <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 2</div>
-            )}
             {/* Dynamic shapes background Seite 2 */}
             <div
               className="dynamic-shape"
@@ -559,7 +554,13 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
             {/* Footer Seite 2 */}
             {documentSettings?.showFooter !== false && (
               <div className="bg-white p-2 mt-3 relative z-10">
-                <SimpleFooter data={data} color={color} />
+                <SimpleFooter 
+                  data={data} 
+                  color={color}
+                  showPageNumbers={documentSettings?.showPageNumbers}
+                  currentPage={2}
+                  totalPages={2}
+                />
               </div>
             )}
           </div>

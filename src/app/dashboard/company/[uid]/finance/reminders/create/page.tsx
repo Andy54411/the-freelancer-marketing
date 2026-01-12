@@ -1395,9 +1395,9 @@ export default function CreateReminderPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
-      <header className="w-full" style={{ maxWidth: '1440px' }}>
+      <header className="w-full">
         <div className="flex items-center justify-between py-4 border-b border-gray-200 gap-4">
           {/* Left side - Title */}
           <div className="flex items-center shrink-0">
@@ -2856,6 +2856,11 @@ export default function CreateReminderPage() {
         document={buildPreviewData()}
         documentType="reminder"
         companyId={uid}
+        mode="preview"
+        onSaveAsDraft={() => {
+          setPreviewOpen(false);
+          handleSave(); // Mahnung speichern
+        }}
       />
 
       {/* Send Document Modal */}

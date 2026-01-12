@@ -4821,7 +4821,12 @@ export default function EditQuotePage() {
         onClose={() => setShowLivePreview(false)}
         document={buildInvoiceDataForPreview()}
         documentType="quote"
-        companyId={uid} />
+        companyId={uid}
+        mode="preview"
+        onSaveAsDraft={() => {
+          setShowLivePreview(false);
+          handleUpdateQuote(true); // Als Entwurf speichern
+        }} />
 
     </div>);
 

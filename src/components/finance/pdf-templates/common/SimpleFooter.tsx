@@ -5,9 +5,18 @@ import { InvoiceFooter } from './InvoiceFooter';
 interface PageFooterProps {
   data: ProcessedPDFData;
   color?: string;
+  showPageNumbers?: boolean;
+  currentPage?: number;
+  totalPages?: number;
 }
 
-export const SimpleFooter: React.FC<PageFooterProps> = ({ data, color = '#14ad9f' }) => {
+export const SimpleFooter: React.FC<PageFooterProps> = ({ 
+  data, 
+  color = '#14ad9f',
+  showPageNumbers = false,
+  currentPage = 1,
+  totalPages = 1,
+}) => {
   const footerData = {
     companyName: (data as any).companyName || ' ',
     phoneNumber: (data as any).phoneNumber || '+4901605979000',
@@ -37,6 +46,11 @@ export const SimpleFooter: React.FC<PageFooterProps> = ({ data, color = '#14ad9f
   return (
     <div className="bg-white p-2 mt-1">
       <InvoiceFooter data={footerData} color={color} />
+      {showPageNumbers && (
+        <div className="text-center text-xs text-gray-500 mt-1">
+          Seite {currentPage}{totalPages > 1 ? ` von ${totalPages}` : ''}
+        </div>
+      )}
     </div>
   );
 };

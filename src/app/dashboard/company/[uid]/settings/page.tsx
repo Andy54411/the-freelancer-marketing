@@ -31,51 +31,155 @@ export default function SettingsPage() {
   const [isManagingDirectorModalOpen, setIsManagingDirectorModalOpen] = useState(false);
 
   const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
-    const transformed = {
-      uid: rawData.uid,
-      companyName: rawData.companyName || rawData.step2?.companyName,
-      email: rawData.email,
-      displayName: rawData.displayName || rawData.email || '',
-      legalForm: rawData.step2?.legalForm,
-      step1: rawData.step1,
-      step2: rawData.step2,
-      step3: {
-        ...(rawData.step3 || {}),
-        // Merge accounting fields from root level into step3
-        vatId: rawData.vatId ?? rawData.step3?.vatId ?? '',
-        taxNumber: rawData.taxNumber ?? rawData.step3?.taxNumber ?? '',
-        districtCourt:
-          rawData.districtCourt ||
-          rawData.step3?.districtCourt ||
-          rawData.step2?.districtCourt ||
-          '',
-        companyRegister:
-          rawData.companyRegister ||
-          rawData.step3?.companyRegister ||
-          rawData.step2?.companyRegister ||
-          rawData.registrationNumber ||
-          '',
-        ust: rawData.step3?.ust || rawData.ust,
-        profitMethod: rawData.step3?.profitMethod || rawData.profitMethod,
-        priceInput: rawData.step3?.priceInput || rawData.priceInput,
-        taxMethod: rawData.step3?.taxMethod || rawData.taxMethod,
-        accountingSystem:
-          rawData.step3?.accountingSystem ||
-          (rawData.accountingSystem === 'skr03' ? 'skro3' : rawData.accountingSystem),
-        defaultTaxRate: rawData.defaultTaxRate || rawData.step3?.defaultTaxRate || '19',
-        profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
-        profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
-        bankDetails: rawData.step3?.bankDetails || {
-          bankName: rawData.bankName || '',
-          iban: rawData.iban || '',
-          bic: rawData.bic || '',
-          accountHolder: rawData.accountHolder || '',
-        },
+    // Basierend auf der tatsächlichen Datenbankstruktur:
+    // - step1 enthält: address (city, postalCode, street), companyName, legalForm, taxNumber, vatId, website
+    // - step2 enthält: contactPerson (firstName, lastName, email, phone, dateOfBirth), kleinunternehmer, priceInput, profitMethod, taxNumber, vatId
+    // - step3 enthält: bankDetails, defaultTaxRate, taxNumber, vatId, profitMethod, priceInput
+    // - step4 enthält: Bank-Daten (iban, bic, bankName, accountHolder)
+    // - Root-Level enthält auch viele Felder als Duplikate
+    
+    // Extrahiere step1 Felder (Firmendaten)
+    const step1Data = {
+      ...(rawData.step1 || {}),
+      // Adresse aus step1.address
+      address: (rawData.step1 as any)?.address || {},
+      // Persönliche Daten Objekt (für Geburtsdatum etc.)
+      personalData: {
+        ...(rawData.step1?.personalData || {}),
+        dateOfBirth: rawData.step1?.personalData?.dateOfBirth || (rawData.step2 as any)?.contactPerson?.dateOfBirth || '',
+        firstName: rawData.step1?.personalData?.firstName || rawData.step1?.firstName || '',
+        lastName: rawData.step1?.personalData?.lastName || rawData.step1?.lastName || '',
+        email: rawData.step1?.personalData?.email || rawData.email || rawData.step1?.email || '',
+        phone: rawData.step1?.personalData?.phone || rawData.phoneNumber || rawData.phone || '',
       },
-      step4: rawData.step4,
+      // Persönliche Daten flach
+      firstName: rawData.step1?.firstName || rawData.step1?.personalData?.firstName || (rawData.step1 as any)?.address?.firstName || '',
+      lastName: rawData.step1?.lastName || rawData.step1?.personalData?.lastName || '',
+      email: rawData.email || rawData.step1?.email || '',
+      phoneNumber: rawData.phoneNumber || rawData.phone || (rawData.step1 as any)?.phone || '',
+      personalStreet: rawData.step1?.personalStreet || (rawData.step1 as any)?.address?.street || '',
+      personalPostalCode: rawData.step1?.personalPostalCode || (rawData.step1 as any)?.address?.postalCode || '',
+    };
+
+    // Extrahiere step2 Felder (Kontaktperson und Steuer-Basics)
+    const step2Data = {
+      ...(rawData.step2 || {}),
+      // Firmendaten - aus step1 oder Root
+      companyName: rawData.companyName || (rawData.step1 as any)?.companyName || rawData.step2?.companyName || '',
+      companySuffix: rawData.step2?.companySuffix || '',
+      // Adresse - aus step1.address oder Root
+      address: rawData.address || (rawData.step1 as any)?.address?.street || rawData.step2?.address || '',
+      street: rawData.address || (rawData.step1 as any)?.address?.street || rawData.step2?.street || '',
+      postalCode: rawData.postalCode || (rawData.step1 as any)?.address?.postalCode || rawData.step2?.postalCode || '',
+      city: rawData.city || (rawData.step1 as any)?.address?.city || rawData.step2?.city || '',
+      // Kontakt - aus step2.contactPerson oder Root
+      companyPhoneNumber: rawData.phoneNumber || rawData.phone || (rawData.step2 as any)?.contactPerson?.phone || rawData.step2?.companyPhone || '',
+      companyPhone: rawData.phoneNumber || rawData.phone || (rawData.step2 as any)?.contactPerson?.phone || rawData.step2?.companyPhone || '',
+      fax: rawData.step2?.fax || '',
+      website: rawData.website || (rawData.step1 as any)?.website || rawData.step2?.website || '',
+      companyWebsite: rawData.website || (rawData.step1 as any)?.website || rawData.step2?.companyWebsite || '',
+      languages: rawData.languages || rawData.step2?.languages || '',
+      industry: rawData.industry || rawData.step2?.industry || '',
+      employees: rawData.employees || (rawData.step1 as any)?.employees || rawData.step2?.employees || '',
+      numberOfEmployees: rawData.employees || (rawData.step1 as any)?.employees || rawData.step2?.numberOfEmployees || '',
+      // Rechtsform - aus Root oder step1
+      legalForm: rawData.legalForm || (rawData.step1 as any)?.legalForm || rawData.step2?.legalForm || '',
+      foundingDate: rawData.step2?.foundingDate || '',
+      hauptberuflich: rawData.step2?.hauptberuflich,
+      // Steuer-Daten - aus step2 oder Root oder step1
+      vatId: rawData.vatId || (rawData.step2 as any)?.vatId || (rawData.step1 as any)?.vatId || '',
+      taxId: rawData.taxNumber || (rawData.step2 as any)?.taxNumber || (rawData.step1 as any)?.taxNumber || '',
+      taxNumber: rawData.taxNumber || (rawData.step2 as any)?.taxNumber || (rawData.step1 as any)?.taxNumber || '',
+      // Kleinunternehmer aus step2 oder Root
+      kleinunternehmer: rawData.kleinunternehmer || (rawData.step2 as any)?.kleinunternehmer || 'nein',
+      // Steuer-Einstellungen aus step2 oder Root
+      profitMethod: rawData.profitMethod || (rawData.step2 as any)?.profitMethod || 'euer',
+      priceInput: rawData.priceInput || (rawData.step2 as any)?.priceInput || 'netto',
+      taxRate: rawData.taxRate || (rawData.step2 as any)?.taxRate || '19',
+      businessDescription: rawData.description || rawData.step2?.businessDescription || '',
+      categories: rawData.step2?.categories || [],
+      subcategories: rawData.step2?.subcategories || [],
+      // Kontaktperson
+      contactPerson: (rawData.step2 as any)?.contactPerson || {},
+      companyAddress: rawData.step2?.companyAddress || (rawData.step2 as any)?.businessAddress || {
+        street: rawData.address || (rawData.step1 as any)?.address?.street || '',
+        city: rawData.city || (rawData.step1 as any)?.address?.city || '',
+        postalCode: rawData.postalCode || (rawData.step1 as any)?.address?.postalCode || '',
+        country: 'Deutschland',
+      },
+    };
+
+    // Extrahiere step3 Felder (Buchhaltung & Bank)
+    const step3Data = {
+      ...(rawData.step3 || {}),
+      // Steuer-IDs - Priorität: step3 > step2 > step1 > Root
+      vatId: rawData.step3?.vatId || (rawData.step2 as any)?.vatId || (rawData.step1 as any)?.vatId || rawData.vatId || '',
+      taxNumber: rawData.step3?.taxNumber || (rawData.step2 as any)?.taxNumber || (rawData.step1 as any)?.taxNumber || rawData.taxNumber || '',
+      districtCourt: rawData.step3?.districtCourt || rawData.districtCourt || '',
+      companyRegister: rawData.step3?.companyRegister || (rawData.step1 as any)?.companyRegister || rawData.companyRegister || '',
+      // USt-Status - aus kleinunternehmer ableiten
+      ust: rawData.step3?.ust || (rawData.kleinunternehmer === 'ja' || (rawData.step2 as any)?.kleinunternehmer === 'ja' ? 'kleinunternehmer' : 'standard'),
+      // Gewinnermittlung - Priorität: step3 > step2 > Root
+      profitMethod: rawData.step3?.profitMethod || (rawData.step2 as any)?.profitMethod || rawData.profitMethod || 'euer',
+      priceInput: rawData.step3?.priceInput || (rawData.step2 as any)?.priceInput || rawData.priceInput || 'netto',
+      taxMethod: rawData.step3?.taxMethod || rawData.taxMethod || 'soll',
+      accountingSystem: rawData.step3?.accountingSystem || rawData.accountingSystem || 'skro4',
+      // Steuersatz - aus step3 oder step2 oder Root
+      defaultTaxRate: rawData.step3?.defaultTaxRate || (rawData.step2 as any)?.taxRate || rawData.taxRate || rawData.defaultTaxRate || '19',
+      finanzamt: rawData.step3?.finanzamt || rawData.finanzamt || '',
+      bundesland: rawData.step3?.bundesland || rawData.bundesland || '',
+      profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
+      profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
+      // Bankdaten - aus step3.bankDetails oder step4 oder Root
+      bankDetails: rawData.step3?.bankDetails || {
+        bankName: rawData.bankName || rawData.step4?.bankName || '',
+        iban: rawData.iban || rawData.step4?.iban || '',
+        bic: rawData.bic || rawData.step4?.bic || '',
+        accountHolder: rawData.accountHolder || rawData.step4?.accountHolder || '',
+      },
+    };
+
+    // Extrahiere step4 Felder (Bank-Daten Fallback)
+    const step4Data = {
+      ...(rawData.step4 || {}),
+      bankName: rawData.step4?.bankName || rawData.step3?.bankDetails?.bankName || rawData.bankName || '',
+      iban: rawData.step4?.iban || rawData.step3?.bankDetails?.iban || rawData.iban || '',
+      bic: rawData.step4?.bic || rawData.step3?.bankDetails?.bic || rawData.bic || '',
+      accountHolder: rawData.step4?.accountHolder || rawData.step3?.bankDetails?.accountHolder || rawData.accountHolder || '',
+    };
+
+    const transformed: UserDataForSettings = {
+      uid: rawData.uid,
+      companyName: rawData.companyName || rawData.step2?.companyName || '',
+      email: rawData.email || '',
+      displayName: rawData.displayName || rawData.email || '',
+      legalForm: rawData.legalForm || rawData.step2?.legalForm || '',
+      lat: rawData.lat,
+      lng: rawData.lng,
+      radiusKm: rawData.radiusKm || 30,
+      profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
+      profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
+      // Tasker-Felder
+      bio: rawData.bio || rawData.step3?.bio || '',
+      selectedCategory: rawData.selectedCategory || rawData.step3?.selectedCategory || '',
+      selectedSubcategory: rawData.selectedSubcategory || rawData.step3?.selectedSubcategory || '',
+      skills: rawData.skills || rawData.step3?.skills || [],
+      hourlyRate: rawData.hourlyRate || rawData.step3?.hourlyRate,
+      location: rawData.location || rawData.step3?.location || '',
+      offersVideoConsultation: rawData.offersVideoConsultation || rawData.step3?.offersVideoConsultation,
+      level: rawData.level || rawData.step3?.level,
+      isTopRated: rawData.isTopRated || rawData.step3?.isTopRated,
+      // Steps
+      step1: step1Data,
+      step2: step2Data,
+      step3: step3Data,
+      step4: step4Data,
       step5: rawData.step5,
-      portfolioItems: rawData.portfolioItems || [],
+      // Listen
+      portfolioItems: rawData.portfolioItems || rawData.portfolio || [],
       faqs: rawData.faqs || [],
+      portfolio: rawData.portfolio || rawData.portfolioItems || [],
+      // Sonstige
       paymentTermsSettings: rawData.paymentTermsSettings || {
         defaultPaymentTerms: rawData.defaultPaymentTerms,
       },

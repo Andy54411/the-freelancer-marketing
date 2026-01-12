@@ -174,6 +174,9 @@ export interface ProcessedPDFData {
   customerName: string;
   customerAddress: string;
   customerEmail: string;
+  customerOrderNumber?: string; // Referenznummer / Bestellnummer des Kunden
+  customerVatId?: string; // USt-IdNr. des Kunden
+  customerPhone?: string; // Telefon des Kunden
 
   // Invoice details
   invoiceNumber: string;
@@ -323,7 +326,7 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
           case 'credit-note':
             return 'Gutschrift';
           case 'cancellation':
-            return 'Stornierung';
+            return 'Stornorechnung';
           default:
             return 'Dokument';
         }
@@ -364,7 +367,8 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
     const customerEmail = documentData.customerEmail || '';
     const customerPhone = (documentData as any).customerPhone || '';
     const customerNumber = enrichedCustomerNumber || (documentData as any).customerNumber || ''; // 🔥 Angereicherte Kundennummer mit Firestore-Fallback
-    const customerOrderNumber = (documentData as any).customerOrderNumber || '';
+    // customerOrderNumber kann als "customerOrderNumber" oder "reference" übergeben werden
+    const customerOrderNumber = (documentData as any).customerOrderNumber || (documentData as any).reference || '';
     const customerFirstName = (documentData as any).customerFirstName || '';
     const customerLastName = (documentData as any).customerLastName || '';
     const customerTaxNumber = (documentData as any).customerTaxNumber || '';
@@ -598,6 +602,11 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       title: (documentData as any).title || '', // Betreff für Stornorechnungen
       originalInvoiceNumber: (documentData as any).originalInvoiceNumber || '', // Original-Rechnungsnummer bei Storno
       stornoNumber: (documentData as any).stornoNumber || '', // Storno-Nummer
+      
+      // Kunden-Zusatzdaten
+      customerOrderNumber, // Referenznummer / Bestellnummer des Kunden
+      customerVatId, // USt-IdNr. des Kunden
+      customerPhone, // Telefon des Kunden
 
       items: realItems,
       description,

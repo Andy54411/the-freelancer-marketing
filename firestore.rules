@@ -2310,6 +2310,66 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Order Confirmations Collection - Auftragsbestätigungen
+    match /companies/{companyId}/orderConfirmations/{confirmationId} {
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId));
+      
+      // Aktualisieren: Eigene Firma oder Mitarbeiter
+      allow update: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId));
+      
+      // Löschen: Nur Support Staff (GoBD-Konformität)
+      allow delete: if isSupportStaff();
+    }
+
+    // Recurring Expenses Collection - Wiederkehrende Ausgaben
+    match /companies/{companyId}/recurringExpenses/{expenseId} {
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId));
+      
+      // Aktualisieren: Eigene Firma oder Mitarbeiter
+      allow update: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId));
+      
+      // Löschen: Eigene Firma, Mitarbeiter oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId) ||
+                        isSupportStaff());
+    }
+    }
+
     // Invoices Collection (Rechnungen) - als Subcollection unter companies
     match /companies/{companyId}/invoices/{invoiceId} {
       // Lesen: Eigene Firma, Mitarbeiter oder Support Staff

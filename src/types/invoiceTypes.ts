@@ -141,6 +141,8 @@ export interface InvoiceData {
   // Storno-spezifische Felder
   isStorno: boolean;
   originalInvoiceId?: string; // Referenz zur ursprünglichen Rechnung
+  originalInvoiceNumber?: string; // Rechnungsnummer der ursprünglichen Rechnung (GoBD-konform)
+  originalInvoiceDate?: string; // Datum der ursprünglichen Rechnung (GoBD-konform)
   stornoReason?: string; // Grund für die Stornierung
   stornoDate?: Date; // Datum der Stornierung
   stornoBy?: string; // Wer die Stornierung durchgeführt hat

@@ -55,6 +55,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             color={props.color}
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
+            documentType={props.documentType}
             documentSettings={documentSettings}
           />
         );
@@ -109,6 +110,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             color={props.color}
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
+            documentType={props.documentType}
             documentSettings={documentSettings}
           />
         );

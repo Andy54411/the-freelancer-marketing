@@ -6,15 +6,33 @@ export interface RawFirestoreUserData {
   displayName?: string;
   photoURL?: string;
   profileBannerImage?: string;
+  profilePictureURL?: string;
   taxNumber?: string;
   taxNumberForBackend?: string;
   vatId?: string;
   vatIdForBackend?: string;
   iban?: string;
   accountHolder?: string;
+  bankName?: string;
+  bic?: string;
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // Firmen-Felder auf Root-Level (aus Datenbank)
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+  phoneNumber?: string;
+  website?: string;
+  industry?: string;
+  employees?: string;
+  legalForm?: string;
+  kleinunternehmer?: string;
+  taxRate?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
   // Onboarding status
   onboardingCompleted?: boolean;
   // Tasker Profile fields (Root-Level)
@@ -62,6 +80,11 @@ export interface RawFirestoreUserData {
   defaultTaxRate?: string;
   bankName?: string;
   bic?: string;
+  // Steuerliche Angaben
+  finanzamt?: string;
+  bundesland?: string;
+  // Gesprochene Sprachen (kann auch auf Root-Level sein)
+  languages?: string;
   step1?: {
     personalData?: {
       gender?: string;
@@ -93,6 +116,23 @@ export interface RawFirestoreUserData {
       portfolio?: string;
       references?: string;
     };
+    // Direkte Adresse (alternative Struktur aus Registration)
+    address?: {
+      street?: string;
+      houseNumber?: string;
+      postalCode?: string;
+      city?: string;
+      country?: string;
+    };
+    // Firma-Daten auf step1-Ebene (aus Registration)
+    companyName?: string;
+    legalForm?: string;
+    taxNumber?: string;
+    vatId?: string;
+    website?: string;
+    employees?: string;
+    phone?: string;
+    // Persönliche Daten flach
     personalStreet?: string;
     firstName?: string;
     lastName?: string;
@@ -102,6 +142,7 @@ export interface RawFirestoreUserData {
   };
   step2?: {
     companyName?: string;
+    companySuffix?: string;
     companyAddress?: {
       street?: string;
       houseNumber?: string;
@@ -109,9 +150,20 @@ export interface RawFirestoreUserData {
       city?: string;
       country?: string;
     };
+    // Flache Adressfelder (Alternative zu companyAddress)
+    address?: string;
+    street?: string;
+    postalCode?: string;
+    city?: string;
     companyPhone?: string;
+    companyPhoneNumber?: string;
     companyEmail?: string;
     companyWebsite?: string;
+    website?: string;
+    fax?: string;
+    languages?: string;
+    industry?: string;
+    employees?: string;
     taxId?: string;
     vatId?: string;
     commercialRegisterNumber?: string;
@@ -119,6 +171,7 @@ export interface RawFirestoreUserData {
     companyRegister?: string;
     legalForm?: string;
     foundingDate?: string;
+    hauptberuflich?: boolean | string;
     numberOfEmployees?: string;
     businessDescription?: string;
     categories?: string[];
@@ -146,6 +199,8 @@ export interface RawFirestoreUserData {
     taxMethod?: string;
     defaultTaxRate?: string;
     accountingSystem?: string;
+    finanzamt?: string;
+    bundesland?: string;
     faqs?: any[];
     portfolio?: any[];
     profilePictureURL?: string;
@@ -304,6 +359,7 @@ export interface UserDataForSettings {
     commercialRegisterNumber?: string;
     legalForm?: string;
     foundingDate?: string;
+    hauptberuflich?: boolean | string;
     numberOfEmployees?: string;
     businessDescription?: string;
     categories?: string[];
@@ -331,6 +387,8 @@ export interface UserDataForSettings {
     taxMethod?: string;
     defaultTaxRate?: string;
     accountingSystem?: string;
+    finanzamt?: string;
+    bundesland?: string;
     faqs?: any[];
     portfolio?: any[];
     profilePictureURL?: string;

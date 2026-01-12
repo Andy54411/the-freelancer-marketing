@@ -32,6 +32,13 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
   // 🌍 ÜBERSETZUNGSSYSTEM
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
+  // Berechne, ob eine zweite Seite benötigt wird
+  // STANDARD: Immer einseitig, außer der Inhalt ist zu lang
+  const itemCount = data.items?.length || 0;
+  const hasLongDescription = data.items?.some((item: { description?: string }) => (item.description?.length || 0) > 150) || false;
+  const hasHeaderText = !!(data.processedHeaderText || data.processedHeadTextHtml);
+  const needsSecondPage = (itemCount > 6 || (itemCount > 4 && hasLongDescription) || (itemCount > 5 && hasHeaderText));
+
   // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
@@ -65,9 +72,11 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
 
   return (
     <div
-      className="bg-white w-full max-w-[210mm] mx-auto text-xs"
+      className="bg-white w-full mx-auto text-xs"
       style={{
         fontFamily: 'Arial, sans-serif',
+        width: '794px',
+        maxWidth: '794px',
       }}
     >
       <style
@@ -84,8 +93,8 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
             }
           }
           .pdf-page {
-            width: 210mm;
-            min-height: 297mm;
+            width: 794px;
+            min-height: 1123px;
             page-break-after: always;
             break-after: page;
           }
@@ -106,10 +115,6 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
               {data.documentLabel}
             </div>
           </div>
-        )}
-        {/* Seitenzahl */}
-        {documentSettings?.showPageNumbers && (
-          <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">{t('page')} 1</div>
         )}
         {/* HEADER SEITE 1 */}
         <div className="p-6 pb-4">
@@ -177,36 +182,37 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
               )}
             </div>
 
-            <div>
-              <div className="font-semibold mb-2">{t('documentDetails')}:</div>
-              <div className="space-y-1">
-                <div>
-                  {config.numberLabel}: {data.invoiceNumber}
-                </div>
-                <div>
-                  {config.dateLabel}: {formatDate(data.invoiceDate)}
-                </div>
-                {config.showDueDate && data.dueDate && (
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="font-semibold mb-2">{t('documentDetails')}:</div>
+                <div className="space-y-1">
                   <div>
-                    {config.dueDateLabel}: {formatDate(data.dueDate)}
+                    {config.numberLabel}: {data.invoiceNumber}
                   </div>
-                )}
-              </div>
-
-              {/* QR-Code unter Dokumentdetails */}
-              {documentSettings?.showQRCode && (
-                <div className="mt-4">
-                  {documentSettings?.qrCodeUrl ? (
-                    <img
-                      src={documentSettings.qrCodeUrl}
-                      alt="QR Code"
-                      className="w-20 h-20 border border-gray-300"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                      QR
+                  <div>
+                    {config.dateLabel}: {formatDate(data.invoiceDate)}
+                  </div>
+                  {config.showDueDate && data.dueDate && (
+                    <div>
+                      {config.dueDateLabel}: {formatDate(data.dueDate)}
                     </div>
                   )}
+                  {data.customerOrderNumber && (
+                    <div>
+                      {t('reference')}: {data.customerOrderNumber}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* QR-Code neben Dokumentdetails - kompakt */}
+              {documentSettings?.showQRCode && documentSettings?.qrCodeUrl && (
+                <div className="shrink-0">
+                  <img
+                    src={documentSettings.qrCodeUrl}
+                    alt="QR Code"
+                    className="w-12 h-12 border border-gray-300"
+                  />
                 </div>
               )}
             </div>
@@ -220,28 +226,13 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
             </div>
           )}
 
-          {/* Header Text (Kopftext) */}
-          {data.processedHeaderText && (
-            <div
-              className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
-              style={{ borderColor: color }}
-            >
-              <div
-                className="text-sm text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: data.processedHeaderText,
-                }}
-              />
-            </div>
-          )}
-
-          {/* Head Text / Einleitung (processedHeadTextHtml) */}
-          {data.processedHeadTextHtml && (
+          {/* Kopftext / Einleitung - Nur EIN Text anzeigen (processedHeadTextHtml hat Priorität) */}
+          {(data.processedHeadTextHtml || data.processedHeaderText) && (
             <div className="mb-4">
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: data.processedHeadTextHtml,
+                  __html: data.processedHeadTextHtml || data.processedHeaderText,
                 }}
               />
             </div>
@@ -261,8 +252,8 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
             language={documentSettings?.language || 'de'}
           />
 
-          {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' && (
+          {/* Totals und Footer wenn keine zweite Seite benötigt wird */}
+          {!needsSecondPage && (
             <>
               {/* Totals */}
               <div className="flex justify-between items-start gap-8 mb-8 mt-8">
@@ -308,12 +299,20 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
 
         {/* FOOTER SEITE 1 */}
         <div className="bg-white p-2 mt-4">
-          {documentSettings?.showFooter !== false && <SimpleFooter data={data} color={color} />}
+          {documentSettings?.showFooter !== false && (
+            <SimpleFooter 
+              data={data} 
+              color={color} 
+              showPageNumbers={documentSettings?.showPageNumbers}
+              currentPage={1}
+              totalPages={needsSecondPage ? 2 : 1}
+            />
+          )}
         </div>
       </div>
 
-      {/* ========= MEHRSEITIG MODUS ========= */}
-      {pageMode !== 'single' && (
+      {/* ========= MEHRSEITIG MODUS - NUR WENN BENÖTIGT ========= */}
+      {needsSecondPage && (
         <>
           {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
           <div
@@ -332,8 +331,8 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
           <div
             className="flex flex-col no-page-break"
             style={{
-              minHeight: '297mm',
-              height: '297mm',
+              minHeight: '1123px',
+              height: '1123px',
               pageBreakAfter: 'avoid',
               breakAfter: 'avoid',
             }}
@@ -476,7 +475,13 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
 
             {/* FOOTER SEITE 2 */}
             <div className="bg-white p-2 mt-3">
-              <SimpleFooter data={data} color={color} />
+              <SimpleFooter 
+                data={data} 
+                color={color}
+                showPageNumbers={documentSettings?.showPageNumbers}
+                currentPage={2}
+                totalPages={2}
+              />
             </div>
           </div>
         </>
