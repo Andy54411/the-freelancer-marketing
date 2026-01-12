@@ -18,6 +18,7 @@ services:
     volumes:
       - recordings:/data/recordings
       - drive-data:/opt/taskilo/webmail-proxy/data
+      - /opt/mailcow-dockerized/data/assets/ssl:/certs:ro
     depends_on:
       - redis
     healthcheck:

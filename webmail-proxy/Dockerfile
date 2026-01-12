@@ -14,7 +14,8 @@ RUN apk add --no-cache \
     giflib-dev \
     librsvg-dev \
     pixman-dev \
-    ffmpeg
+    ffmpeg \
+    openssl
 
 # Copy package files
 COPY package.json ./

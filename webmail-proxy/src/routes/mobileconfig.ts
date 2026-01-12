@@ -6,10 +6,10 @@ import path from 'path';
 
 const router = Router();
 
-// Pfade zu den SSL-Zertifikaten (Let's Encrypt auf Hetzner)
-const CERT_PATH = '/etc/letsencrypt/live/mail.taskilo.de/cert.pem';
-const KEY_PATH = '/etc/letsencrypt/live/mail.taskilo.de/privkey.pem';
-const CHAIN_PATH = '/etc/letsencrypt/live/mail.taskilo.de/chain.pem';
+// Pfade zu den SSL-Zertifikaten (Mailcow auf Hetzner)
+const CERT_PATH = '/certs/cert.pem';
+const KEY_PATH = '/certs/key.pem';
+// Für die Chain verwenden wir das Cert selbst (Let's Encrypt full chain ist im cert.pem)
 
 /**
  * Generiert und signiert ein Apple .mobileconfig Profil
@@ -112,7 +112,7 @@ router.post('/', async (req: Request, res: Response) => {
 </plist>`;
 
     // Prüfe ob Zertifikate existieren
-    if (!existsSync(CERT_PATH) || !existsSync(KEY_PATH) || !existsSync(CHAIN_PATH)) {
+    if (!existsSync(CERT_PATH) || !existsSync(KEY_PATH)) {
       console.warn('SSL-Zertifikate nicht gefunden, sende unsigniertes Profil');
       res.setHeader('Content-Type', 'application/x-apple-aspen-config');
       res.setHeader('Content-Disposition', `attachment; filename="taskilo-mail-${email.split('@')[0]}.mobileconfig"`);
@@ -128,8 +128,8 @@ router.post('/', async (req: Request, res: Response) => {
       // Unsigniertes Profil speichern
       writeFileSync(unsignedPath, unsignedConfig);
 
-      // Mit OpenSSL signieren (PKCS#7)
-      execSync(`openssl smime -sign -signer ${CERT_PATH} -inkey ${KEY_PATH} -certfile ${CHAIN_PATH} -nodetach -outform der -in ${unsignedPath} -out ${signedPath}`, {
+      // Mit OpenSSL signieren (PKCS#7) - cert.pem enthält die full chain
+      execSync(`openssl smime -sign -signer ${CERT_PATH} -inkey ${KEY_PATH} -nodetach -outform der -in ${unsignedPath} -out ${signedPath}`, {
         timeout: 10000,
       });
 
