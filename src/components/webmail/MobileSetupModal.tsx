@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Smartphone, Apple, Download, Mail, Server, Lock, User } from 'lucide-react';
+import { X, Smartphone, Apple, Download, Mail, Server, Lock, User, Copy, Check } from 'lucide-react';
 
 interface MobileSetupModalProps {
   isOpen: boolean;
@@ -17,7 +17,15 @@ export const MobileSetupModal: React.FC<MobileSetupModalProps> = ({
   userEmail,
   userName,
 }) => {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   if (!isOpen) return null;
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // URL für das Konfigurationsprofil
   const configUrl = `https://taskilo.de/api/webmail/mobile-config?email=${encodeURIComponent(userEmail)}&name=${encodeURIComponent(userName || '')}`;
@@ -38,6 +46,20 @@ export const MobileSetupModal: React.FC<MobileSetupModalProps> = ({
       security: 'STARTTLS',
     },
   };
+
+  const CopyButton = ({ value, field }: { value: string; field: string }) => (
+    <button
+      onClick={() => copyToClipboard(value, field)}
+      className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+      title="Kopieren"
+    >
+      {copiedField === field ? (
+        <Check className="w-3.5 h-3.5 text-green-500" />
+      ) : (
+        <Copy className="w-3.5 h-3.5 text-gray-400" />
+      )}
+    </button>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -150,15 +172,21 @@ export const MobileSetupModal: React.FC<MobileSetupModalProps> = ({
                   <span className="font-medium text-blue-900 dark:text-blue-300">Posteingang (IMAP)</span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Server:</span>
-                    <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.imap.server}</code>
+                    <div className="flex items-center">
+                      <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white font-bold">{serverSettings.imap.server}</code>
+                      <CopyButton value={serverSettings.imap.server} field="imap-server" />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Port:</span>
-                    <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.imap.port}</code>
+                    <div className="flex items-center">
+                      <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white font-bold">{serverSettings.imap.port}</code>
+                      <CopyButton value={serverSettings.imap.port} field="imap-port" />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Sicherheit:</span>
                     <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.imap.security}</code>
                   </div>
@@ -172,20 +200,31 @@ export const MobileSetupModal: React.FC<MobileSetupModalProps> = ({
                   <span className="font-medium text-green-900 dark:text-green-300">Postausgang (SMTP)</span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Server:</span>
-                    <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.smtp.server}</code>
+                    <div className="flex items-center">
+                      <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white font-bold">{serverSettings.smtp.server}</code>
+                      <CopyButton value={serverSettings.smtp.server} field="smtp-server" />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Port:</span>
-                    <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.smtp.port}</code>
+                    <div className="flex items-center">
+                      <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white font-bold">{serverSettings.smtp.port}</code>
+                      <CopyButton value={serverSettings.smtp.port} field="smtp-port" />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Sicherheit:</span>
                     <code className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-gray-900 dark:text-white">{serverSettings.smtp.security}</code>
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Alternative SMTP Port Hinweis */}
+            <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/30 rounded-lg px-3 py-2">
+              <strong>Alternativ für SMTP:</strong> Port {serverSettings.smtpAlt.port} mit {serverSettings.smtpAlt.security} (falls Port 465 blockiert ist)
             </div>
 
             {/* Anmeldedaten */}
@@ -197,7 +236,10 @@ export const MobileSetupModal: React.FC<MobileSetupModalProps> = ({
               <div className="grid md:grid-cols-2 gap-3 text-sm">
                 <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg px-3 py-2">
                   <span className="text-gray-600 dark:text-gray-400">Benutzername:</span>
-                  <code className="text-gray-900 dark:text-white font-mono">{userEmail}</code>
+                  <div className="flex items-center">
+                    <code className="text-gray-900 dark:text-white font-mono font-bold">{userEmail}</code>
+                    <CopyButton value={userEmail} field="username" />
+                  </div>
                 </div>
                 <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg px-3 py-2">
                   <span className="text-gray-600 dark:text-gray-400">Passwort:</span>
