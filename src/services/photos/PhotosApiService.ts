@@ -333,4 +333,256 @@ export class PhotosApiService {
     });
     return { syncedAt: result.syncedAt };
   }
+
+  // ==================== KI KLASSIFIKATION ====================
+
+  /**
+   * Klassifiziert ein Foto mit der Taskilo KI
+   * Erkennt automatisch: Szenen, Objekte, Personen, Metadaten
+   */
+  static async classifyPhoto(file: File): Promise<PhotoClassification> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('extract_embedding', 'false');
+
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    
+    const response = await fetch(`${TASKILO_KI_URL}/api/photos/photo/classify/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.detail || 'Klassifikation fehlgeschlagen');
+    }
+
+    return data as PhotoClassification;
+  }
+
+  /**
+   * Holt dynamische Kategorien für den Benutzer
+   * Kategorien entstehen aus den tatsächlich vorhandenen Fotos (wie Google Photos)
+   */
+  static async getDynamicCategories(minCount: number = 1, limit: number = 50): Promise<DynamicCategory[]> {
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    
+    const response = await fetch(
+      `${TASKILO_KI_URL}/api/photos/photo/dynamic-categories?user_id=${encodeURIComponent(this.userId)}&min_count=${minCount}&limit=${limit}`
+    );
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.detail || 'Kategorien laden fehlgeschlagen');
+    }
+
+    return data.categories || [];
+  }
+
+  /**
+   * Fügt ein Foto zur KI-Bibliothek hinzu und aktualisiert dynamische Kategorien
+   */
+  static async addToKiLibrary(file: File, photoId: string): Promise<{ categories: string[]; image_hash?: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('user_id', this.userId);
+    formData.append('photo_id', photoId);
+
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    
+    const response = await fetch(`${TASKILO_KI_URL}/api/photos/photo/add-to-library`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.detail || 'Hinzufügen zur Bibliothek fehlgeschlagen');
+    }
+
+    return { 
+      categories: data.all_categories || [],
+      image_hash: data.image_hash,
+    };
+  }
+}
+
+// ==================== KI TYPES ====================
+
+export interface PhotoClassification {
+  success: boolean;
+  primary_category: string;
+  primary_category_display: string;
+  primary_confidence: number;
+  detected_categories: DetectedCategory[];
+  detected_objects: DetectedObject[];
+  metadata_categories: string[];
+  metadata?: PhotoMetadata;
+  processing_time_ms: number;
+  model_version: string;
+}
+
+export interface DetectedCategory {
+  category: string;
+  display_name: string;
+  confidence: number;
+  source?: string;
+}
+
+export interface DetectedObject {
+  object: string;
+  object_de?: string;
+  confidence: number;
+}
+
+export interface PhotoMetadata {
+  date_taken?: string;
+  year?: number;
+  month?: number;
+  day_of_week?: string;
+  time_of_day?: string;
+  gps?: {
+    latitude: number;
+    longitude: number;
+  };
+  location?: {
+    name?: string;
+    city?: string;
+    country?: string;
+  };
+  camera?: {
+    make?: string;
+    model?: string;
+  };
+  is_screenshot: boolean;
+  is_selfie: boolean;
+  dimensions?: {
+    width: number;
+    height: number;
+    orientation: string;
+  };
+}
+
+export interface DynamicCategory {
+  key: string;
+  display_name: string;
+  count: number;
+  thumbnail_url?: string;
+  type: 'time' | 'location' | 'object' | 'scene';
+}
+
+// ==================== STILLES LERNEN ====================
+
+/**
+ * Sendet Feedback an die KI (still im Hintergrund).
+ * User merkt nichts davon - DSGVO-konform.
+ */
+export class SilentLearning {
+  private static imageHashes: Map<string, string> = new Map();
+  private static TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+  
+  /**
+   * Speichert image_hash aus Klassifikation für späteres Feedback
+   */
+  static storeImageHash(photoId: string, imageHash: string): void {
+    this.imageHashes.set(photoId, imageHash);
+    
+    // Nach 1 Stunde aufräumen
+    setTimeout(() => {
+      this.imageHashes.delete(photoId);
+    }, 3600000);
+  }
+  
+  /**
+   * Ruft image_hash für ein Foto ab
+   */
+  static getImageHash(photoId: string): string | undefined {
+    return this.imageHashes.get(photoId);
+  }
+  
+  /**
+   * Sendet Feedback an die KI (fire and forget)
+   */
+  private static async sendFeedback(
+    imageHash: string,
+    feedbackType: string,
+    options?: {
+      newCategory?: string;
+      searchQuery?: string;
+    }
+  ): Promise<void> {
+    try {
+      await fetch(`${this.TASKILO_KI_URL}/api/photos/photo/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_hash: imageHash,
+          feedback_type: feedbackType,
+          new_category: options?.newCategory,
+          search_query: options?.searchQuery,
+        }),
+      });
+    } catch {
+      // Still ignorieren - User soll nichts merken
+    }
+  }
+  
+  /**
+   * User hat Kategorie implizit akzeptiert (nicht korrigiert nach 30 Sek)
+   */
+  static recordAccept(photoId: string): void {
+    const hash = this.getImageHash(photoId);
+    if (hash) {
+      this.sendFeedback(hash, 'accept');
+    }
+  }
+  
+  /**
+   * User hat Kategorie manuell korrigiert (SEHR wertvoll!)
+   */
+  static recordCorrection(photoId: string, newCategory: string): void {
+    const hash = this.getImageHash(photoId);
+    if (hash) {
+      this.sendFeedback(hash, 'correct', { newCategory });
+    }
+  }
+  
+  /**
+   * User hat über Suche gefunden und geklickt
+   */
+  static recordSearchClick(photoId: string, searchQuery: string): void {
+    const hash = this.getImageHash(photoId);
+    if (hash) {
+      this.sendFeedback(hash, 'search', { searchQuery });
+    }
+  }
+  
+  /**
+   * User hat als Favorit markiert
+   */
+  static recordFavorite(photoId: string): void {
+    const hash = this.getImageHash(photoId);
+    if (hash) {
+      this.sendFeedback(hash, 'favorite');
+    }
+  }
+  
+  /**
+   * User hat Foto gelöscht
+   */
+  static recordDelete(photoId: string): void {
+    const hash = this.getImageHash(photoId);
+    if (hash) {
+      this.sendFeedback(hash, 'delete');
+    }
+  }
+  
+  /**
+   * Startet Timer für implizite Akzeptanz (30 Sek ohne Korrektur)
+   */
+  static startAcceptTimer(photoId: string): void {
+    setTimeout(() => {
+      this.recordAccept(photoId);
+    }, 30000);
+  }
 }

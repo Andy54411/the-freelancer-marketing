@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MailHeader } from '@/components/webmail/MailHeader';
 import { PhotosSidebar, PhotoSection } from '@/components/webmail/photos/PhotosSidebar';
-import { PhotosApiService, Photo, PhotoStorageInfo } from '@/services/photos/PhotosApiService';
+import { PhotosApiService, Photo, PhotoStorageInfo, SilentLearning } from '@/services/photos/PhotosApiService';
 import { UpdatesSection } from '@/components/webmail/photos/UpdatesSection';
 import { useWebmailSession } from '../layout';
 import {
@@ -19,6 +19,7 @@ import {
   Info,
   X,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
@@ -45,6 +46,8 @@ export default function PhotosPage() {
   const { isDark } = useWebmailTheme();
   const userEmail = session?.email;
   const [activeSection, setActiveSection] = useState<PhotoSection>('fotos');
+  const [activeDocumentCategory, setActiveDocumentCategory] = useState<string | undefined>(undefined);
+  const [activeDynamicCategory, setActiveDynamicCategory] = useState<string | undefined>(undefined);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [storageInfo, setStorageInfo] = useState<PhotoStorageInfo | null>(null);
@@ -57,6 +60,7 @@ export default function PhotosPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [classifyingCount, setClassifyingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Trigger file input from header button
@@ -162,7 +166,27 @@ export default function PhotosPage() {
 
     try {
       for (let i = 0; i < imageFiles.length; i++) {
-        await PhotosApiService.uploadPhoto(imageFiles[i]);
+        // 1. Foto hochladen
+        const uploadedPhoto = await PhotosApiService.uploadPhoto(imageFiles[i]);
+        setUploadProgress(((i + 0.5) / imageFiles.length) * 100);
+        
+        // 2. KI-Klassifikation im Hintergrund
+        setClassifyingCount(prev => prev + 1);
+        PhotosApiService.addToKiLibrary(imageFiles[i], uploadedPhoto.id)
+          .then((result) => {
+            // STILLES LERNEN: Accept-Timer starten und Image-Hash speichern
+            if (result?.image_hash) {
+              SilentLearning.storeImageHash(uploadedPhoto.id, result.image_hash);
+            }
+            SilentLearning.startAcceptTimer(uploadedPhoto.id);
+          })
+          .catch(() => {
+            // KI nicht verfügbar - ignorieren
+          })
+          .finally(() => {
+            setClassifyingCount(prev => prev - 1);
+          });
+        
         setUploadProgress(((i + 1) / imageFiles.length) * 100);
       }
       await loadPhotos();
@@ -219,6 +243,12 @@ export default function PhotosPage() {
     if (!userEmail) return;
     try {
       await PhotosApiService.toggleFavorite(photo.id);
+      
+      // STILLES LERNEN: Favorit-Feedback senden
+      if (!photo.isFavorite) {
+        SilentLearning.recordFavorite(photo.id);
+      }
+      
       await loadPhotos();
     } catch (error) {
       // Error handling
@@ -228,6 +258,11 @@ export default function PhotosPage() {
   const handleDeleteSelected = async () => {
     if (!userEmail || selectedPhotos.size === 0) return;
     try {
+      // STILLES LERNEN: Löschung für alle ausgewählten Fotos melden
+      selectedPhotos.forEach(photoId => {
+        SilentLearning.recordDelete(photoId);
+      });
+      
       await Promise.all(
         Array.from(selectedPhotos).map((id) => PhotosApiService.deletePhoto(id))
       );
@@ -236,6 +271,17 @@ export default function PhotosPage() {
     } catch {
       // Error handling
     }
+  };
+
+  /**
+   * Handler für Foto-Klick - STILLES LERNEN bei Suchergebnissen
+   */
+  const handlePhotoClick = (photo: Photo) => {
+    // Wenn Suchergebnis angeklickt wird, tracken wir das
+    if (searchQuery && searchQuery.trim() !== '') {
+      SilentLearning.recordSearchClick(photo.id, searchQuery.trim());
+    }
+    setSelectedPhoto(photo);
   };
 
   const photoGroups = groupPhotosByDate(photos);
@@ -306,6 +352,11 @@ export default function PhotosPage() {
           storageUsed={storageInfo?.used || 0}
           storageLimit={storageInfo?.limit || 5 * 1024 * 1024 * 1024}
           isCollapsed={sidebarCollapsed}
+          activeDocumentCategory={activeDocumentCategory}
+          onDocumentCategoryChange={setActiveDocumentCategory}
+          userEmail={userEmail}
+          activeDynamicCategory={activeDynamicCategory}
+          onDynamicCategoryChange={setActiveDynamicCategory}
         />
 
         {/* Main Content */}
@@ -358,6 +409,16 @@ export default function PhotosPage() {
                 </div>
                 <span className={`text-sm ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>{Math.round(uploadProgress)}%</span>
               </div>
+            </div>
+          )}
+
+          {/* KI Klassifikation Indikator */}
+          {classifyingCount > 0 && !uploading && (
+            <div className={`px-6 py-2 border-b flex items-center gap-2 ${isDark ? 'bg-purple-900/30 border-purple-800' : 'bg-purple-50 border-purple-100'}`}>
+              <Sparkles className={`w-4 h-4 animate-pulse ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+              <span className={`text-sm ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>
+                KI analysiert {classifyingCount} Foto{classifyingCount > 1 ? 's' : ''}...
+              </span>
             </div>
           )}
 
@@ -491,7 +552,7 @@ export default function PhotosPage() {
                               <div
                                 key={photo.id}
                                 className="relative aspect-square group cursor-pointer"
-                                onClick={() => setSelectedPhoto(photo)}
+                                onClick={() => handlePhotoClick(photo)}
                               >
                                 <img
                                   src={photoUrl}
