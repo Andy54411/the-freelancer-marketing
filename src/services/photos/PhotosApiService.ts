@@ -345,9 +345,9 @@ export class PhotosApiService {
     formData.append('file', file);
     formData.append('extract_embedding', 'false');
 
-    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://mail.taskilo.de';
     
-    const response = await fetch(`${TASKILO_KI_URL}/api/photos/photo/classify/upload`, {
+    const response = await fetch(`${TASKILO_KI_URL}/api/v1/photos/photo/classify/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -365,10 +365,10 @@ export class PhotosApiService {
    * Kategorien entstehen aus den tatsächlich vorhandenen Fotos (wie Google Photos)
    */
   static async getDynamicCategories(minCount: number = 1, limit: number = 50): Promise<DynamicCategory[]> {
-    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://mail.taskilo.de';
     
     const response = await fetch(
-      `${TASKILO_KI_URL}/api/photos/photo/dynamic-categories?user_id=${encodeURIComponent(this.userId)}&min_count=${minCount}&limit=${limit}`
+      `${TASKILO_KI_URL}/api/v1/photos/photo/dynamic-categories?user_id=${encodeURIComponent(this.userId)}&min_count=${minCount}&limit=${limit}`
     );
 
     const data = await response.json();
@@ -388,9 +388,9 @@ export class PhotosApiService {
     formData.append('user_id', this.userId);
     formData.append('photo_id', photoId);
 
-    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+    const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://mail.taskilo.de';
     
-    const response = await fetch(`${TASKILO_KI_URL}/api/photos/photo/add-to-library`, {
+    const response = await fetch(`${TASKILO_KI_URL}/api/v1/photos/photo/add-to-library`, {
       method: 'POST',
       body: formData,
     });
@@ -479,7 +479,7 @@ export interface DynamicCategory {
  */
 export class SilentLearning {
   private static imageHashes: Map<string, string> = new Map();
-  private static TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://ki.taskilo.de';
+  private static TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://mail.taskilo.de';
   
   /**
    * Speichert image_hash aus Klassifikation für späteres Feedback
@@ -512,7 +512,7 @@ export class SilentLearning {
     }
   ): Promise<void> {
     try {
-      await fetch(`${this.TASKILO_KI_URL}/api/photos/photo/feedback`, {
+      await fetch(`${this.TASKILO_KI_URL}/api/v1/photos/photo/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
