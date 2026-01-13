@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MailHeader } from '@/components/webmail/MailHeader';
 import { PhotosSidebar, PhotoSection } from '@/components/webmail/photos/PhotosSidebar';
 import { PhotosApiService, Photo, PhotoStorageInfo } from '@/services/photos/PhotosApiService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useWebmailSession } from '../layout';
 import {
   Upload,
   Search,
@@ -40,7 +40,8 @@ interface Memory {
 }
 
 export default function PhotosPage() {
-  const { user } = useAuth();
+  const { session } = useWebmailSession();
+  const userEmail = session?.email;
   const [activeSection, setActiveSection] = useState<PhotoSection>('fotos');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [storageInfo, setStorageInfo] = useState<PhotoStorageInfo | null>(null);
@@ -53,10 +54,10 @@ export default function PhotosPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const loadPhotos = useCallback(async () => {
-    if (!user?.email) return;
+    if (!userEmail) return;
     
     // UserId für die API setzen
-    PhotosApiService.setUserId(user.email);
+    PhotosApiService.setUserId(userEmail);
     
     setLoading(true);
     try {
@@ -73,7 +74,7 @@ export default function PhotosPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email, activeSection]);
+  }, [userEmail, activeSection]);
 
   useEffect(() => {
     loadPhotos();
@@ -128,7 +129,7 @@ export default function PhotosPage() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || !user?.email) return;
+    if (!files || !userEmail) return;
 
     setUploading(true);
     setUploadProgress(0);
@@ -161,7 +162,7 @@ export default function PhotosPage() {
 
   const handleToggleFavorite = async (photo: Photo, event: React.MouseEvent) => {
     event.stopPropagation();
-    if (!user?.email) return;
+    if (!userEmail) return;
     try {
       await PhotosApiService.toggleFavorite(photo.id);
       await loadPhotos();
@@ -171,7 +172,7 @@ export default function PhotosPage() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!user?.email || selectedPhotos.size === 0) return;
+    if (!userEmail || selectedPhotos.size === 0) return;
     try {
       await Promise.all(
         Array.from(selectedPhotos).map((id) => PhotosApiService.deletePhoto(id))
@@ -230,7 +231,7 @@ export default function PhotosPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <MailHeader 
-        userEmail={user?.email || ''} 
+        userEmail={userEmail || ''} 
         appName="Fotos"
         appHomeUrl="/webmail/photos"
         hideSearch
