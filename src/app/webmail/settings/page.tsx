@@ -1,25 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter } from 'next/navigation';
 import { 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Palette,
-  Trash2,
-  Save,
+  ChevronLeft,
+  ChevronRight,
   Phone,
   CheckCircle2,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -38,6 +31,20 @@ interface UserSettings {
   signature: string;
   language: string;
   timezone: string;
+  maxPageSize: number;
+  keyboardShortcuts: boolean;
+  buttonLabels: 'icons' | 'text' | 'hover';
+  undoSendDelay: number;
+  defaultReplyBehavior: 'reply' | 'reply-all';
+  conversationView: boolean;
+  sendAndArchive: boolean;
+  spellCheck: boolean;
+  autoAdvance: 'next-newer' | 'next-older' | 'back-to-list';
+  desktopNotifications: 'off' | 'new-mail' | 'important';
+  notificationSound: boolean;
+  starPresets: string[];
+  personalLevelIndicators: boolean;
+  snippets: boolean;
   notifications: {
     email: boolean;
     desktop: boolean;
@@ -51,6 +58,30 @@ interface UserSettings {
     readReceipts: boolean;
     showOnlineStatus: boolean;
   };
+  inbox: {
+    type: 'default' | 'important-first' | 'unread-first' | 'starred-first' | 'priority';
+    categories: boolean;
+    promotionsCategory: boolean;
+    socialCategory: boolean;
+    updatesCategory: boolean;
+    forumsCategory: boolean;
+  };
+  filters: {
+    importFiltersFrom: string;
+  };
+  forwarding: {
+    enabled: boolean;
+    address: string;
+    keepCopy: boolean;
+  };
+  vacation: {
+    enabled: boolean;
+    subject: string;
+    message: string;
+    startDate: string;
+    endDate: string;
+    contactsOnly: boolean;
+  };
 }
 
 const defaultSettings: UserSettings = {
@@ -58,6 +89,20 @@ const defaultSettings: UserSettings = {
   signature: '',
   language: 'de',
   timezone: 'Europe/Berlin',
+  maxPageSize: 50,
+  keyboardShortcuts: true,
+  buttonLabels: 'hover',
+  undoSendDelay: 5,
+  defaultReplyBehavior: 'reply',
+  conversationView: true,
+  sendAndArchive: false,
+  spellCheck: true,
+  autoAdvance: 'next-newer',
+  desktopNotifications: 'off',
+  notificationSound: true,
+  starPresets: ['yellow'],
+  personalLevelIndicators: true,
+  snippets: true,
   notifications: {
     email: true,
     desktop: true,
@@ -71,7 +116,46 @@ const defaultSettings: UserSettings = {
     readReceipts: true,
     showOnlineStatus: true,
   },
+  inbox: {
+    type: 'default',
+    categories: true,
+    promotionsCategory: true,
+    socialCategory: true,
+    updatesCategory: true,
+    forumsCategory: true,
+  },
+  filters: {
+    importFiltersFrom: '',
+  },
+  forwarding: {
+    enabled: false,
+    address: '',
+    keepCopy: true,
+  },
+  vacation: {
+    enabled: false,
+    subject: '',
+    message: '',
+    startDate: '',
+    endDate: '',
+    contactsOnly: false,
+  },
 };
+
+// Gmail-ähnliche Tab-Definitionen
+const settingsTabs = [
+  { id: 'general', label: 'Allgemein' },
+  { id: 'labels', label: 'Labels' },
+  { id: 'inbox', label: 'Posteingang' },
+  { id: 'accounts', label: 'Konten & Import' },
+  { id: 'filters', label: 'Filter & blockierte Adressen' },
+  { id: 'forwarding', label: 'Weiterleitung & POP/IMAP' },
+  { id: 'addons', label: 'Add-ons' },
+  { id: 'chat', label: 'Chat & Meet' },
+  { id: 'advanced', label: 'Erweitert' },
+  { id: 'offline', label: 'Offline' },
+  { id: 'themes', label: 'Designs' },
+];
 
 export default function WebmailSettingsPage() {
   const { session, logout } = useWebmailSession();
@@ -80,7 +164,10 @@ export default function WebmailSettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState('account');
+  const [activeTab, setActiveTab] = useState('general');
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Phone Verification State
   const [phoneStatus, setPhoneStatus] = useState<{
@@ -96,6 +183,41 @@ export default function WebmailSettingsPage() {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Scroll-Funktionen für Tab-Navigation
+  const checkScrollability = useCallback(() => {
+    const container = tabsContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
+    }
+  }, []);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    const container = tabsContainerRef.current;
+    if (container) {
+      const scrollAmount = 200;
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  useEffect(() => {
+    checkScrollability();
+    const container = tabsContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', checkScrollability);
+      }
+      window.removeEventListener('resize', checkScrollability);
+    };
+  }, [checkScrollability]);
+
   const loadSettings = useCallback(() => {
     if (!session?.email) return;
     
@@ -103,7 +225,7 @@ export default function WebmailSettingsPage() {
     const saved = localStorage.getItem(storageKey);
     
     if (saved) {
-      setSettings(JSON.parse(saved));
+      setSettings({ ...defaultSettings, ...JSON.parse(saved) });
     } else {
       setSettings({
         ...defaultSettings,
@@ -254,17 +376,81 @@ export default function WebmailSettingsPage() {
     
     setTimeout(() => {
       setIsSaving(false);
-      toast.success('Einstellungen gespeichert');
+      toast.success('Änderungen wurden gespeichert');
     }, 500);
   };
 
-  const sections = [
-    { id: 'account', name: 'Konto', icon: User },
-    { id: 'phone', name: 'Telefon', icon: Phone },
-    { id: 'notifications', name: 'Benachrichtigungen', icon: Bell },
-    { id: 'appearance', name: 'Darstellung', icon: Palette },
-    { id: 'privacy', name: 'Datenschutz', icon: Shield },
-  ];
+  // Hilfsfunktion für kleine Label-Texte
+  const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <span className={cn("text-xs font-medium", isDark ? "text-gray-300" : "text-gray-700", className)}>
+      {children}
+    </span>
+  );
+
+  // Hilfsfunktion für Beschreibungstexte
+  const Description = ({ children }: { children: React.ReactNode }) => (
+    <span className={cn("text-xs", isDark ? "text-gray-500" : "text-gray-500")}>
+      {children}
+    </span>
+  );
+
+  // Hilfsfunktion für Abschnittsüberschriften
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <div className={cn(
+      "text-xs font-bold py-2 border-b mb-3",
+      isDark ? "text-gray-300 border-gray-700" : "text-gray-700 border-gray-200"
+    )}>
+      {children}
+    </div>
+  );
+
+  // Hilfsfunktion für Einstellungszeilen
+  const SettingRow = ({ 
+    children, 
+    label, 
+    description 
+  }: { 
+    children: React.ReactNode; 
+    label?: string;
+    description?: string;
+  }) => (
+    <div className="flex items-start gap-4 py-2">
+      {label && (
+        <div className="w-40 shrink-0">
+          <Label>{label}</Label>
+          {description && <Description>{description}</Description>}
+        </div>
+      )}
+      <div className="flex-1 text-xs">{children}</div>
+    </div>
+  );
+
+  // Radio-Button-Komponente
+  const RadioOption = ({ 
+    name, 
+    value, 
+    checked, 
+    onChange, 
+    label 
+  }: { 
+    name: string;
+    value: string;
+    checked: boolean;
+    onChange: () => void;
+    label: string;
+  }) => (
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={onChange}
+        className="w-3.5 h-3.5 text-teal-600 focus:ring-teal-500"
+      />
+      <span className={cn("text-xs", isDark ? "text-gray-300" : "text-gray-700")}>{label}</span>
+    </label>
+  );
 
   if (isLoading) {
     return (

@@ -551,6 +551,12 @@ export default function TaxesPage() {
                           {obl.status === 'submitted' ? 'Details ansehen' : 'Überprüfen'}
                         </Button>
                       </Link>
+                    ) : obl.type === 'estVorauszahlung' ? (
+                      <Link href={`/dashboard/company/${uid}/finance/taxes/prepayment/est-${selectedYear}-q${quarter}`}>
+                        <Button variant="outline" className="w-full">
+                          {obl.status === 'submitted' ? 'Details ansehen' : 'Überprüfen'}
+                        </Button>
+                      </Link>
                     ) : (
                       <Button variant="outline" className="w-full">
                         Überprüfen

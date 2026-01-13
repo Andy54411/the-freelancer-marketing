@@ -183,6 +183,7 @@ interface QuickSettingsProps {
   isOpen: boolean;
   onClose: () => void;
   onSettingsChange?: (settings: WebmailSettings) => void;
+  onOpenFullSettings?: () => void;
 }
 
 // Preview Image Components
@@ -426,7 +427,7 @@ function ChatMeetPreview() {
   );
 }
 
-export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettingsProps) {
+export function QuickSettings({ isOpen, onClose, onSettingsChange, onOpenFullSettings }: QuickSettingsProps) {
   const { isDark } = useWebmailTheme();
   const [settings, setSettings] = useState<WebmailSettings>(defaultSettings);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -498,8 +499,8 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                 : "border-gray-300 text-teal-600 hover:bg-teal-50"
             )}
             onClick={() => {
-              // TODO: Navigation zu vollen Einstellungen
               onClose();
+              onOpenFullSettings?.();
             }}
           >
             Alle Einstellungen aufrufen

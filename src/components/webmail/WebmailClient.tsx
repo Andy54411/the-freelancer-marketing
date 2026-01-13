@@ -54,6 +54,7 @@ import { MailSidebar } from './MailSidebar';
 import { MailHeader } from './MailHeader';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { QuickSettings, loadSettings, getThemeById, WebmailSettings } from './QuickSettings';
+import { SettingsPage } from './settings';
 import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 import { EmailCompose as EmailComposeComponent } from '@/components/email-client/EmailCompose';
 import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessage } from '@/components/email-client/types';
@@ -969,10 +970,17 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [showFullSettings, setShowFullSettings] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>('basicwhite');
   const [currentDensity, setCurrentDensity] = useState<'default' | 'comfortable' | 'compact'>('default');
   const [currentInboxType, setCurrentInboxType] = useState<'default' | 'important-first' | 'unread-first' | 'starred-first' | 'priority' | 'multiple'>('default');
   const [activeCategory, setActiveCategory] = useState<EmailCategory>('primary');
+  
+  // Session-Objekt für Settings Modal
+  const session = useMemo(() => ({
+    email,
+    isAuthenticated: !!email && !!password,
+  }), [email, password]);
   
   // States für Mehrere Posteingänge
   const [draftsMessages, setDraftsMessages] = useState<EmailMessage[]>([]);
@@ -1505,11 +1513,14 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-w-0 relative z-10 p-4 gap-4">
-        {/* Mail Sidebar - Desktop only, mobile uses drawer */}
+        {/* Mail Sidebar - Desktop only, mobile uses drawer - immer sichtbar */}
         <MailSidebar
           mailboxes={mailboxes}
           currentMailbox={currentMailbox}
-          onSelectMailbox={handleSelectMailbox}
+          onSelectMailbox={(mailbox) => {
+            setShowFullSettings(false);
+            handleSelectMailbox(mailbox);
+          }}
           onCompose={() => handleCompose()}
           userEmail={email}
           userPassword={password}
@@ -1519,6 +1530,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
           onMobileClose={() => setIsMobileSidebarOpen(false)}
         />
 
+        {/* Settings Page - Gmail-Style Inline (ersetzt Email-Liste und Viewer) */}
+        {showFullSettings ? (
+          <SettingsPage
+            onClose={() => setShowFullSettings(false)}
+            isDark={isDark}
+            session={session}
+            email={email}
+          />
+        ) : (
+        <>
         {/* Email List - Full width on mobile, Fixed Width when email selected on desktop */}
         <div
           className={cn(
@@ -2153,6 +2174,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
           ) : null}
         </div>
       )}
+      </>
+      )}
       </div>
 
       {/* Mobile FAB - Compose Button (Gmail-style) */}
@@ -2210,6 +2233,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
         isOpen={showQuickSettings}
         onClose={() => setShowQuickSettings(false)}
         onSettingsChange={handleSettingsChange}
+        onOpenFullSettings={() => setShowFullSettings(true)}
       />
     </div>
   );

@@ -70,15 +70,9 @@ export const HeroHeader = () => {
 
   const pricingItems = [
     { 
-      name: 'Alle Preise', 
-      href: '/pricing', 
-      description: 'Übersicht aller Taskilo-Produkte',
-      icon: CreditCard
-    },
-    { 
-      name: 'Webmail-Preise', 
+      name: 'Webmail', 
       href: '/pricing/webmail', 
-      description: 'E-Mail-Postfächer & Domain-Pakete',
+      description: 'Professionelle E-Mail-Postfächer',
       icon: Mail
     },
     { 

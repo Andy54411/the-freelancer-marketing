@@ -29,12 +29,12 @@ const webmailPlans: PricingPlan[] = [
   {
     id: 'basic',
     name: 'Webmail Basic',
-    description: 'Professionelle E-Mail mit eigener Domain',
-    price: 2.99,
+    description: 'Professionelle E-Mail für den Einstieg',
+    price: 0,
     period: '/Postfach/Monat',
     features: [
       '5 GB Speicher pro Postfach',
-      'Eigene Domain verknüpfen',
+      '@taskilo.de E-Mail-Adresse',
       'IMAP/SMTP Zugang',
       'Spam- und Virenschutz',
       'Webmail-Oberfläche',
@@ -49,7 +49,7 @@ const webmailPlans: PricingPlan[] = [
     period: '/Postfach/Monat',
     features: [
       '25 GB Speicher pro Postfach',
-      'Eigene Domain inklusive',
+      'Eigene Domain inklusive (Ende 2026)',
       'IMAP/SMTP Zugang',
       'Erweiterte Spam-Filter',
       'Kalender-Integration',
@@ -67,9 +67,9 @@ const webmailPlans: PricingPlan[] = [
     period: '/Postfach/Monat',
     features: [
       '50 GB Speicher pro Postfach',
-      'Eigene Domain inklusive',
-      'Unbegrenzte Aliasse',
-      'DKIM/DMARC-Konfiguration',
+      'Eigene Domain inklusive (Ende 2026)',
+      'Unbegrenzte Aliasse (Ende 2026)',
+      'DKIM/DMARC-Konfiguration (Ende 2026)',
       'Archivierungsfunktion',
       'Admin-Dashboard',
       'API-Zugang',
@@ -107,14 +107,15 @@ export default function WebmailPricingPage() {
   const yearlyDiscount = 0.17; // 17% Rabatt bei jährlicher Zahlung
 
   const getPrice = (price: number) => {
+    if (price === 0) return 'Kostenlos';
     if (billingCycle === 'yearly') {
-      return (price * (1 - yearlyDiscount) * 12).toFixed(2).replace('.', ',');
+      return (price * (1 - yearlyDiscount) * 12).toFixed(2).replace('.', ',') + ' €';
     }
-    return price.toFixed(2).replace('.', ',');
+    return price.toFixed(2).replace('.', ',') + ' €';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
       <HeroHeader />
       
       {/* Hero Section */}
@@ -187,25 +188,27 @@ export default function WebmailPricingPage() {
                 <div className="text-center mb-6">
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-gray-900">
-                      {getPrice(plan.price)} €
+                      {getPrice(plan.price)}
                     </span>
                   </div>
-                  <span className="text-gray-500 text-sm">
-                    {billingCycle === 'yearly' ? '/Postfach/Jahr' : plan.period}
-                  </span>
+                  {plan.price > 0 && (
+                    <span className="text-gray-500 text-sm">
+                      {billingCycle === 'yearly' ? '/Postfach/Jahr' : plan.period}
+                    </span>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-gray-600">
-                      <Check className="w-5 h-5 text-[#14ad9f] flex-shrink-0 mt-0.5" />
+                      <Check className="w-5 h-5 text-[#14ad9f] shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
 
                 <Link
-                  href="/registrieren"
+                  href="/webmail/register"
                   className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     plan.highlighted
                       ? 'bg-[#14ad9f] text-white hover:bg-teal-700'
@@ -303,7 +306,7 @@ export default function WebmailPricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-6 bg-gradient-to-br from-[#14ad9f] to-teal-700">
+      <section className="py-16 px-6 bg-linear-to-br from-[#14ad9f] to-teal-700">
         <div className="max-w-3xl mx-auto text-center text-white">
           <h2 className="text-3xl font-bold mb-4">
             Bereit für professionelle E-Mail?
@@ -312,7 +315,7 @@ export default function WebmailPricingPage() {
             Starten Sie noch heute mit Taskilo Webmail und präsentieren Sie sich professionell.
           </p>
           <Link
-            href="/registrieren"
+            href="/webmail/register"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-[#14ad9f] font-semibold hover:shadow-xl transition-all"
           >
             Kostenlos registrieren

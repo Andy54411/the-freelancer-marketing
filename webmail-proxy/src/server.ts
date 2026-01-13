@@ -21,6 +21,7 @@ import registrationRouter from './routes/registration';
 import profileRouter from './routes/profile';
 import phoneVerificationRouter from './routes/phone-verification';
 import newsletterRouter from './routes/newsletter';
+import settingsRouter from './routes/settings';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { 
@@ -126,10 +127,13 @@ app.use('/api/phone-verification', phoneVerificationRouter);
 // API Routes - Newsletter (ÖFFENTLICH für Anmeldungen)
 app.use('/api/newsletter', newsletterRouter);
 
+// API Routes - Settings (ÖFFENTLICH für Webmail-Einstellungen)
+app.use('/api/settings', settingsRouter);
+
 // API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
-  // Registration-, Profile-, Phone-Verification-, Newsletter- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
-  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/mobileconfig')) {
+  // Registration-, Profile-, Phone-Verification-, Newsletter-, Settings- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/settings') || req.path.startsWith('/mobileconfig')) {
     return next();
   }
   
