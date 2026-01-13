@@ -16,6 +16,7 @@ import { recordingRouter } from './routes/recording';
 import { meetingRouter } from './routes/meeting';
 import contactsRouter from './routes/contacts';
 import { driveRouter } from './routes/drive';
+import photosRouter from './routes/photos';
 import { paymentRouter } from './routes/payment';
 import registrationRouter from './routes/registration';
 import profileRouter from './routes/profile';
@@ -182,6 +183,7 @@ app.use('/api/recording', recordingRouter);
 app.use('/api/meeting', meetingRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
+app.use('/api/photos', photosRouter);
 
 // API Routes - Payment (Revolut Escrow System)
 app.use('/api/payment', paymentRouter);

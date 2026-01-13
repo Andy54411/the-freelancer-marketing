@@ -32,6 +32,7 @@ import {
 import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 import { MobileSetupModal } from './MobileSetupModal';
+import { getSettings } from '@/lib/webmail-settings-api';
 
 // Debug-Logging für Hydration
 const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
@@ -43,6 +44,7 @@ const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
 interface MailHeaderProps {
   userEmail: string;
   userInitial?: string;
+  profileImage?: string;
   onMenuToggle?: () => void;
   onSearch?: (query: string) => void;
   onAdvancedSearch?: (filters: SearchFilters) => void;
@@ -72,6 +74,7 @@ interface MailHeaderProps {
 export function MailHeader({
   userEmail,
   userInitial,
+  profileImage: propProfileImage,
   onMenuToggle,
   onSearch,
   onAdvancedSearch,
@@ -117,6 +120,35 @@ export function MailHeader({
   // Dashboard: Unread counts für Badges
   const [unreadEmailsCount, setUnreadEmailsCount] = useState(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  
+  // Profilbild aus Settings laden
+  const [profileImage, setProfileImage] = useState<string | undefined>(propProfileImage);
+  
+  // Lade Profilbild vom Hetzner-Server wenn nicht über Props übergeben
+  useEffect(() => {
+    if (propProfileImage) {
+      setProfileImage(propProfileImage);
+      return;
+    }
+    
+    if (!userEmail) return;
+    
+    const loadProfileImage = async () => {
+      try {
+        console.log('[MailHeader] Loading profile image for:', userEmail);
+        const settings = await getSettings(userEmail);
+        console.log('[MailHeader] Settings loaded:', settings?.profileImage ? 'Has image' : 'No image');
+        if (settings?.profileImage) {
+          setProfileImage(settings.profileImage);
+        }
+      } catch (err) {
+        console.error('[MailHeader] Error loading profile image:', err);
+        // Fehler ignorieren - Fallback auf Initial
+      }
+    };
+    
+    loadProfileImage();
+  }, [userEmail, propProfileImage]);
 
   // Fetch unread counts wenn im Dashboard
   useEffect(() => {
@@ -286,8 +318,12 @@ export function MailHeader({
           {/* Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none">
-                {userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'}
+              <button className="w-8 h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -611,6 +647,9 @@ export function MailHeader({
         {/* Apps Grid Button - Auf Mobile und Desktop sichtbar */}
         <AppLauncher hasTheme={isDark} companyId={companyId} isDarkMode={isDark} />
 
+        {/* Debug log */}
+        {console.log('[MailHeader] Rendering avatar, profileImage:', profileImage ? 'Set (' + profileImage.substring(0, 50) + '...)' : 'Not set')}
+
         {/* User Profile - Gmail Style Ring - IMMER sichtbar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -618,20 +657,28 @@ export function MailHeader({
               className="p-0.5 rounded-full hover:bg-gray-200/60 transition-colors shrink-0"
               aria-label={`Konto: ${userEmail}`}
             >
-              <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all">
-                <span className="text-white font-medium text-sm">
-                  {userInitial || userEmail.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all overflow-hidden">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white font-medium text-sm">
+                    {userInitial || userEmail.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
             <div className="px-4 py-3 border-b">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center">
-                  <span className="text-white font-medium">
-                    {userInitial || userEmail.charAt(0).toUpperCase()}
-                  </span>
+                <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-medium">
+                      {userInitial || userEmail.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">

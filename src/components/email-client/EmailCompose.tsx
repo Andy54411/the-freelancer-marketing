@@ -45,9 +45,14 @@ import {
   UserPlus,
   Expand,
   Shrink,
+  Check,
+  PenLine,
+  Settings,
 } from 'lucide-react';
 import type { EmailCompose as EmailComposeType, EmailMessage } from './types';
 import { cn } from '@/lib/utils';
+import { getSettings } from '@/lib/webmail-settings-api';
+import type { EmailSignature } from '@/components/webmail/settings/types';
 import { db } from '@/firebase/clients';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { PDFGenerationService } from '@/services/pdfGenerationService';
@@ -147,6 +152,11 @@ const htmlToPlainText = (html: string): string => {
     .replace(/[ \t]+/g, ' '); // Multiple spaces to single space
 
   return text;
+};
+
+// Helper zum Escapen von RegExp-Sonderzeichen
+const escapeRegExp = (string: string): string => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
 // Helper to safely extract sender info
@@ -286,6 +296,10 @@ export function EmailCompose({
   // Drive Picker State
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   
+  // Signatur State
+  const [signatures, setSignatures] = useState<EmailSignature[]>([]);
+  const [activeSignatureId, setActiveSignatureId] = useState<string | null>(null);
+  
   // Kontakte für Autovervollständigung
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [toRecipients, setToRecipients] = useState<Array<{ id: string; name: string; email: string }>>([]);
@@ -423,6 +437,44 @@ export function EmailCompose({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFontDropdown, showSizeDropdown, showColorDropdown, showAlignDropdown, showLinkModal, showEmojiPicker]);
+
+  // Signaturen vom Hetzner-Server laden
+  useEffect(() => {
+    const loadSignatures = async () => {
+      const webmailCreds = getWebmailCookie();
+      if (!webmailCreds?.email) return;
+      
+      try {
+        const settings = await getSettings(webmailCreds.email);
+        if (settings?.signatures) {
+          setSignatures(settings.signatures);
+          // Setze Standard-Signatur für neue E-Mails
+          if (!replyTo && !forwardEmail) {
+            const defaultSig = settings.signatures.find(s => s.id === settings.defaultSignatureNewEmail);
+            if (defaultSig) {
+              setActiveSignatureId(defaultSig.id);
+              // Signatur zum Body hinzufügen wenn leer
+              if (!email.body && defaultSig.content) {
+                setEmail(prev => ({ ...prev, body: `<br><br>${defaultSig.content}` }));
+              }
+            }
+          } else {
+            // Standard-Signatur für Antworten
+            const replySig = settings.signatures.find(s => s.id === settings.defaultSignatureReply);
+            if (replySig) {
+              setActiveSignatureId(replySig.id);
+            }
+          }
+        }
+      } catch (error) {
+        // Signaturen konnten nicht geladen werden
+      }
+    };
+    
+    if (isOpen) {
+      loadSignatures();
+    }
+  }, [isOpen, replyTo, forwardEmail]);
 
   // Update email state when replyTo or forwardEmail changes
   useEffect(() => {
@@ -2215,9 +2267,98 @@ export function EmailCompose({
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Vertraulich">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               </button>
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Signatur einfügen">
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-              </button>
+              
+              {/* Signatur-Dropdown (Gmail-Style) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className={cn(
+                      "h-8 w-8 flex items-center justify-center rounded-full text-gray-600",
+                      activeSignatureId ? "bg-teal-100 text-teal-700" : "hover:bg-gray-100"
+                    )} 
+                    title="Signatur einfügen"
+                  >
+                    <PenLine className="h-[18px] w-[18px]" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {/* Signaturen verwalten - Link zu den Einstellungen */}
+                  <DropdownMenuItem 
+                    className="text-[13px] text-gray-600"
+                    onClick={() => {
+                      // Öffne Settings-Seite in neuem Tab
+                      window.open('/webmail?settings=general', '_blank');
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Signaturen verwalten
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Keine Signatur Option */}
+                  <DropdownMenuItem 
+                    className="text-[13px]"
+                    onClick={() => {
+                      // Entferne aktuelle Signatur aus Body
+                      if (activeSignatureId) {
+                        const currentSig = signatures.find(s => s.id === activeSignatureId);
+                        if (currentSig && editorRef.current) {
+                          const bodyHtml = editorRef.current.innerHTML;
+                          // Versuche die Signatur zu entfernen
+                          const sigPattern = new RegExp(`(<br><br>)?${escapeRegExp(currentSig.content)}`, 'gi');
+                          const newBody = bodyHtml.replace(sigPattern, '');
+                          editorRef.current.innerHTML = newBody;
+                          setEmail(prev => ({ ...prev, body: newBody }));
+                        }
+                      }
+                      setActiveSignatureId(null);
+                    }}
+                  >
+                    {!activeSignatureId && <Check className="h-4 w-4 mr-2 text-teal-600" />}
+                    {activeSignatureId && <span className="w-4 mr-2" />}
+                    Keine Signatur
+                  </DropdownMenuItem>
+                  
+                  {/* Liste der Signaturen */}
+                  {signatures.map(sig => (
+                    <DropdownMenuItem 
+                      key={sig.id}
+                      className="text-[13px]"
+                      onClick={() => {
+                        // Entferne alte Signatur falls vorhanden
+                        if (activeSignatureId && editorRef.current) {
+                          const oldSig = signatures.find(s => s.id === activeSignatureId);
+                          if (oldSig) {
+                            const bodyHtml = editorRef.current.innerHTML;
+                            const sigPattern = new RegExp(`(<br><br>)?${escapeRegExp(oldSig.content)}`, 'gi');
+                            editorRef.current.innerHTML = bodyHtml.replace(sigPattern, '');
+                          }
+                        }
+                        
+                        // Füge neue Signatur hinzu
+                        if (editorRef.current) {
+                          const currentHtml = editorRef.current.innerHTML;
+                          const newHtml = currentHtml + `<br><br>${sig.content}`;
+                          editorRef.current.innerHTML = newHtml;
+                          setEmail(prev => ({ ...prev, body: newHtml }));
+                        }
+                        setActiveSignatureId(sig.id);
+                      }}
+                    >
+                      {activeSignatureId === sig.id && <Check className="h-4 w-4 mr-2 text-teal-600" />}
+                      {activeSignatureId !== sig.id && <span className="w-4 mr-2" />}
+                      {sig.name}
+                    </DropdownMenuItem>
+                  ))}
+                  
+                  {signatures.length === 0 && (
+                    <div className="px-3 py-2 text-[12px] text-gray-400">
+                      Keine Signaturen vorhanden
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Mehr-Optionen */}
               <DropdownMenu>

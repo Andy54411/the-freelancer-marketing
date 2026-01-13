@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Star, AlertCircle, Info, Check, HelpCircle, Plus, Trash2, GripVertical } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Star, AlertCircle, Info, Check, HelpCircle, Plus, Trash2, GripVertical, Upload, Loader2, Pencil, X } from 'lucide-react';
 import type { SettingsTabProps, EmailSignature } from './types';
+import { SignatureEditor } from '@/components/ui/SignatureEditor';
 
 // Hilfsfunktion für Radio-Button Styling
 const RadioOption = ({ 
@@ -136,6 +144,46 @@ const StarIcon = ({ color, icon }: { color: string; icon: string }) => {
 
 export function GeneralSettings({ settings, onSettingsChange, isDark }: SettingsTabProps) {
   const [newSignatureName, setNewSignatureName] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [editingSignatureId, setEditingSignatureId] = useState<string | null>(null);
+  const [editingSignatureName, setEditingSignatureName] = useState('');
+  const [showNewSignatureModal, setShowNewSignatureModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const MAX_SIGNATURE_NAME_LENGTH = 320;
+
+  // Profilbild hochladen
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validierung: nur Bilder
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    // Max 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      // Bild zu Base64 konvertieren für lokale Vorschau
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        onSettingsChange({ profileImage: base64 });
+        setIsUploadingImage(false);
+      };
+      reader.onerror = () => {
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingImage(false);
+    }
+  };
 
   // Signatur erstellen
   const handleCreateSignature = () => {
@@ -166,6 +214,30 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
         s.id === id ? { ...s, content } : s
       ),
     });
+  };
+
+  // Signatur umbenennen starten
+  const handleStartRenameSignature = (sig: EmailSignature) => {
+    setEditingSignatureId(sig.id);
+    setEditingSignatureName(sig.name);
+  };
+
+  // Signatur umbenennen speichern
+  const handleSaveRenameSignature = () => {
+    if (!editingSignatureId || !editingSignatureName.trim()) return;
+    onSettingsChange({
+      signatures: settings.signatures.map(s => 
+        s.id === editingSignatureId ? { ...s, name: editingSignatureName.trim() } : s
+      ),
+    });
+    setEditingSignatureId(null);
+    setEditingSignatureName('');
+  };
+
+  // Signatur umbenennen abbrechen
+  const handleCancelRenameSignature = () => {
+    setEditingSignatureId(null);
+    setEditingSignatureName('');
   };
 
   return (
@@ -855,16 +927,51 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
             <p className={cn("text-xs", isDark ? "text-gray-400" : "text-gray-600")}>
               Ihr Profilbild ist in allen Produkten sichtbar.
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                "text-xs h-7",
-                isDark && "border-[#5f6368] bg-transparent text-gray-300 hover:bg-[#3c4043]"
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
+                className={cn(
+                  "text-xs h-7",
+                  isDark && "border-[#5f6368] bg-transparent text-gray-300 hover:bg-[#3c4043]"
+                )}
+              >
+                {isUploadingImage ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Laden...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3 h-3 mr-1" />
+                    Bild ändern
+                  </>
+                )}
+              </Button>
+              {settings.profileImage && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSettingsChange({ profileImage: '' })}
+                  className={cn(
+                    "text-xs h-7 text-red-500 hover:text-red-600",
+                    isDark && "hover:bg-[#3c4043]"
+                  )}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Entfernen
+                </Button>
               )}
-            >
-              Bild ändern
-            </Button>
+            </div>
           </div>
         </div>
       </SettingsRow>
@@ -898,66 +1005,115 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
         </p>
         
         <div className="space-y-4">
-          {/* Bestehende Signaturen */}
+          {/* Bestehende Signaturen - Gmail-Style Layout */}
           {settings.signatures.map((sig) => (
-            <div key={sig.id} className={cn(
-              "p-3 border rounded-lg",
-              isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-300 bg-gray-50"
-            )}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <GripVertical className={cn("w-4 h-4 cursor-grab", isDark ? "text-gray-500" : "text-gray-400")} />
-                  <span className={cn("text-xs font-medium", isDark ? "text-gray-300" : "text-gray-700")}>
-                    {sig.name}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteSignature(sig.id)}
-                  className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              <textarea
-                value={sig.content}
-                onChange={(e) => handleUpdateSignature(sig.id, e.target.value)}
-                placeholder="Signaturtext eingeben..."
-                className={cn(
-                  "w-full min-h-[100px] p-2 text-xs border rounded resize-y",
-                  isDark 
-                    ? "bg-[#2d2e30] border-[#5f6368] text-white placeholder:text-gray-500" 
-                    : "bg-white border-gray-300 placeholder:text-gray-400"
+            <div key={sig.id} className="flex gap-3">
+              {/* Linke Seite: Name mit Aktionen */}
+              <div className={cn(
+                "w-48 shrink-0 p-3 border rounded-lg",
+                isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-300 bg-gray-50"
+              )}>
+                {editingSignatureId === sig.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editingSignatureName}
+                      onChange={(e) => setEditingSignatureName(e.target.value)}
+                      className={cn(
+                        "h-7 text-xs",
+                        isDark ? "bg-[#202124] border-[#5f6368] text-white" : "bg-white border-gray-300"
+                      )}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRenameSignature();
+                        if (e.key === 'Escape') handleCancelRenameSignature();
+                      }}
+                    />
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveRenameSignature}
+                        className="h-6 px-2 text-xs text-[#14ad9f] hover:bg-[#14ad9f]/10"
+                      >
+                        <Check className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelRenameSignature}
+                        className="h-6 px-2 text-xs text-gray-500 hover:bg-gray-100"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <GripVertical className={cn("w-4 h-4 shrink-0 cursor-grab", isDark ? "text-gray-500" : "text-gray-400")} />
+                      <span className={cn("text-xs font-medium truncate", isDark ? "text-gray-300" : "text-gray-700")}>
+                        {sig.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStartRenameSignature(sig)}
+                        className={cn(
+                          "h-6 w-6 p-0",
+                          isDark ? "text-gray-400 hover:text-gray-200 hover:bg-[#5f6368]" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        )}
+                        title="Umbenennen"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteSignature(sig.id)}
+                        className={cn(
+                          "h-6 w-6 p-0",
+                          isDark ? "text-gray-400 hover:text-red-400 hover:bg-[#5f6368]" : "text-gray-500 hover:text-red-600 hover:bg-red-50"
+                        )}
+                        title="Löschen"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              />
+              </div>
+              
+              {/* Rechte Seite: Editor */}
+              <div className={cn(
+                "flex-1 border rounded-lg overflow-hidden",
+                isDark ? "border-[#5f6368]" : "border-gray-300"
+              )}>
+                <SignatureEditor
+                  value={sig.content}
+                  onChange={(content) => handleUpdateSignature(sig.id, content)}
+                  placeholder="Signaturtext eingeben..."
+                  isDark={isDark}
+                  minHeight="150px"
+                />
+              </div>
             </div>
           ))}
           
-          {/* Neue Signatur erstellen */}
-          <div className="flex items-center gap-2">
-            <Input
-              value={newSignatureName}
-              onChange={(e) => setNewSignatureName(e.target.value)}
-              placeholder="Name der neuen Signatur"
-              className={cn(
-                "h-8 text-xs flex-1",
-                isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "bg-white border-gray-300"
-              )}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCreateSignature}
-              className={cn(
-                "h-8 text-xs",
-                isDark && "border-[#5f6368] bg-transparent text-gray-300 hover:bg-[#3c4043]"
-              )}
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Neu erstellen
-            </Button>
-          </div>
+          {/* Neue Signatur erstellen Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowNewSignatureModal(true)}
+            className={cn(
+              "h-9 text-sm text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f]/10",
+              isDark && "hover:bg-[#14ad9f]/20"
+            )}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Neu erstellen
+          </Button>
           
           {/* Standardeinstellungen für Signaturen */}
           {settings.signatures.length > 0 && (
@@ -975,8 +1131,8 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
                     FÜR NEUE E-MAILS
                   </label>
                   <Select
-                    value={settings.defaultSignatureNewEmail}
-                    onValueChange={(value) => onSettingsChange({ defaultSignatureNewEmail: value })}
+                    value={settings.defaultSignatureNewEmail || 'none'}
+                    onValueChange={(value) => onSettingsChange({ defaultSignatureNewEmail: value === 'none' ? '' : value })}
                   >
                     <SelectTrigger className={cn(
                       "h-7 text-xs",
@@ -985,7 +1141,7 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
                       <SelectValue placeholder="Keine Signatur" />
                     </SelectTrigger>
                     <SelectContent className={isDark ? "bg-[#3c4043] border-[#5f6368]" : ""}>
-                      <SelectItem value="" className={cn("text-xs", isDark && "text-white")}>Keine Signatur</SelectItem>
+                      <SelectItem value="none" className={cn("text-xs", isDark && "text-white")}>Keine Signatur</SelectItem>
                       {settings.signatures.map(sig => (
                         <SelectItem key={sig.id} value={sig.id} className={cn("text-xs", isDark && "text-white")}>
                           {sig.name}
@@ -1000,8 +1156,8 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
                     BEIM ANTWORTEN/WEITERLEITEN
                   </label>
                   <Select
-                    value={settings.defaultSignatureReply}
-                    onValueChange={(value) => onSettingsChange({ defaultSignatureReply: value })}
+                    value={settings.defaultSignatureReply || 'none'}
+                    onValueChange={(value) => onSettingsChange({ defaultSignatureReply: value === 'none' ? '' : value })}
                   >
                     <SelectTrigger className={cn(
                       "h-7 text-xs",
@@ -1010,7 +1166,7 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
                       <SelectValue placeholder="Keine Signatur" />
                     </SelectTrigger>
                     <SelectContent className={isDark ? "bg-[#3c4043] border-[#5f6368]" : ""}>
-                      <SelectItem value="" className={cn("text-xs", isDark && "text-white")}>Keine Signatur</SelectItem>
+                      <SelectItem value="none" className={cn("text-xs", isDark && "text-white")}>Keine Signatur</SelectItem>
                       {settings.signatures.map(sig => (
                         <SelectItem key={sig.id} value={sig.id} className={cn("text-xs", isDark && "text-white")}>
                           {sig.name}
@@ -1028,21 +1184,6 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
                 isDark={isDark}
               />
             </div>
-          )}
-          
-          {/* Fallback für alte einfache Signatur */}
-          {settings.signatures.length === 0 && (
-            <textarea
-              value={settings.signature}
-              onChange={(e) => onSettingsChange({ signature: e.target.value })}
-              placeholder="Signaturtext eingeben..."
-              className={cn(
-                "w-full min-h-[120px] p-2 text-xs border rounded resize-y",
-                isDark 
-                  ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-gray-500" 
-                  : "bg-white border-gray-300 placeholder:text-gray-400"
-              )}
-            />
           )}
         </div>
       </SettingsRow>
@@ -1209,6 +1350,83 @@ export function GeneralSettings({ settings, onSettingsChange, isDark }: Settings
           )}
         </div>
       </SettingsRow>
+
+      {/* Modal für neue Signatur */}
+      <Dialog open={showNewSignatureModal} onOpenChange={setShowNewSignatureModal}>
+        <DialogContent className={cn(
+          "sm:max-w-md",
+          isDark ? "bg-[#202124] border-[#5f6368] text-white" : "bg-white"
+        )}>
+          <DialogHeader>
+            <DialogTitle className={cn(
+              "text-lg font-medium",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              Neue Signatur benennen
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <label className={cn(
+              "text-sm font-medium mb-2 block",
+              isDark ? "text-gray-300" : "text-gray-700"
+            )}>
+              Name der Signatur
+            </label>
+            <Input
+              value={newSignatureName}
+              onChange={(e) => {
+                if (e.target.value.length <= MAX_SIGNATURE_NAME_LENGTH) {
+                  setNewSignatureName(e.target.value);
+                }
+              }}
+              placeholder="z.B. Geschäftlich, Privat, etc."
+              className={cn(
+                "h-10",
+                isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "bg-white border-gray-300"
+              )}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newSignatureName.trim()) {
+                  handleCreateSignature();
+                  setShowNewSignatureModal(false);
+                }
+              }}
+            />
+            <div className={cn(
+              "text-xs mt-1 text-right",
+              isDark ? "text-gray-500" : "text-gray-400"
+            )}>
+              {newSignatureName.length} von {MAX_SIGNATURE_NAME_LENGTH} Zeichen eingegeben
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowNewSignatureModal(false);
+                setNewSignatureName('');
+              }}
+              className={cn(
+                isDark && "text-gray-300 hover:bg-[#3c4043]"
+              )}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => {
+                handleCreateSignature();
+                setShowNewSignatureModal(false);
+              }}
+              disabled={!newSignatureName.trim()}
+              className="bg-[#14ad9f] hover:bg-[#0d8a7f] text-white"
+            >
+              Fertig
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

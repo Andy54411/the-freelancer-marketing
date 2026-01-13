@@ -182,6 +182,22 @@ const apps: AppItem[] = [
     ),
   },
   {
+    name: 'Fotos',
+    href: '/webmail/photos',
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        {/* Photo frame */}
+        <rect x="4" y="8" width="40" height="32" rx="4" fill={TEAL_600}/>
+        {/* Photo inner */}
+        <rect x="8" y="12" width="32" height="24" rx="2" fill={TEAL_100}/>
+        {/* Mountain landscape */}
+        <path d="M8 32l10-12 8 10 6-6 8 8v4H8z" fill={TEAL_500}/>
+        {/* Sun */}
+        <circle cx="32" cy="20" r="4" fill={TEAL_400}/>
+      </svg>
+    ),
+  },
+  {
     name: 'Kontakte',
     href: '/webmail/contacts',
     icon: (
