@@ -560,6 +560,15 @@ export default function PhotosPage() {
                                   className="w-full h-full object-cover"
                                 />
 
+                                {/* KI-Kategorie Badge */}
+                                {photo.primaryCategoryDisplay && (
+                                  <div className="absolute bottom-1 left-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="inline-block px-1.5 py-0.5 bg-black/60 text-white text-xs rounded truncate max-w-full">
+                                      {photo.primaryCategoryDisplay}
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* Hover Overlay */}
                                 <div
                                   className={`absolute inset-0 transition-opacity ${
