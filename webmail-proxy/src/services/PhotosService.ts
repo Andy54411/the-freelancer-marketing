@@ -90,6 +90,14 @@ export interface Photo {
   latitude: number | null;
   longitude: number | null;
   camera: string | null;
+  // KI-Klassifizierung
+  primaryCategory: string | null;
+  primaryCategoryDisplay: string | null;
+  primaryConfidence: number | null;
+  detectedCategories: string | null; // JSON-Array
+  detectedObjects: string | null;    // JSON-Array
+  metadataCategories: string | null; // JSON-Array
+  classifiedAt: number | null;
   // Status
   isFavorite: boolean;
   isDeleted: boolean;
@@ -99,6 +107,17 @@ export interface Photo {
   appDeviceId: string | null;
   createdAt: number;
   updatedAt: number;
+}
+
+// KI-Kategorien Interface
+export interface PhotoAiCategories {
+  primaryCategory: string;
+  primaryCategoryDisplay: string;
+  primaryConfidence: number;
+  detectedCategories: Array<{ category: string; display_name: string; confidence: number }>;
+  detectedObjects: Array<{ object: string; confidence: number }>;
+  metadataCategories: string[];
+  classifiedAt: number;
 }
 
 export interface PhotoStorageInfo {
@@ -227,6 +246,41 @@ class PhotosService {
       CREATE INDEX IF NOT EXISTS idx_albums_user ON albums(user_id);
       CREATE INDEX IF NOT EXISTS idx_album_photos ON album_photos(album_id);
     `);
+    
+    // Migration: KI-Kategorien Spalten hinzufügen
+    this.migrateAiCategories();
+  }
+  
+  private migrateAiCategories(): void {
+    try {
+      // Prüfe ob Spalten bereits existieren
+      const tableInfo = this.db.pragma('table_info(photos)');
+      const existingColumns = tableInfo.map((col: { name: string }) => col.name);
+      
+      const newColumns = [
+        { name: 'primary_category', type: 'TEXT' },
+        { name: 'primary_category_display', type: 'TEXT' },
+        { name: 'primary_confidence', type: 'REAL' },
+        { name: 'detected_categories', type: 'TEXT' },
+        { name: 'detected_objects', type: 'TEXT' },
+        { name: 'metadata_categories', type: 'TEXT' },
+        { name: 'classified_at', type: 'INTEGER' },
+      ];
+      
+      for (const col of newColumns) {
+        if (!existingColumns.includes(col.name)) {
+          this.db.exec(`ALTER TABLE photos ADD COLUMN ${col.name} ${col.type}`);
+        }
+      }
+      
+      // Index für KI-Kategorien
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_photos_primary_category ON photos(primary_category);
+        CREATE INDEX IF NOT EXISTS idx_photos_classified ON photos(classified_at);
+      `);
+    } catch {
+      // Migration bereits durchgeführt oder Fehler - ignorieren
+    }
   }
 
   // ==================== USER MANAGEMENT ====================
@@ -485,6 +539,39 @@ class PhotosService {
     return this.getPhoto(userId, photoId);
   }
 
+  async updateAiCategories(userId: string, photoId: string, categories: PhotoAiCategories): Promise<Photo | null> {
+    const photo = await this.getPhoto(userId, photoId);
+    if (!photo) return null;
+    
+    const now = Date.now();
+    
+    this.db.prepare(`
+      UPDATE photos SET 
+        primary_category = ?,
+        primary_category_display = ?,
+        primary_confidence = ?,
+        detected_categories = ?,
+        detected_objects = ?,
+        metadata_categories = ?,
+        classified_at = ?,
+        updated_at = ?
+      WHERE id = ? AND user_id = ?
+    `).run(
+      categories.primaryCategory,
+      categories.primaryCategoryDisplay,
+      categories.primaryConfidence,
+      JSON.stringify(categories.detectedCategories),
+      JSON.stringify(categories.detectedObjects),
+      JSON.stringify(categories.metadataCategories),
+      categories.classifiedAt,
+      now,
+      photoId,
+      userId
+    );
+    
+    return this.getPhoto(userId, photoId);
+  }
+
   async deletePhoto(userId: string, photoId: string): Promise<boolean> {
     const photo = await this.getPhoto(userId, photoId);
     if (!photo) return false;
@@ -641,6 +728,15 @@ class PhotosService {
       latitude: row.latitude,
       longitude: row.longitude,
       camera: row.camera,
+      // KI-Klassifizierung
+      primaryCategory: row.primary_category,
+      primaryCategoryDisplay: row.primary_category_display,
+      primaryConfidence: row.primary_confidence,
+      detectedCategories: row.detected_categories,
+      detectedObjects: row.detected_objects,
+      metadataCategories: row.metadata_categories,
+      classifiedAt: row.classified_at,
+      // Status
       isFavorite: row.is_favorite === 1,
       isDeleted: row.is_deleted === 1,
       deletedAt: row.deleted_at,

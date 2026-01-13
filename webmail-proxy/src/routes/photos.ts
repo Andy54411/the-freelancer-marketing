@@ -352,6 +352,38 @@ router.patch('/:id/move', async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /photos/:id/ai-categories - KI-Kategorien speichern
+router.patch('/:id/ai-categories', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { 
+      primaryCategory,
+      primaryCategoryDisplay,
+      primaryConfidence,
+      detectedCategories,
+      detectedObjects,
+      metadataCategories,
+    } = req.body;
+    
+    const photo = await photosService.updateAiCategories(userId, req.params.id, {
+      primaryCategory,
+      primaryCategoryDisplay,
+      primaryConfidence,
+      detectedCategories,
+      detectedObjects,
+      metadataCategories,
+      classifiedAt: Date.now(),
+    });
+    
+    if (!photo) {
+      return res.status(404).json({ success: false, error: 'Foto nicht gefunden' });
+    }
+    res.json({ success: true, photo });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
 // DELETE /photos/:id - Foto löschen
 router.delete('/:id', async (req: Request, res: Response) => {
   try {

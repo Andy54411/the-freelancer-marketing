@@ -39,6 +39,15 @@ export interface Photo {
   latitude: number | null;
   longitude: number | null;
   camera: string | null;
+  // KI-Klassifizierung
+  primaryCategory: string | null;
+  primaryCategoryDisplay: string | null;
+  primaryConfidence: number | null;
+  detectedCategories: string | null;
+  detectedObjects: string | null;
+  metadataCategories: string | null;
+  classifiedAt: number | null;
+  // Status
   isFavorite: boolean;
   isDeleted: boolean;
   deletedAt: number | null;
@@ -380,9 +389,22 @@ export class PhotosApiService {
   }
 
   /**
-   * Fügt ein Foto zur KI-Bibliothek hinzu und aktualisiert dynamische Kategorien
+   * Fügt ein Foto zur KI-Bibliothek hinzu, klassifiziert es und speichert die Kategorien
    */
-  static async addToKiLibrary(file: File, photoId: string): Promise<{ categories: string[]; image_hash?: string }> {
+  static async addToKiLibrary(file: File, photoId: string): Promise<{ 
+    categories: string[]; 
+    image_hash?: string;
+    classification?: PhotoClassification;
+  }> {
+    // 1. Foto klassifizieren
+    let classification: PhotoClassification | undefined;
+    try {
+      classification = await this.classifyPhoto(file);
+    } catch {
+      // Klassifizierung fehlgeschlagen - trotzdem fortfahren
+    }
+    
+    // 2. Zur KI-Bibliothek hinzufügen
     const formData = new FormData();
     formData.append('file', file);
     formData.append('user_id', this.userId);
@@ -399,11 +421,38 @@ export class PhotosApiService {
     if (!data.success) {
       throw new Error(data.detail || 'Hinzufügen zur Bibliothek fehlgeschlagen');
     }
+    
+    // 3. Kategorien in Hetzner Photos-API speichern
+    if (classification) {
+      try {
+        await this.saveAiCategories(photoId, classification);
+      } catch {
+        // Speichern fehlgeschlagen - ignorieren
+      }
+    }
 
     return { 
       categories: data.all_categories || [],
       image_hash: data.image_hash,
+      classification,
     };
+  }
+  
+  /**
+   * Speichert KI-Kategorien für ein Foto in der Hetzner Photos-API
+   */
+  static async saveAiCategories(photoId: string, classification: PhotoClassification): Promise<Photo> {
+    return this.request<Photo>(`/${photoId}/ai-categories`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        primaryCategory: classification.primary_category,
+        primaryCategoryDisplay: classification.primary_category_display,
+        primaryConfidence: classification.primary_confidence,
+        detectedCategories: classification.detected_categories,
+        detectedObjects: classification.detected_objects,
+        metadataCategories: classification.metadata_categories,
+      }),
+    });
   }
 }
 
