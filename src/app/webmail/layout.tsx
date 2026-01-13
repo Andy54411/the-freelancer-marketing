@@ -9,7 +9,11 @@ const COOKIE_NAME = 'webmail_session';
 
 function decodeCredentials(encoded: string): { email: string; password: string } | null {
   try {
-    return JSON.parse(atob(encoded));
+    // Unicode-sichere Base64-Dekodierung (gleich wie in page.tsx)
+    const binString = atob(encoded);
+    const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0) as number);
+    const jsonStr = new TextDecoder().decode(bytes);
+    return JSON.parse(jsonStr);
   } catch {
     return null;
   }
@@ -75,6 +79,8 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
         password: credentials.password,
         isAuthenticated: true,
       });
+    } else {
+      setSession(null);
     }
     setIsLoading(false);
   }, [isMounted]);
