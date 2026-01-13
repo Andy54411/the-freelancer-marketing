@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterKapESt</Verfahren>
+        <DatenArt>KapEStInvStG</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+            <TransportSchluessel />
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <KapEStInvStG xmlns="http://finkonsens.de/elster/elsterkapest/kapestinvstg/v2024" version="2024">
+                    <KapEAnm>X</KapEAnm>
+                    <StNr>9198081508152</StNr>
+                    <BArt>0</BArt>
+                    <Allg_Ang>
+                        <Investmentfonds>
+                            <Name>Musterfond</Name>
+                            <ISIN>US5949181045</ISIN>
+                        </Investmentfonds>
+                        <Vertreter>
+                            <Bezeichnung>MusterfondgmbH</Bezeichnung>
+                        </Vertreter>
+                    </Allg_Ang>
+                    <KapEStAnm>
+                        <AnmKJ>2024</AnmKJ>
+                        <Monat>01</Monat>
+                        <Schlussausschuettung>
+                            <Geschaeftsjahr>2024</Geschaeftsjahr>
+                            <AusschuettungsDat>05.01.2024</AusschuettungsDat>
+                            <AusschuettungsBeschlDat>05.01.2024</AusschuettungsBeschlDat>
+                            <P50_Nr1>
+                                <P50Abs1S2Nr1_VorAbstandnahme>1000</P50Abs1S2Nr1_VorAbstandnahme>
+                                <P50Abs1S2Nr1>1000</P50Abs1S2Nr1>
+                                <P50Abs1S2Nr1St>150</P50Abs1S2Nr1St>
+                                <P50Abs1S2Nr1Sz>8.25</P50Abs1S2Nr1Sz>
+                            </P50_Nr1>
+                            <P50_Nr1_P33_1_3>
+                                <P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme>1000</P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme>
+                                <P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4>1000</P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4>
+                                <P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St>150</P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St>
+                                <P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz>8.25</P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz>
+                            </P50_Nr1_P33_1_3>
+                            <P50_Nr1_P33_4>
+                                <P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme>1000</P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme>
+                                <P50Abs1S2Nr1iVmP33Abs4undP6Abs5>1000</P50Abs1S2Nr1iVmP33Abs4undP6Abs5>
+                                <P50Abs1S2Nr1iVmP33Abs4undP6Abs5St>150</P50Abs1S2Nr1iVmP33Abs4undP6Abs5St>
+                                <P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz>8.25</P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz>
+                            </P50_Nr1_P33_4>
+                        </Schlussausschuettung>
+                        <AbzufuehrendeAbzugsbetraege>
+                            <AbzugsbetragSt>450</AbzugsbetragSt>
+                            <AbzugsbetragSz>24.75</AbzugsbetragSz>
+                        </AbzufuehrendeAbzugsbetraege>
+                    </KapEStAnm>
+                    <Zerlegungsdaten>
+                        <Einzel>
+                            <ZBY>450.00</ZBY>
+                        </Einzel>
+                        <Sum>
+                            <ZSum>450.00</ZSum>
+                        </Sum>
+                    </Zerlegungsdaten>
+                </KapEStInvStG>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

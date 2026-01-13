@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>UENSTAnzeigeBE</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">1133</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <UENSTAnzeigeBE xmlns="http://finkonsens.de/elster/elsternachricht/uenstanzeigebe/v2" version="2">
+                    <UENSTAnzeigeBE>
+                        <TestFA>1197</TestFA>
+                        <AllgAngaben>
+                            <Belegenheit>
+                                <Str>Musterstraße</Str>
+                                <HausNr>0</HausNr>
+                                <Plz>12345</Plz>
+                                <Ort>Musterort</Ort>
+                                <Adressdaten>
+                                    <AnredeId>3</AnredeId>
+                                    <Vorname>Max</Vorname>
+                                    <Name>Mustermann</Name>
+                                    <Inlandsadresse>
+                                        <Str>Teststraße</Str>
+                                        <HausNr>1</HausNr>
+                                        <Plz>12345</Plz>
+                                        <Ort>Testort</Ort>
+                                    </Inlandsadresse>
+                                </Adressdaten>
+                            </Belegenheit>
+                        </AllgAngaben>
+                        <StlBeratung>
+                            <Beratung_j_n>2</Beratung_j_n>
+                        </StlBeratung>
+                        <Anzeige_Betreiber>
+                            <Besteuerungszeitraum>
+                                <Monat>X</Monat>
+                                <Anzahl_Betten>100</Anzahl_Betten>
+                            </Besteuerungszeitraum>
+                        </Anzeige_Betreiber>
+                    </UENSTAnzeigeBE>
+                </UENSTAnzeigeBE>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

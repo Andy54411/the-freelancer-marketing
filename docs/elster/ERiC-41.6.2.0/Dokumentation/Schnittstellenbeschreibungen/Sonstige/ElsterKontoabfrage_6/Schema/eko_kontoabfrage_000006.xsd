@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Version 1.02 -->
+<xs:schema xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema" xmlns:ekoiabfrage="http://www.elster.de/KontoAbfrage/I-Abfrage/06" xmlns:ekooabfrage="http://www.elster.de/KontoAbfrage/O-Abfrage/06" xmlns:ekozsabfrage="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06" xmlns:ekooutput="http://www.elster.de/KontoAbfrage/Output/06" xmlns:ekobasis="http://www.elster.de/KontoAbfrage/Basistypen000003" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6" targetNamespace="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.elster.de/basis08/XMLSchema" schemaLocation="./allg000008.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/Basistypen000003" schemaLocation="./eko_basistypen_000003.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/I-Abfrage/06" schemaLocation="./eko_i_abfrage_000006.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/O-Abfrage/06" schemaLocation="./eko_o_abfrage_000006.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06" schemaLocation="./eko_zs_abfrage_000006.xsd"/>
+	<xs:include schemaLocation="./Kontoabfrage-6.xsd"/>
+	<xs:element name="kontoabfrage">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="kontoabfrage-teil" maxOccurs="75">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:choice>
+								<xs:element ref="ekoiabfrage:kontoabfrage-input"/>
+								<xs:element ref="ekooabfrage:kontoabfrage-input"/>
+								<xs:element ref="ekozsabfrage:kontoabfrage-input"/>
+							</xs:choice>
+							<xs:choice minOccurs="0" maxOccurs="1">
+									<xs:element name="kontoabfrage-output" type="EKO_Kontoabfrage_Output_CType"/>
+									<xs:element name="kontoabfrage_antwort">
+										<xs:complexType >
+											<xs:sequence>
+												<xs:element name="stpfl" type="stpfl_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="steuerkontoTilgungen" type="steuerkontoTilgungen_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="steuerkontoOffeneBetraege" type="steuerkontoOffeneBetraege_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+												<xs:element name="steuerkontoauszug" type="steuerkontoauszug_1427522926_CType" minOccurs="0" maxOccurs="1"/>													
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>								
+							</xs:choice>
+							<xs:element name="bearbeitungshinweis" type="EKO_Bearbeitungshinweis_CType" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="version" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:long">
+						<xs:enumeration value="6"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="EKO_Kontoabfrage_Output_CType">
+		<xs:sequence>
+			<xs:element name="abfrage-tagesdatum" type="xs:string"/>
+			<xs:element name="abfrage-steuernummer" type="xs:string"/>
+			<xs:element name="abfrage-steuerart" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:sequence minOccurs="0">
+						<xs:element name="steuerart-klartext" type="xs:string"/>
+						<xs:element name="steuerart-erlaeuterung" type="xs:string" minOccurs="0"/>
+						<xs:element name="steuerart-teilbetrag" minOccurs="0" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="teilbetrag-zeitraum" type="xs:string"/>
+									<xs:element name="teilbetrag-faelligkeit" type="xs:string"/>
+									<xs:element name="teilbetrag-wert" type="xs:string" minOccurs="0"/>
+									<xs:element name="teilbetrag-erlaeuterung" type="xs:string" minOccurs="0"/>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="steuerart-gesamtbetrag" type="xs:string" minOccurs="0"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="abfrage-gesamtsumme" type="xs:string" minOccurs="0"/>
+			<xs:element name="abfrage-erlaeuterung" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="EKO_Bearbeitungshinweis_CType">
+		<xs:sequence>
+			<xs:element name="return-code" type="ekobasis:ReturnCode_SType" minOccurs="0"/>
+			<xs:element name="return-text" type="xs:string" minOccurs="0"/>
+			<xs:element name="stack-code" type="ekobasis:ReturnCode_SType" minOccurs="0"/>
+			<xs:element name="stack-text" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

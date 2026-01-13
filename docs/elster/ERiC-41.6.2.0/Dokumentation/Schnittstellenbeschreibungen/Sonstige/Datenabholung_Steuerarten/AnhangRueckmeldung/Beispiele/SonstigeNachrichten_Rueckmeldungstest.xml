@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>SonstigeNachrichten</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000001</Testmerker>
+        <SigUser>
+            <Sig/>
+        </SigUser>
+        <Empfaenger id="L">
+            <Ziel>HE</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>abc-soft</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">2620</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Nachricht xmlns="http://finkonsens.de/elster/elsternachricht/sonstigenachrichten/v21" version="21">
+                    <Steuernummer>2620011531300</Steuernummer>
+                    <Steuerpflichtiger>
+                        <SteuerpflichtigerTyp>NichtNatPerson</SteuerpflichtigerTyp>
+                        <Name>Name</Name>
+                        <Adresse>
+                            <StrAdrInl>
+                                <Strasse>Straße</Strasse>
+                                <Hausnummer>1</Hausnummer>
+                                <Postleitzahl>94680</Postleitzahl>
+                                <Ort>Ort</Ort>
+                            </StrAdrInl>
+                        </Adresse>
+                    </Steuerpflichtiger>
+                    <Inhalt>
+                        <Betreff>54 SonstigeNachrichten: 1 Anhang (Rückmeldung)</Betreff>
+                        <Text>Testfall #54: SonstigeNachrichten (Rückmeldungs-Test)
+
+Der Eingangsdatensatz dieses Testfalls enthält einen Anhang, der von ELSTER als ungültig erkannt wird und eine Rückmeldung erzeugt:
+
+1: "Defekt.pdf"
+- Teile eines gültigen PDFs ohne Inhalt, Datenstruktur unvollständig und nicht interpretierbar
+- Invalides PDF
+- Größe: 5.103 Bytes</Text>
+                    </Inhalt>
+                </Nachricht>
+                <Anhaenge xmlns="http://finkonsens.de/elster/anhaenge/simple/v3" version="3">
+                    <Rueckmeldung>
+                        <RueckmeldungGewuenscht>true</RueckmeldungGewuenscht>
+                    </Rueckmeldung>
+                    <Anhang>
+                        <Dateibezeichnung>Defekt.pdf</Dateibezeichnung>
+                        <Dateityp>application/pdf</Dateityp>
+                        <Dateiinhalt>JVBERi0xLjcKCjQgMCBvYmoKKElkZW50aXR5KQplbmRvYmoKNSAwIG9iagooQWRvYmUpCmVuZG9iago4IDAgb2JqCjw8Ci9GaWx0ZXIgL0ZsYXRlRGVjb2RlCi9MZW5ndGggMjI5MTk4Ci9MZW5ndGgxIDYxNjIwNAovVHlwZSAvU3RyZWFtCj4+CnN0cmVhbQp4nOx9B3wcxfX/zO5e71VXdLqmO0k+9d4snWUV23KTbNmSbdmSJbnAGXfcjcFgQGBKqKaTECCYIp1tLDDF5Gc6IYSYECAQCAQIwbQAAduS/m92dlRsQ8gv//7RSN97352dmd15M/PmzeyehDBCyA4fAmqrnjW57u9LJ4SRanIzQp79NVXVs3VZUznELb0coaQNNVVTJ1ZUVf0Kca3XIqT6rq66pvZI4uvvItm+DxCS/6Vu5oxZtlu0XiR79DnEX3FF3aymqi+86gLE7VqF+Iw1M2Zl5d7669xjCOGP4aptHSvaVz3zxl+fQeisGyH/ko5z1/keWfXHAoR+4UBI9tiSVUtXbH+HL0JoNSTXRZa2r12FklAQrn8hRBiXxjYt+dVLN0xD6N6jCBfcu6yrvfOfLwRPQPkxOF+4DCJ0DySS690Fx8nLVqzb+JuSlW0IcZMQWjbz7K415yTs825BnGUjQo5XYys72g/dePYuhN/ZilD+8RXtG1dltIcLIf9zkN+3omtd+9E9b54N9RHgOHZO+4qu7l8fKUZc+lSEcmyrVq5dN+hGu+D+Okn6VWu6VlmWBpwIbU+Hy/9d1LW8uDF2Wf9ziwzl3yCnEpFw6O9bXyLyD88kp5043r9D9akSrolUiEM0QD45GkD4iPqOE8eP36H6VCxpRHDeT2JcW9GdyIg2IhnkNKIsdDFC5kK4LgdneSGCr4IzStkeWR4UmUQl/wraxSEl4gwyjuMEnhPeRZmDh1HyFvEOIEyb5fOhKEInBHoPitu4sA/hQXKOPyjTk5oiq6Afvhv8W+hOd0I7/ZtBmIfuF6pR+xnPfYruH3nMfzz6+IcC/wC6X6ZF808r7+Rwfk74aWWJaXcjhZg/lebhW8+cV/46XHfcmc/JpqKOnxLHghAYLkdoPkUPD6C6M+XhP0SGUeUH0H3oJwahGwUUSWj8D5SbdFrck6hs1PHX0PtOTXOGuFHXFNCd/ItoxRnPdUG/HlnWDnrM5A8Ffia6U7gAxU4rb+NwPvzpj5cB502McxVSuc/TPNy7Z84rl8N1rz7zOeE+tOSnxLHAP03LEXrREv7YKXqYgSafMU8LShxV/m50+2nXPEOcmLcf+eUVqOi0+JdQIb/zDO26HFWPOn4NLTgtzRniRt1LPtrDL0bzznROsRLNk78NwPQ8pG0bVfYJ1DpS/lDgVqOQ/CYUUr6GQsJe4DdLvByF0E8I8nN/WjpWHkkvV8E1Jp5+DXJOODYcp0hFIf4IKjitrFPqKsXtYRz/AV30r+4H0ojphSR0Cf5k8DUCcsz/YlQ5e86UV96J9oy83mn3Unx6m50pbuicVBapF/fC6HJ5P2o4Ux7ZgzQeyhXTcw8i/6gyP0R+Yf3ouDNeG9LILMivqIf+/ca/Tk/SwH1ee1o5+ejSM6Xnb0UBWd/pbchvQGn87ShwWnwaavmha3P3o2ruryjGTRflJK4P1eGnUDJ3AxrH/Q3FcAdqxysG/wjHMbwQxYQ5kPZDETViPsiDvwWZjarw+yhIqOJTG3Mq6KGphEiWP9pHa1dXMzF7brQ4t5yAV4F0bZrgJmlqUpufVmN0ICYd2bjl0xDpAMRGEiPi3MQzoEQ8LlRpUGFIupFeZeM3uqSb21caSJoqntyZvGzdt7gG40TIHV0McIJ3xSQaETKQvXdRhYxXgcJokn2n1bCtE+lctpZNdD5ERHI4zdbg5kO0fEQeJQaajT48q5jYpZAQFwFIPqMk+s7xVAmaLiEpuswK4yZ8JzSTk+rZQBkbzO8z+WBFCnXTUXmtzWypGh2TPMb8yiNsSA/js0UbR14Y4U3PsFZZwFc/HVWoowgQUVZEEemYbi0UsENYq5ZqEuSxeydLcMvYdSED2m5d9x1Z5Xn+HFOgA6jZFvgjzmmMA/SMO7BuT384sUrxfFXeYAtJBIe0l1IvG83QllrLXD1bNkgxv7YFYSVnCjJRmD+WUkJB4dheZinHsLkmjulRPx/bSAMabV9fDovaudZ3uVR8GMKog+TWWEFZX2E4DMI60bgJg6q0HxrJoCob6CIoXjyjrrDs7SqWn2mtFBV6bUU5QElTR04vaEXDj2q7e1R72GJtP41rRkQLCEJV8EcmEKxIgLMLgFjZB+qEdSSkkQQ+6KYmm5AoVeRaqsh5165pzOfbczAI/wstpDiJp5nn0O2nU0qaGQ1raQDYNI8h+RESkgNKt9jAkXgtqZY0aZEhHpoN3GmNVRhFi9fYjdBmFU9A5g2vaqNrWTiZ6+e/JrPX+vSxEU8NI0h22ViPkqGay6UyYRnvoPwRInccXhj1aLOY1JKJtk1mO3Sujf1g0UzUWx5qrNq0Yd85KvdONkbVhrBIFZPblHqcEXucnF/y78Zxo5/+lPPSn5TNUzn+jbE/D1WwiBg2t1vWSFeNlJCmjaaPkNGNKooI4v+qRwwj2bSVaru3laJFmW5ufHeOB+3MgqqpUcptZRiHG8aawimZUfLEXDkwahdK+hCZs2lYpLYqGQEZNNxCf7IkNjacneKCmGCz24/pOvoHHvOpVMxDpwVTovPNZAOAL/NOzdd6dbrm12zb1ZoLU8EhzIEoHGvHUlFoSzwWge5IGzhMrOtR917mx6lxHkY3H6cN+v55TVkZ9MeyAbiuFFRzOjFR0UmKa1K2OQ9TqNPJDjNMMmB40Ytl7ID8ACOj8YJ2CghVxjxBwBhOww6lIHsqb6I6TVHMOEvax/4+3k3VU4hnfoZxrpqr0cwLfTz12nt6lMqUlxWvleEweQocoOF81KCR8ReJTOHJatPobB+kYrKkYzdS9SThIU0ImjL3BU1JZq0VBSf8JFvgJxI6HLfAgrFVGqSG0bUJHTivlzkm1GKGvcfpgrEn+A9rShz1dQJPmekUGMpmcBFj6EfpBkeaxgEr9XQbXDMOxlbqA+A0Rk6CC81DC42hLbHZe2bJRKR0FG2QtFlCTnq1mZYxiMY49CDxphpViYFQRjjKLj+MbtL1rU6xFfKlLeEtP9Nix3OHRVVhjfehCVEYZNFUjp0DNkzDKTSQOvPSocMQvOdalOF8++tG1GQd9tolZO0+ikmCkpjoulD/ssSM3WpRZqBAuA/UD3NHyCHp6+rsEt5QG0fp03BUfr3GlZPclVImmDfhX5jhGunIhE/cxgs7C4vOSuh/19KEuGxUSEn1shLwQ6C32OuRQc1KhB8TdIY5zSwoXf++xRKeIkyBHDpE+yILeJh+HaNGEvxmBrWbC6XnZlgrmDs1Lkqyp17m36gdCDriUlmoMl4nWUX3EOhaKCmjhF+lDL5WbkuKsxN43VOtiqbdhOs2p7e36p006XeRQCxryqJkO21uaxg2WlG8EM8e1XvLYE8FOGEKyZsIr6FzLDppKL0sx7LrptCcx/bmFaCrbKhr3iTbFN9/PYdJfqc3SnmgqZytRpvsiGThwyjTqB9Al26tfErafoxHU+av0tnhUkHznAHcC9NAUfXWtrTSqAwzCB7h+oTFQrM4DxXTUB5Uu4PiaDnc0GFcj7uSkbh/ZWeHK135xDdcRTBjriOpGyO4+uyPbWeB70Dar/nade1WPe03gpFnVRsmm/0Twyw9oCBkLVSlqgnqG2gvln9ognxtikjAnPqkr7n04FnjGzBdo4pd5lqDrOK9igFad/AadQKXw2M32aTcyVGL3KYM2Ni4XCVbu6p0vzXzwJWmg0Q+MCD8nWeD0mByOZKCmFzn1grSNv0boJ7+bpl17Xa3ftaKCYzJlOL0khOX7GLQigwXyeIOE6KDno52U8gLJnfBhNKSdKUeI8L7FsEyJkMAp5Lr7rRa15aMzSzHVtymqWl5lja8DV6LS/x5JdZIojf2JhUOu8KJbDd8XtE2YyKYeY2DqdbCVCqLVuta+sAch2ZIA1WBV8TFCe4Xr3PhGjsgFatQwSMuSh5IAqYTBIOayU/DKgxmtpGpUX0ybLINfm76HqzxqTN1x2+KZ8ESWWDTmfiggOuxq5ElurwVAiFFCXgG8O2cvu47muiuw0pwFjYx0da1TG5NGHhyiMlC/FUlTUQXXfXhOBN+5Vx3tWI6voBL9zIfNLersJjjeA9qLiYRXmdhJnEnB4qQGW9R1xaT15piKhLS2dyR3oJq4kIk3SPG4UqKR8lbopgxcd10Qo4r8sz+xN0XHbQAwJjYM5A3UQI8jDwXC0PFeFslShrUMjYYxCodEJQ7pnT1RqQJxUL2H/7rp9cgaXVkAfjrX83W8eYZsGnIhmlJPboY8UcRHwWH0kwRFlfRFHHL7/IspjWPMHsWn8nU1rLdCiyBbq+inHbboGiRCnANbKF9qaYwREd2cktlNUQxSREo6Qk7fLYxrfEkR6yqGu+/ZmD8VOuMXzLxWhLOSXTn0MXPDrYWWTeFrab48NlmrczJo5yIUCr8aMffRYu3+FPkJySOhi020MX6QHaTUfBZyxHdhCg0uzJGcTYCZziLkgHbYpJQ1E3sUZIY577yxn2ZwnoKr9XQRI0hvsXEX5asv7OJ3/p1qudAttrWxkwbUfehnUhfEv5D09a3gkXoHr3rSqGVXsjuwO8VluP1BNJNqgIbvIvFOfZ9szXogtSdKUKlD6q/dUIKYUGpJF60l6hLYdGO+dpLFOrt7GIyZk8mwdsc1jfkdqy9ukHc7YLH9Hd5junSpvcCgrtO8/7KmrCqLJ1V3QJThjZljokCfaShJI+U3RdCGYI6sNOl2yVF2DdJ5ZTdQcaoaPPGtvErdfhICY47df/yERhA/L/qZd8CVlLqaPqpDv4Qmmk6Cq2zaXDhcFJWF1l4lGeOMzEe2aSueKOC8OT2NUXffGD1r5Q/yNAiczwodhGOdLwqwjY6kFTwpOC4tGh0bvJlT6odhGDCOk73QPYxxV4MJ1EYW+Gt0ElYWXVnA1axjcOhPNlsSV0g9RaeG9rzDt9EZADQCkqOaWKlMjkc0d8O6/w0qrnGedwcjeza6tdvwTTmQc7Pe/wjRf3LSUigwrCODkFph9KCYC67W5hOqTgMqnTA4TMd4qYbVHeRL3TMX0pGskrRs2TQXJN4QRDg56WJh07SqpRrrrsqWgDX0MbJTBt4GpgMeUiDuFileYiOmuwzSNVidIoq81cX2P5aE75IdgtFk8eMprJgyTLUMqRviBMWZJ441fvwx5JQTEJuyKchP6SCO8VdSMrjdSJhg2gJRChdxzNjufqPp/8H4ca5agplbmRzdHJlYW0KZW5kb2JqCjI3IDAgb2JqCjw8Ci9Gb250IDw8Ci9GMSAxMSAwIFIKL0YyIDE5IDAgUgo+Pgo+PgplbmRvYmoKMjUgMCBvYmoKPDwKL0NvbnRlbnRzIFsgMjYgMCBSIF0KL0Nyb3BCb3ggWyAwLjAgMC4wIDU5NS4zMjAwMSA4NDEuOTIwMDQgXQovTWVkaWFCb3ggWyAwLjAgMC4wIDU5NS4zMjAwMSA4NDEuOTIwMDQgXQovUGFyZW50IDIgMCBSCi9SZXNvdXJjZXMgMjcgMCBSCi9Sb3RhdGUgMAovVHlwZSAvUGFnZQo+PgplbmRvYmoKMjkgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCA0NTc4Cj4+CnN0cmVhbQp4nM1dy27suBHd+yv8A90RRVIPYGDA9rUX2Q0KPj4KZW5kb2JqCnhyZWYKMCAzMg0KMDAwMDAwMDAwMCA2NTUzNSBmDQowMDAwNDQ5MTg4IDAwMDAwIG4NCjAwMDA0NDkxMDggMDAwMDAgbg0KMDAwMDQyMjE4MyAwMDAwMCBuDQowMDAwMDAwMDA5IDAwMDAwIG4NCjAwMDAwMDAwMzUgMDAwMDAgbg0KMDAwMDQ0ODQ4NiAwMDAwMCBuDQowMDAwNDQ4NTIzIDAwMDAwIG4NCjAwMDAwMDAwNTggMDAwMDAgbg0KMDAwMDQ0NzQ4MSAwMDAwMCBuDQowMDAwNDQ1OTI3IDAwMDAwIG4NCjAwMDAyMjkzNjEgMDAwMDAgbg0KMDAwMDIyOTgzMyAwMDAwMCBuDQowMDAwMjI5ODYwIDAwMDAwIG4NCjAwMDA0NDkwNTAgMDAwMDAgbg0KMDAwMDQ0OTA4OCAwMDAwMCBuDQowMDAwMjI5ODg0IDAwMDAwIG4NCjAwMDA0NDg5NzQgMDAwMDAgbg0KMDAwMDQ0ODU0MiAwMDAwMCBuDQowMDAwNDEyNTQ0IDAwMDAwIG4NCjAwMDA0MTMwMjIgMDAwMDAgbg0KMDAwMDQyMjEyNyAwMDAwMCBuDQowMDAwNDMxNDAzIDAwMDAwIG4NCjAwMDA0MjIzNjIgMDAwMDAgbg0KMDAwMDQzMTM0NyAwMDAwMCBuDQowMDAwNDQwODU5IDAwMDAwIG4NCjAwMDA0MzE1ODMgMDAwMDAgbg0KMDAwMDQ0MDgwMyAwMDAwMCBuDQowMDAwNDQ1NzQ3IDAwMDAwIG4NCjAwMDA0NDEwMzkgMDAwMDAgbg0KMDAwMDQ0NTY5MSAwMDAwMCBuDQowMDAwNDQ5MjM3IDAwMDAwIG4NCnRyYWlsZXIKPDwKL0luZm8gMzEgMCBSCi9Sb290IDEgMCBSCi9TaXplIDMyCj4+CnN0YXJ0eHJlZgo0NDk0MjYKJSVFT0YK</Dateiinhalt>
+                    </Anhang>
+                </Anhaenge>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

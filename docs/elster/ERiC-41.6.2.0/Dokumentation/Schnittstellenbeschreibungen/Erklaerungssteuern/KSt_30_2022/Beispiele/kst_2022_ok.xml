@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterErklaerung</Verfahren>
+        <DatenArt>KSt</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Testpoint ELSTER;Mustergasse;42;a;im Hinterhof;12345;Musterstadt;Deutschland;089/1234567890;tester@tpe.qs.de</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">2604</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Testpoint ELSTER</ProduktName>
+                    <ProduktVersion>42</ProduktVersion>
+                </Hersteller>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <E30 xmlns="http://finkonsens.de/elster/elstererklaerung/kst/e30/v2022" version="2022">
+                    <KSt1>
+                        <Allgemein>
+                            <E8000101>p</E8000101>
+                        </Allgemein>
+                        <Steuerpflicht>
+                            <E8000501>ã</E8000501>
+                            <E8000601>v</E8000601>
+                            <Rechtsform>
+                                <E8001105>221</E8001105>
+                            </Rechtsform>
+                        </Steuerpflicht>
+                        <Steuerbefreiung>
+                            <E8001505>22</E8001505>
+                            <E8001506>1</E8001506>
+                        </Steuerbefreiung>
+                        <AE>
+                            <Gesamt>
+                                <E8122601>2</E8122601>
+                            </Gesamt>
+                        </AE>
+                    </KSt1>
+                    <Vorsatz>
+                        <Unterfallart>30</Unterfallart>
+                        <Vorgang>01</Vorgang>
+                        <StNr>2604082575682</StNr>
+                        <Zeitraum>2022</Zeitraum>
+                        <AbsName>Ux-Òï6óÎ</AbsName>
+                        <AbsStr>o</AbsStr>
+                        <AbsOrt>õ</AbsOrt>
+                        <Copyright>Mein ELSTER</Copyright>
+                        <OrdNrArt>S</OrdNrArt>
+                        <Rueckuebermittlung>
+                            <Bescheid>2</Bescheid>
+                        </Rueckuebermittlung>
+                    </Vorsatz>
+                </E30>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

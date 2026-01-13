@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VMoVMVStBAnlage - 10 - 4.2 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrm/vmovmvstbanlage/v10" targetNamespace="http://finkonsens.de/elster/elsterbrm/vmovmvstbanlage/v10" xmlns:exml="http://finkonsens.de/elster/elsterbrm/vmovmvstbanlage/v10">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="BundesfinanzamtsnummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Bundesfinanzamtsnummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJMonatOptionalBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-2][0-9]|3[0-1])\.(10|11|12|00|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: MONAT_OPTIONAL</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VMoVMVStBAnlage_Ausschluss_SteuerartenUndVerfahren_SteuerartOderVerfahren_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Einkommensteuer">
+                <xs:annotation>
+                    <xs:documentation>Einkommensteuer (ESt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Umsatzsteuer">
+                <xs:annotation>
+                    <xs:documentation>Umsatzsteuer (USt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Gewerbesteuer">
+                <xs:annotation>
+                    <xs:documentation>Gewerbesteuer</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Feststellungsverfahren">
+                <xs:annotation>
+                    <xs:documentation>Feststellungsverfahren nach § 180 Absatz 1 Satz 1 Nummer 2, Absatz 2 AO</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Körperschaftsteuer">
+                <xs:annotation>
+                    <xs:documentation>Körperschaftsteuer (KSt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Lohnsteuer">
+                <xs:annotation>
+                    <xs:documentation>Lohnsteuer (LSt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Grundsteuer">
+                <xs:annotation>
+                    <xs:documentation>Grundsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Grunderwerbsteuer">
+                <xs:annotation>
+                    <xs:documentation>Grunderwerbsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Erbschafts-Schenkungssteuer">
+                <xs:annotation>
+                    <xs:documentation>Erbschafts-/Schenkungssteuer</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Umsatzsteuervoranmeldungsverfahren">
+                <xs:annotation>
+                    <xs:documentation>Umsatzsteuervoranmeldungsverfahren</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Lohnsteuerermäßigungsverfahren">
+                <xs:annotation>
+                    <xs:documentation>Lohnsteuerermäßigungsverfahren</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Investitionszulage">
+                <xs:annotation>
+                    <xs:documentation>Investitionszulage</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Festsetzungsverfahren">
+                <xs:annotation>
+                    <xs:documentation>Festsetzungsverfahren</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Erhebungsverfahren">
+                <xs:annotation>
+                    <xs:documentation>Erhebungsverfahren (einschließlich Vollstreckungsverfahren)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Rechtsbehelfsverfahren">
+                <xs:annotation>
+                    <xs:documentation>die Vertretung im außergerichtlichen Rechtsbehelfsverfahren</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Finanzgerichtsbarkeitsverfahren">
+                <xs:annotation>
+                    <xs:documentation>die Vertretung im Verfahren der Finanzgerichtsbarkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Straf_und_Bußgeldverfahren">
+                <xs:annotation>
+                    <xs:documentation>die Vertretung im Straf- und Bußgeldverfahren (Steuer)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VMoVMVStBAnlage_ErloeschenVollmacht_VollmachtErloeschen_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="BisherigeVollmachtenLoeschen">
+                <xs:annotation>
+                    <xs:documentation>Bisher erteilte Vollmachten erlöschen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VollmachtDiesesBeteiligtenLoeschen">
+                <xs:annotation>
+                    <xs:documentation>Nur dem oben aufgeführten Bevollmächtigten bisher erteilte Vollmachten erlöschen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VMoVMVStBAnlage_Vollmachtgeber_NatuerlichePerson_Anrede_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Herr">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Frau">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL120_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="120"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL25_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="25"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL30_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="30"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL60_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VMoVMVStBAnlage" type="VMoVMVStBAnlage_CType"/>
+    <xs:complexType name="VMoVMVStBAnlage_CType">
+        <xs:sequence>
+            <xs:element name="VMoVMVStBAnlage" type="VMoVMVStBAnlage_907919129_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="10" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VMoVMVStBAnlage_907919129_CType">
+        <xs:sequence>
+            <xs:element name="Vollmachtgeber" type="Vollmachtgeber_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Untervollmachten" type="Untervollmachten_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Ausschluss" type="Ausschluss_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bekanntgabevollmacht" type="Bekanntgabevollmacht_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ZeitlicheVertretung" type="ZeitlicheVertretung_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ErloeschenVollmacht" type="ErloeschenVollmacht_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Abrufbefugnis" type="Abrufbefugnis_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Steuernummern" type="Steuernummern_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Diva" type="Diva_m1011358975_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtgeber_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="NatuerlichePerson" type="NatuerlichePerson_m607457298_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="NichtNatuerlichePerson" type="NichtNatuerlichePerson_m607457298_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatuerlichePerson_m607457298_CType">
+        <xs:sequence>
+            <xs:element name="Identifikationsnummer" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geburtsdatum" type="DatumTTpMMpJJJJMonatOptionalBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Geburtsdatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anrede" type="Enum_VMoVMVStBAnlage_Vollmachtgeber_NatuerlichePerson_Anrede_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL30_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namensvorsatz" type="String_MinL1_MaxL25_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namenszusatz" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NichtNatuerlichePerson_m607457298_CType">
+        <xs:sequence>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Untervollmachten_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="UntervollmachtenMoeglich" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Der/Die Bevollmächtigte ist berechtigt, Untervollmachten zu erteilen und zu widerrufen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Ausschluss_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="SteuerartenUndVerfahren" type="SteuerartenUndVerfahren_m2069678751_CType" minOccurs="0" maxOccurs="16"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="SteuerartenUndVerfahren_m2069678751_CType">
+        <xs:sequence>
+            <xs:element name="SteuerartOderVerfahren" type="Enum_VMoVMVStBAnlage_Ausschluss_SteuerartenUndVerfahren_SteuerartOderVerfahren_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuerart/Verfahren</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bekanntgabevollmacht_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="EntgegennahmeSteuerbescheide" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Entgegennahme Steuerbescheiden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EntgegennahmeMahnungen" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Entgegennahme Mahnungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ZeitlicheVertretung_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="Vollmachtsdauer" type="Vollmachtsdauer_1657308138_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtsdauer_1657308138_CType">
+        <xs:sequence>
+            <xs:element name="AbVZ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ab Veranlagungszeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BisVZ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bis Veranlagungszeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ErloeschenVollmacht_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtErloeschen" type="Enum_VMoVMVStBAnlage_ErloeschenVollmacht_VollmachtErloeschen_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erlöschen von Vollmachten:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Abrufbefugnis_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="AbrufbefugnisNichtErteilt" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abrufbefugnis wird nicht erteilt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="UnbeschraenkteAbrufbefugnis" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Dem oben angegeben Bevollmächtigten wird eine unbeschränkte Abrufbefugnis erteilt.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuernummern_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="NeuaufnahmeSteuernummer" type="NeuaufnahmeSteuernummer_m666268197_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="BekannteSteuernummer" type="BekannteSteuernummer_m666268197_CType" minOccurs="0" maxOccurs="999"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NeuaufnahmeSteuernummer_m666268197_CType">
+        <xs:sequence>
+            <xs:element name="Finanzamt" type="BundesfinanzamtsnummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt (BUFA-Nummer)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BekannteSteuernummer_m666268197_CType">
+        <xs:sequence>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Diva_m1011358975_CType">
+        <xs:sequence>
+            <xs:element name="DivaTeilnahme" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mit dieser Vollmacht wird der Übermittlung von Verwaltungsakten und sonstigen Schreiben durch Bereitstellung zum Datenabruf (§ 122a der Abgabenordnung) zugestimmt. Auf die von Ihnen bereits zur Kenntnis genommenen Hinweise zur Bekanntgabe in elektronischer Form wird verwiesen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

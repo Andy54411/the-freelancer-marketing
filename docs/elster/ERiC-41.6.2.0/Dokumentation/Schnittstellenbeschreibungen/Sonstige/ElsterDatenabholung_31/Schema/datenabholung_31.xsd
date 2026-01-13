@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schemaversion 11 aus dem Downloadpaket ElsterDatenabholung Version 31.0.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:datenabholung="http://finkonsens.de/elster/elsterdatenabholung/v3" targetNamespace="http://finkonsens.de/elster/elsterdatenabholung/v3" elementFormDefault="qualified" >
+    <xs:element name="Datenabholung">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:choice minOccurs="0">
+                    <xs:element name="Fingerprint" type="datenabholung:FingerprintCType"/>
+                    <xs:element name="Abholzertifikat" type="datenabholung:base64CType"/>
+                </xs:choice>
+                <xs:choice>
+                    <xs:element name="Anfrage" type="datenabholung:AnfrageCType"/>
+                    <xs:element name="Abholung" type="datenabholung:AbholungCType"/>
+                    <xs:element name="Statusabfrage" type="datenabholung:StatusabfrageRequestCType"/>
+                    <xs:element name="Bereitstellungen" type="datenabholung:StatusabfrageResponseCType"/>
+                    <xs:element name="PostfachStatus" type="datenabholung:PostfachStatusRequestCType"/>
+                    <xs:element name="PostfachStatusAntwort" type="datenabholung:PostfachStatusAntwortResponseCType"/>
+                    <xs:element name="PostfachAnfrage" type="datenabholung:PostfachAnfrageRequestCType"/>
+                    <xs:element name="PostfachAnfrageAntwort" type="datenabholung:PostfachAnfrageAntwortResponseCType"/>
+                    <xs:element name="PostfachBestaetigung" type="datenabholung:PostfachBestaetigungRequestCType"/>
+                    <xs:element name="PostfachBestaetigungAntwort" type="datenabholung:PostfachBestaetigungAntwortResponseCType"/>
+                </xs:choice>
+            </xs:sequence>
+            <xs:attribute name="version" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="31"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="FingerprintCType">
+        <xs:simpleContent>
+            <xs:extension base="datenabholung:base64CType">
+                <xs:attribute name="name" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:hexBinary">
+                            <xs:minLength value="1"/>
+                            <xs:maxLength value="25"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:simpleType name="base64CType">
+        <xs:restriction base="xs:base64Binary">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="AnfrageCType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Id" type="datenabholung:AntwortIdCType"/>
+        </xs:sequence>
+        <xs:attribute name="veranlagungsjahr" type="xs:gYear"/>
+        <xs:attribute name="idnr" type="datenabholung:IdNrSType"/>
+        <xs:attribute name="belegart" type="datenabholung:ElsterStringWithUnderscoreCType"/>
+    </xs:complexType>
+    <xs:complexType name="AntwortIdCType">
+        <xs:attribute name="id" type="datenabholung:ETIDCType" use="required"/>
+        <xs:attribute name="groesse" type="xs:integer" use="required"/>
+        <xs:attribute name="belegart" type="xs:string"/>
+        <xs:attribute name="schemaversion" type="xs:string"/>
+        <xs:attribute name="hashwert" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="AbholungCType">
+        <xs:sequence>
+            <xs:element name="Datenpaket" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="id" type="datenabholung:ETIDCType" use="required"/>
+        <xs:attribute name="idnr" type="datenabholung:IdNrSType"/>
+        <xs:attribute name="veranlagungsjahr" type="xs:gYear"/>
+    </xs:complexType>
+     <xs:complexType name="MetadatenAnhangCType">
+        <xs:sequence>
+            <xs:element name="MetadatumAnhang" type="datenabholung:MetadatumAnhangCType" minOccurs="0" maxOccurs="20"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetadatumAnhangCType">
+        <xs:sequence>
+            <xs:element name="SchluesselAnhang" type="datenabholung:StringMinL1MaxL50SType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="WertAnhang" type="datenabholung:StringMinL1MaxL100SType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+     <xs:simpleType name="StringMinL1MaxL50SType">
+        <xs:restriction base="datenabholung:StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="50"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringMinL1MaxL100SType">
+        <xs:restriction base="datenabholung:StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="StatusabfrageRequestCType">
+        <xs:annotation>
+            <xs:documentation>Request der Statusabfrage</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice>
+                <xs:element name="BereitstellungsTickets">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="BereitstellungsTicket" type="xs:string"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="BekanntgabeVorgangsIds">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="BekanntgabeVorgangsId" type="xs:string"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+        </xs:sequence>
+        <xs:attribute name="rolle" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="empfaenger"/>
+                    <xs:enumeration value="sender"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+    <xs:complexType name="StatusabfrageResponseCType">
+        <xs:annotation>
+            <xs:documentation>Response der Statusabfrage</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="Bereitstellung" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="BereitstellungsTicket" type="xs:string" minOccurs="0"/>
+                        <xs:element name="Status" type="xs:string"/>
+                        <xs:element name="BekanntgabeVorgangsId" type="xs:string" minOccurs="0"/>
+                        <xs:element name="EMailVersandZeitpunkt" type="datenabholung:ElsterDateTimeCType" minOccurs="0"/>
+                        <xs:element name="AbrufZeitpunkt" type="datenabholung:ElsterDateTimeCType" minOccurs="0"/>
+                        <xs:element name="LoeschZeitpunkt" type="datenabholung:ElsterDateTimeCType" minOccurs="0"/>
+                        <xs:element name="Fehler" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="Nummer" type="xs:string"/>
+                                    <xs:element name="Text" type="xs:string"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PostfachStatusRequestCType">
+        <xs:annotation>
+            <xs:documentation>Request der PostfachStatus</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="von" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="bis" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="einschraenkung" default="alle">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="neue"/>
+                    <xs:enumeration value="alle"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+    <xs:complexType name="PostfachStatusAntwortResponseCType">
+        <xs:annotation>
+            <xs:documentation>Response des PostfachStatus</xs:documentation>
+        </xs:annotation>
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="DatenartBereitstellung" type="datenabholung:PostfachStatusDatenartBereitstellungCType"/>
+        </xs:sequence>
+        <xs:attribute name="von" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="bis" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="einschraenkung" default="alle">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="neue"/>
+                    <xs:enumeration value="alle"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+    <xs:complexType name="PostfachStatusDatenartBereitstellungCType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="anzahltreffer" type="xs:integer" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="PostfachAnfrageRequestCType">
+        <xs:annotation>
+            <xs:documentation>Request der PostfachAnfrage</xs:documentation>
+        </xs:annotation>
+        <xs:sequence minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="DatenartBereitstellung" type="datenabholung:PostfachAnfrageDatenartBereitstellungCType"/>
+        </xs:sequence>
+        <xs:attribute name="von" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="bis" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="einschraenkung" default="alle">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="neue"/>
+                    <xs:enumeration value="alle"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="max">
+            <xs:simpleType>
+                <xs:restriction base="xs:integer">
+                    <xs:minInclusive value="1"/>
+                    <xs:maxInclusive value="1000"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="paginierungLetzteBestId" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="PostfachAnfrageDatenartBereitstellungCType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>   
+    <xs:complexType name="PostfachAnfrageAntwortResponseCType">
+        <xs:annotation>
+            <xs:documentation>Response des PostfachAnfrage</xs:documentation>
+        </xs:annotation>
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="DatenartBereitstellung">
+                <xs:complexType>
+                    <xs:sequence minOccurs="0">
+                        <xs:element name="Bereitstellungen">
+                            <xs:complexType>
+                                <xs:sequence minOccurs="1">
+                                    <xs:element name="Bereitstellung" type= "datenabholung:PAAntwortBereitstellungCType" minOccurs="1" maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                <xs:attribute name="name" type="xs:string" use="required"/>
+                <xs:attribute name="anzahltreffer" type="xs:integer" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="von" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="bis" type="datenabholung:ElsterDateCType"/>
+        <xs:attribute name="einschraenkung" default="alle">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="neue"/>
+                    <xs:enumeration value="alle"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="max">
+            <xs:simpleType>
+                <xs:restriction base="xs:integer">
+                    <xs:minInclusive value="1"/>
+                    <xs:maxInclusive value="1000"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="paginierungLetzteBestId" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="PAAntwortBereitstellungCType" >
+        <xs:sequence minOccurs="0">
+            <xs:element name="MetaInformationen" type="datenabholung:MetaInformationenCType">
+                <xs:unique name="id-meta-postfach-anfrage-name-uniqueness">
+                    <xs:selector xpath="./datenabholung:Meta"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="Datenpaket" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence minOccurs="0">
+                        <xs:element name="ReferenzId" type="xs:string" minOccurs="1"/>
+                        <xs:element name="Encoding" type="xs:string"/>
+                        <xs:element name="Groesse" type="xs:string" minOccurs="1"/>
+                    </xs:sequence>
+                </xs:complexType>       
+            </xs:element>
+            <xs:element name="Anhaenge" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence maxOccurs="unbounded">
+                        <xs:element name="Anhang">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="DateinameMitErweiterung" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                                    <xs:element name="Dateibezeichnung" type="xs:string" />
+                                    <xs:element name="Dateityp" type="xs:string"/>
+                                    <xs:element name="DateiReferenzId" type="xs:string" />
+                                    <xs:element name="DateiGroesse" type="xs:string"/>
+                                    <xs:element name="MetadatenAnhang" type="datenabholung:MetadatenAnhangCType" minOccurs="0" maxOccurs="1"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>                           
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="id" type="datenabholung:ETIDCType" use="required"/>
+        <xs:attribute name="groesse" type="xs:integer" use="required"/>
+        <xs:attribute name="bereitstellungsticket" type="datenabholung:ElsterStringCType"/>     
+    </xs:complexType>   
+    <xs:complexType name="MetaInformationenCType" mixed="true">
+        <xs:sequence minOccurs="0" >
+            <xs:element name="Meta" type="datenabholung:MetaCType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="MetaInfoMaps" type="datenabholung:MetaInfoMapsCType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetaInfoMapsCType">
+        <xs:sequence>
+            <xs:element name="MetaInfoMap" type="datenabholung:MetaInfoMapCType" maxOccurs="unbounded">
+                <xs:unique name="metainfomap-meta-name-uniqueness">
+                    <xs:selector xpath="./datenabholung:Meta"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetaInfoMapCType">
+        <xs:sequence>
+            <xs:element name="Meta" type="datenabholung:MetaCType" maxOccurs="unbounded"/>
+            <xs:element name="MetaList" type="datenabholung:MetaListCType" minOccurs="0"  maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="typ" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="[a-zA-Z0-9]+"/>
+                    <xs:maxLength value="32"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute> 
+    </xs:complexType>
+    <!-- MetaListCType - Gemeinsames Element zwischen ElsterBereitstellung und ElsterDatenabholung -->
+    <xs:complexType name="MetaListCType">
+        <xs:sequence>
+            <xs:element name="MetaListElement" type="datenabholung:MetaListElementCType" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="typ" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="[a-zA-Z0-9]+"/>
+                    <xs:maxLength value="32"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute> 
+    </xs:complexType>
+    <!-- MetaListElementCType - Gemeinsames Element zwischen ElsterBereitstellung und ElsterDatenabholung -->
+    <xs:complexType name="MetaListElementCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="name" use="optional" form="unqualified">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="[a-zA-Z0-9]+"/>
+                            <xs:maxLength value="64"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <!-- MetaCType - Gemeinsames Element zwischen ElsterBereitstellung und ElsterDatenabholung -->
+    <xs:complexType name="MetaCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="name" use="required" form="unqualified">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="[a-zA-Z0-9\-]+"/>
+                            <xs:maxLength value="32"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+                <xs:attribute name="coding" default="text">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="text"/>
+                            <xs:enumeration value="base64"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="PostfachBestaetigungRequestCType">
+        <xs:annotation>
+            <xs:documentation>Request der PostfachBestaetigung</xs:documentation>
+        </xs:annotation>
+        <xs:sequence minOccurs="1" maxOccurs="1">
+            <xs:element name="Bereitstellungen" minOccurs="1">
+                <xs:complexType >
+                    <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                        <xs:element name="Bereitstellung" minOccurs="1">
+                            <xs:complexType >
+                                    <xs:attribute name="id" type="xs:string"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PostfachBestaetigungAntwortResponseCType">
+        <xs:annotation>
+            <xs:documentation>Response des PostfachBestaetigung</xs:documentation>
+        </xs:annotation>
+        <xs:sequence minOccurs="1" maxOccurs="1">
+            <xs:element name="Bereitstellungen" >
+                <xs:complexType >
+                    <xs:sequence minOccurs="1" maxOccurs="unbounded">
+                        <xs:element name="Bereitstellung" minOccurs="1">
+                            <xs:complexType >
+                                <xs:sequence minOccurs="1" maxOccurs="1">
+                                    <xs:element name="Rueckgabe">
+                                        <xs:complexType>
+                                            <xs:sequence minOccurs="1" maxOccurs="1">
+                                                <xs:element name="Code" minOccurs="1" type="xs:string"/>
+                                                <xs:element name="Text" minOccurs="1" type="xs:string"/>
+                                            </xs:sequence>
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                                <xs:attribute name="id" type="xs:string"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>       
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="ElsterDateCType">
+        <xs:annotation>
+            <xs:documentation xml:lang="DE">JJJJMMDD</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4}((0[1-9])|(1[0-2]))((3[0-1])|(2[0-9])|(1[0-9])|(0[1-9]))"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElsterDateTimeCType">
+        <xs:annotation>
+            <xs:documentation xml:lang="DE">JJJJMMDDHHMMSS</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4}(0?[1-9]|1[0-2])(0?[1-9]|[12][0-9]|3[01])(0?[0-9]|1[0-9]|2[0-3])([0-9]|[0-5][0-9]){2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ETIDCType">
+        <xs:restriction base="xs:string">
+            <xs:length value="32"/>
+            <xs:pattern value="[0-9a-km-z]{2}[0-9]{3}[0-9a-km-z]{27}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IdNrSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElsterStringCType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9A-Za-z]{1,32}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String60Type">
+        <xs:restriction base="xs:string">
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElsterStringWithUnderscoreCType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9A-Za-z_]{1,32}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElsterIntegerCType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[+-]{0,1}[0-9]{1,5}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElsterStringWithHyphenCType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9A-Za-z\-]{1,32}"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

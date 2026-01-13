@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>KStZ</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Entwicklung</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">3196</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERICTest</ProduktName>
+					<ProduktVersion>2009.1/0</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E39 xmlns="http://finkonsens.de/elster/elstererklaerung/kstz/e39/v2021" version="2021">
+					<KStZerl1>
+						<Allgemein>
+							<E8800021>xy GmbH</E8800021>
+							<E8800022>Gewerbe</E8800022>
+						</Allgemein>
+						<Ang_Zerl>
+							<Art>
+								<E8800076>1</E8800076>
+							</Art>
+						</Ang_Zerl>
+						<Steuerberater>
+							<Mitwirkung>
+								<E8800171>1</E8800171>
+								<Anfertigung>
+									<E8800051>Muster</E8800051>
+									<E8800052>Max</E8800052>
+									<E8800053>Teststraße</E8800053>
+									<E8800057>55555</E8800057>
+									<E8800059>123456</E8800059>
+									<E8800060>12-23/567</E8800060>
+									<E8800062>12-23/567</E8800062>
+									<E8800061>bh</E8800061>
+								</Anfertigung>
+							</Mitwirkung>
+						</Steuerberater>
+					</KStZerl1>
+					<KStZerlBS>
+						<Gemeinde>1</Gemeinde>
+						<BS>
+							<Allgemein>
+								<E8827020>12345</E8827020>
+								<E8827021>Testberg</E8827021>
+								<E8827022>09162000</E8827022>
+								<E8827018>Outlet</E8827018>
+							</Allgemein>
+						</BS>
+						<Zerl>
+							<ZerlegungsmassstabBS>Zerl1</ZerlegungsmassstabBS>
+							<E8827070>1000000</E8827070>
+						</Zerl>
+					</KStZerlBS>
+					<Vorsatz>
+						<Unterfallart>39</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>3196081508158</StNr>
+						<Zeitraum>2021</Zeitraum>
+						<AbsName>Testfallversand ERiC</AbsName>
+						<AbsStr>Testgasse 1a</AbsStr>
+						<AbsPlz>12345</AbsPlz>
+						<AbsOrt>Musterstadt</AbsOrt>
+						<Copyright>(C)</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E39>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

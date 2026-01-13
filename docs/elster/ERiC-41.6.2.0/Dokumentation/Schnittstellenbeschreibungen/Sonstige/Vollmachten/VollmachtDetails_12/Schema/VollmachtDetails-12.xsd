@@ -1,0 +1,2350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VollmachtDetails - 12 - 1.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrm/vollmachtdetails/v12" targetNamespace="http://finkonsens.de/elster/elsterbrm/vollmachtdetails/v12" xmlns:exml="http://finkonsens.de/elster/elsterbrm/vollmachtdetails/v12">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="GanzzahlPosOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:positiveInteger">
+            <xs:pattern value="[1-9].*">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="BundesfinanzamtsnummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Bundesfinanzamtsnummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJMonatOptionalBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-2][0-9]|3[0-1])\.(10|11|12|00|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: MONAT_OPTIONAL</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_LandTab_Bundesbank_3_BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="AF">
+                <xs:annotation>
+                    <xs:documentation>Afghanistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="EG">
+                <xs:annotation>
+                    <xs:documentation>Ägypten</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AL">
+                <xs:annotation>
+                    <xs:documentation>Albanien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DZ">
+                <xs:annotation>
+                    <xs:documentation>Algerien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="UM">
+                <xs:annotation>
+                    <xs:documentation>Amerikanisch-Ozeanien (US Minor Outlying Islands)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AS">
+                <xs:annotation>
+                    <xs:documentation>Amerikanisch-Samoa</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VI">
+                <xs:annotation>
+                    <xs:documentation>Amerikanische Jungferninseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AD">
+                <xs:annotation>
+                    <xs:documentation>Andorra</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AO">
+                <xs:annotation>
+                    <xs:documentation>Angola</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AI">
+                <xs:annotation>
+                    <xs:documentation>Anguilla</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AQ">
+                <xs:annotation>
+                    <xs:documentation>Antarktis</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AG">
+                <xs:annotation>
+                    <xs:documentation>Antigua und Barbuda</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GQ">
+                <xs:annotation>
+                    <xs:documentation>Äquatorialguinea</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AR">
+                <xs:annotation>
+                    <xs:documentation>Argentinien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AM">
+                <xs:annotation>
+                    <xs:documentation>Armenien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AW">
+                <xs:annotation>
+                    <xs:documentation>Aruba</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AZ">
+                <xs:annotation>
+                    <xs:documentation>Aserbaidschan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ET">
+                <xs:annotation>
+                    <xs:documentation>Äthiopien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AU">
+                <xs:annotation>
+                    <xs:documentation>Australien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BS">
+                <xs:annotation>
+                    <xs:documentation>Bahamas</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BH">
+                <xs:annotation>
+                    <xs:documentation>Bahrain</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BD">
+                <xs:annotation>
+                    <xs:documentation>Bangladesch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BB">
+                <xs:annotation>
+                    <xs:documentation>Barbados</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BY">
+                <xs:annotation>
+                    <xs:documentation>Belarus (Weißrussland)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BE">
+                <xs:annotation>
+                    <xs:documentation>Belgien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BZ">
+                <xs:annotation>
+                    <xs:documentation>Belize</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BJ">
+                <xs:annotation>
+                    <xs:documentation>Benin</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BM">
+                <xs:annotation>
+                    <xs:documentation>Bermuda</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BT">
+                <xs:annotation>
+                    <xs:documentation>Bhutan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BO">
+                <xs:annotation>
+                    <xs:documentation>Bolivien, Plurinationaler Staat</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BQ">
+                <xs:annotation>
+                    <xs:documentation>Bonaire, Saba und Sint Eustatius</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BA">
+                <xs:annotation>
+                    <xs:documentation>Bosnien und Herzegowina</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BW">
+                <xs:annotation>
+                    <xs:documentation>Botsuana</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BV">
+                <xs:annotation>
+                    <xs:documentation>Bouvetinsel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BR">
+                <xs:annotation>
+                    <xs:documentation>Brasilien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VG">
+                <xs:annotation>
+                    <xs:documentation>Britische Jungferninseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IO">
+                <xs:annotation>
+                    <xs:documentation>Britisches Territorium im Indischen Ozean</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BN">
+                <xs:annotation>
+                    <xs:documentation>Brunei Darussalam</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BG">
+                <xs:annotation>
+                    <xs:documentation>Bulgarien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BF">
+                <xs:annotation>
+                    <xs:documentation>Burkina Faso</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BI">
+                <xs:annotation>
+                    <xs:documentation>Burundi</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="XC">
+                <xs:annotation>
+                    <xs:documentation>Ceuta</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CL">
+                <xs:annotation>
+                    <xs:documentation>Chile</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CN">
+                <xs:annotation>
+                    <xs:documentation>China, Volksrepublik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CK">
+                <xs:annotation>
+                    <xs:documentation>Cookinseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CR">
+                <xs:annotation>
+                    <xs:documentation>Costa Rica</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CI">
+                <xs:annotation>
+                    <xs:documentation>Cote d Ivoire (Elfenbeinküste)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CW">
+                <xs:annotation>
+                    <xs:documentation>Curacao</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DK">
+                <xs:annotation>
+                    <xs:documentation>Dänemark</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DM">
+                <xs:annotation>
+                    <xs:documentation>Dominica</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DO">
+                <xs:annotation>
+                    <xs:documentation>Dominikanische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DJ">
+                <xs:annotation>
+                    <xs:documentation>Dschibuti</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="EC">
+                <xs:annotation>
+                    <xs:documentation>Ecuador</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SV">
+                <xs:annotation>
+                    <xs:documentation>El Salvador</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ER">
+                <xs:annotation>
+                    <xs:documentation>Eritrea</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="EE">
+                <xs:annotation>
+                    <xs:documentation>Estland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FK">
+                <xs:annotation>
+                    <xs:documentation>Falklandinseln (Malwinen)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FO">
+                <xs:annotation>
+                    <xs:documentation>Färöer</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FJ">
+                <xs:annotation>
+                    <xs:documentation>Fidschi</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FI">
+                <xs:annotation>
+                    <xs:documentation>Finnland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FR">
+                <xs:annotation>
+                    <xs:documentation>Frankreich, Monaco und zugeh. Gebiete</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PF">
+                <xs:annotation>
+                    <xs:documentation>Französisch-Polynesien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TF">
+                <xs:annotation>
+                    <xs:documentation>Französische Südgebiete</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GA">
+                <xs:annotation>
+                    <xs:documentation>Gabun</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GM">
+                <xs:annotation>
+                    <xs:documentation>Gambia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GE">
+                <xs:annotation>
+                    <xs:documentation>Georgien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GH">
+                <xs:annotation>
+                    <xs:documentation>Ghana</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GI">
+                <xs:annotation>
+                    <xs:documentation>Gibraltar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GD">
+                <xs:annotation>
+                    <xs:documentation>Grenada</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GR">
+                <xs:annotation>
+                    <xs:documentation>Griechenland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GL">
+                <xs:annotation>
+                    <xs:documentation>Grönland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GU">
+                <xs:annotation>
+                    <xs:documentation>Guam</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GT">
+                <xs:annotation>
+                    <xs:documentation>Guatemala</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GG">
+                <xs:annotation>
+                    <xs:documentation>Guernsey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GN">
+                <xs:annotation>
+                    <xs:documentation>Guinea</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GW">
+                <xs:annotation>
+                    <xs:documentation>Guinea-Bissau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GY">
+                <xs:annotation>
+                    <xs:documentation>Guyana</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HT">
+                <xs:annotation>
+                    <xs:documentation>Haiti</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HM">
+                <xs:annotation>
+                    <xs:documentation>Heard und die McDonaldinseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VA">
+                <xs:annotation>
+                    <xs:documentation>Heiliger Stuhl (Vatikanstadt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HN">
+                <xs:annotation>
+                    <xs:documentation>Honduras</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HK">
+                <xs:annotation>
+                    <xs:documentation>Hongkong</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IN">
+                <xs:annotation>
+                    <xs:documentation>Indien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ID">
+                <xs:annotation>
+                    <xs:documentation>Indonesien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IM">
+                <xs:annotation>
+                    <xs:documentation>Insel Man</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IQ">
+                <xs:annotation>
+                    <xs:documentation>Irak</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IR">
+                <xs:annotation>
+                    <xs:documentation>Iran, Islamische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IE">
+                <xs:annotation>
+                    <xs:documentation>Irland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IS">
+                <xs:annotation>
+                    <xs:documentation>Island</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IL">
+                <xs:annotation>
+                    <xs:documentation>Israel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IT">
+                <xs:annotation>
+                    <xs:documentation>Italien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JM">
+                <xs:annotation>
+                    <xs:documentation>Jamaika</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JP">
+                <xs:annotation>
+                    <xs:documentation>Japan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="YE">
+                <xs:annotation>
+                    <xs:documentation>Jemen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JE">
+                <xs:annotation>
+                    <xs:documentation>Jersey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JO">
+                <xs:annotation>
+                    <xs:documentation>Jordanien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KY">
+                <xs:annotation>
+                    <xs:documentation>Kaimaninseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KH">
+                <xs:annotation>
+                    <xs:documentation>Kambodscha</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CM">
+                <xs:annotation>
+                    <xs:documentation>Kamerun</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CA">
+                <xs:annotation>
+                    <xs:documentation>Kanada</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CV">
+                <xs:annotation>
+                    <xs:documentation>Kap Verde</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KZ">
+                <xs:annotation>
+                    <xs:documentation>Kasachstan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="QA">
+                <xs:annotation>
+                    <xs:documentation>Katar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KE">
+                <xs:annotation>
+                    <xs:documentation>Kenia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KG">
+                <xs:annotation>
+                    <xs:documentation>Kirgisistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KI">
+                <xs:annotation>
+                    <xs:documentation>Kiribati</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CC">
+                <xs:annotation>
+                    <xs:documentation>Kokosinseln (Keelinginseln)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CO">
+                <xs:annotation>
+                    <xs:documentation>Kolumbien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KM">
+                <xs:annotation>
+                    <xs:documentation>Komoren</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CD">
+                <xs:annotation>
+                    <xs:documentation>Kongo, Demokratische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CG">
+                <xs:annotation>
+                    <xs:documentation>Kongo, Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SZ">
+                <xs:annotation>
+                    <xs:documentation>Königreich Eswatini</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KP">
+                <xs:annotation>
+                    <xs:documentation>Korea, Demokratische Volksrepublik (Nordkorea)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KR">
+                <xs:annotation>
+                    <xs:documentation>Korea, Republik (Südkorea)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="XK">
+                <xs:annotation>
+                    <xs:documentation>Kosovo</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HR">
+                <xs:annotation>
+                    <xs:documentation>Kroatien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CU">
+                <xs:annotation>
+                    <xs:documentation>Kuba</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KW">
+                <xs:annotation>
+                    <xs:documentation>Kuwait</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LA">
+                <xs:annotation>
+                    <xs:documentation>Laos, Demokratische Volksrepublik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LS">
+                <xs:annotation>
+                    <xs:documentation>Lesotho</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LV">
+                <xs:annotation>
+                    <xs:documentation>Lettland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LB">
+                <xs:annotation>
+                    <xs:documentation>Libanon</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LR">
+                <xs:annotation>
+                    <xs:documentation>Liberia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LY">
+                <xs:annotation>
+                    <xs:documentation>Libysch-Arabische Dschamahirija (Libyen)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LI">
+                <xs:annotation>
+                    <xs:documentation>Liechtenstein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LT">
+                <xs:annotation>
+                    <xs:documentation>Litauen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LU">
+                <xs:annotation>
+                    <xs:documentation>Luxemburg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MO">
+                <xs:annotation>
+                    <xs:documentation>Macau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MG">
+                <xs:annotation>
+                    <xs:documentation>Madagaskar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MW">
+                <xs:annotation>
+                    <xs:documentation>Malawi</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MY">
+                <xs:annotation>
+                    <xs:documentation>Malaysia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MV">
+                <xs:annotation>
+                    <xs:documentation>Malediven</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ML">
+                <xs:annotation>
+                    <xs:documentation>Mali</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MT">
+                <xs:annotation>
+                    <xs:documentation>Malta</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MP">
+                <xs:annotation>
+                    <xs:documentation>Marianen, Nördliche</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MA">
+                <xs:annotation>
+                    <xs:documentation>Marokko</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MH">
+                <xs:annotation>
+                    <xs:documentation>Marshallinseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MR">
+                <xs:annotation>
+                    <xs:documentation>Mauretanien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MU">
+                <xs:annotation>
+                    <xs:documentation>Mauritius</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="XL">
+                <xs:annotation>
+                    <xs:documentation>Melilla</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MX">
+                <xs:annotation>
+                    <xs:documentation>Mexiko</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FM">
+                <xs:annotation>
+                    <xs:documentation>Mikronesien, Föderierte Staaten von</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MD">
+                <xs:annotation>
+                    <xs:documentation>Moldau, Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MN">
+                <xs:annotation>
+                    <xs:documentation>Mongolei</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ME">
+                <xs:annotation>
+                    <xs:documentation>Montenegro</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MS">
+                <xs:annotation>
+                    <xs:documentation>Montserrat</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MZ">
+                <xs:annotation>
+                    <xs:documentation>Mosambik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MM">
+                <xs:annotation>
+                    <xs:documentation>Myanmar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NA">
+                <xs:annotation>
+                    <xs:documentation>Namibia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NR">
+                <xs:annotation>
+                    <xs:documentation>Nauru</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NP">
+                <xs:annotation>
+                    <xs:documentation>Nepal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NC">
+                <xs:annotation>
+                    <xs:documentation>Neukaledonien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NZ">
+                <xs:annotation>
+                    <xs:documentation>Neuseeland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NI">
+                <xs:annotation>
+                    <xs:documentation>Nicaragua</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NL">
+                <xs:annotation>
+                    <xs:documentation>Niederlande</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NE">
+                <xs:annotation>
+                    <xs:documentation>Niger</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NG">
+                <xs:annotation>
+                    <xs:documentation>Nigeria</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NU">
+                <xs:annotation>
+                    <xs:documentation>Niue</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MK">
+                <xs:annotation>
+                    <xs:documentation>Nordmazedonien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NF">
+                <xs:annotation>
+                    <xs:documentation>Norfolkinsel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NO">
+                <xs:annotation>
+                    <xs:documentation>Norwegen und zugeh. Gebiete</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="OM">
+                <xs:annotation>
+                    <xs:documentation>Oman</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AT">
+                <xs:annotation>
+                    <xs:documentation>Österreich</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PK">
+                <xs:annotation>
+                    <xs:documentation>Pakistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PS">
+                <xs:annotation>
+                    <xs:documentation>Palästinensische Autonomiegebiete</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PW">
+                <xs:annotation>
+                    <xs:documentation>Palau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PA">
+                <xs:annotation>
+                    <xs:documentation>Panama</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PG">
+                <xs:annotation>
+                    <xs:documentation>Papua-Neuguinea</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PY">
+                <xs:annotation>
+                    <xs:documentation>Paraguay</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PE">
+                <xs:annotation>
+                    <xs:documentation>Peru</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PH">
+                <xs:annotation>
+                    <xs:documentation>Philippinen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PN">
+                <xs:annotation>
+                    <xs:documentation>Pitcairninseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PL">
+                <xs:annotation>
+                    <xs:documentation>Polen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PT">
+                <xs:annotation>
+                    <xs:documentation>Portugal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RW">
+                <xs:annotation>
+                    <xs:documentation>Ruanda</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RO">
+                <xs:annotation>
+                    <xs:documentation>Rumänien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RU">
+                <xs:annotation>
+                    <xs:documentation>Russische Föderation</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SB">
+                <xs:annotation>
+                    <xs:documentation>Salomonen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ZM">
+                <xs:annotation>
+                    <xs:documentation>Sambia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="WS">
+                <xs:annotation>
+                    <xs:documentation>Samoa</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SM">
+                <xs:annotation>
+                    <xs:documentation>San Marino</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ST">
+                <xs:annotation>
+                    <xs:documentation>Sao Tome und Principe</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SA">
+                <xs:annotation>
+                    <xs:documentation>Saudi-Arabien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SE">
+                <xs:annotation>
+                    <xs:documentation>Schweden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CH">
+                <xs:annotation>
+                    <xs:documentation>Schweiz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SN">
+                <xs:annotation>
+                    <xs:documentation>Senegal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="XS">
+                <xs:annotation>
+                    <xs:documentation>Serbien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SC">
+                <xs:annotation>
+                    <xs:documentation>Seychellen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SL">
+                <xs:annotation>
+                    <xs:documentation>Sierra Leone</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ZW">
+                <xs:annotation>
+                    <xs:documentation>Simbabwe</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SG">
+                <xs:annotation>
+                    <xs:documentation>Singapur</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SX">
+                <xs:annotation>
+                    <xs:documentation>Sint Maarten (Niederländisches Gebiet)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SK">
+                <xs:annotation>
+                    <xs:documentation>Slowakei</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SI">
+                <xs:annotation>
+                    <xs:documentation>Slowenien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SO">
+                <xs:annotation>
+                    <xs:documentation>Somalia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ES">
+                <xs:annotation>
+                    <xs:documentation>Spanien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LK">
+                <xs:annotation>
+                    <xs:documentation>Sri Lanka</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SH">
+                <xs:annotation>
+                    <xs:documentation>St. Helena und Nebengebiete</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KN">
+                <xs:annotation>
+                    <xs:documentation>St. Kitts und Nevis</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LC">
+                <xs:annotation>
+                    <xs:documentation>St. Lucia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PM">
+                <xs:annotation>
+                    <xs:documentation>St. Pierre und Miquelon</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VC">
+                <xs:annotation>
+                    <xs:documentation>St. Vincent und die Grenadinen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ZA">
+                <xs:annotation>
+                    <xs:documentation>Südafrika</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SD">
+                <xs:annotation>
+                    <xs:documentation>Sudan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GS">
+                <xs:annotation>
+                    <xs:documentation>Südgeorgien und die Südlichen Sandwichinseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SS">
+                <xs:annotation>
+                    <xs:documentation>Südsudan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SR">
+                <xs:annotation>
+                    <xs:documentation>Suriname</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SY">
+                <xs:annotation>
+                    <xs:documentation>Syrien, Arabische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TJ">
+                <xs:annotation>
+                    <xs:documentation>Tadschikistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TW">
+                <xs:annotation>
+                    <xs:documentation>Taiwan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TZ">
+                <xs:annotation>
+                    <xs:documentation>Tansania, Vereinigte Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TH">
+                <xs:annotation>
+                    <xs:documentation>Thailand</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TL">
+                <xs:annotation>
+                    <xs:documentation>Timor-Leste</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TG">
+                <xs:annotation>
+                    <xs:documentation>Togo</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TK">
+                <xs:annotation>
+                    <xs:documentation>Tokelau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TO">
+                <xs:annotation>
+                    <xs:documentation>Tonga</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TT">
+                <xs:annotation>
+                    <xs:documentation>Trinidad und Tobago</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TD">
+                <xs:annotation>
+                    <xs:documentation>Tschad</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CZ">
+                <xs:annotation>
+                    <xs:documentation>Tschechische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TN">
+                <xs:annotation>
+                    <xs:documentation>Tunesien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TR">
+                <xs:annotation>
+                    <xs:documentation>Türkei</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TM">
+                <xs:annotation>
+                    <xs:documentation>Turkmenistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TC">
+                <xs:annotation>
+                    <xs:documentation>Turks- und Caicosinseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TV">
+                <xs:annotation>
+                    <xs:documentation>Tuvalu</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="UG">
+                <xs:annotation>
+                    <xs:documentation>Uganda</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="UA">
+                <xs:annotation>
+                    <xs:documentation>Ukraine</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HU">
+                <xs:annotation>
+                    <xs:documentation>Ungarn</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="UY">
+                <xs:annotation>
+                    <xs:documentation>Uruguay</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="UZ">
+                <xs:annotation>
+                    <xs:documentation>Usbekistan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VU">
+                <xs:annotation>
+                    <xs:documentation>Vanuatu</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VE">
+                <xs:annotation>
+                    <xs:documentation>Venezuela, Bolivarische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AE">
+                <xs:annotation>
+                    <xs:documentation>Vereinigte Arabischen Emirate</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="US">
+                <xs:annotation>
+                    <xs:documentation>Vereinigte Staaten von Amerika</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GB">
+                <xs:annotation>
+                    <xs:documentation>Vereinigtes Königreich Großbritannien und Nordirland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VN">
+                <xs:annotation>
+                    <xs:documentation>Vietnam</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="WF">
+                <xs:annotation>
+                    <xs:documentation>Wallis und Futuna</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CX">
+                <xs:annotation>
+                    <xs:documentation>Weihnachtsinsel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="EH">
+                <xs:annotation>
+                    <xs:documentation>Westsahara</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CF">
+                <xs:annotation>
+                    <xs:documentation>Zentralafrikanische Republik</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CY">
+                <xs:annotation>
+                    <xs:documentation>Zypern</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollmachtDetails_Status_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="VollmachtID_beantragt">
+                <xs:annotation>
+                    <xs:documentation>Vollmacht-ID beantragt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="in_Freischaltung">
+                <xs:annotation>
+                    <xs:documentation>in Freischaltung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="in_Pruefung">
+                <xs:annotation>
+                    <xs:documentation>in Prüfung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="geprueft">
+                <xs:annotation>
+                    <xs:documentation>geprüft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="zurueckgewiesen">
+                <xs:annotation>
+                    <xs:documentation>zurückgewiesen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Beratungsstellenwechsel_beantragt">
+                <xs:annotation>
+                    <xs:documentation>Beratungsstellenwechsel beantragt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Aenderung_beantragt">
+                <xs:annotation>
+                    <xs:documentation>Änderung beantragt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Widerruf_beantragt">
+                <xs:annotation>
+                    <xs:documentation>Widerruf beantragt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="widerrufen">
+                <xs:annotation>
+                    <xs:documentation>widerrufen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollmachtDetails_Vollmachtgeber_NatuerlichePerson_Anrede_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Herr">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Frau">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollmachtDetails_Vollmachtgeber_NichtNatuerlichePerson_Rechtsform_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="200">
+                <xs:annotation>
+                    <xs:documentation>Atypisch stille Gesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="210">
+                <xs:annotation>
+                    <xs:documentation>Offene Handelsgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="220">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="221">
+                <xs:annotation>
+                    <xs:documentation>Investmentkommanditgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="230">
+                <xs:annotation>
+                    <xs:documentation>GmbH &amp; Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="240">
+                <xs:annotation>
+                    <xs:documentation>GmbH &amp; Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="250">
+                <xs:annotation>
+                    <xs:documentation>AG &amp; Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="260">
+                <xs:annotation>
+                    <xs:documentation>AG &amp; Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="270">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft bürgerlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="280">
+                <xs:annotation>
+                    <xs:documentation>Europäische wirtschaftliche Interessenvereinigung (EWIV)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="290">
+                <xs:annotation>
+                    <xs:documentation>sonstige Personengesellschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="291">
+                <xs:annotation>
+                    <xs:documentation>Gemeinschaft (z. B. Erben-, Grundstücks-)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="292">
+                <xs:annotation>
+                    <xs:documentation>Partenreederei (§§ 489 ff HGB)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="293">
+                <xs:annotation>
+                    <xs:documentation>Partnerschaft (§1 PartGG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="295">
+                <xs:annotation>
+                    <xs:documentation>Unterbeteiligung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="920">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Personengesellschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="310">
+                <xs:annotation>
+                    <xs:documentation>Aktiengesellschaft (AG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="320">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft auf Aktien (KGaA)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="350">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft mit beschränkter Haftung (GmbH)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="360">
+                <xs:annotation>
+                    <xs:documentation>Europäische Gesellschaft (SE)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="370">
+                <xs:annotation>
+                    <xs:documentation>Unternehmergesellschaft haftungsbeschränkt (UG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="910">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Kapitalgesellschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="450">
+                <xs:annotation>
+                    <xs:documentation>Europäische Genossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="460">
+                <xs:annotation>
+                    <xs:documentation>eingetragene Genossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="490">
+                <xs:annotation>
+                    <xs:documentation>sonstige Genossenschaft i. S. des Genossenschaftsgesetzes</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="930">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Genossenschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="510">
+                <xs:annotation>
+                    <xs:documentation>Versicherungsvereine auf Gegenseitigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="511">
+                <xs:annotation>
+                    <xs:documentation>Pensionsfondsvereine auf Gegenseitigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="520">
+                <xs:annotation>
+                    <xs:documentation>eingetragener Verein (e. V.)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="540">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Stiftung des Privatrechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="623">
+                <xs:annotation>
+                    <xs:documentation>Wirtschaftlicher Verein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="590">
+                <xs:annotation>
+                    <xs:documentation>sonstige juristische Person des privaten Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="940">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer sonst. jur. Person des priv. Rechts entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="621">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähiger Verein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="611">
+                <xs:annotation>
+                    <xs:documentation>Sondervermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="624">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Zweckvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="650">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Stiftung des Privatrechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="391">
+                <xs:annotation>
+                    <xs:documentation>Investmentaktiengesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="950">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Personenvereinigung oder Vermögensmasse i. S. des § 1 Abs. 1 Nr. 5 KStG entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="810">
+                <xs:annotation>
+                    <xs:documentation>Gebietskörperschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="820">
+                <xs:annotation>
+                    <xs:documentation>öffentlich-rechtliche Religionsgesellschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="831">
+                <xs:annotation>
+                    <xs:documentation>berufsständige Körperschaften des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="811">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Anstalt des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="833">
+                <xs:annotation>
+                    <xs:documentation>öffentlich-rechtliche Rundfunk- und Fernsehanstalt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="834">
+                <xs:annotation>
+                    <xs:documentation>sonstige juristische Person des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="837">
+                <xs:annotation>
+                    <xs:documentation>europäischer Verbund für territoriale Zusammenarbeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="838">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Anstalt des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="840">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Stiftung des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="850">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Stiftung des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="960">
+                <xs:annotation>
+                    <xs:documentation>ausländische Körperschaft des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollmachtDetails_Vollmachtnehmer_Anschrift_NatuerlichePerson_Anrede_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Frau">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Herr">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollmachtDetails_Vollmachtnehmer_Anschrift_NichtNatuerlichePerson_Rechtsform_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="200">
+                <xs:annotation>
+                    <xs:documentation>Atypisch stille Gesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="210">
+                <xs:annotation>
+                    <xs:documentation>Offene Handelsgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="220">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="221">
+                <xs:annotation>
+                    <xs:documentation>Investmentkommanditgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="230">
+                <xs:annotation>
+                    <xs:documentation>GmbH &amp; Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="240">
+                <xs:annotation>
+                    <xs:documentation>GmbH &amp; Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="250">
+                <xs:annotation>
+                    <xs:documentation>AG &amp; Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="260">
+                <xs:annotation>
+                    <xs:documentation>AG &amp; Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="270">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft bürgerlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="280">
+                <xs:annotation>
+                    <xs:documentation>Europäische wirtschaftliche Interessenvereinigung (EWIV)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="290">
+                <xs:annotation>
+                    <xs:documentation>sonstige Personengesellschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="291">
+                <xs:annotation>
+                    <xs:documentation>Gemeinschaft (z. B. Erben-, Grundstücks-)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="292">
+                <xs:annotation>
+                    <xs:documentation>Partenreederei (§§ 489 ff HGB)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="293">
+                <xs:annotation>
+                    <xs:documentation>Partnerschaft (§1 PartGG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="295">
+                <xs:annotation>
+                    <xs:documentation>Unterbeteiligung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="920">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Personengesellschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="310">
+                <xs:annotation>
+                    <xs:documentation>Aktiengesellschaft (AG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="320">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft auf Aktien (KGaA)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="350">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft mit beschränkter Haftung (GmbH)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="360">
+                <xs:annotation>
+                    <xs:documentation>Europäische Gesellschaft (SE)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="370">
+                <xs:annotation>
+                    <xs:documentation>Unternehmergesellschaft haftungsbeschränkt (UG)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="910">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Kapitalgesellschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="450">
+                <xs:annotation>
+                    <xs:documentation>Europäische Genossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="460">
+                <xs:annotation>
+                    <xs:documentation>eingetragene Genossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="490">
+                <xs:annotation>
+                    <xs:documentation>sonstige Genossenschaft i. S. des Genossenschaftsgesetzes</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="930">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Genossenschaft entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="510">
+                <xs:annotation>
+                    <xs:documentation>Versicherungsvereine auf Gegenseitigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="511">
+                <xs:annotation>
+                    <xs:documentation>Pensionsfondsvereine auf Gegenseitigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="520">
+                <xs:annotation>
+                    <xs:documentation>eingetragener Verein (e. V.)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="540">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Stiftung des Privatrechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="623">
+                <xs:annotation>
+                    <xs:documentation>Wirtschaftlicher Verein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="590">
+                <xs:annotation>
+                    <xs:documentation>sonstige juristische Person des privaten Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="940">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer sonst. jur. Person des priv. Rechts entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="621">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähiger Verein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="611">
+                <xs:annotation>
+                    <xs:documentation>Sondervermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="624">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Zweckvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="650">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Stiftung des Privatrechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="391">
+                <xs:annotation>
+                    <xs:documentation>Investmentaktiengesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="950">
+                <xs:annotation>
+                    <xs:documentation>ausländische Rechtsform, die einer Personenvereinigung oder Vermögensmasse i. S. des § 1 Abs. 1 Nr. 5 KStG entspricht</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="810">
+                <xs:annotation>
+                    <xs:documentation>Gebietskörperschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="820">
+                <xs:annotation>
+                    <xs:documentation>öffentlich-rechtliche Religionsgesellschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="831">
+                <xs:annotation>
+                    <xs:documentation>berufsständige Körperschaften des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="811">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Anstalt des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="833">
+                <xs:annotation>
+                    <xs:documentation>öffentlich-rechtliche Rundfunk- und Fernsehanstalt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="834">
+                <xs:annotation>
+                    <xs:documentation>sonstige juristische Person des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="837">
+                <xs:annotation>
+                    <xs:documentation>europäischer Verbund für territoriale Zusammenarbeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="838">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Anstalt des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="840">
+                <xs:annotation>
+                    <xs:documentation>rechtsfähige Stiftung des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="850">
+                <xs:annotation>
+                    <xs:documentation>nichtrechtsfähige Stiftung des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="960">
+                <xs:annotation>
+                    <xs:documentation>ausländische Körperschaft des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlPosOhneFuehrNull_Muster1432008049_SType">
+        <xs:restriction base="GanzzahlPosOhneFuehrNullBaseSType">
+            <xs:pattern value=".{0,5}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL10_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL120_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="120"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL20_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL25_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="25"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL30_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="30"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL46_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="46"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL50_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="50"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL60_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL6_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="6"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL25_MaxL25_Muster1023145846_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="25"/>
+            <xs:maxLength value="25"/>
+            <xs:pattern value="\d{4}F\d{20}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL25_MaxL25_Muster1910649527_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="25"/>
+            <xs:maxLength value="25"/>
+            <xs:pattern value="\d{4}G\d{20}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL5_MaxL5_Muster88063003_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="5"/>
+            <xs:maxLength value="5"/>
+            <xs:pattern value="\d{5}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VollmachtDetails" type="VollmachtDetails_CType"/>
+    <xs:complexType name="VollmachtDetails_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtDetails" type="VollmachtDetails_m577485857_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="12" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VollmachtDetails_m577485857_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtID" type="String_MinL25_MaxL25_Muster1910649527_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ID der Vollmacht</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anlagedatum" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anlagedatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Freischaltdatum" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Freischaltdatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Freischaltfrist" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Freischaltfrist</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Status" type="Enum_VollmachtDetails_Status_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Status</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="DivaTeilnahme" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Elektronische Bekanntgabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vollmachtnehmer" type="Vollmachtnehmer_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Vollmachtgeber" type="Vollmachtgeber_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Untervollmachten" type="Untervollmachten_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Ausschluss" type="Ausschluss_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bekanntgabevollmacht" type="Bekanntgabevollmacht_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ZeitlicheVertretung" type="ZeitlicheVertretung_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="VollmachtenLoeschen" type="VollmachtenLoeschen_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Abrufbefugnis" type="Abrufbefugnis_m1299678271_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Steuernummern" type="Steuernummern_m1299678271_CType" minOccurs="0" maxOccurs="999"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtnehmer_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtnehmerID" type="String_MinL25_MaxL25_Muster1023145846_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer des Vollmachtnehmers</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anschrift" type="Anschrift_2124130026_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anschrift_2124130026_CType">
+        <xs:sequence>
+            <xs:element name="NatuerlichePerson" type="NatuerlichePerson_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+            <xs:element name="NichtNatuerlichePerson" type="NichtNatuerlichePerson_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+            <xs:element name="AdresseInland" type="AdresseInland_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+            <xs:element name="AdresseAusland" type="AdresseAusland_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+            <xs:element name="PostfachInland" type="PostfachInland_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+            <xs:element name="Grosskundenadresse" type="Grosskundenadresse_m75668580_CType" minOccurs="0" maxOccurs="5"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatuerlichePerson_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Anrede" type="Enum_VollmachtDetails_Vollmachtnehmer_Anschrift_NatuerlichePerson_Anrede_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL30_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namensvorsatz" type="String_MinL1_MaxL25_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namenszusatz" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NichtNatuerlichePerson_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rechtsform" type="Enum_VollmachtDetails_Vollmachtnehmer_Anschrift_NichtNatuerlichePerson_Rechtsform_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsform</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AdresseInland_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Strasse" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Hausnummer" type="GanzzahlPosOhneFuehrNull_Muster1432008049_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Hausnummerzusatz" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErgaenzung" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Postleitzahl" type="String_MinL5_MaxL5_Muster88063003_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ortsteil" type="String_MinL1_MaxL50_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ortsteil</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AdresseAusland_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Strasse" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Hausnummer" type="GanzzahlPosOhneFuehrNull_Muster1432008049_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Hausnummerzusatz" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErgaenzung" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Postleitzahl" type="String_MinL1_MaxL10_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Land" type="Enum_LandTab_Bundesbank_3_BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Land</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PostfachInland_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Postfach" type="String_MinL1_MaxL6_Musterm1643987249_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postfach</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Postleitzahl" type="String_MinL5_MaxL5_Muster88063003_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Grosskundenadresse_m75668580_CType">
+        <xs:sequence>
+            <xs:element name="Postleitzahl" type="String_MinL5_MaxL5_Muster88063003_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl des Großempfängers</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MinL1_MaxL72_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtgeber_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="NatuerlichePerson" type="NatuerlichePerson_m895776594_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="NichtNatuerlichePerson" type="NichtNatuerlichePerson_m895776594_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatuerlichePerson_m895776594_CType">
+        <xs:sequence>
+            <xs:element name="Identifikationsnummer" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geburtsdatum" type="DatumTTpMMpJJJJMonatOptionalBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Geburtsdatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anrede" type="Enum_VollmachtDetails_Vollmachtgeber_NatuerlichePerson_Anrede_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL30_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namensvorsatz" type="String_MinL1_MaxL25_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namenszusatz" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NichtNatuerlichePerson_m895776594_CType">
+        <xs:sequence>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rechtsform" type="Enum_VollmachtDetails_Vollmachtgeber_NichtNatuerlichePerson_Rechtsform_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsform</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Untervollmachten_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="UntervollmachtenMoeglich" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Der/Die Bevollmächtigte ist berechtigt, Untervollmachten zu erteilen und zu widerrufen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Ausschluss_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="SteuerartenUndVerfahren" type="SteuerartenUndVerfahren_1936969249_CType" minOccurs="0" maxOccurs="20"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="SteuerartenUndVerfahren_1936969249_CType">
+        <xs:sequence>
+            <xs:element name="SteuerartOderVerfahren" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuerverfahren</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bekanntgabevollmacht_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="EntgegennahmeSteuerbescheide" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Entgegennahme Steuerbescheide</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EntgegennahmeMahnungen" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Entgegennahme Mahnungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ZeitlicheVertretung_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="Von" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>von</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bis" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bis</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="VollmachtenLoeschen_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="BisherErteilteVollmachtenLoeschen" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bisher erteilte Vollmachten löschen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NurDemVollmachtnehmerBisherErteilteVollmachtenLoeschen" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Nur dem Vollmachtnehmer bisher erteilte Vollmachten löschen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Abrufbefugnis_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="AbrufbefugnisNichtErteilt" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abrufbefugnis nicht erteilt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="UnbeschraenkteAbrufbefugnisErteilt" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Unbeschränkte Abrufbefugnis erteilt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuernummern_m1299678271_CType">
+        <xs:sequence>
+            <xs:element name="Finanzamt" type="BundesfinanzamtsnummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

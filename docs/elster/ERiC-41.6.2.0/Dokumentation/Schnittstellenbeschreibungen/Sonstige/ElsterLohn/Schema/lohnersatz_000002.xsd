@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Schema für Schnittstelle zur Übermittlung von Lohnersatzleistungs-Bescheinigungen.
+
+	Version 1:	Ersterstellung wg. Einführung Blockname
+	Version 2: Änderung Zuflussjahr min 2013 max 2014
+	Version 3: Erweiterung LohnersatzleistungsArtSType um neue zulässige Einträge
+	Version 4: StornierungCType entfernt, da nicht benötigt
+	Version 5: Zuflussjahr um max 2015 erweitert, Aktualisierung StaatenSchluesselSType auf StaatenSchluesselSType-1.50 für Auslandsadresse
+	Version 6: Zuflussjahr 2016
+	Version 7: qualifizierte Typangabe für das Attribut geschlecht
+	Version 8: Zuflussjahr 2017
+	Version 9: Wert x fuer geschlecht zugelassen
+	Version 10: Zuflussjahr: Restriction maxInclusive für SST entfernt
+	28.05.2020: Zuflussjahr maxInclusive = 2020
+-->
+<xs:schema xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema" xmlns:elsterlohnersatz="http://www.elsterfachmethodik.de/Lohnersatz000002/XMLSchema" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.elsterfachmethodik.de/Lohnersatz000002/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.elster.de/basis08/XMLSchema" schemaLocation="./allg000008.xsd"/>
+	<xs:complexType name="LohnersatzleistungCType">
+		<xs:sequence>
+			<xs:element name="Zuflussjahr" type="elsterlohnersatz:ZuflussjahrSType">
+				<xs:annotation>
+					<xs:documentation>Kalenderjahr in dem die Leistung dem Leistungsempfänger zu- bzw. abgeflossen ist.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="MitteilungsPflichtiger" type="elsterlohnersatz:MitteilungsPflichtigerCType">
+				<xs:annotation>
+					<xs:documentation>Träger der Sozialleistungen, der nach §32b (3) EStG zur Übermittlung der elektronischen Bescheinigung verpflichtet ist.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="LeistungsEmpfaenger" type="elsterlohnersatz:LeistungsEmpfaengerCType">
+				<xs:annotation>
+					<xs:documentation>Empfänger der Sozialleistungen</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Mitteilung" type="elsterlohnersatz:MitteilungCType">
+				<xs:annotation>
+					<xs:documentation>Mitteilung über die vom Leistungsempfänger erhaltenen Sozialleistungen</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- Definierung einfacher Elements________________________________________________________-->
+	<!-- A -->
+	<!-- B -->
+	<xs:simpleType name="BetragSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Einheitlicher Datentyp aller zu bescheinigenden Werte</xs:documentation>
+			<xs:documentation xml:lang="DE">Vorzeichen: es ist nur das "-" als Vorzeichen zulässig "+" nicht !!!</xs:documentation>
+			<xs:documentation xml:lang="DE">13 Stellen (Ziffern) vor dem Dezimaltrennzeichen</xs:documentation>
+			<xs:documentation xml:lang="DE">Dezimaltrennzeichen ist der "."</xs:documentation>
+			<xs:documentation xml:lang="DE">2 Stellen nach dem Dezimaltrennzeichen</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="15"/>
+			<xs:fractionDigits value="2" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- C -->
+	<!-- D -->
+	<xs:simpleType name="DatumYYYY-00-00_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Datum 10-stellig mit Trennzeichen</xs:documentation>
+			<xs:documentation xml:lang="DE">Format : JJJJ-00-00</xs:documentation>
+			<xs:documentation xml:lang="DE">Datum 00.00. zulässig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="10"/>
+			<xs:pattern value="((19|20)\d{2})[\-][0][0][\-][0-0][0-0]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="DatumYYYY-MM-00_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Datum 10-stellig mit Trennzeichen</xs:documentation>
+			<xs:documentation xml:lang="DE">Format : JJJJ-MM-00</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="10"/>
+			<xs:pattern value="((18[8-9][0-9])|(19|20)\d{2})[\-](([0][1-9])|([1][0-2]))[\-][0][0]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Datum_ab_1880_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Datum 10-stellig mit Trennzeichen</xs:documentation>
+			<xs:documentation xml:lang="DE">Datum ab 1880</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:date">
+			<xs:minInclusive value="1880-01-01"/>
+			<xs:maxInclusive value="9999-12-31"/>
+			<xs:pattern value="\d{4}-\d{2}-\d{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- E -->
+	<!-- F -->
+	<!-- G -->
+	<!-- H -->
+	<!-- I -->
+	<xs:simpleType name="InsitutionskennzeichenSType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="9"/>
+			<xs:minLength value="9"/>
+			<xs:pattern value="\d+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- J -->
+	<!-- K -->
+	<xs:simpleType name="KundennummerSType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="10"/>
+			<xs:minLength value="1"/>
+			<xs:pattern value="\d+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KundennummerFVSType">
+		<xs:union memberTypes="elsterbase:allg_UStIDNrDESType elsterbase:allg_AGSSType elsterbase:allg_StNrSType elsterlohnersatz:InsitutionskennzeichenSType"/>
+	</xs:simpleType>
+	<!-- L -->
+	<xs:simpleType name="LohnersatzleistungsArtSType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Arbeitslosengeld"/>
+			<xs:enumeration value="Teilarbeitslosengeld"/>
+			<xs:enumeration value="Zuschüsse zum Arbeitsentgelt"/>
+			<xs:enumeration value="Kurzarbeitergeld"/>
+			<xs:enumeration value="Winterausfallgeld"/>
+			<xs:enumeration value="Insolvenzgeld"/>
+			<xs:enumeration value="Arbeitslosenhilfe"/>
+			<xs:enumeration value="Übergangsgeld"/>
+			<xs:enumeration value="Altersübergangsgeld"/>
+			<xs:enumeration value="Altersübergangsgeld-Ausgleichsbetrag"/>
+			<xs:enumeration value="Unterhaltsgeld als Zuschuss"/>
+			<xs:enumeration value="Eingliederungshilfe"/>
+			<xs:enumeration value="Unterhaltsgeld aus dem Europäischen Sozialfonds"/>
+			<xs:enumeration value="Leistungen nach § 10 des Dritten Buches Sozialgesetzbuch, die dem Lebensunterhalt dienen"/>
+			<xs:enumeration value="Insolvenzgeld, das nach § 188 Absatz 1 des Dritten Buches Sozialgesetzbuch einem Dritten zusteht"/>
+			<xs:enumeration value="Krankengeld"/>
+			<xs:enumeration value="Mutterschaftsgeld"/>
+			<xs:enumeration value="Verletztengeld"/>
+			<xs:enumeration value="Zuschuss zum Mutterschaftsgeld"/>
+			<xs:enumeration value="Sonderunterstützung nach dem Mutterschutzgesetz"/>
+			<xs:enumeration value="Zuschuss bei Beschäftigungsverboten"/>
+			<xs:enumeration value="Arbeitslosenbeihilfe nach dem Soldatenversorgungsgesetz"/>
+			<xs:enumeration value="Arbeitslosenhilfe nach dem Soldatenversorgungsgesetz"/>
+			<xs:enumeration value="Entschädigungen für Verdienstausfall nach dem Infektionsschutzgesetz"/>
+			<xs:enumeration value="Versorgungskrankengeld nach dem Bundesversorgungsgesetz"/>
+			<xs:enumeration value="Übergangsgeld nach dem Bundesversorgungsgesetz"/>
+			<xs:enumeration value="Nach § 3 Nummer 28 steuerfreie Aufstockungsbeträge oder Zuschläge"/>
+			<xs:enumeration value="Verdienstausfallentschädigung nach dem Unterhaltssicherungsgesetz"/>
+			<xs:enumeration value="Elterngeld"/>
+			<xs:enumeration value="vergleichbare Leistungen nach dem Fünften, Sechsten oder Siebten Buch Sozialgesetzbuch"/>
+			<xs:enumeration value="vergleichbare Leistungen nach dem Gesetz über die Krankenversicherung der Landwirte"/>
+			<xs:enumeration value="vergleichbare Leistungen nach dem Zweiten Gesetz über die Krankenversicherung der Landwirte"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- M -->
+	<!-- N -->
+	<!-- O -->
+	<xs:simpleType name="Ordnungsmerkmal_SType">
+		<xs:annotation>
+			<xs:documentation>RebSy:Baustein 05:mipfOrdBg</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="37"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- P -->
+	<!-- Q -->
+	<!-- R -->
+	<!-- S -->
+	<!-- T -->
+	<xs:simpleType name="Text20SType">
+		<xs:restriction base="elsterbase:allg_BaseStringLightSType">
+			<xs:maxLength value="20"/>
+			<xs:minLength value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text25SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="25"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text30SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="30"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text45SType">
+		<xs:restriction base="elsterbase:allg_BaseStringLightSType">
+			<xs:maxLength value="45"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text46SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="46"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text50SType">
+		<xs:restriction base="elsterbase:allg_BaseStringLightSType">
+			<xs:maxLength value="50"/>
+			<xs:minLength value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text60SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="60"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text72SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="72"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Text90SType">
+		<xs:restriction base="elsterbase:allg_BaseStringLightSType">
+			<xs:maxLength value="90"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- U -->
+	<!-- V -->
+	<!-- W -->
+	<!-- X -->
+	<!-- Y -->
+	<!-- Z -->
+	<xs:simpleType name="ZuflussjahrSType">
+		<xs:restriction base="xs:gYear">
+			<xs:minInclusive value="2013"/>
+			<xs:maxInclusive value="2020"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Definierung globaler complex Types __________________________________________________ -->
+	<!-- A -->
+	<xs:complexType name="AdresseCType">
+		<xs:attribute name="str" type="elsterlohnersatz:Text72SType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Straße des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="hausNr" use="optional">
+			<xs:annotation>
+				<xs:documentation>Hausnummer des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="0"/>
+					<xs:maxInclusive value="99999"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="hausNrZu" type="elsterlohnersatz:Text20SType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Hausnummernzusatz zur Hausnummer des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="adressErg" type="elsterlohnersatz:Text46SType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Adressergänzung zur Adresse des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ort" type="elsterlohnersatz:Text72SType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Ort des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="plz" type="elsterbase:allg_PLZSType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Postleitzahl des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="staatId" type="elsterbase:allg_StaatenSchluesselSType-1.50" use="optional">
+			<xs:annotation>
+				<xs:documentation>3-stellige Staatenschlüssel gemäß GINSTER/VDM Verzeichnis</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="auslPlz" use="optional">
+			<xs:annotation>
+				<xs:documentation>Auslandspostleitzahl des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="elsterbase:allg_BaseStringSType">
+					<xs:minLength value="1"/>
+					<xs:maxLength value="12"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="postfachOrt" type="elsterlohnersatz:Text72SType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Ort zum Postfach des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="postfachPlz" type="elsterbase:allg_PLZSType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Postleitzahl zum Postfach des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="postfach" type="elsterbase:allg_PostfachSType" use="optional">
+			<xs:annotation>
+				<xs:documentation>Postfach des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="LeistungsEmpfaengerCType">
+		<xs:sequence>
+			<xs:choice>
+				<xs:element name="IdNr" type="elsterbase:allg_IdNrSType">
+					<xs:annotation>
+						<xs:documentation>IdNr des Leistungsempfängers</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="ETIN" type="elsterbase:allg_ETINSType">
+					<xs:annotation>
+						<xs:documentation>eTIN des Leistungsempfängers</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+			<xs:element name="Ordnungsmerkmal" type="elsterlohnersatz:Ordnungsmerkmal_SType">
+				<xs:annotation>
+					<xs:documentation>eindeutiges Ordnungsmerkmal des Leistungsempfängers beim Mitteilungspflichtigen</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Name" type="elsterlohnersatz:NachnameCType">
+				<xs:annotation>
+					<xs:documentation>Familienname des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Geburtsdatum">
+				<xs:annotation>
+					<xs:documentation>Geburtsdatum des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:union memberTypes="elsterlohnersatz:Datum_ab_1880_SType elsterlohnersatz:DatumYYYY-00-00_SType"/>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Adresse" type="elsterlohnersatz:AdresseCType">
+				<xs:annotation>
+					<xs:documentation>Adresse des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- B -->
+	<!-- C -->
+	<!-- D -->
+	<!-- E -->
+	<!-- F -->
+	<!-- G -->
+	<!-- H -->
+	<!-- I -->
+	<!-- J -->
+	<!-- K -->
+	<xs:complexType name="KundennummerFVCType">
+		<xs:annotation>
+			<xs:documentation>Die Art der Kundennummer richtet sich nach dem jeweiligen Träger der Sozialleistung.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="elsterlohnersatz:KundennummerFVSType">
+				<xs:attribute name="art" use="required">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="StNr"/>
+							<xs:enumeration value="AGS"/>
+							<xs:enumeration value="W-IdNr"/>
+							<xs:enumeration value="IK"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<!-- L -->
+	<!-- M -->
+	<xs:complexType name="MitteilungCType">
+		<xs:sequence>
+			<xs:element name="Leistung" maxOccurs="11">
+				<xs:complexType>
+					<xs:sequence maxOccurs="200">
+						<xs:element name="Leistungspflichtiger">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Name" type="elsterlohnersatz:Text90SType">
+										<xs:annotation>
+											<xs:documentation>Name des Leistungspflichtigen</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="Bearbeiter">
+										<xs:annotation>
+											<xs:documentation>zuständiger Bearbeiter/ Bearbeitergruppe für die Lohnersatzleistung</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:simpleContent>
+												<xs:extension base="elsterlohnersatz:Text50SType">
+													<xs:attribute name="tel" type="elsterbase:allg_TelefonnummerSType" use="optional">
+														<xs:annotation>
+															<xs:documentation>Telefonnummer des Bearbeiters</xs:documentation>
+														</xs:annotation>
+													</xs:attribute>
+													<xs:attribute name="durchwahl" type="elsterbase:allg_TelefonnummerDurchwahlSType" use="optional">
+														<xs:annotation>
+															<xs:documentation>Durchwahl des Bearbeiters</xs:documentation>
+														</xs:annotation>
+													</xs:attribute>
+													<xs:attribute name="email" type="elsterbase:allg_EMailSType" use="optional">
+														<xs:annotation>
+															<xs:documentation>EMail Adresse des Bearbeiters</xs:documentation>
+														</xs:annotation>
+													</xs:attribute>
+												</xs:extension>
+											</xs:simpleContent>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="Adresse">
+										<xs:annotation>
+											<xs:documentation>Adresse des Leistungspflichtigen</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:attribute name="str" type="elsterlohnersatz:Text72SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Straße des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="hausNr" use="optional">
+												<xs:annotation>
+													<xs:documentation>Hausnummer des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+												<xs:simpleType>
+													<xs:restriction base="xs:integer">
+														<xs:minInclusive value="0"/>
+														<xs:maxInclusive value="99999"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute name="hausNrZu" type="elsterlohnersatz:Text20SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Hausnummernzusatz zur Hausnummer des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="adressErg" type="elsterlohnersatz:Text46SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Adressergänzung zur Adresse des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="ort" type="elsterlohnersatz:Text72SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Ort des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="plz" type="elsterbase:allg_PLZSType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Postleitzahl des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="staatId" use="optional">
+												<xs:annotation>
+													<xs:documentation>3-stellige Staatenschlüssel gemäß GINSTER/VDM Verzeichnis</xs:documentation>
+												</xs:annotation>
+												<xs:simpleType>
+													<xs:restriction base="elsterbase:allg_BaseStringSType">
+														<xs:length value="3"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute name="auslPlz" use="optional">
+												<xs:annotation>
+													<xs:documentation>Auslandspostleitzahl des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+												<xs:simpleType>
+													<xs:restriction base="elsterbase:allg_BaseStringSType">
+														<xs:minLength value="1"/>
+														<xs:maxLength value="12"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute name="postfachOrt" type="elsterlohnersatz:Text72SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Ort zum Postfach des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="postfachPlz" type="elsterbase:allg_PLZSType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Postleitzahl zum Postfach des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="postfach" type="elsterbase:allg_PostfachSType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Postfach des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="gkOrt" type="elsterlohnersatz:Text72SType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Ort zur Großkundenadresse des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+											<xs:attribute name="gkPlz" type="elsterbase:allg_PLZSType" use="optional">
+												<xs:annotation>
+													<xs:documentation>Postleitzahl zur Großkundenadresse des Leistungspflichtigen</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="Aktenzeichen" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>Aktenzeichen zur Lohnersatzleistung beim Leistungspflichtigen</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="1"/>
+												<xs:maxLength value="50"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Zeitraum" minOccurs="0" maxOccurs="183">
+										<xs:annotation>
+											<xs:documentation>Leistungszeitraum der Lohnersatzleistung</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:attribute name="beginn" use="required">
+												<xs:annotation>
+													<xs:documentation>Beginn des Leistungszeitraums der Lohnersatzleistung</xs:documentation>
+												</xs:annotation>
+												<xs:simpleType>
+													<xs:restriction base="xs:date">
+														<xs:minInclusive value="1900-01-01"/>
+														<xs:maxInclusive value="9999-12-31"/>
+														<xs:pattern value="\d{4}-\d{2}-\d{2}"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute name="ende" use="required">
+												<xs:annotation>
+													<xs:documentation>Ende des Leistungszeitraums der Lohnersatzleistung</xs:documentation>
+												</xs:annotation>
+												<xs:simpleType>
+													<xs:restriction base="xs:date">
+														<xs:minInclusive value="1900-01-01"/>
+														<xs:maxInclusive value="9999-12-31"/>
+														<xs:pattern value="\d{4}-\d{2}-\d{2}"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+					<xs:attribute name="betrag" type="elsterlohnersatz:BetragSType" use="required">
+						<xs:annotation>
+							<xs:documentation>Gesamtbetrag der im Zuflussjahr zu- bzw. abgeflossenen Lohnersatzleisung</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="art" type="elsterlohnersatz:LohnersatzleistungsArtSType" use="required">
+						<xs:annotation>
+							<xs:documentation>Art der Lohnersatzleisung</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- N -->
+	<xs:complexType name="NachnameCType">
+		<xs:sequence>
+			<xs:choice>
+				<xs:sequence>
+					<xs:element name="Familienname" type="elsterlohnersatz:Text45SType">
+						<xs:annotation>
+							<xs:documentation>Nachname des Leistungsempfängers</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Vorname" type="elsterbase:allg_VornameSType">
+						<xs:annotation>
+							<xs:documentation>Vorname des Leistungsempfängers</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+				<xs:element name="Blockname" type="elsterbase:allg_BlocknameCType">
+					<xs:annotation>
+						<xs:documentation>Blockname des Empfängers</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+			<xs:element name="Namensvorsatz" type="elsterbase:allg_NamensvorsatzSType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Namensvorsatz zum Familiennamen des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Namenszusatz" type="elsterbase:allg_NamenszusatzSType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Namenszusatz zum Familiennamen des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Titel" type="elsterbase:allg_TitelSType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Titel des Leistungsempfängers</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="geschlecht">
+			<xs:annotation>
+				<xs:documentation>Geschlecht des Leistungsempfängers</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="M"/>
+					<xs:enumeration value="W"/>
+					<xs:enumeration value="m"/>
+					<xs:enumeration value="w"/>
+					<xs:enumeration value="x"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<!-- O -->
+	<!-- P -->
+	<!-- Q -->
+	<!-- R -->
+	<xs:complexType name="MitteilungsPflichtigerCType">
+		<xs:sequence>
+			<xs:element name="KundennummerFV" type="elsterlohnersatz:KundennummerFVCType"/>
+			<xs:element name="Kundennummer" type="elsterlohnersatz:KundennummerSType">
+				<xs:annotation>
+					<xs:documentation>Eindeutige Kundennummer des Mitteilungspflichtigen</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- S -->
+	<!-- T -->
+	<!-- U -->
+	<!-- V -->
+	<!-- W -->
+	<!-- X -->
+	<!-- Y -->
+	<!-- Z -->
+	<!-- Definierung globaler Attribute _______________________________________________________ -->
+</xs:schema>

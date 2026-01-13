@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>USt</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Musterlieferant;Mustergasse;42;a;im Hinterhof;12345;Musterstadt;Deutschland;089/1234567890;tester@tpe.qs.de</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>NO_BASE64</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">3096</Empfaenger>
+				<Hersteller>
+					<ProduktName>Testpoint ELSTER</ProduktName>
+					<ProduktVersion>42</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Musterlieferant;Mustergasse;42;a;im Hinterhof;12345;Musterstadt;Deutschland;089/1234567890;tester@tpe.qs.de</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E50 xmlns="http://finkonsens.de/elster/elstererklaerung/ust/e50/v2023" version="2023">
+					<USt2A>
+						<Allg>
+							<Unternehmen>
+								<E3000901>Musterunternehmen</E3000901>
+								<Adr>
+									<E3001101>Musterstraße</E3001101>
+									<E3001203>01</E3001203>
+									<E3001206>Musterort</E3001206>
+									<E3001207>Beispiel</E3001207>
+								</Adr>
+							</Unternehmen>
+							<Dauer_Unt_Eig>
+								<E3001401>31.12-31.12</E3001401>
+							</Dauer_Unt_Eig>
+							<Best_Art>
+								<E3002203>1</E3002203>
+							</Best_Art>
+						</Allg>
+						<Umsaetze>
+							<Tabelle>
+								<Ums_allg>
+									<Unent_Wertabgaben>
+										<E3003405>5276</E3003405>
+										<E3003406>1002,44</E3003406>
+									</Unent_Wertabgaben>
+								</Ums_allg>
+								<Ums_erm>
+									<Unent_Wertabgaben>
+										<E3003703>-14292</E3003703>
+										<E3003704>-1000,44</E3003704>
+									</Unent_Wertabgaben>
+								</Ums_erm>
+								<Ums_Sum>
+									<E3006001>2,00</E3006001>
+								</Ums_Sum>
+							</Tabelle>
+						</Umsaetze>
+						<Berech_USt>
+							<Tabelle>
+								<E3009201>2,00</E3009201>
+								<E3009801>2,00</E3009801>
+								<E3010201>2,00</E3010201>
+								<E3010601>2,00</E3010601>
+								<Verbl_USt>
+									<E3011101>2,00</E3011101>
+									<E3011301>902,00</E3011301>
+								</Verbl_USt>
+								<Zahl_Erstatt>
+									<E3011401>-900,00</E3011401>
+								</Zahl_Erstatt>
+							</Tabelle>
+						</Berech_USt>
+					</USt2A>
+					<Vorsatz>
+						<Unterfallart>50</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>3096095864199</StNr>
+						<Zeitraum>2023</Zeitraum>
+						<AbsName>Musterabsender</AbsName>
+						<AbsStr>Musterstraße</AbsStr>
+						<AbsOrt>Musterort</AbsOrt>
+						<Copyright>Copyright</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E50>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

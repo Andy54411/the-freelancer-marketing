@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11" >
+    <TransferHeader version="11">
+        <Verfahren>ElsterLavendel</Verfahren>
+        <DatenArt>ELeVErmaessigung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Softwaretester</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">1096</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Testpoint ELSTER</ProduktName>
+                    <ProduktVersion>42</ProduktVersion>
+                </Hersteller>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <ELeVErmaessigung xmlns="http://finkonsens.de/elster/elsterlavendel/elevermaessigung/v2025" version="2025">
+                    <Hauptvordruck>
+                        <Jahr>2025</Jahr>
+                        <OrdNrArt>O</OrdNrArt>
+                        <FaBisher>Musterstadt</FaBisher>
+                        <Antragsteller>
+                            <PersIdNr>04452397687</PersIdNr>
+                            <AnredeId>1</AnredeId>
+                            <Vorname>Max</Vorname>
+                            <Name>Fuchs</Name>
+                            <GebDatum>18.03.1975</GebDatum>
+                            <GebName>Mustermann</GebName>
+                            <Berufsbez>Heizungsbauer</Berufsbez>
+                            <Adrkette>
+                                <PostfAdr>
+                                    <Postfach>1234</Postfach>
+                                    <Plz>54321</Plz>
+                                    <Ort>Testhausen</Ort>
+                                </PostfAdr>
+                            </Adrkette>
+                            <Telefon>
+                                <RufNr>34567</RufNr>
+                            </Telefon>
+                        </Antragsteller>
+                            <Ehegatte>
+                            <PersIdNr>04452317681</PersIdNr>
+                            <AnredeId>2</AnredeId>
+                            <Vorname>Andrea</Vorname>
+                            <Name>Fuchs</Name>
+                            <GebDatum>20.09.1986</GebDatum>
+                            <Berufsbez>Kindergärtnerin</Berufsbez>
+                            <Adrkette>
+                                <AuslAdr>
+                                    <Str>Hauptstraße</Str>
+                                    <HausNr>2</HausNr>
+                                    <HausNrZu>a</HausNrZu>
+                                    <AdressErg>im OG</AdressErg>
+                                    <Plz>12345</Plz>
+                                    <Ort>Beispielshausen</Ort>
+                                    <StaatId>Peru</StaatId>
+                                </AuslAdr>
+                            </Adrkette>
+                        </Ehegatte>
+                    </Hauptvordruck>
+                    <Steuerklassenwechsel>
+                        <ErklaerungWiederaufnahme>
+                            <DatumWiederaufnahme>23.09.2020</DatumWiederaufnahme>
+                        </ErklaerungWiederaufnahme>
+                    </Steuerklassenwechsel>
+                </ELeVErmaessigung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

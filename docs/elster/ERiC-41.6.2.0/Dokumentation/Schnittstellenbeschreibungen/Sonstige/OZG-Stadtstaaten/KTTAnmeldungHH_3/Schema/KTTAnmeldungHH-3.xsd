@@ -1,0 +1,1042 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- KTTAnmeldungHH - 3 - 3.0 - Vorgabe-Vordrucke-Gefiltert: true -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsteranmeldung/kttanmeldunghh/v3" targetNamespace="http://finkonsens.de/elster/elsteranmeldung/kttanmeldunghh/v3" xmlns:exml="http://finkonsens.de/elster/elsteranmeldung/kttanmeldunghh/v3">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMailBaseSType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([^@]+)(@)([^@]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:pattern value="\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMail_MinLm1_MaxL128_SType">
+        <xs:restriction base="EMailBaseSType">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="128"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_AnZr_AnmZR_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>1. Quartal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>2. Quartal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>3. Quartal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="4">
+                <xs:annotation>
+                    <xs:documentation>4. Quartal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="0">
+                <xs:annotation>
+                    <xs:documentation>Jahresanmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_AnZr_ArtA_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="11">
+                <xs:annotation>
+                    <xs:documentation>erstmalig</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12">
+                <xs:annotation>
+                    <xs:documentation>berichtigt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_AnmPfl_AllgemeineAngaben_NNatPers_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>Firma</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>Keine Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_AnmPfl_AllgemeineAngaben_NatPers_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>Keine Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_BehBet_NichtNurNatuerlichePerson_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>Firma</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>Keine Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_Finanzamt_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="2210">
+                <xs:annotation>
+                    <xs:documentation>Hamburg</xs:documentation>
+                    <xs:documentation>Falls für ein Element dieses Typs kein Wert angegeben ist, wird für die Überprüfung der Gültigkeit der Wert &quot;2210&quot; als Default-Wert verwendet. Dies gilt aber nicht, wenn die Struktur, die ein Element dieses Typs umfasst, mehrfach vorkommt.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Anmeldung_der_KTT_TestFA_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="2293">
+                <xs:annotation>
+                    <xs:documentation>Testfinanzamt Hamburg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullSType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType"/>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="NAEnum_LAND_OF_WORLD_2020_1_BaseSType">
+        <xs:restriction base="StringBaseSType">
+            <xs:annotation>
+                <xs:documentation>Afghanistan,Ägypten,Albanien,Algerien,Andorra,Angola,Antigua und Barbuda,Äquatorialguinea,Argentinien,Armenien,Aserbaidschan,Äthiopien,Australien,Bahamas,Bahrain,Bangladesch,Barbados,Belgien,Belize,Benin,Bhutan,Bolivien,Bosnien und Herzegowina,Botsuana,Brasilien,Brunei Darussalam,Bulgarien,Burkina Faso,Burundi,Chile,China,Cookinseln,Costa Rica,Cote d&apos;Ivoire,Dänemark,Deutschland,Dominica,Dominikanische Republik,Dschibuti,Ecuador,El Salvador,Eritrea,Estland,Eswatini,Fidschi,Finnland,Frankreich,Gabun,Gambia,Georgien,Ghana,Grenada,Griechenland,Guatemala,Guinea,Guinea-Bissau,Guyana,Haiti,Honduras,Indien,Indonesien,Irak,Iran,Irland,Island,Israel,Italien,Jamaika,Japan,Jemen,Jordanien,Kambodscha,Kamerun,Kanada,Kap Verde,Kasachstan,Katar,Kenia,Kirgisistan,Kiribati,Kolumbien,Komoren,Kongo,Kongo, Demokratische Republik,Korea, Demokratische Volksrepublik,Korea, Republik,Kosovo,Kroatien,Kuba,Kuwait,Laos,Lesotho,Lettland,Libanon,Liberia,Libyen,Liechtenstein,Litauen,Luxemburg,Madagaskar,Malawi,Malaysia,Malediven,Mali,Malta,Marokko,Marshallinseln,Mauretanien,Mauritius,Mexiko,Föderierte Staaten von Mikronesien,Moldau,Monaco,Mongolei,Montenegro,Mosambik,Myanmar,Namibia,Nauru,Nepal,Neuseeland,Nicaragua,Niederlande,Niger,Nigeria,Niue,Nordmazedonien,Norwegen,Oman,Österreich,Pakistan,Palau,Panama,Papua-Neuguinea,Paraguay,Peru,Philippinen,Polen,Portugal,Ruanda,Rumänien,Russische Föderation,Salomonen,Sambia,Samoa,San Marino,Sao Tome und Principe,Saudi-Arabien,Schweden,Schweiz,Senegal,Serbien,Seychellen,Sierra Leone,Simbabwe,Singapur,Slowakei,Slowenien,Somalia,Spanien,Sri Lanka,St. Kitts und Nevis,St. Lucia,St. Vincent und die Grenadinen,Südafrika,Sudan,Südsudan,Surinam,Syrien,Tadschikistan,Tansania,Thailand,Timor-Leste,Togo,Tonga,Trinidad und Tobago,Tschad,Tschechische Republik,Tunesien,Türkei,Turkmenistan,Tuvalu,Uganda,Ukraine,Ungarn,Uruguay,USA,Usbekistan,Vanuatu,Vatikanstadt,Venezuela,Vereinigte Arabische Emirate,Vereinigtes Königreich,Vietnam,Weißrussland,Zentralafrikanische Republik,Zypern</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MaxL72_Muster90562_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:maxLength value="72"/>
+            <xs:pattern value="\D*"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL100_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL10_Muster91555_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+            <xs:pattern value="\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL120_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="120"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL12_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="12"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL20_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL46_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="46"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL4_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="4"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL89_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="89"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL13_Muster1255396078_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="13"/>
+            <xs:pattern value="\d+-?\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL7_Musterm1317310723_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="7"/>
+            <xs:pattern value="(00|\+)\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL5_MaxL5_Muster2084297628_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="5"/>
+            <xs:maxLength value="5"/>
+            <xs:pattern value="([0]{1}[1-9]{1}[0-9]{3})|([1-9]{1}[0-9]{4})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="KTTAnmeldungHH" type="KTTAnmeldungHH_CType"/>
+    <xs:complexType name="KTTAnmeldungHH_CType">
+        <xs:sequence>
+            <xs:element name="Anmeldung_der_KTT" type="Anmeldung_der_KTT_m632924955_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="3" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="Anmeldung_der_KTT_m632924955_CType">
+        <xs:sequence>
+            <xs:element name="TestFA" type="Enum_Anmeldung_der_KTT_TestFA_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Test-Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Finanzamt" type="Enum_Anmeldung_der_KTT_Finanzamt_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StNr" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnZr" type="AnZr_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="AnmPfl" type="AnmPfl_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="BehBet" type="BehBet_1741861080_CType" minOccurs="0" maxOccurs="100"/>
+            <xs:element name="UeN" type="UeN_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_V3" type="Stpfl_UE_V3_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE" type="Stpfl_UE_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="StGesamt" type="StGesamt_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EOP" type="EOP_1741861080_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AnZr_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kalenderjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnmZR" type="Enum_Anmeldung_der_KTT_AnZr_AnmZR_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anmeldungszeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArtA" type="Enum_Anmeldung_der_KTT_AnZr_ArtA_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art der Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AnmPfl_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="AllgemeineAngaben" type="AllgemeineAngaben_1099203404_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AllgemeineAngaben_1099203404_CType">
+        <xs:sequence>
+            <xs:element name="NatPers" type="NatPers_m1256965133_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="NNatPers" type="NNatPers_m1256965133_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Inlandsadresse" type="Inlandsadresse_m1256965133_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kommunikation" type="Kommunikation_m1256965133_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="AuslandAdr" type="AuslandAdr_m1256965133_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatPers_m1256965133_CType">
+        <xs:sequence>
+            <xs:element name="IdNr" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="GebDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Geburtsdatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnredeId" type="Enum_Anmeldung_der_KTT_AnmPfl_AllgemeineAngaben_NatPers_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NNatPers_m1256965133_CType">
+        <xs:sequence>
+            <xs:element name="AnredeId" type="Enum_Anmeldung_der_KTT_AnmPfl_AllgemeineAngaben_NNatPers_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenbezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Inlandsadresse_m1256965133_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Plz" type="String_MinL5_MaxL5_Muster2084297628_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MaxL72_Muster90562_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kommunikation_m1256965133_CType">
+        <xs:sequence>
+            <xs:element name="Tel" type="Tel_m953374009_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="Email" type="Email_m953374009_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Fax" type="Fax_m953374009_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Tel_m953374009_CType">
+        <xs:sequence>
+            <xs:element name="IntVorw" type="String_MinL2_MaxL7_Musterm1317310723_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl international</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NatVorw" type="String_MinL1_MaxL10_Muster91555_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl national</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RufNr" type="String_MinL2_MaxL13_Muster1255396078_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rufnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Email_m953374009_CType">
+        <xs:sequence>
+            <xs:element name="Adresse" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Fax_m953374009_CType">
+        <xs:sequence>
+            <xs:element name="FaxNummer" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fax-Nummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AuslandAdr_m1256965133_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AuslPlz" type="String_MinL1_MaxL12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StaatId" type="NAEnum_LAND_OF_WORLD_2020_1_BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Staat</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BehBet_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="NichtNurNatuerlichePerson" type="NichtNurNatuerlichePerson_m1006649246_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NichtNurNatuerlichePerson_m1006649246_CType">
+        <xs:sequence>
+            <xs:element name="AnredeId" type="Enum_Anmeldung_der_KTT_BehBet_NichtNurNatuerlichePerson_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenbezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Inlandsadresse" type="Inlandsadresse_96555844_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kommunikation" type="Kommunikation_96555844_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Inlandsadresse_96555844_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Plz" type="String_MinL5_MaxL5_Muster2084297628_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MaxL72_Muster90562_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kommunikation_96555844_CType">
+        <xs:sequence>
+            <xs:element name="Tel" type="Tel_400146968_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="Email" type="Email_400146968_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Fax" type="Fax_400146968_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Tel_400146968_CType">
+        <xs:sequence>
+            <xs:element name="IntVorw" type="String_MinL2_MaxL7_Musterm1317310723_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl international</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NatVorw" type="String_MinL1_MaxL10_Muster91555_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl national</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RufNr" type="String_MinL2_MaxL13_Muster1255396078_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rufnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Email_400146968_CType">
+        <xs:sequence>
+            <xs:element name="Adresse" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Fax_400146968_CType">
+        <xs:sequence>
+            <xs:element name="FaxNummer" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fax-Nummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="UeN_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="GesUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gesamtzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NStb" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>davon nicht steuerbar:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Stpfl" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerpflichtig:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_V3_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="Stpfl_UE25_10" type="Stpfl_UE25_10_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_25" type="Stpfl_UE25_25_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_50" type="Stpfl_UE25_50_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_100" type="Stpfl_UE25_100_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_150" type="Stpfl_UE25_150_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_200" type="Stpfl_UE25_200_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_250" type="Stpfl_UE25_250_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_300" type="Stpfl_UE25_300_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_350" type="Stpfl_UE25_350_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_400" type="Stpfl_UE25_400_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_400_plus" type="Stpfl_UE25_400_plus_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE25_ErsatzBMG" type="Stpfl_UE25_ErsatzBMG_m685797896_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_10_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_25_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_50_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_100_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_150_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_200_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_250_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_300_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_350_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_400_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_400_plus_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE25_ErsatzBMG_m685797896_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE25" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="Stpfl_UE_10" type="Stpfl_UE_10_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_25" type="Stpfl_UE_25_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_50" type="Stpfl_UE_50_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_100" type="Stpfl_UE_100_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_150" type="Stpfl_UE_150_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_200" type="Stpfl_UE_200_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_250" type="Stpfl_UE_250_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_300" type="Stpfl_UE_300_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_350" type="Stpfl_UE_350_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_400" type="Stpfl_UE_400_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_400_plus" type="Stpfl_UE_400_plus_244456176_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Stpfl_UE_ErsatzBMG" type="Stpfl_UE_ErsatzBMG_244456176_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_10_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_25_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_50_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_100_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_150_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_200_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_250_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_300_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_350_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_400_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_400_plus_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Stpfl_UE_ErsatzBMG_244456176_CType">
+        <xs:sequence>
+            <xs:element name="AnzUe" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Übernachtungen:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeUE" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe Steuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="StGesamt_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="SteuerGesamt" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuer gesamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EOP_1741861080_CType">
+        <xs:sequence>
+            <xs:element name="Transferaufgabe" type="String_MinL1_MaxL89_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Transferaufgabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

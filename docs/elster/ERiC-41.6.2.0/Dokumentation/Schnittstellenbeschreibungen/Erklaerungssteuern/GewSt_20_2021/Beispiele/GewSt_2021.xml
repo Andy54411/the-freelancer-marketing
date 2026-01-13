@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>GewSt</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Entwicklung</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">2241</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERICTest</ProduktName>
+					<ProduktVersion>2009.1/0</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E20 xmlns="http://finkonsens.de/elster/elstererklaerung/gewst/e20/v2021" version="2021">
+					<GewSt1A>
+						<Allgemein>
+							<E4000101>Unternehmer Baier</E4000101>
+							<E4000201>Minimalhändler</E4000201>
+						</Allgemein>
+						<Rechtsform>
+							<E4000501>350</E4000501>
+						</Rechtsform>
+						<Abw_Empf>
+							<E4001420>Steuerberater</E4001420>
+							<E4001410>Fischer</E4001410>
+							<E4001411>Georg</E4001411>
+							<E4001412>Beteiigungsallee</E4001412>
+							<E4001413>12345 Beteiligtenhausen</E4001413>
+						</Abw_Empf>
+						<Ang_Gew_Betr>
+							<Betr_St>
+								<E4001506>2</E4001506>
+								<E4001507>1</E4001507>
+								<E4001102>2</E4001102>
+								<E4001110>12345</E4001110>
+								<E4001111>Beteiligtenhausen</E4001111>
+							</Betr_St>
+						</Ang_Gew_Betr>
+						<Gewinn>
+							<E4001703>1</E4001703>
+						</Gewinn>
+						<Steuerberater>
+							<Mitwirkung>
+								<E4002002>1</E4002002>
+								<Anfertigung>
+									<E4001610>Steuerberater</E4001610>
+									<E4001611>Schneider</E4001611>
+									<E4001612>Teststraße 12345</E4001612>
+									<E4001613>12345 Testheim</E4001613>
+									<E4001614>0101-123456</E4001614>
+									<E4001615>in Vertretung</E4001615>
+									<E4001616>123456#++</E4001616>
+									<E4001618>abx</E4001618>
+								</Anfertigung>
+							</Mitwirkung>
+						</Steuerberater>
+					</GewSt1A>
+					<Vorsatz>
+						<Unterfallart>20</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>2241081508154</StNr>
+						<Zeitraum>2021</Zeitraum>
+						<AbsName>Testfallversand ERiC</AbsName>
+						<AbsStr>Musterstraße 5</AbsStr>
+						<AbsPlz>34567</AbsPlz>
+						<AbsOrt>Teststadt</AbsOrt>
+						<Copyright>Testpoint</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E20>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

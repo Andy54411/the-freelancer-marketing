@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterDatenabholung</Verfahren>
+        <DatenArt>PostfachBestaetigung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000001</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Beispiele</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+                    <PostfachBestaetigung>
+                      <Bereitstellungen>
+                        <Bereitstellung id="be2156xz75hi9y32ekgb2kpewrvxemma"/>
+                       </Bereitstellungen>
+                    </PostfachBestaetigung>
+                </Datenabholung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

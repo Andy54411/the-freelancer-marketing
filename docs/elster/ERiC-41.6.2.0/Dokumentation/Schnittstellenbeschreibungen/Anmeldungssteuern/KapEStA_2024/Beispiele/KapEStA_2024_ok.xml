@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterKapESt</Verfahren>
+        <DatenArt>KapEStA</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Softwaretester ERiC-QS</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERiC Unittest</ProduktName>
+                    <ProduktVersion>37.1</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <KapEStA xmlns="http://finkonsens.de/elster/elsterkapest/kapesta/v2024" version="2024">
+                    <KapEAnm>X</KapEAnm>
+                    <BuStNr>2227047908039</BuStNr>
+                    <BArt>1</BArt>
+                    
+                    <AllgAngaben>                    
+                        <AnmZtr>20241231</AnmZtr>
+                        
+                        <Schuldner>
+                            <Name>ERiC-QS</Name>
+                            <Telefon>08912345</Telefon>
+                            <StrAdrInl>
+                                <PLZ>12345</PLZ>
+                                <Ort>x</Ort>
+                            </StrAdrInl>
+                        </Schuldner>
+                        
+                        <Berater>
+                            <Bezeichnung>Steuerberater</Bezeichnung>
+                            <Vorname>Maximiliane</Vorname>
+                            <Name>Musterfrau</Name>
+                            <StrAdrInl>
+                                <Str>Schlossallee</Str>
+                                <Hausnummer>1</Hausnummer>
+                                <HNrZusatz>Rueckgebaeude</HNrZusatz>
+                                <PLZ>12345</PLZ>
+                                <Ort>Antenhausen</Ort>
+                            </StrAdrInl>
+                        </Berater>
+                    </AllgAngaben>
+                    
+                    <KapEZ>                    
+                        <KapErtrSch25>
+                            <KapErtr>
+                                <KapESch25>4970</KapESch25> 
+                                <KapESch25P7Abs3>7647</KapESch25P7Abs3> 
+                            </KapErtr>
+                            <KapESt>
+                                <KapESch25St>96.35</KapESch25St> 
+                                <KapESch25P7Abs3St>1108</KapESch25P7Abs3St>
+                                <KapESch25P7Abs5St>62.89</KapESch25P7Abs5St> 
+                                <KapESch25StSum>1141.46</KapESch25StSum>
+                            </KapESt>
+                            <Soli>
+                                <KapESch25Sz>6.29</KapESch25Sz>
+                                <KapESch25P7Abs3Sz>38.48</KapESch25P7Abs3Sz>
+                                <KapESch25P7Abs5Sz>92.67</KapESch25P7Abs5Sz> 
+                                <KapESch25SzSum>-47.90</KapESch25SzSum>
+                            </Soli>
+                            <GewVertBeschl>
+                                <GewVertBeschlDat>20231201</GewVertBeschlDat>
+                                <GewVertBeschlBet>-7</GewVertBeschlBet>
+                                <GewVertBeschlTag>20241231</GewVertBeschlTag>
+                            </GewVertBeschl>
+                        </KapErtrSch25>
+                    </KapEZ>
+                    
+                    <KapErtrSch15>
+                        <P43Abs1Satz1Nr_7b_7c>
+                            <KapErtr>
+                                <KapESch15P7Abs3>7945</KapESch15P7Abs3>
+                            </KapErtr>
+                            
+                            <KapESt>
+                                <KapESch15P7Abs3St>1155</KapESch15P7Abs3St>
+                                <KapESch15P7Abs5St>76.00</KapESch15P7Abs5St>
+                                <KapESch15StSum>1079.00</KapESch15StSum>
+                                <KapESchStSum>2220</KapESchStSum>
+                            </KapESt>
+
+                            <Soli>
+                                <KapESch15P7Abs3Sz>41.31</KapESch15P7Abs3Sz>
+                                <KapESch15P7Abs5Sz>13.94</KapESch15P7Abs5Sz>
+                                <KapESch15SzSum>27.37</KapESch15SzSum>
+                                <KapESchSzSum>-20.53</KapESchSzSum>
+                            </Soli>
+                        </P43Abs1Satz1Nr_7b_7c>
+                    </KapErtrSch15>
+
+                    <Kirchensteuerdaten>
+                        <K010100>31.50</K010100>
+                        <K010200>62.49</K010200>
+                        <K010300>78.15</K010300>
+                        <K010400>98.87</K010400>
+                        <K010500>21.64</K010500>
+                        <K010600>61.20</K010600>
+                        <K010800>39.69</K010800>
+                        <K010900>70.54</K010900>
+                        <K011000>52.02</K011000>
+                        <K011100>53.50</K011100>
+                        <K011200>36.95</K011200>
+                        <K011300>92.86</K011300>
+                        <K011400>62.53</K011400>
+                        <K011500>73.47</K011500>
+                        <K011600>58.13</K011600>
+                        <K011700>99.57</K011700>
+                        <K011900>75.28</K011900>
+                        <K012000>56.79</K012000>
+                        <K012300>75.12</K012300>
+                        <K012400>30.94</K012400>
+                        <K025100>49.16</K025100>
+                        <K025200>18.47</K025200>
+                        <K025300>63.49</K025300>
+                        <K025400>75.06</K025400>
+                        <K025500>35.73</K025500>
+                        <K025600>39.41</K025600>
+                        <K025700>26.64</K025700>
+                        <K025800>58.26</K025800>
+                        <K025900>43.02</K025900>
+                        <K026000>88.82</K026000>
+                        <K026100>53.00</K026100>
+                        <K026200>16.35</K026200>
+                        <K026300>27.35</K026300>
+                        <K026400>13.77</K026400>
+                        <K026500>28.61</K026500>
+                        <K026600>31.76</K026600>
+                        <K026700>89.61</K026700>
+                        <K026800>91.46</K026800>
+                        <K026900>96.95</K026900>
+                        <K027000>54.20</K027000>
+                        <K027100>46.19</K027100>
+                        <K027200>85.06</K027200>
+                        <K027300>14.02</K027300>
+                        <K027400>63.93</K027400>
+                        <K027500>24.55</K027500>
+                        <K027600>48.38</K027600>
+                        <K027700>46.57</K027700>
+                        <K027800>28.51</K027800>
+                        <K033200>42.27</K033200>
+                        <K044000>76.99</K044000>
+                        <K044100>70.89</K044100>
+                        <K044200>40.96</K044200>
+                        <K044300>52.60</K044300>
+                        <K044400>91.25</K044400>
+                        <K044500>86.74</K044500>
+                        <K044600>96.13</K044600>
+                        <K044700>74.39</K044700>
+                        <K044800>76.91</K044800>
+                        <K044900>30.30</K044900>
+                        <K058200>92.71</K058200>
+                        <K058300>12.87</K058300>
+                        <K058400>89.19</K058400>
+                        <K058500>13.49</K058500>
+                        <K058600>-3500.06</K058600>
+                        <KSum>37.20</KSum>
+                    </Kirchensteuerdaten>
+
+                    <KorrekturKirchensteuerdatenVor2015>
+                        <KorKiEv>58.26</KorKiEv>
+                        <KorKiRK>99.92</KorKiRK>
+                        <KorKuJKOKH>33.70</KorKuJKOKH>
+                        <KorSum>191.88</KorSum>
+                    </KorrekturKirchensteuerdatenVor2015>            
+
+                    <SummeKirchensteuerdaten>
+                        <GSum>229.08</GSum>
+                    </SummeKirchensteuerdaten>
+                    
+                </KapEStA>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

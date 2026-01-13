@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>SpezRechtListe</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <TransferTicket>br1274nqvydy7s231dz9sotey20sjdi8</TransferTicket>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ElsterBRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel />
+        </Datei>
+        <RC>
+            <Rueckgabe>
+                <Code>0</Code>
+                <Text>OK</Text>
+            </Rueckgabe>
+            <Stack>
+                <Code>0</Code>
+                <Text />
+            </Stack>
+        </RC>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <RC>
+                    <Rueckgabe>
+                        <Code>0</Code>
+                        <Text>OK</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>0</Code>
+                        <Text />
+                    </Stack>
+                </RC>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <SpezRechtListe version="7">
+                        <Vollmachtsdaten>
+                            <VollmachtsID>0100G10469836542000027266</VollmachtsID>
+                            <Datum>2016-07-27</Datum>
+                            <Status>aktiv</Status>
+                            <VollmachtnehmerID>
+                                <Herausgeber>0100</Herausgeber>
+                                <HauptID>104698365</HauptID>
+                                <SubID>000000000</SubID>
+                            </VollmachtnehmerID>
+                            <Vollmachtnehmer>
+                                <Name>Kanzlei1</Name>
+                                <Name2> im Inland</Name2>
+                                <Anschrift>
+                                    <Str>Musterstrasse 1</Str>
+                                    <Ort>Musterort</Ort>
+                                    <PLZ>12345</PLZ>
+                                </Anschrift>
+                            </Vollmachtnehmer>
+                            <Vollmachtgeber>
+                                <Name>Dagobert Duck</Name>
+                                <DateninhaberIdNr>04146325799</DateninhaberIdNr>
+                            </Vollmachtgeber>
+                            <AusschlussVerwIdNr>true</AusschlussVerwIdNr>
+                            <Steuernummern/>
+                            <Ausschluesse>
+                                <Ausschluss>ElsterKontoabfrage|Kontoabfrage</Ausschluss>
+                            </Ausschluesse>
+                            <Untervollmachten>true</Untervollmachten>
+                            <Veranlagungszeitraum>
+                                <Unbeschraenkt>true</Unbeschraenkt>
+                            </Veranlagungszeitraum>
+                        </Vollmachtsdaten>
+                </SpezRechtListe>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

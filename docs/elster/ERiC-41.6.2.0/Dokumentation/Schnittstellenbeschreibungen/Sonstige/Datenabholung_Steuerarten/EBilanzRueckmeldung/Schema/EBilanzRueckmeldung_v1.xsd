@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema für EBilanzRueckmeldung -->
+<xs:schema xmlns:ebilanz="http://rzf.fin-nrw.de/RMS/EBilanz/2016/XMLSchema" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xbrli="http://www.xbrl.org/2003/instance" targetNamespace="http://rzf.fin-nrw.de/RMS/EBilanz/2016/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- Importe -->
+	<xs:import namespace="http://www.xbrl.org/2003/instance" schemaLocation="http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd"/>
+	<!-- Ende Importe -->
+	<!-- Wurzelelement -->
+	<xs:element name="EBilanz" type="ebilanz:EBilanzRueckmeldungCType_v1"/>
+	<!-- Datentyp für EBilanz -->
+	<xs:complexType name="EBilanzRueckmeldungCType_v1">
+		<xs:sequence>
+			<xs:element name="stichtag">
+				<xs:annotation>
+					<xs:documentation>Datum im Format YYYYMMTT</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:int">
+						<xs:maxInclusive value="99999999"/>
+						<xs:minInclusive value="0"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element ref="xbrli:xbrl"/>
+		</xs:sequence>
+		<xs:attribute name="version" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="2"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

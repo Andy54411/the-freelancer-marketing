@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Adapterschema für die elektronische Lohnsteuerbescheinigung 2021 (Version 202101).
+	=============
+	Änderungshistorie
+	Version 1: Erstellung
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://www.elsterlohn.de/2021-01/XMLSchema" targetNamespace="http://www.elsterlohn.de/2021-01/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- RootElement = Lohnsteuerbescheinigung 2021_________________________________________________-->
+	<xs:include schemaLocation="./lstb202101.xsd"/>
+	<xs:element name="Lohnsteuerbescheinigung" type="elsterlohn:lstb_LohnsteuerbescheinigungCType"/>
+</xs:schema>

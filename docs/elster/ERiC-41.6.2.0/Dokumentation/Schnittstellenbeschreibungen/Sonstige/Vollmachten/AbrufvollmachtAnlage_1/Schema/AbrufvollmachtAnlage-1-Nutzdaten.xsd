@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:abrufvollmachtAnlage="http://finkonsens.de/elster/elsterbrm/abrufvollmachtanlage/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/abrufvollmachtanlage/v1" schemaLocation="AbrufvollmachtAnlage-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="abrufvollmachtAnlage:AbrufvollmachtAnlage"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

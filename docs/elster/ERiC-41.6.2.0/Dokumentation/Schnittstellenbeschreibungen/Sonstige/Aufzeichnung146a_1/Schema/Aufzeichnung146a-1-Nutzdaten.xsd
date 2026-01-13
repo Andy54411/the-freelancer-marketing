@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:aufzeichnung146a="http://finkonsens.de/elster/elsternachricht/aufzeichnung146a/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsternachricht/aufzeichnung146a/v1" schemaLocation="Aufzeichnung146a-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="aufzeichnung146a:Aufzeichnung146a"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

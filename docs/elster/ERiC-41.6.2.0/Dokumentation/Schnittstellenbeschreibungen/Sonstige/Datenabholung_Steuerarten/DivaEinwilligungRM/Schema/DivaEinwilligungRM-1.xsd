@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://finkonsens.de/elster/elsterbereitstellung/divaeinwilligungrm/v1" targetNamespace="http://finkonsens.de/elster/elsterbereitstellung/divaeinwilligungrm/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="DivaEinwilligungRM" type="DivaEinwilligungRM_CType"/>
+	<xs:complexType name="DivaEinwilligungRM_CType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Rückmeldung zur Verarbeitung einer Vollmacht von ELSTER-BRM an BestDB. Die Abholung der Nutzdaten erfolgt über die Datenart ElsterDatenabholung|MitteilungAbholung.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="DivaEinwilligungID" type="DivaEinwilligungID_SType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Die ID der Einwilligungserklärung, die diese Rückmeldung betrifft.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RC" type="NutzdatenRC_CType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Der ReturnCode der Einwilligungsverarbeitung, bestehend aus Code und Text.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="version" use="required" fixed="1"/>
+	</xs:complexType>
+	<xs:complexType name="NutzdatenRC_CType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Definiert den Inhalt eines Verarbeitungsergebnisses. Dieser besteht aus einem Code und einer textuellen Beschreibung.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Code" type="CodeSType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Verarbeitungsergebnis als Code; "0" bzw. bedeutet eine fehlerfreie Verarbeitung. Ansonsten wird der Fehlercode angegeben.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Text" type="StringBaseSType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Eine textuelle Beschreibung des Verarbeitungsergebnisses.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="DivaEinwilligungID_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Pattern für DivaEinwilliungsID</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="\d{4}G\d{20}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="StringBaseSType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+				</xs:annotation>
+			</xs:pattern>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="CodeSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Der Elster-Returncode. Im Erfolgsfall ist dieser "0". Im Fehlerfall 9-stellig und von "000000000" verschieden. Die Syntax der Fehlernummern ist auf der Seite https://work.elster.de/elsterconfluence/x/iDY beschrieben.
+				Ausnahme: In der VDB wird der 9-stellige Fehlercode "000000000" im Erfolgsfall verwendet.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="0"/>
+			<xs:pattern value="\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

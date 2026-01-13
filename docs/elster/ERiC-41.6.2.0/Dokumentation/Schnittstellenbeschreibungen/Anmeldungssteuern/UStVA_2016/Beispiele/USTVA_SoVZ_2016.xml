@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterAnmeldung</Verfahren>
+		<DatenArt>UStVA</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>datenlieferant</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel />
+		</Datei>
+		<RC>
+			<Rueckgabe>
+				<Code>0</Code>
+				<Text />
+			</Rueckgabe>
+			<Stack>
+				<Code>0</Code>
+				<Text />
+			</Stack>
+		</RC>
+		<VersionClient>Programm XY</VersionClient>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>234234234</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+				<Zusatz>
+					<Info>....</Info>
+				</Zusatz>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<!-- die Version gibt Auskunft über das Jahr und die derzeit gültige Versionsnummer -->
+				<Anmeldungssteuern art="UStVA" version="201601">
+					<DatenLieferant>
+						<Name>Bayerisches Landesamt für Steuern</Name>
+						<Strasse>Meiserstr. 6</Strasse>
+						<PLZ>80335</PLZ>
+						<Ort>München</Ort>
+						<Telefon>089/0815 0815</Telefon>
+						<Email>email@adresse.de</Email>
+					</DatenLieferant>
+					<Erstellungsdatum>20160209</Erstellungsdatum>
+					<Steuerfall>
+						<Berater>
+							<Bezeichnung>Unternehmername</Bezeichnung>
+							<Name>name</Name>
+							<Vorname>vorname</Vorname>
+							<Namensvorsatz>freiherr</Namensvorsatz>
+							<Namenszusatz>von</Namenszusatz>
+							<Str>Weg</Str>
+							<Hausnummer>3</Hausnummer>
+							<HNrZusatz>a</HNrZusatz>
+							<AnschriftenZusatz>3.Stock</AnschriftenZusatz>
+							<Ort>München</Ort>
+							<PLZ>80333</PLZ>
+							<AuslandsPLZ>153</AuslandsPLZ>
+							<Land>Dänemark</Land>
+							<PostfachOrt>München</PostfachOrt>
+							<Postfach>103</Postfach>
+							<PostfachPLZ>80311</PostfachPLZ>
+							<GKPLZ>12345</GKPLZ>
+							<Telefon>0890815</Telefon>
+							<Email>adresse@email.de</Email>
+						</Berater>
+						<Mandant>
+							<Name>name</Name>
+							<Vorname>vorname</Vorname>
+							<MandantenNr>12</MandantenNr>
+							<Bearbeiterkennzeichen>kennzeichen</Bearbeiterkennzeichen>
+						</Mandant>
+						<Unternehmer>
+							<Bezeichnung>Unternehmername</Bezeichnung>
+							<Name>name</Name>
+							<Vorname>vorname</Vorname>
+							<Namensvorsatz>freiherr</Namensvorsatz>
+							<Namenszusatz>von</Namenszusatz>
+							<Str>Weg</Str>
+							<Hausnummer>5</Hausnummer>
+							<HNrZusatz>c</HNrZusatz>
+							<AnschriftenZusatz>Wohneinheit 23</AnschriftenZusatz>
+							<Ort>München</Ort>
+							<PLZ>80333</PLZ>
+							<AuslandsPLZ>52432</AuslandsPLZ>
+							<Land>Spanien</Land>
+							<PostfachOrt>München</PostfachOrt>
+							<Postfach>236</Postfach>
+							<PostfachPLZ>80311</PostfachPLZ>
+							<GKPLZ>25463</GKPLZ>
+							<Telefon>08908150815</Telefon>
+							<Email>email@adresse.de</Email>
+						</Unternehmer>
+						<Umsatzsteuersondervorauszahlung>
+							<Jahr>2016</Jahr>
+							<Steuernummer>9198011310134</Steuernummer>
+							<Kz09>74931</Kz09>
+							<Kz10>1</Kz10>
+							<Kz26>1</Kz26>
+							<Kz29>1</Kz29>
+							<Kz38>9999999999999</Kz38>
+						</Umsatzsteuersondervorauszahlung>
+					</Steuerfall>
+				</Anmeldungssteuern>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

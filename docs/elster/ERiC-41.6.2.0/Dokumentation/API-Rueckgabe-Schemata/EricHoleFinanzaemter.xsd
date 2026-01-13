@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:eric="http://www.elster.de/EricXML/1.0/EricHoleFinanzaemter"
+		targetNamespace="http://www.elster.de/EricXML/1.0/EricHoleFinanzaemter"
+		elementFormDefault="qualified">
+	
+	<annotation>
+		<documentation xml:lang="de">
+			XML-Daten mit diesem Schema werden von der ERiC-Funktion EricHoleFinanzaemter im Rückgabepuffer zurückgegeben.
+		</documentation>
+	</annotation>
+	
+	<element name="EricHoleFinanzaemter">
+		<annotation>
+			<documentation xml:lang="de">
+				Wurzelelement für Rückgabedaten. Enthält eine Auflistung der gewünschten Finanzämter bestehend aus
+				deren Nummer und Name.
+			</documentation>
+		</annotation>
+	
+		<complexType>
+			<choice>
+				<element name="Finanzamt" type="eric:FinanzamtTyp" maxOccurs="unbounded" />
+			</choice>
+		</complexType>
+	</element>
+	
+	<complexType name="FinanzamtTyp">
+		<annotation>
+			<documentation xml:lang="de">
+				Eines der zurückgegebenen Finanzämter. Es wird die Bundesfinanzamtsnummer, die das Finanzamt identifiziert
+				und der Name des Finanzamts zurückgegeben.
+			</documentation>
+		</annotation>
+	
+		<sequence>
+			<element name="BuFaNummer" type="eric:BuFaNummerTyp" />
+			<element name="Name" type="string" />
+		</sequence>
+	</complexType>
+	
+	<simpleType name="BuFaNummerTyp">
+		<restriction base="string">
+			<pattern value="\d{4}"/>
+		</restriction>
+	</simpleType>
+</schema>

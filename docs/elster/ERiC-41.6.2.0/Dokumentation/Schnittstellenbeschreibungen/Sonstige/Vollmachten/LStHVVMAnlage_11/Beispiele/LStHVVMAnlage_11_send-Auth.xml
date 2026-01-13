@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterBRM</Verfahren>
+		<DatenArt>LStHVVMAnlage</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>370000001</Testmerker>
+		<Empfaenger id="L">
+			<Ziel>CS</Ziel>
+		</Empfaenger>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Mein ELSTER 5000927536</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>ep0043p1krtefd32nuj85z10jzk8gioo</NutzdatenTicket>
+				<Empfaenger id="L">CS</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<LStHVVMAnlage xmlns="http://finkonsens.de/elster/elsterbrm/lsthvvmanlage/v11" version="11">
+					<LStHVVMAnlage>
+						<Vollmachtgeber>
+							<NatuerlichePerson>
+								<Identifikationsnummer>45231891707</Identifikationsnummer>
+								<Geburtsdatum>01.01.2000</Geburtsdatum>
+								<Vorname>Andrea</Vorname>
+								<Name>Baier</Name>
+							</NatuerlichePerson>
+						</Vollmachtgeber>
+						<Untervollmachten>
+							<UntervollmachtenMoeglich>X</UntervollmachtenMoeglich>
+						</Untervollmachten>
+						<Ausschluss>
+							<SteuerartenUndVerfahren>
+								<SteuerartOderVerfahren>Festsetzungsverfahren</SteuerartOderVerfahren>
+							</SteuerartenUndVerfahren>
+						</Ausschluss>
+						<Bekanntgabevollmacht>
+							<EntgegennahmeMahnungen>X</EntgegennahmeMahnungen>
+						</Bekanntgabevollmacht>
+						<ZeitlicheVertretung>
+							<Vollmachtsdauer>
+								<AbVZ>2020</AbVZ>
+								<BisVZ>2021</BisVZ>
+							</Vollmachtsdauer>
+						</ZeitlicheVertretung>
+						<ErloeschenVollmacht>
+							<VollmachtErloeschen>VollmachtDiesesBeteiligtenLoeschen</VollmachtErloeschen>
+						</ErloeschenVollmacht>
+						<EinverstaendnisDatenuebermittlung>
+							<Einverstaendniserklaerung>X</Einverstaendniserklaerung>
+						</EinverstaendnisDatenuebermittlung>
+						<Steuernummern>
+							<NeuaufnahmeSteuernummer>
+								<Finanzamt>9248</Finanzamt>
+							</NeuaufnahmeSteuernummer>
+						</Steuernummern>
+					</LStHVVMAnlage>
+				</LStHVVMAnlage>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

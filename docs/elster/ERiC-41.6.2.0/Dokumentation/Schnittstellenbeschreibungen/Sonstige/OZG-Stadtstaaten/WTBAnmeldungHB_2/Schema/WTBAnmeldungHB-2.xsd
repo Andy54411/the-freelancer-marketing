@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- WTBAnmeldungHB - 2 - 3.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsteranmeldung/wtbanmeldunghb/v2" targetNamespace="http://finkonsens.de/elster/elsteranmeldung/wtbanmeldunghb/v2" xmlns:exml="http://finkonsens.de/elster/elsteranmeldung/wtbanmeldunghb/v2">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="EMailBaseSType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([^@]+)(@)([^@]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DATUM_MMJJBaseSType">
+        <xs:annotation>
+            <xs:documentation>DATUM_MMJJ</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(01|02|03|04|05|06|07|08|09|10|11|12)\.[0-9]{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMail_MinLm1_MaxL128_SType">
+        <xs:restriction base="EMailBaseSType">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="128"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_WTBAnmeldungHB_Finanzamt_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="2460">
+                <xs:annotation>
+                    <xs:documentation>Bremen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_WTBAnmeldungHB_Persoenliche_Angaben_Adressangaben_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>Firma</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>Keine Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_WTBAnmeldungHB_TestFA_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="2497">
+                <xs:annotation>
+                    <xs:documentation>Bremen - Schulungssystem</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_MaxVK7_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:totalDigits value="7"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_MaxVK8_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:totalDigits value="8"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_Muster1432008018_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:pattern value=".{0,4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Ja1BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MaxL72_Muster90562_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:maxLength value="72"/>
+            <xs:pattern value="\D*"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL100_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL10_Muster91555_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+            <xs:pattern value="\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL120_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="120"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL20_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL46_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="46"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL4_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="4"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL89_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="89"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL13_Muster1255396078_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="13"/>
+            <xs:pattern value="\d+-?\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL7_Musterm1317310723_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="7"/>
+            <xs:pattern value="(00|\+)\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL5_MaxL5_Muster2084297628_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="5"/>
+            <xs:maxLength value="5"/>
+            <xs:pattern value="([0]{1}[1-9]{1}[0-9]{3})|([1-9]{1}[0-9]{4})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="WTBAnmeldungHB" type="WTBAnmeldungHB_CType"/>
+    <xs:complexType name="WTBAnmeldungHB_CType">
+        <xs:sequence>
+            <xs:element name="WTBAnmeldungHB" type="WTBAnmeldungHB_m433182811_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="WTBAnmeldungHBA1" type="WTBAnmeldungHBA1_m433182811_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="2" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="WTBAnmeldungHB_m433182811_CType">
+        <xs:sequence>
+            <xs:element name="Finanzamt" type="Enum_WTBAnmeldungHB_Finanzamt_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="TestFA" type="Enum_WTBAnmeldungHB_TestFA_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Test-Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Besteuerungszeitraum" type="Besteuerungszeitraum_m976948095_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Persoenliche_Angaben" type="Persoenliche_Angaben_m976948095_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Anmeldung" type="Anmeldung_m976948095_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EOP" type="EOP_m976948095_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Besteuerungszeitraum_m976948095_CType">
+        <xs:sequence>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Zeitraum" type="DATUM_MMJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Monat/Jahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berichtigung" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Berichtigte Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Persoenliche_Angaben_m976948095_CType">
+        <xs:sequence>
+            <xs:element name="Adressangaben" type="Adressangaben_m684749979_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Adressangaben_m684749979_CType">
+        <xs:sequence>
+            <xs:element name="AnredeId" type="Enum_WTBAnmeldungHB_Persoenliche_Angaben_Adressangaben_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL120_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenbezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Inlandsadresse" type="Inlandsadresse_101202361_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kommunikation" type="Kommunikation_101202361_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Inlandsadresse_101202361_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Plz" type="String_MinL5_MaxL5_Muster2084297628_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MaxL72_Muster90562_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kommunikation_101202361_CType">
+        <xs:sequence>
+            <xs:element name="Tel" type="Tel_404793485_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="Email" type="Email_404793485_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Fax" type="Fax_404793485_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Tel_404793485_CType">
+        <xs:sequence>
+            <xs:element name="IntVorw" type="String_MinL2_MaxL7_Musterm1317310723_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl international</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NatVorw" type="String_MinL1_MaxL10_Muster91555_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl national</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RufNr" type="String_MinL2_MaxL13_Muster1255396078_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rufnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Email_404793485_CType">
+        <xs:sequence>
+            <xs:element name="Adresse" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Fax_404793485_CType">
+        <xs:sequence>
+            <xs:element name="FaxNummer" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fax-Nummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anmeldung_m976948095_CType">
+        <xs:sequence>
+            <xs:element name="Anzahl_Bildschirme" type="GanzzahlNichtNegOhneFuehrNull_Muster1432008018_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Bildschirme nach § 11 Absatz 1 Vergnügungssteuergesetz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Wettbuerosteuer" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zu entrichtende Wettbürosteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EOP_m976948095_CType">
+        <xs:sequence>
+            <xs:element name="Transferaufgabe" type="String_MinL1_MaxL89_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Transferaufgabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="WTBAnmeldungHBA1_m433182811_CType">
+        <xs:sequence>
+            <xs:element name="Aufstellorte" type="Aufstellorte_993560561_CType" minOccurs="0" maxOccurs="50"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Aufstellorte_993560561_CType">
+        <xs:sequence>
+            <xs:element name="Anschrift" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschrift</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anzahl_Bildschirme" type="GanzzahlNichtNegOhneFuehrNull_Muster1432008018_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Bildschirme</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Wettbuerosteuer" type="GanzzahlNichtNegOhneFuehrNull_MaxVK7_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wettbürosteuer (60 € pro Bildschirm)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

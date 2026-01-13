@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 51.0.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- Kontoabfrage - 6 - 1.3 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6" targetNamespace="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6" xmlns:exml="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="-?[1-9][0-9]*(,[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0,[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(,0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJbMMbTTkTkHHdmmdssBaseSType">
+        <xs:restriction base="xs:dateTime"/>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(,\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="kontoabfrage_antwort" type="kontoabfrage_antwort_CType"/>
+    <xs:complexType name="kontoabfrage_antwort_CType">
+        <xs:sequence>
+            <xs:element name="stpfl" type="stpfl_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="steuerkontoTilgungen" type="steuerkontoTilgungen_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="steuerkontoOffeneBetraege" type="steuerkontoOffeneBetraege_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="steuerkontoauszug" type="steuerkontoauszug_1427522926_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="6" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="stpfl_1427522926_CType">
+        <xs:sequence>
+            <xs:element name="finanzamt" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="name" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="keinLeistungsgebot" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hinweis</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="abfragedatum" type="DatumJJJJbMMbTTkTkHHdmmdssBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abfragedatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="steuerkontoTilgungen_1427522926_CType">
+        <xs:sequence>
+            <xs:element name="zeile" type="zeile_461763312_CType" minOccurs="0" maxOccurs="99999"/>
+            <xs:element name="summen" type="summen_461763312_CType" minOccurs="0" maxOccurs="3"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="zeile_461763312_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="faelligkeitWertstellung" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fälligkeit/Wertstellung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="zufluss" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zufluss</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="abfluss" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abfluss</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="erlaeuterungen" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erläuterungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="summen_461763312_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="zufluss" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zufluss</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="abfluss" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abfluss</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="steuerkontoOffeneBetraege_1427522926_CType">
+        <xs:sequence>
+            <xs:element name="zeile" type="zeile_m22529191_CType" minOccurs="0" maxOccurs="99999"/>
+            <xs:element name="summen" type="summen_m22529191_CType" minOccurs="0" maxOccurs="2"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="zeile_m22529191_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="faelligkeitWertstellung" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fälligkeit/Wertstellung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="offenForderung" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Offen (Forderung)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="offenVerbindlichkeit" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Offen (Verbindlichkeit)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="erlaeuterungen" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erläuterungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="summen_m22529191_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="offenForderung" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Offen (Forderung)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="offenVerbindlichkeit" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Offen (Verbindlichkeit)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="steuerkontoauszug_1427522926_CType">
+        <xs:sequence>
+            <xs:element name="zeile" type="zeile_1666398300_CType" minOccurs="0" maxOccurs="99999"/>
+            <xs:element name="summen" type="summen_1666398300_CType" minOccurs="0" maxOccurs="2"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="zeile_1666398300_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="faelligkeitWertstellung" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Fälligkeit/Wertstellung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="erlaeuterungen" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erläuterungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="summen_1666398300_CType">
+        <xs:sequence>
+            <xs:element name="text" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Text</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

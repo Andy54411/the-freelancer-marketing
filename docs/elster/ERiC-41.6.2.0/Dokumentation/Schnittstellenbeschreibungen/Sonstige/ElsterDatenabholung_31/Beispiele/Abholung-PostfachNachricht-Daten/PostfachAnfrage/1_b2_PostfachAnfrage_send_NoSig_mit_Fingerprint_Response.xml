@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+  <TransferHeader version="11">
+    <Verfahren>ElsterDatenabholung</Verfahren>
+    <DatenArt>PostfachAnfrage</DatenArt>
+    <Vorgang>send-NoSig</Vorgang>
+    <TransferTicket>00000000000000000000000000000000</TransferTicket>
+    <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+    <DatenLieferant>Lieferant</DatenLieferant>
+    <EingangsDatum>20210412150638</EingangsDatum>
+    <Datei>
+      <Verschluesselung>CMSEncryptedData</Verschluesselung>
+      <Kompression>GZIP</Kompression>
+      <TransportSchluessel />
+    </Datei>
+    <RC>
+      <Rueckgabe>
+        <Code>0</Code>
+        <Text>Ihr Request wurde bearbeitet</Text>
+      </Rueckgabe>
+      <Stack>
+        <Code>0</Code>
+        <Text>Ihr Request wurde bearbeitet</Text>
+      </Stack>
+    </RC>
+    <VersionClient>Client 2024</VersionClient>
+  </TransferHeader>
+  <DatenTeil>
+    <Nutzdatenblock>
+      <NutzdatenHeader version="11">
+        <NutzdatenTicket>1</NutzdatenTicket>
+        <Empfaenger id="L">CS</Empfaenger>
+        <Hersteller>
+          <ProduktName>Programm</ProduktName>
+          <ProduktVersion>V 1.0</ProduktVersion>
+        </Hersteller>
+        <DatenLieferant>Lieferant</DatenLieferant>
+        <RC>
+          <Rueckgabe>
+            <Code>0</Code>
+            <Text>Ihr Request wurde bearbeitet</Text>
+          </Rueckgabe>
+          <Stack>
+            <Code>0</Code>
+            <Text>Ihr Request wurde bearbeitet</Text>
+          </Stack>
+        </RC>
+      </NutzdatenHeader>
+      <Nutzdaten>
+        <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+                <!-- Fingerprint name="Fingerprint">Signatur ueber den Fingerprint</Fingerprint -->
+            <Fingerprint name="d8f285140739ab939030efc84e7afd5c">MIICqwYJKoZIhvcNAQcCoIICnDCCApgCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHATGCAncwggJzAgEBMIGbMIGVMQswCQYDVQQGEwJERTEPMA0GA1UEChMGRUxT
+VEVSMQ4wDAYDVQQLEwVDUllQVDETMBEGA1UEAxMKTXVzdGVybWFubjEWMBQGA1UE
+BxQNODAzMzNNyHVuY2hlbjEUMBIGA1UECRMLSGF1cHRzdHIuIDExIjAgBgNVBAUM
+GVRodSBBdWcgMTEgMTU6MTY6NDAgMjAwNQoCAQAwCQYFKw4DAhoFAKCBsTAYBgkq
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA1MTMxMjI3
+NDFaMCMGCSqGSIb3DQEJBDEWBBQTNrhQY+tfimt86puZoLZqoKL2ZzBSBgkqhkiG
+9w0BCQ8xRTBDMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0D
+AgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAW
+bGharzFLq2VaeJJ3SHd0vqZ1GgmYT26bmRlCfeOOxdYiI2RMW48BP1H7iqAED2TN
+0yeKm1Qiuf2zUctUztD/OBVkGG4hppvnhASW/swl0dpB1osrVdX91fkh2VKPjFdd
+uyqSlmrvUQ29xatURef1E0Rn9ydLmByQ+JXNv70SM3AFl1urgrD6tEviP1bSjeqf
+fxXvcBpfl+HTbBZV5SFWFgFYaP40eoWy0+O1k7cv768V8GrOxy6y8F7Yz8YWp+hR
+rFJRFiHVaom1TbetRCuDzuSjbAfNTNG6JjnmNv7UrWmf41El9aT7OcsM3j1Zn/sk
+q88vx1VkCcuO6EFB/QWU</Fingerprint>
+         <PostfachAnfrageAntwort einschraenkung="alle" max="1000" >
+            <DatenartBereitstellung name="ESB" anzahltreffer="3">
+              <Bereitstellungen>
+                <Bereitstellung id="be1237nw3vymf411strc2fk7rhakxdvf" bereitstellungsticket="et2501jbenyw7w6yw8c0tivbcj3rfvsd" groesse="900">
+                  <MetaInformationen>
+                    <Meta name="bundesland">BY</Meta> 
+                    <Meta name="erstelldatum">20211010</Meta> 
+                    <Meta name="finanzamt">Starnberg</Meta> 
+                    <Meta name="veranlagungsjahr">2022</Meta>
+                    <Meta name="bevorzugterempfaenger">elster-portal</Meta>
+                    <Meta name="verfuegbarbis">20231111</Meta>
+                  </MetaInformationen>
+                  <Datenpaket>
+                    <ReferenzId>32550000-0000-0000-0000-000000000000</ReferenzId>
+                    <Encoding>ISO-8859-15</Encoding>
+                    <Groesse>1205</Groesse>
+                  </Datenpaket>
+                </Bereitstellung>
+                <Bereitstellung id="be3947nw3vymf511strc2fk7rhakxdvf" bereitstellungsticket="et9981jbenyw7w6yw8c0tivbcj3rfvsd" groesse="1900">
+                  <MetaInformationen>
+                    <Meta name="bundesland">BY</Meta> 
+                    <Meta name="erstelldatum">20210708</Meta> 
+                    <Meta name="finanzamt">Augsburg</Meta> 
+                    <Meta name="veranlagungsjahr">2020</Meta>
+                    <Meta name="verfuegbarbis">20231111</Meta>
+                  </MetaInformationen>
+                  <Datenpaket>
+                    <ReferenzId>11120000-0000-0000-0000-000000000000</ReferenzId>
+                    <Encoding>ISO-8859-15</Encoding>
+                    <Groesse>6985</Groesse>
+                  </Datenpaket>
+                </Bereitstellung>
+                <Bereitstellung id="be9947nw3vymf591strc2fk7rhakxdvf" bereitstellungsticket="et2561jbenyw7w6yw8c0tivbcj3rfvsd" groesse="5000">
+                  <MetaInformationen>
+                    <Meta name="bundesland">BY</Meta> 
+                    <Meta name="erstelldatum">20211010</Meta> 
+                    <Meta name="erklaerungsticket">et9901jbenyw9w6yw8c0tivbcj3rfvsd</Meta> 
+                    <Meta name="finanzamt">Ingolstadt</Meta> 
+                    <Meta name="veranlagungsjahr">2021</Meta> 
+                    <Meta name="bevorzugterempfaenger">elster-portal</Meta>
+                    <Meta name="verfuegbarbis">20231111</Meta>
+                  </MetaInformationen>
+                  <Datenpaket>
+                    <ReferenzId>19920000-0000-0000-0000-000000000000</ReferenzId>
+                    <Encoding>ISO-8859-15</Encoding>
+                    <Groesse>13365</Groesse>
+                  </Datenpaket>
+                </Bereitstellung>
+            </Bereitstellungen>
+            </DatenartBereitstellung> 
+            <DatenartBereitstellung name="EPMitteilung" anzahltreffer="2">
+              <Bereitstellungen>
+                <Bereitstellung id="be3947nw3vymf991strc2fk8rhakxdvf" bereitstellungsticket="et3777jbenyw7w6yw8c0tivbcj3rfvsd" groesse="1000">
+                  <MetaInformationen>
+                    <Meta name="sendername">Stadt Mühldorf</Meta> 
+                    <Meta name="bezeichnungnachricht">Hundemitteilung 2021</Meta> 
+                    <Meta name="lieferticket">et118d71b8ssajkqdds9k0jdsuuctktr</Meta> 
+                    <Meta name="bekanntgabevorgangsid">et338d71b8ssajkqdds9k0jdsuuctktr</Meta>
+                    <Meta name="verfuegbarbis">20231111</Meta>
+                    <MetaInfoMaps>
+                      <MetaInfoMap typ="ANTWORTLINK">
+                        <Meta name="url">https://blabla2/</Meta> 
+                        <Meta name="beschreibung">Mouse - Hover-Over Text</Meta> 
+                        <Meta name="titel">Einspruch xxx</Meta>
+                      </MetaInfoMap>
+                      <MetaInfoMap typ="ANTWORT">
+                        <Meta name="zuordnungskriterium">eigene-id</Meta>
+                        <Meta name="antwortfrist">30.10.2023</Meta>
+                        <MetaList typ="antwortbetreff">
+                          <MetaListElement>Betreff 1 - Novemberbescheid</MetaListElement>
+                          <MetaListElement name="typ1">Betreff 2 - Hundebescheid</MetaListElement>
+                        </MetaList>
+                      </MetaInfoMap>
+                    </MetaInfoMaps>
+                  </MetaInformationen>
+                  <Anhaenge>
+                    <Anhang>
+                      <DateinameMitErweiterung>e8d6c686-ab123-4ad1-9bd6-0e0503fc035b-ce88325b-2033-42fc-bc3e-2242e7c8eeca.pdf</DateinameMitErweiterung>
+                      <Dateibezeichnung>Mitteilung</Dateibezeichnung>
+                      <Dateityp>application/pdf</Dateityp>
+                      <DateiReferenzId>1992ab00-0000-0000-0000-000000000000</DateiReferenzId>
+                      <DateiGroesse>97845</DateiGroesse>
+                    </Anhang>
+                  </Anhaenge>
+                </Bereitstellung>
+                <Bereitstellung id="be3947nw3vymf991strc2fk7rhakxdvf" bereitstellungsticket="et3797jbenyw7w6yw8c0tivbcj3rfvsd" groesse="1000">
+                  <MetaInformationen>
+                    <Meta name="sendername">Stadt Mühldorf</Meta> 
+                    <Meta name="bezeichnungnachricht">Hundemitteilung 2020</Meta> 
+                    <Meta name="bekanntgabevorgangsid">et118d71b8ssajkqdds4k0jdsuuctktr</Meta>
+                    <Meta name="geschaeftszeichen">8888888888</Meta>
+                    <Meta name="lieferticket">et112d71b8ssajkqdds9k0jdsuuctktr</Meta> 
+                    <Meta name="verfuegbarbis">20231111</Meta>
+                    <MetaInfoMaps>
+                      <MetaInfoMap typ="ANTWORTLINK">
+                        <Meta name="url">https://blabla2/</Meta> 
+                        <Meta name="beschreibung">Mouse - Hover-Over Text</Meta> 
+                        <Meta name="titel">Einspruch xxx</Meta>
+                      </MetaInfoMap>
+                      <MetaInfoMap typ="ANTWORT">
+                        <Meta name="zuordnungskriterium">eigene-id</Meta>
+                        <Meta name="antwortfrist">01.11.2023</Meta>
+                        <MetaList typ="antwortbetreff">
+                          <MetaListElement>Betreff 1 - Novemberbescheid</MetaListElement>
+                          <MetaListElement name="typ1">Betreff 2 - Hundebescheid</MetaListElement>
+                        </MetaList>
+                      </MetaInfoMap>
+                    </MetaInfoMaps>
+                  </MetaInformationen>
+                  <Anhaenge>
+                    <Anhang>
+                      <DateinameMitErweiterung>e8d6c686-1f13-4ad1-9bd6-0e0503fc035b-ce88325b-2033-42fc-bc3e-2242e7c8eeca.pdf</DateinameMitErweiterung>
+                      <Dateibezeichnung>Mitteilung</Dateibezeichnung>
+                      <Dateityp>application/pdf</Dateityp>
+                      <DateiReferenzId>199200ag-0000-0000-0000-000000000000</DateiReferenzId>
+                      <DateiGroesse>97845</DateiGroesse>
+                    </Anhang>
+                  </Anhaenge>
+                </Bereitstellung>
+              </Bereitstellungen>
+            </DatenartBereitstellung>                    
+          </PostfachAnfrageAntwort>
+        </Datenabholung>
+      </Nutzdaten>
+    </Nutzdatenblock>
+  </DatenTeil>
+</Elster>

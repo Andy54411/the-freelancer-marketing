@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>StundungAntrag</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Beispiele</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <StundungAntrag xmlns="http://finkonsens.de/elster/elsternachricht/stundungantrag/v1" version="1">
+                    <Stundung>
+                        <StundArt>
+                            <StgArt>1</StgArt>
+                        </StundArt>
+                        <Ordnungsbegriff>
+                            <Steuernummer>9198081508152</Steuernummer>
+                        </Ordnungsbegriff>
+                        <Steuerpflichtiger>
+                            <SteuerpflichtigerTyp>NatPerson</SteuerpflichtigerTyp>
+                            <IdNr>02476291358</IdNr>
+                            <GebDa>01.01.1980</GebDa>
+                            <Name>Max Mustermann</Name>
+                            <Adr>
+                                <StrAdr>
+                                    <Str>Teststr.</Str>
+                                    <HausNr>1</HausNr>
+                                    <Plz>80639</Plz>
+                                    <Ort>München</Ort>
+                                </StrAdr>
+                            </Adr>
+                        </Steuerpflichtiger>
+                        <ZuStdAbg>
+                            <PersSt>
+                                <EinkommenSt>
+                                    <AbgabeArt>2000000</AbgabeArt>
+                                    <Jahr>2023</Jahr>
+                                    <Zeitraum>41</Zeitraum>
+                                    <ZuStundenderBetrag>0.01</ZuStundenderBetrag>
+                                </EinkommenSt>
+                            </PersSt>
+                        </ZuStdAbg>
+                        <ErstattungsAnsp>
+                            <Steuernummer>9296081508153</Steuernummer>
+                            <Begruendung>1</Begruendung>
+                            <AbgabeArtErst>
+                                <EinkommenSt>
+                                    <AbgabeArt>2000000</AbgabeArt>
+                                    <Jahr>2023</Jahr>
+                                    <Zeitraum>41</Zeitraum>
+                                    <ErwErstattung>1000.00</ErwErstattung>
+                                </EinkommenSt>
+                            </AbgabeArtErst>
+                        </ErstattungsAnsp>
+                    </Stundung>
+                </StundungAntrag>                
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

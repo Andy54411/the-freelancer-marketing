@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>VMoVMVStBUpdate</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>BRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VMoVMVStBUpdate xmlns="http://finkonsens.de/elster/elsterbrm/vmovmvstbupdate/v10" version="10">
+                    <VMoVMVStBUpdate>
+                        <VollmachtID>0400G91234567172311836422</VollmachtID>
+                        <Vollmachtgeber>
+                            <NatuerlichePerson>
+                                <Anrede>Herr</Anrede>
+                                <Titel>Magier</Titel>
+                                <Vorname>Martin</Vorname>
+                                <Namensvorsatz>Mit</Namensvorsatz>
+                                <Name>Manfred</Name>
+                                <Namenszusatz>Schloß</Namenszusatz>
+                            </NatuerlichePerson>
+                        </Vollmachtgeber>
+                        <Steuernummern>
+                            <BekannteSteuernummer>
+                                <Steuernummer>2653081508158</Steuernummer>
+                            </BekannteSteuernummer>
+                        </Steuernummern>
+                    </VMoVMVStBUpdate>
+                </VMoVMVStBUpdate>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

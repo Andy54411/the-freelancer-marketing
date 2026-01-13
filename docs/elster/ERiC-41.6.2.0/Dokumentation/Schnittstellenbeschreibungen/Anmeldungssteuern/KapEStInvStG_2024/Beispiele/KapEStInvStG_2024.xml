@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterKapESt</Verfahren>
+        <DatenArt>KapEStInvStG</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+            <TransportSchluessel />
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <KapEStInvStG xmlns="http://finkonsens.de/elster/elsterkapest/kapestinvstg/v2024" version="2024">
+                    <AnmZahl36a>X</AnmZahl36a>
+                    <StNr>9198081508152</StNr>
+                    <BArt>1</BArt>
+                    <Allg_Ang>
+                        <Investmentfonds>
+                            <Name>Mustergesellschaft</Name>
+                            <ISIN>PX3U279RD6Y0</ISIN>
+                        </Investmentfonds>
+                        <Vertreter>
+                            <Bezeichnung>Mustervertreter</Bezeichnung>
+                        </Vertreter>
+                    </Allg_Ang>
+                    <Anm_Zahlung_P31_3>
+                        <LetzterTagGeschaeftsjahr>31.01.2024</LetzterTagGeschaeftsjahr>
+                        <P31_3>
+                            <ZahlungP36aAbs4>0</ZahlungP36aAbs4>
+                            <ZahlungP36aAbs4St>999</ZahlungP36aAbs4St>
+                        </P31_3>
+                    </Anm_Zahlung_P31_3>
+                </KapEStInvStG>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

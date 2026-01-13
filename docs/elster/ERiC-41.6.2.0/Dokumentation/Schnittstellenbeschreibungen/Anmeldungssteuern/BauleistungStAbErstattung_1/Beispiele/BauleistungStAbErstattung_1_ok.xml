@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterAnmeldung</Verfahren>
+        <DatenArt>BauleistungStAbErstattung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">5622</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <BauleistungStAbErstattung xmlns="http://finkonsens.de/elster/elsteranmeldung/bauleistungstaberstattung/v1" version="1">
+                    <BauleistungStAbErstattung>
+                        <Bundesfinanzamtsnummer>5622</Bundesfinanzamtsnummer>
+                        <Antragsteller>
+                            <Bezeichnung>maiores</Bezeichnung>
+                            <Telefon>603215798401436798</Telefon>
+                            <EMail>Otto.Normalverbraucher@eMail.de</EMail>
+                            <Anschrift>
+                                <StrAdr>
+                                    <Str>Musterfeld</Str>
+                                    <HausNr>179</HausNr>
+                                    <HausNrZu>A</HausNrZu>
+                                    <AdressErg>Suite 577</AdressErg>
+                                    <Plz>12121</Plz>
+                                    <Ort>Musterburg</Ort>
+                                </StrAdr>
+                            </Anschrift>
+                        </Antragsteller>
+                        <Empfangsbevollmaechtigter>
+                            <Bezeichnung>Vitae perspiciatis quam non nam.</Bezeichnung>
+                            <Vorname>Ab cumque architecto neque in placeat et.</Vorname>
+                            <Name>dignissimos</Name>
+                            <Titel>dicta</Titel>
+                            <TelefonEmpf>52635241807925397486</TelefonEmpf>
+                            <EMailEmpf>Otto.Normalverbraucher@eMail.de</EMailEmpf>
+                            <AnschriftEmpf>
+                                <StrAdr>
+                                    <Str>Musterweg</Str>
+                                    <HausNr>476</HausNr>
+                                    <HausNrZu>G</HausNrZu>
+                                    <AdressErg>Apt. 662</AdressErg>
+                                    <Plz>56565</Plz>
+                                    <Ort>Musterstadt</Ort>
+                                </StrAdr>
+                            </AnschriftEmpf>
+                        </Empfangsbevollmaechtigter>
+                        <Antrag>
+                            <Abzugsbetraege>
+                                <LfdNr>2</LfdNr>
+                                <VAZ>2025-01</VAZ>
+                                <Betrag>200.00</Betrag>
+                                <Bezeichnung>dolorem</Bezeichnung>
+                                <AnschriftLeistEmpf>
+                                    <StrAdr>
+                                        <Str>Musterfeld</Str>
+                                        <HausNr>259</HausNr>
+                                        <HausNrZu>d</HausNrZu>
+                                        <AdressErg>Apt. 751</AdressErg>
+                                        <Plz>34343</Plz>
+                                        <Ort>Musterstadt</Ort>
+                                    </StrAdr>
+                                </AnschriftLeistEmpf>
+                            </Abzugsbetraege>
+                            <Abzugsbetraege>
+                                <LfdNr>1</LfdNr>
+                                <VAZ>1980-01</VAZ>
+                                <Betrag>500.00</Betrag>
+                                <Bezeichnung>aliquid</Bezeichnung>
+                                <AnschriftLeistEmpf>
+                                    <StrAdr>
+                                        <Str>Musterweg</Str>
+                                        <HausNr>787</HausNr>
+                                        <HausNrZu>E</HausNrZu>
+                                        <AdressErg>2 OG</AdressErg>
+                                        <Plz>56565</Plz>
+                                        <Ort>Musterhausen</Ort>
+                                    </StrAdr>
+                                </AnschriftLeistEmpf>
+                            </Abzugsbetraege>
+                            <Sum>
+                                <SummeVerguetungsbetraege>700.00</SummeVerguetungsbetraege>
+                            </Sum>
+                        </Antrag>
+                        <BegruendungErklaerung>
+                            <KeineVerpflichtungLoStAnmeldung>1</KeineVerpflichtungLoStAnmeldung>
+                            <KeineZuSicherndenSteueranspueche>1</KeineZuSicherndenSteueranspueche>
+                            <VersicherungWahrheit>1</VersicherungWahrheit>
+                        </BegruendungErklaerung>
+                        <Ueberweisungsempf>
+                            <IbanBicPflicht>
+                                <IbanBic>
+                                    <IBAN>GR801530328EAXHUAUFWTBQLCKH</IBAN>
+                                </IbanBic>
+                            </IbanBicPflicht>
+                        </Ueberweisungsempf>
+
+                    </BauleistungStAbErstattung>
+                </BauleistungStAbErstattung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRMOrg</Verfahren>
+        <DatenArt>VNoVMVRegistrierung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>BRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>EOP</ProduktName>
+                    <ProduktVersion>R44</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ElsterOnline-Portal 1003177879</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VNoVMVRegistrierung xmlns="http://finkonsens.de/elster/elsterbrmorg/vnovmvregistrierung/v11" version="11">
+                    <VNoVMVRegistrierung>
+                        <Rolle>Privatpersonen (Angehörige § 15 AO)</Rolle>
+                        <Anschrift>
+                            <NatuerlichePerson>
+                                <Anrede>Herr</Anrede>
+                                <Vorname>Donald</Vorname>
+                                <Name>Duck</Name>
+                            </NatuerlichePerson>
+                            <AdresseInland>
+                                <Strasse>Hauptstraße</Strasse>
+                                <Hausnummer>1</Hausnummer>
+                                <Hausnummerzusatz>2ter Stock</Hausnummerzusatz>
+                                <Postleitzahl>12345</Postleitzahl>
+                                <Ort>Entenhausen</Ort>
+                            </AdresseInland>
+                        </Anschrift>
+                    </VNoVMVRegistrierung>
+                </VNoVMVRegistrierung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

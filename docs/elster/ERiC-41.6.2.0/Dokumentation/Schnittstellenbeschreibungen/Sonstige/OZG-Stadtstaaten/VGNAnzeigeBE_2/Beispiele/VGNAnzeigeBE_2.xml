@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>VGNAnzeigeBE</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">1197</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VGNAnzeigeBE xmlns="http://finkonsens.de/elster/elsternachricht/vgnanzeigebe/v2" version="2">
+                    <VGNAnzeigeAngBE>
+                        <TestFA>1197</TestFA>
+                        <AllgAngaben>
+                            <AnredeId>1</AnredeId>
+                            <Vorname>Max</Vorname>
+                            <Name>Mustermann</Name>
+                            <Inlandsadresse>
+                                <Str>Musterstraße</Str>
+                                <HausNr>194</HausNr>
+                                <Plz>67676</Plz>
+                                <Ort>Musterdorf</Ort>
+                            </Inlandsadresse>
+                        </AllgAngaben>
+                    </VGNAnzeigeAngBE>
+                </VGNAnzeigeBE>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

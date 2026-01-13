@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Mit XMLSpy v2023 sp1 (x64) (http://www.altova.com) generiertes W3C XML-Schema-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.itzbund.de/iban/01.00" xmlns:k="http://www.itzbund.de/iban/std/01.00" targetNamespace="http://www.itzbund.de/iban/01.00" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.itzbund.de/iban/std/01.00" schemaLocation="dinTypen.xsd"/>
+	<xs:annotation>
+		<xs:documentation>
+    ****************************************************************************  
+    * Institution: ITZBund (Informationstechnikzentrum Bund) 
+    * Beschreibung:
+    * Definition einer Liste von IBAN-Meldungen
+    ****************************************************************************
+    Versionshistorie:
+    01.00
+    - initiale Erstellung 
+    ****************************************************************************
+		</xs:documentation>
+	</xs:annotation>
+	<xs:element name="IBANRoot">
+		<xs:annotation>
+			<xs:documentation>Root-Element für die Nutzdaten mit Versionsangabe.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element ref="Liste_139b_10"/>
+				<xs:element ref="Liste_139b_10_ANTW"/>
+			</xs:choice>
+		</xs:complexType>
+		<xs:unique name="MeldUUIDIstEindeutig">
+			<xs:annotation>
+				<xs:documentation>Dieser Constraint sorgt dafuer, dass MeldUUIDs generell eindeutig innerhalb der gelieferten Datei sind</xs:documentation>
+			</xs:annotation>
+			<xs:selector xpath=".//*"/>
+			<xs:field xpath="@MeldUUID"/>
+		</xs:unique>
+	</xs:element>
+	<xs:element name="IBANRoot_EOP">
+		<xs:annotation>
+			<xs:documentation>Root-Element für die Nutzdaten mit Versionsangabe (EOP).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element ref="Liste_139b_10_EOP"/>
+				<xs:element ref="Liste_139b_10_ANTW_EOP"/>
+			</xs:choice>
+		</xs:complexType>
+		<xs:unique name="MeldUUIDIstEindeutig_EOP">
+			<xs:annotation>
+				<xs:documentation>Dieser Constraint sorgt dafuer, dass MeldUUIDs generell eindeutig innerhalb der gelieferten Datei sind</xs:documentation>
+			</xs:annotation>
+			<xs:selector xpath=".//*"/>
+			<xs:field xpath="@MeldUUID"/>
+		</xs:unique>
+	</xs:element>
+	<xs:element name="IBANRoot_Auskunft">
+		<xs:annotation>
+			<xs:documentation>Root-Element für die Nutzdaten (Auskunft).</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="Auskunft_Anfrage" type="Auskunft_Anfrage_Type">
+					<xs:annotation>
+						<xs:documentation>Anfrage für eine Auskunft zur aktuell gepeicherten Bankverbindung zu einer Person</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="Auskunft_Antwort" type="Auskunft_Antwort_Type">
+					<xs:annotation>
+						<xs:documentation>Auskunft zur aktuell gepeicherten Bankverbindung zu einer Person</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Liste_139b_10" type="Liste_139b_10_Type">
+		<xs:annotation>
+			<xs:documentation>Liste mit IBAN-Meldungen gemäß §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Liste_139b_10_EOP" type="Liste_139b_10_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>Liste mit IBAN-Meldungen gemäß §139b Absatz 10 AO (EOP)</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="Liste_139b_10_Type">
+		<xs:annotation>
+			<xs:documentation>Listentyp mit IBAN-Meldungen gemäß §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:ListenRumpfType">
+				<xs:sequence>
+					<xs:element name="Dienstleister" type="Melder_139b_10_AbstractType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Informationen zum durchführenden Dienstleister</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Melder" type="Melder_139b_10_AbstractType">
+						<xs:annotation>
+							<xs:documentation>Informationen zum Melder</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Meldung_139b_10" type="Meldung_139b_10_AbstractType" maxOccurs="50000">
+						<xs:annotation>
+							<xs:documentation>IBAN-Meldungen</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Liste_139b_10_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>Listentyp mit IBAN-Meldungen gemäß §139b Absatz 10 AO für EOP</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:ListenRumpfType">
+				<xs:sequence>
+					<xs:element name="Melder" type="Melder_139b_10_Natuerlich_EOP_Type">
+						<xs:annotation>
+							<xs:documentation>Informationen zum Melder</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Meldung_139b_10" type="Meldung_139b_10_EOP_Type">
+						<xs:annotation>
+							<xs:documentation>IBAN-Meldungen</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Meldung_139b_10_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>IBAN-Meldung Basistyp</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:Meldung_AbstractType"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Meldung_139b_10_Type">
+		<xs:annotation>
+			<xs:documentation>IBAN-Meldung nach §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Meldung_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:group ref="Meldungsdaten_139b_10_Group"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Meldung_139b_10_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>IBAN-Meldung nach §139b Absatz 10 AO über EOP</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Meldung_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:group ref="Meldungsdaten_139b_10_EOP_Group"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Auskunft_Antwort_Type">
+		<xs:annotation>
+			<xs:documentation>Typ für die Antwort auf eine Auskunftsanfrage</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="IdNr" type="k:IdNrType">
+				<xs:annotation>
+					<xs:documentation>IdNr der Person</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:choice>
+				<xs:element name="Gespeicherte_Bankverbindung" type="Auskunft_Konto_Angaben_Type"/>
+				<xs:element name="keine_Bankverbindung_gespeichert" type="xs:string" fixed=""/>
+				<xs:element name="Fehlermeldung">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:maxLength value="1000"/>
+							<xs:minLength value="1"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Auskunft_Konto_Angaben_Type">
+		<xs:annotation>
+			<xs:documentation>Typ mit dem Inhalt der Kontoangaben, wenn eine Verbindung gespeichert ist</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Kontoangabe" type="k:KontoAngabeBasisType">
+				<xs:annotation>
+					<xs:documentation>Kontoangabe zu der Auskunft</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="gueltig_seit" type="xs:dateTime">
+				<xs:annotation>
+					<xs:documentation>Angabe, seit wann diese Bankverbindung als gültig hinterlegt ist</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="gemeldet_durch" type="Melder_Auskunft_AbstractType">
+				<xs:annotation>
+					<xs:documentation>Angabe, durch wen die Bankverbindung gemeldet wurde</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Auskunft_Anfrage_Type">
+		<xs:annotation>
+			<xs:documentation>Typ für eine Auskunftsanfrage</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="IdNr" type="k:IdNrType">
+				<xs:annotation>
+					<xs:documentation>IdNr der Person</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Meldung_139b_10_StornoType">
+		<xs:annotation>
+			<xs:documentation>Storniert eine (irrtümlich) vorher getätigte Meldung einer IBAN zu einem Bürger</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Meldung_139b_10_AbstractType">
+				<xs:attribute name="RefUUID" type="k:UUIDType" use="required">
+					<xs:annotation>
+						<xs:documentation>MeldUUID der zu stornierenden IBAN-Meldung</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Meldung_139b_10_LoeschType">
+		<xs:annotation>
+			<xs:documentation>Beauftragt die Löschung der zur IdNr gemeldeten IBAN.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Meldung_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:element name="IdNr" type="k:IdNrType">
+						<xs:annotation>
+							<xs:documentation>IdNr</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="GebDt" type="k:DatumMit0Type">
+						<xs:annotation>
+							<xs:documentation>Geburtsdatum. Angabe eines teilbekannten Datums ist moeglich. D.h. der tt-, mm- oder jjjj-Teil darf aus 00 bzw. 0000 bestehen, wenn das entsprechende Teildatum in den amtlichen Meldedaten unbekannt ist.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Melder_139b_10_NichtNatuerlich_Type">
+		<xs:annotation>
+			<xs:documentation>Typ für eine nichtnatürliche Person als Melder</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Melder_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:element name="Name">
+						<xs:annotation>
+							<xs:documentation>Name des Melders/Dienstleisters</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="k:BeschreibungsType">
+								<xs:minLength value="1"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Melder_139b_10_Natuerlich_Type">
+		<xs:annotation>
+			<xs:documentation>Typ für eine natürliche Person als Melder</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Melder_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:element name="Person" type="k:PersonenDatenType"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Melder_139b_10_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Obertyp für Melder und Dienstleister im Kontext von §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Zulassungsnummer" type="k:ZulassungsNrType">
+				<xs:annotation>
+					<xs:documentation>Zulassungsnummer des Melders/Dienstleisters. Es handelt sich um einen Uniontype aus IdNr und IBAN-Einlieferungs-Zulassungsnummer</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Adresse" type="k:Adresse_AbstractType">
+				<xs:annotation>
+					<xs:documentation>Adressdaten des Melders/Dienstleisters</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Email" type="k:EmailType">
+				<xs:annotation>
+					<xs:documentation>E-Mail-Adresse des Melders/Dienstleisters</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Telefonnummer" type="k:TelefonnummerType">
+				<xs:annotation>
+					<xs:documentation>Telefonnummer des Melders/Dienstleisters</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Melder_Auskunft_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Obertyp für Melder und Dienstleister im Kontext einer Auskunftsanfrage</xs:documentation>
+		</xs:annotation>
+	</xs:complexType>
+	<xs:complexType name="Melder_Auskunft_Natuerlich_Type" abstract="false">
+		<xs:annotation>
+			<xs:documentation>Typ für eine natürliche Person als Melder im Kontext einer Auskunftsanfrage</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Melder_Auskunft_AbstractType">
+				<xs:sequence>
+					<xs:element name="Nachname" type="k:NachnameType"/>
+					<xs:element name="Vorname" type="k:VornameType" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Melder_Auskunft_NichtNatuerlich_Type" abstract="false">
+		<xs:annotation>
+			<xs:documentation>Typ für eine nicht natürliche Person als Melder im Kontext einer Auskunftsanfrage</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Melder_Auskunft_AbstractType">
+				<xs:sequence>
+					<xs:element name="Name">
+						<xs:annotation>
+							<xs:documentation>Name des Melders</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="k:BeschreibungsType">
+								<xs:minLength value="1"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Melder_139b_10_Natuerlich_EOP_Type" abstract="false">
+		<xs:annotation>
+			<xs:documentation>Typ für natürlichen Melder im Kontext von §139b Absatz 10 AO im EOP</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="IdNr" type="k:IdNrType">
+				<xs:annotation>
+					<xs:documentation>IdNr des Melders</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Liste_139b_10_ANTW" type="Liste_139b_10_ANTW_Type">
+		<xs:annotation>
+			<xs:documentation>Liste mit Verarbeitungsrückmeldungen zu IBAN-Meldungen gemäß §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Liste_139b_10_ANTW_EOP" type="Liste_139b_10_ANTW_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>Liste mit Verarbeitungsrückmeldungen zu IBAN-Meldungen gemäß §139b Absatz 10 AO (EOP)</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="Liste_139b_10_ANTW_Type">
+		<xs:annotation>
+			<xs:documentation>Listentyp mit Verarbeitungsrückmeldungen zu IBAN-Meldungen gemäß §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:ListenRumpfType">
+				<xs:sequence>
+					<xs:choice>
+						<xs:element name="DatensatzUebergreifenderFehler" type="k:NachrichtType" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Liste von datensatzübergreifenden Fehlern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="Protokoll_139b_10" type="Protokoll_139b_10_AbstractType" maxOccurs="50000">
+							<xs:annotation>
+								<xs:documentation>Antworten zu einzelnen Meldungen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:choice>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Liste_139b_10_ANTW_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>Listentyp mit Verarbeitungsrückmeldungen zu IBAN-Meldungen gemäß §139b Absatz 10 AO (EOP)</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:ListenRumpfType">
+				<xs:sequence>
+					<xs:choice>
+						<xs:element name="DatensatzUebergreifenderFehler" type="k:NachrichtType" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Liste von datensatzübergreifenden Fehlern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="Protokoll_139b_10" type="Protokoll_139b_10_EOP_Type">
+							<xs:annotation>
+								<xs:documentation>Antworten zu einzelnen Meldungen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:choice>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Protokoll_139b_10_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Abstraktes Protokollobjekt für eine Meldung nach §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="k:Meldung_Protokoll_AbstractType">
+				<xs:sequence>
+					<xs:element name="AllgRC" type="k:KMKWReturnCodeType">
+						<xs:annotation>
+							<xs:documentation>Returncode der Verarbeitung</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Protokoll_139b_10_Type">
+		<xs:annotation>
+			<xs:documentation>Protokollobjekt für eine IBAN-Meldung nach §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Protokoll_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:group ref="Meldungsdaten_139b_10_Group"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Protokoll_139b_10_EOP_Type">
+		<xs:annotation>
+			<xs:documentation>Protokollobjekt für eine IBAN-Meldung nach §139b Absatz 10 AO über EOP</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Protokoll_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:group ref="Meldungsdaten_139b_10_EOP_Group"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Protokoll_139b_10_StornoType">
+		<xs:annotation>
+			<xs:documentation>Protokollobjekt für eine IBAN-Storno-Meldung nach §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Protokoll_139b_10_AbstractType"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Protokoll_139b_10_LoeschType">
+		<xs:annotation>
+			<xs:documentation>Protokollobjekt für eine IBAN-Lösch-Meldung nach §139b Absatz 10 AO</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Protokoll_139b_10_AbstractType">
+				<xs:sequence>
+					<xs:element name="IdNr" type="k:IdNrType">
+						<xs:annotation>
+							<xs:documentation>IdNr</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:group name="Meldungsdaten_139b_10_Group">
+		<xs:annotation>
+			<xs:documentation>Containertyp für die Meldungsdaten für Nicht-EOP-Einlieferungswege</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:group ref="Meldungsdaten_139b_10_Basis_Group"/>
+			<xs:choice>
+				<xs:element name="Kontoangabe" type="k:KontoAngabeType">
+					<xs:annotation>
+						<xs:documentation>Kontoangabe zu dem Meldefall</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="Leermeldungsgrund" type="k:MeldungsgrundType">
+					<xs:annotation>
+						<xs:documentation>Geschlüsselter Rechtsgrund für die Leermeldung. Erlaubte Schlüssel sind dem Kommunikationshandbuch zu entnehmen</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+		</xs:sequence>
+	</xs:group>
+	<xs:group name="Meldungsdaten_139b_10_EOP_Group">
+		<xs:annotation>
+			<xs:documentation>Containertyp für die Meldungsdaten via EOP</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:group ref="Meldungsdaten_139b_10_Basis_Group"/>
+			<xs:element name="Kontoangabe" type="k:KontoAngabeBasisType">
+				<xs:annotation>
+					<xs:documentation>Kontoangabe zu dem Meldefall</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:group>
+	<xs:group name="Meldungsdaten_139b_10_Basis_Group">
+		<xs:annotation>
+			<xs:documentation>Containertyp für die Meldungsdaten für alle Einlieferungswege</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="IdNr" type="k:IdNrType">
+				<xs:annotation>
+					<xs:documentation>IdNr der Person</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="GebDt" type="k:DatumMit0Type">
+				<xs:annotation>
+					<xs:documentation>Geburtsdatum. Angabe eines teilbekannten Datums ist moeglich. D.h. der tt-, mm- oder jjjj-Teil darf aus 00 bzw. 0000 bestehen, wenn das entsprechende Teildatum in den amtlichen Meldedaten unbekannt ist.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Nachname" type="k:NachnameType">
+				<xs:annotation>
+					<xs:documentation>Nachname der Person</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Vorname" type="k:VornameType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Vorname der Person</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:group>
+</xs:schema>

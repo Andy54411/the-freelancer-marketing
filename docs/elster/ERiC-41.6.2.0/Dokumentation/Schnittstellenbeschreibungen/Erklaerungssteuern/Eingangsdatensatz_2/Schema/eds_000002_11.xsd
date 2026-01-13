@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xs:schema
+	 xmlns:elster="http://www.elster.de/elsterxml/schema/v11"
+	 xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:complexType name="JahressteuererklaerungCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Im XML muss mindestens ein Element "Feld" enthalten sein. Dieses kann für Datenarten, die Untersachbereiche vorsehen, auch innerhalb eines "Usb"-Elements stehen.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Vorsatz" type="elster:VorsatzCType">
+				<xs:annotation>
+					<xs:documentation>Für die im Element "Vorsatz" zu übermittelnden Daten sind die im Dokument "Erklaerungssteuern/Formale_Plausipruefungen.xml" dokumentierten Einschränkungen zu beachten.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="Feld" type="elster:FeldCType" maxOccurs="unbounded" />
+				<xs:element name="Usb" type="elster:UsbCType" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">Das Element "Usb" enthält die Information, welchem USB (Untersachbereich) die enthaltenen Felder zugeordnet werden. Das "Usb"-Element umfasst dabei alle Felder, die diesem USB zugeordnet sind.
+
+Dieses Element ist optional und wird nur für bestimmte Vordrucke einiger Datenarten benötigt. Für welche Vordrucke ein USB erforderlich ist und welche Werte als "nr" des USB angegeben werden müssen, ist im ERiC-Entwicklerhandbuch bzw. der Jahresdokumentation (Tabellenblatt "Allg. Information") der jeweiligen Datenart dokumentiert. 
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+		</xs:sequence>
+		<xs:attribute name="version" type="xs:positiveInteger" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Das Attribut "version" ist mit der jeweilig aktuell gültigen Versionsnummer zu füllen. Die gültige Version ist 2.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="VorsatzCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Der Vorsatz enthält Informationen über den Absender und die Erstellung des Steuerfalls.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="StNr" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Bundeseinheitliche 13-stellige Steuernummer im ELSTER-Steuernummernformat</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="13" />
+						<xs:maxLength value="13" />
+						<xs:pattern value="\d{4}0\d{8}" />
+						<xs:pattern value="\d{4}.{4}\d{2}[A-Z0-9]{3}" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ID" type="elster:IDCType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Identifikationsnummer: 11-stellig, numerisch</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="IDEhefrau" type="elster:IDCType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Identifikationsnummer der Ehefrau: 11-stellig, numerisch</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Zeitraum" type="xs:gYear">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Das Jahr, für das die Erklärung gilt, im Format JJJJ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Erstelldatum" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Das Erstellungsdatum des Steuerfalls, im Format JJJJMMDD</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\d{4}((0[1-9])|(1[0-2]))((3[0-1])|(2[0-9])|(1[0-9])|(0[1-9]))" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Erstellzeit" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Die Erstellungszeit des Steuerfalls, im Format hhmmss</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="((0[0-9])|(1[0-9])|(2[0-3]))([0-5][0-9]){2}" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AbsName">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Name, alphanumerisch, max. 45-stellig</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="45" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AbsStr">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Straße und Hausnummer, alphanumerisch, max. 30-stellig</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AbsPlz" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Plz, numerisch, 5-stellig</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\d{5}" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AbsOrt">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Ort, alphanumerisch, max. 29-stellig</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="29" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Copyright">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Copyrightmeldung des SW-Herstellers, alphanumerisch, max.50-stellig</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="50" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Rueckuebermittlung">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">In den enthaltenen Elementen werden die zur Abholung notwendigen Informationen angegeben.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">Das Element "Rueckuebermittlung" sammelt die Informationen zur Bescheidrückübermittlung und 
+enthält die Elemente "ArtRueckuebermittlung", "SchluesselRueckuebermittlung" und "AdresseRueckuebermittlung".
+Zusätzlich wird in dem verpflichtenden Attribut "bescheid" mit den Werten "ja" oder "nein" mitgeteilt, ob eine Datenabholung gewünscht ist.
+Die Elemente "ArtRueckuebermittlung" und "AdresseRueckuebermittlung" müssen ausgefüllt werden, wenn eine Benachrichtigung zum bereitgestellten Bescheid gewünscht wird.
+Im Element "SchluesselRueckuebermittlung" wird der selbsterzeugte öffentliche Schlüssel eingetragen.
+Wenn der Sendevorgang "send-Auth" eingetragen ist, wird das verwendete Portalzertifikat zum Verschlüsseln der Bescheiddaten verwendet.
+In dem Fall müssen die Bescheide mit demselben Portalzertifikat abgeholt werden, mit dem die Erklärung signiert wurde.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:sequence minOccurs="0">
+						<xs:element name="ArtRueckuebermittlung" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation xml:lang="DE">Art der Adresse der Bescheidbereitstellung: "INTERNET" bei Rückübermittlung über Internet</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="10" />
+									<xs:whiteSpace value="preserve" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SchluesselRueckuebermittlung" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation xml:lang="DE">Öffentlicher Schlüssel mit variabler Länge.
+Der Bescheid wird mit dem öffentlichen Schlüssel serverseitig verschlüsselt bereitgestellt.
+Es muss ein RFC4648 Base64-codiertes x509-Zertifikat ohne Angebe eines Prologs und ohne Zeilenumbrüche angegeben werden.</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:maxLength value="2997" />
+									<xs:minLength value="1" />
+									<xs:whiteSpace value="preserve" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="AdresseRueckuebermittlung" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation xml:lang="DE">Erforderliche Adresselemente bei Benachrichtigung für Bescheidbereitstellung: E-Mail-Adresse</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="290" />
+									<xs:whiteSpace value="preserve" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>
+					<xs:attribute name="bescheid" use="required">
+						<xs:annotation>
+							<xs:documentation xml:lang="DE">Dieses Attribut beschreibt, ob eine Datenabholung gewünscht ist.
+Mögliche Werte sind "ja" oder "nein". Wenn "ja" angegeben ist, müssen zusätzlich Unterelemente angegeben werden.
+Bei "nein" dürfen keine Unterelemente angegeben werden.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="ja" />
+								<xs:enumeration value="nein" />
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="unterfallart" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Unterfalllarten für das Verfahren ElsterErklaerung:
+10 für ESt
+12 für EStbeschraenkt
+13 für 34a
+20 für GewSt
+21 für GewStZ
+30 - 33 für KSt
+39 für KStZ
+50 für USt
+77 für EUER
+90 für FEIN (gesonderte und einheitliche Feststellung)
+95 für FEIN (gesonderte Feststellung)
+97 für InvStG56Abs5
+				</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:int">
+					<xs:enumeration value="10" />
+					<xs:enumeration value="12" />
+					<xs:enumeration value="13" />
+					<xs:enumeration value="20" />
+					<xs:enumeration value="21" />
+					<xs:enumeration value="30" />
+					<xs:enumeration value="31" />
+					<xs:enumeration value="32" />
+					<xs:enumeration value="33" />
+					<xs:enumeration value="39" />
+					<xs:enumeration value="50" />
+					<xs:enumeration value="77" />
+					<xs:enumeration value="90" />
+					<xs:enumeration value="95" />
+					<xs:enumeration value="97" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="ordNrArt" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Mit "S" für Steuernummer oder "O" für maschinell ermittelten Ordnungsbegriff zu füllen.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="S" />
+					<xs:enumeration value="O" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="vorgang" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Mit "01" bei nur-Veranlagung und mit "04" bei Veranlagung mit Vorauszahlung zu füllen.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="01" />
+					<xs:enumeration value="04" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<!-- Der Vorsatz enthält Informationen über den Absender und die Erstellung des Steuerfalls. -->
+	</xs:complexType>
+	<xs:simpleType name="IDCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Identifikationsnummer: 11-stellig, numerisch</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="\d{11}" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="FeldCType">
+		<xs:attribute name="nr" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Feldkennung: 7-stellig numerisch.
+Fest vergebene, eindeutige Nummer eines Feldes der Steuererklärung. Die Nummernzuordnung ist in den Jahresdokumentationen im Blatt Felder aufgeführt.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="(-\d{6}|\d{7})" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="index" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Feldindex: maximal 2-stellig numerisch (1-99).
+Indizierung bei mehrfachem Ausfüllen des gleichen Feldes (z. B. Unterstützung mehrerer bedürftiger Personen). Default: 1</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1" />
+					<xs:maxExclusive value="100" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="wert" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">1 bis 999 Zeichen, alphanumerisch.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:minLength value="1" />
+					<xs:maxLength value="999" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="lfdNr" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Indizierung bei mehrfach gleichen Anlagen (z. B. mehrere Anlagen V), die Durchnummerierung hat lückenlos aufsteigend zu erfolgen, von 1 bis 99999. Default: 1</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1" />
+					<xs:maxExclusive value="100000" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="alias" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Identifizierung der Zeile / Feld im Fremdprogramm.
+Beliebige Zeichenfolge (kann frei benutzt oder freigelassen werden). Dieser Wert wird nicht übertragen, sondern bei einer Fehlermeldung
+zusammen mit der Zeile/Feld unverändert zurückgegeben. Es entspricht "//EricBearbeiteVorgang/FehlerRegelpruefung/PrivateKennnummer" im common/API-Rueckgabe-Schemata/EricBearbeiteVorgang.xsd.
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="UsbCType">
+		<xs:sequence>
+			<xs:element name="Feld" type="elster:FeldCType" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attribute name="nr" use="required">
+			<xs:annotation>
+				<xs:documentation xml:lang="DE">Maximal fünfstellige Zahl, beginnend mit 1</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1" />
+					<xs:maxExclusive value="100000" />
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

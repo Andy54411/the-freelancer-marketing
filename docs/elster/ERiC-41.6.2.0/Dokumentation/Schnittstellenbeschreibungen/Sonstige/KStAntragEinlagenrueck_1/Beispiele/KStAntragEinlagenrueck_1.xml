@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterNachricht</Verfahren>
+		<DatenArt>KStAntragEinlagenrueck</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Beispiele</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>1</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<KStAntragEinlagenrueck xmlns="http://finkonsens.de/elster/elsternachricht/kstantrageinlagenrueck/v1" version="1">
+					<KSt1F_27_8>
+                        <BeginnWj>01.01.2023</BeginnWj>
+                        <EndeWj>31.12.2023</EndeWj>
+						<Allgemein>
+							<OrdNrArt>O</OrdNrArt>
+							<Name>Test KSt</Name>
+                            <Strasse>Teststr.</Strasse>
+                            <Hausnummer>1</Hausnummer>
+                            <PLZ>80639</PLZ>
+                            <Ort>Test</Ort>
+                            <Waehrung>EUR</Waehrung>
+						</Allgemein>
+                        <Vorhergehend>
+                            <Vorher_Keine>1</Vorher_Keine>
+                        </Vorhergehend>
+                        <Fest>
+                            <ELKRuek>50</ELKRuek>
+                        </Fest>
+                        <Leistungen>
+                            <Leistung>
+                                <Leistung_Bezeichnung>Abc</Leistung_Bezeichnung>
+                                <Leistung_Beschluss>01.01.2023</Leistung_Beschluss>
+                                <Leistung_Abfluss>01.06.2023</Leistung_Abfluss>
+                                <Leistung_Betrag>100</Leistung_Betrag>
+                                <Leistung_ELKRueck>50</Leistung_ELKRueck>
+                            </Leistung>
+                        </Leistungen>
+                        <Nachweis>
+                            <Nachweis_ausl_Stpfl>Frankreich</Nachweis_ausl_Stpfl>
+                        </Nachweis>
+					</KSt1F_27_8>
+                    <AE>
+                        <Allgemein>
+                            <AE_Steuernummer>9198081508152</AE_Steuernummer>
+                            <AE_Name>Test Anteilseigner</AE_Name>
+                            <AE_Strasse>Teststr. 2</AE_Strasse>
+                            <AE_PLZ_Ort>80639 München</AE_PLZ_Ort>
+                        </Allgemein>
+                        <Besitzdauern>
+                            <BetBeginn>
+                                <Anfang>100</Anfang>
+                                <Anfang_Gesamt>100</Anfang_Gesamt>
+                            </BetBeginn>
+                        </Besitzdauern>
+                    </AE>
+				</KStAntragEinlagenrueck>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xs:schema
+	 xmlns:elster="http://www.elster.de/elsterxml/schema/v11"
+	 xmlns:elsterbasisTH8="http://www.elster.de/elsterxml/schema/v11"
+	 xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/th000011_extern.xsd" />
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/ndh000011.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Nutzdatenheader</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="./eds_000002_11.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Zentrale Meldung</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<!--  RootElement = Elster _______________________________________________________________ -->
+	<xs:element name="Elster">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TransferHeader" type="elster:TransferHeaderCType" />
+				<xs:element name="DatenTeil" type="elster:DatenTeilCType">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">verschlüsselt</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+		<!--  aus Performance Gründne nur in den externen Schemata zu verwenden
+		<xs:unique name="EindeutigesNutzdatenTicket">
+			<xs:selector xpath="elster:DatenTeil/elster:Nutzdatenblock/elster:NutzdatenHeader"/>
+			<xs:field xpath="elster:NutzdatenTicket"/>
+		</xs:unique>
+		 -->
+	</xs:element>
+	<xs:complexType name="DatenTeilCType">
+		<xs:sequence>
+			<xs:element name="Nutzdatenblock" type="elster:NutzdatenblockCType" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--  E  -->
+	<!--  F  -->
+	<!--  G  -->
+	<!--  H  -->
+	<!--  I  -->
+	<!--  J  -->
+	<!--  K  -->
+	<!--  L  -->
+	<!--  M  -->
+	<!--  N  -->
+	<xs:complexType name="NutzdatenblockCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Der Nutzdatenblock enthält jeweils einen "NutzdatenHeader"- und einen "Nutzdaten"-Tag			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="NutzdatenHeader" type="elster:NutzdatenHeaderCType" />
+			<xs:element name="Nutzdaten" type="elster:NutzdatenCType">
+				<!-- 		aus Performancegründen nur in den externen Schemata's zu verwenden
+				<xs:unique name="EindeutigesOrdnungsmerkmal">
+					<xs:selector xpath="elster:Lohnsteuerbescheinigung/elster:Allgemein"/>
+					<xs:field xpath="elster:Ordnungsmerkmal"/>
+				</xs:unique>
+ -->
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="NutzdatenCType">
+		<xs:sequence>
+			<xs:element name="Jahressteuererklaerung" type="elster:JahressteuererklaerungCType">
+				<xs:annotation>
+					<xs:documentation xml:lang="DE">Im XML muss mindestens ein Element "Feld" enthalten sein. Dieses kann bei den Datenarten "Fein", "34a" oder "KStZ" innerhalb eines "Usb"-Elements stehen.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://finkonsens.de/rms/elo/lstbstorno/v2" targetNamespace="http://finkonsens.de/rms/elo/lstbstorno/v2" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!--Version 2 -->
+	<xs:include schemaLocation="./lstb_storno_000002.xsd"/>
+	<xs:element name="LStBStorno" type="elsterlohn:StornierungCType"/>
+</xs:schema>

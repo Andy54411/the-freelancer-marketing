@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://finkonsens.de/elster/elsterbereitstellung/lsthvvmrm/v2" targetNamespace="http://finkonsens.de/elster/elsterbereitstellung/lsthvvmrm/v2" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="LStHVVMRM" type="LStHVVMRM_CType"/>
+	<xs:complexType name="LStHVVMRM_CType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">
+                Rückmeldung zur Verarbeitung einer Vollmacht oder eine Vollmachtnehmers von ELSTER-BRM an BestDB. Die Abholung der
+                Nutzdaten erfolgt über die Datenart ElsterDatenabholung|MitteilungAbholung.
+            </xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="VollmachtID" type="VollmachtIDSType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">
+                        Die ID der Vollmacht, die diese Rückmeldung betrifft.
+                    </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VollmachtnehmerID" type="VollmachtnehmerIDSType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">
+                        Die Vollmachtnehmer-ID, die diese Rückmeldung betrifft.
+                    </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RC" type="NutzdatenRC_CType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">
+                        Der ReturnCode der Vollmachtsverarbeitung, bestehend aus Code und Text.
+                    </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="version" use="required" fixed="1"/>
+	</xs:complexType>
+	<xs:simpleType name="VollmachtIDSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">ID einer Vollmacht. Die ersten 4 Ziffern legen den Vollmachtstyp fest. Um vorwärtskompatible Erweiterungen zu ermöglichen ist das Pattern jedoch nicht zu strikt gewählt.
+				(1) 0100G: Vollmacht eines Steuerberaters, der an K-VDB teilnimmt
+				(2) 0104G: Abrufvollmacht eines Steuerberaters, der an K-VDB teilnimmt
+				(3) 0202G: Vollmacht eines Lohnsteuerhilfevereins
+				(4) 0204G: Abrufvollmacht eines Lohnsteuerhilfevereins
+				(5) 0303G: Vollmacht für Angehörige (VollfA)
+				(6) 0304G: Abrufvollmacht (AbV)
+				(7) 0305G: Einwilligungserklärung (DIVA)
+				(8) 0400G: Vollmacht eines inländ. Steuerberaters, der nicht an K-VDB teilnimmt
+				(9) 0404G: Abrufvollmacht eines inländ. Steuerberaters, der nicht an K-VDB teilnimmt
+				(10) 0500G: Vollmacht eines ausländ. Steuerberaters, der nicht an K-VDB teilnimmt
+				(11) 0504G: Abrufvollmacht eines ausländ. Steuerberaters, der nicht an K-VDB teilnimmt</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="\d{4}G\d{20}">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Pattern für vorwärtskompatible Erweiterungen</xs:documentation>
+				</xs:annotation>
+			</xs:pattern>
+			<xs:pattern value="[a-zA-Z0-9]{10,28}">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Veraltetes VM-ID-Pattern, sehr liberal.</xs:documentation>
+				</xs:annotation>
+			</xs:pattern>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="VollmachtnehmerIDSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">
+				ID eines Vollmachtnehmers. Die ersten 4 Ziffern legen den Vollmachtnehmertyp fest.  Um vorwärtskompatible Erweiterungen zu ermöglichen ist das Pattern jedoch nicht zu strikt gewählt.
+				(1) 0100F: Steuerberater, der K-VDB nutzt
+				(2) 0200F: Lohnsteuerhilfeverein
+				(3) 0300F: Übrige Vollmachtnehmer von Vollmachten ohne Vollmachtsvermutung
+				(4) 0400F: Inländische Steuerberater und landwirtschaftliche Buchstellen
+				(5) 0500F: Ausländische Steuerberater
+				(6) 0101L: Lohnsteuerhilfeverein (veraltetes Pattern, ging nie produktiv, aber ggf. auf vereinzelten Testsystemen im Einsatz)
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="\d{4}F\d{20}">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Pattern für vorwärtskompatible Erweiterungen</xs:documentation>
+				</xs:annotation>
+			</xs:pattern>
+			<xs:pattern value="0100F\d{9}\d{8,10}"/>
+			<!-- veraltetes DATEV-Pattern mit Präfix 0100F, aus Kompatibilitätsgründen aufgenommen -->
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="NutzdatenRC_CType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Definiert den Inhalt eines Verarbeitungsergebnisses. Dieser besteht aus einem Code und einer textuellen Beschreibung.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Code" type="CodeSType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Verarbeitungsergebnis als Code; "0" bzw. bedeutet eine fehlerfreie Verarbeitung. Ansonsten wird der Fehlercode angegeben.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Text" type="StringBaseSType">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Eine textuelle Beschreibung des Verarbeitungsergebnisses.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="CodeSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de">Der Elster-Returncode. Im Erfolgsfall ist dieser "0". Im Fehlerfall 9-stellig und von "000000000" verschieden. Die Syntax der Fehlernummern ist auf der Seite https://work.elster.de/elsterconfluence/x/iDY beschrieben.
+				Ausnahme: In der VDB wird der 9-stellige Fehlercode "000000000" im Erfolgsfall verwendet.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="0"/>
+			<xs:pattern value="\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="StringBaseSType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+				</xs:annotation>
+			</xs:pattern>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

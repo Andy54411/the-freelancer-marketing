@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterNachricht</Verfahren>
+		<DatenArt>KStAntragOptionPersG</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Test ERiC-Entwicklung</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>1</NutzdatenTicket>
+				<Empfaenger id="F">9181</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERIC, BayLfSt</ProduktName>
+					<ProduktVersion>31.x</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>ERiC-Entwicklung</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<KStAntragOptionPersG xmlns="http://finkonsens.de/elster/elsternachricht/kstantragoptionpersg/v3" version="3">
+					<KStOpt>
+						<Allgemein>
+							<OrdNrArt>O</OrdNrArt>
+							<Bezeichnung>Test PersG</Bezeichnung>
+                            <Art>3</Art>
+							<WJ_Beginn>01.01.2021</WJ_Beginn>
+							<WJ_Ende>31.12.2021</WJ_Ende>
+							<Nicht_Gefuehrt>1</Nicht_Gefuehrt>
+							<Anschrift>
+								<Strasse>Teststraße</Strasse>
+								<Hausnummer>1</Hausnummer>
+								<Hausnummerzusatz>1</Hausnummerzusatz>
+								<AdressE>e</AdressE>
+								<PLZ>11111</PLZ>
+								<Ort>Testort</Ort>
+							</Anschrift>
+						</Allgemein>
+						<K>
+							<Option>1</Option>
+							<P217UmwG>1</P217UmwG>
+							<IFonds>1</IFonds>
+						</K>
+					</KStOpt>
+				</KStAntragOptionPersG>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

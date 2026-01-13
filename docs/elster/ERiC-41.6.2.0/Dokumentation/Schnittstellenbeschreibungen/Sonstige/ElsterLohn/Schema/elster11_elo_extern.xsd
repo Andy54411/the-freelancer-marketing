@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Schema als Schnittstelle zur Übermittlung von Lohnsteuerbescheinigungen.
+	=============
+	Änderungshistorie
+	Version 1: 	Erstellung bei Einführung von Elster Transferheader 11
+	Version 2: 	Protokollanforderung entfällt mit TH11, Umstellung auf ElsterDatenabholung
+	Version 3: 	Aufnahme LStB 201901
+	Version 4: 	Aufnahme LStB 202001
+	Version 5:  Aufnahme LStB 202101
+	06.05.2021: Aufnahme LStB 2022, LSTBStorno V2
+	16.05.2022: Aufnahme LStB 2023
+	15.05.2023: Aufnahme LStB 2024
+	17.05.2023: Aufnahme LStB 2025
+-->
+<xs:schema 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:elster="http://www.elster.de/elsterxml/schema/v11" 
+	xmlns:elsterlohn201201="http://www.elsterlohn.de/2012-01/XMLSchema" 
+	xmlns:elsterlohn201301="http://www.elsterlohn.de/2013-01/XMLSchema" 
+	xmlns:elsterlohn201302="http://www.elsterlohn.de/2013-02/XMLSchema" 
+	xmlns:elsterlohn201401="http://www.elsterlohn.de/2014-01/XMLSchema" 
+	xmlns:elsterlohn201501="http://www.elsterlohn.de/2015-01/XMLSchema" 
+	xmlns:elsterlohn201601="http://www.elsterlohn.de/2016-01/XMLSchema" 
+	xmlns:elsterlohn201701="http://www.elsterlohn.de/2017-01/XMLSchema" 
+	xmlns:elsterlohn201801="http://www.elsterlohn.de/2018-01/XMLSchema" 
+	xmlns:elsterlohn201901="http://www.elsterlohn.de/2019-01/XMLSchema" 
+	xmlns:elsterlohn202001="http://www.elsterlohn.de/2020-01/XMLSchema" 
+	xmlns:elsterlohn202101="http://www.elsterlohn.de/2021-01/XMLSchema"
+	xmlns:elsterlohn202201="http://finkonsens.de/rms/elo/lstb/v202201"
+	xmlns:elsterlohn202301="http://finkonsens.de/rms/elo/lstb/v202301"
+	xmlns:elsterlohn202401="http://finkonsens.de/rms/elo/lstb/v202401"
+	xmlns:elsterlohn202501="http://finkonsens.de/rms/elo/lstb/v202501"
+	xmlns:lstbstornov1="http://www.elsterlohn.de/LStBStornoV1/XMLSchema" 
+	xmlns:lstbstornov2="http://finkonsens.de/rms/elo/lstbstorno/v2" 
+	xmlns:elsterlohnersatz1="http://www.elsterfachmethodik.de/Lohnersatz000001/XMLSchema" 
+	xmlns:elsterlohnersatz2="http://www.elsterfachmethodik.de/Lohnersatz000002/XMLSchema" 
+	xmlns:elsterlohnersatz3="http://www.elsterfachmethodik.de/Lohnersatz000003/XMLSchema" 
+	targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- Import : Lohnsteuerbescheinigungen / Storno -->
+	<xs:import namespace="http://www.elsterlohn.de/2012-01/XMLSchema" schemaLocation="./lstb201201_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2013-01/XMLSchema" schemaLocation="./lstb201301_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2013-02/XMLSchema" schemaLocation="./lstb201302_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2014-01/XMLSchema" schemaLocation="./lstb201401_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2015-01/XMLSchema" schemaLocation="./lstb201501_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2016-01/XMLSchema" schemaLocation="./lstb201601_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2017-01/XMLSchema" schemaLocation="./lstb201701_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2018-01/XMLSchema" schemaLocation="./lstb201801_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2019-01/XMLSchema" schemaLocation="./lstb201901_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2020-01/XMLSchema" schemaLocation="./lstb202001_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/2021-01/XMLSchema" schemaLocation="./lstb202101_adapter.xsd"/>
+	<xs:import namespace="http://finkonsens.de/rms/elo/lstb/v202201" schemaLocation="./lstb202201_adapter.xsd"/>
+	<xs:import namespace="http://finkonsens.de/rms/elo/lstb/v202301" schemaLocation="./lstb202301_adapter.xsd"/>
+	<xs:import namespace="http://finkonsens.de/rms/elo/lstb/v202401" schemaLocation="./lstb202401_adapter.xsd"/>	
+	<xs:import namespace="http://finkonsens.de/rms/elo/lstb/v202501" schemaLocation="./lstb202501_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterlohn.de/LStBStornoV1/XMLSchema" schemaLocation="./lstb_storno_000001_adapter.xsd"/>
+	<xs:import namespace="http://finkonsens.de/rms/elo/lstbstorno/v2" schemaLocation="./lstb_storno_000002_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterfachmethodik.de/Lohnersatz000001/XMLSchema" schemaLocation="./lohnersatz_000001_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterfachmethodik.de/Lohnersatz000002/XMLSchema" schemaLocation="./lohnersatz_000002_adapter.xsd"/>
+	<xs:import namespace="http://www.elsterfachmethodik.de/Lohnersatz000003/XMLSchema" schemaLocation="./lohnersatz_000003_adapter.xsd"/>
+	<!-- Includes NDH 11, TH 11, -->
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/ndh000011.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Nutzdatenheader der Version 11</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/th000011_extern.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">TransferHeader der Version 11</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<!-- RootElement = Elster _______________________________________________________________-->
+	<xs:element name="Elster">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TransferHeader" type="elster:TransferHeaderCType"/>
+				<xs:element name="DatenTeil" type="elster:DatenTeilCType">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">verschlüsselt</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+		<xs:unique name="EindeutigesNutzdatenTicket">
+			<xs:selector xpath="elster:DatenTeil/elster:Nutzdatenblock/elster:NutzdatenHeader"/>
+			<xs:field xpath="elster:NutzdatenTicket"/>
+		</xs:unique>
+	</xs:element>
+	<!-- DatenTeil; hier noch mal separat aufgeführt damit auch der Datenteil
+	     einer Lieferung komplett ohne TransferHeader validiert werden kann. -->
+	<xs:element name="DatenTeil" type="elster:DatenTeilCType">
+		<xs:unique name="EindeutigesNutzdatenTicketinDatenTeil">
+			<xs:selector xpath="elster:Nutzdatenblock/elster:NutzdatenHeader"/>
+			<xs:field xpath="elster:NutzdatenTicket"/>
+		</xs:unique>
+	</xs:element>
+	<!-- DatenTeil -->
+	<xs:complexType name="DatenTeilCType">
+		<xs:sequence>
+			<xs:element name="Nutzdatenblock" type="elster:NutzdatenblockCType" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- Nutzdatenblock -->
+	<xs:complexType name="NutzdatenblockCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Der Nutzdatenblock enthält jeweils einen "NutzdatenHeader"- und einen "Nutzdaten"-Tag</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="NutzdatenHeader" type="elster:NutzdatenHeaderCType"/>
+			<xs:element name="Nutzdaten" type="elster:NutzdatenCType"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- Nutzdaten -->
+	<xs:complexType name="NutzdatenCType">
+		<xs:choice>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element ref="elsterlohn201201:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201301:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201302:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201401:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201501:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201601:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201701:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201801:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn201901:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202001:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202101:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202201:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202301:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202401:Lohnsteuerbescheinigung"/>
+				<xs:element ref="elsterlohn202501:Lohnsteuerbescheinigung"/>
+				<xs:element ref="lstbstornov1:LStBStorno"/>
+				<xs:element ref="lstbstornov2:LStBStorno"/>
+			</xs:choice>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element ref="elsterlohnersatz1:Lohnersatzleistung"/>
+				<xs:element ref="elsterlohnersatz2:Lohnersatzleistung"/>
+				<xs:element ref="elsterlohnersatz3:Lohnersatzleistung"/>
+				<xs:element ref="elsterlohnersatz1:Stornierung"/>
+			</xs:choice>
+		</xs:choice>
+	</xs:complexType>
+</xs:schema>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterErklaerung</Verfahren>
+        <DatenArt>34a</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Softwareentwickler ERiC</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <E34a xmlns="http://finkonsens.de/elster/elstererklaerung/e34a/v2022" version="2022">
+                    <Anl_34a>
+                        <Person>PersonA</Person>
+                        <Betr>
+                            <Betrieb>100</Betrieb>
+                            <E2910001>Mustermann</E2910001>
+                            <E2910002>Marian</E2910002>
+                            <Ek_Art>
+                                <E2910041>1</E2910041>
+                            </Ek_Art>
+                            <Betriebsbez>
+                                <E2910051>Baumschule Mustermann</E2910051>
+                            </Betriebsbez>
+                            <Beg_Betr>
+                                <E2910061>50000</E2910061>
+                                <E2910121>10000</E2910121>
+                                <E2910131>30000</E2910131>
+                            </Beg_Betr>
+                        </Betr>
+                    </Anl_34a>
+                    <Vorsatz>
+                        <Unterfallart>13</Unterfallart>
+                        <Vorgang>01</Vorgang>
+                        <StNr>9198011310010</StNr>
+                        <Zeitraum>2022</Zeitraum>
+                        <AbsName>abc</AbsName>
+                        <AbsStr>abc</AbsStr>
+                        <AbsOrt>abc</AbsOrt>
+                        <Copyright>ERiC</Copyright>
+                        <OrdNrArt>S</OrdNrArt>
+                        <Rueckuebermittlung>
+                            <Bescheid>2</Bescheid>
+                        </Rueckuebermittlung>
+                    </Vorsatz>
+                </E34a>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

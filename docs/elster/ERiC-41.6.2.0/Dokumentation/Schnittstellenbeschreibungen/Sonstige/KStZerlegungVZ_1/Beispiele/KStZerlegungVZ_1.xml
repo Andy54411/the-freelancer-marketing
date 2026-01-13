@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11" >
+	<TransferHeader version="11">
+		<Verfahren>ElsterNachricht</Verfahren>
+		<DatenArt>KStZerlegungVZ</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<SigUser>
+			<Sig/>
+		</SigUser>
+		<Empfaenger id="L">
+			<Ziel>BY</Ziel>
+		</Empfaenger>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Beispiel AenderungAdresse</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>1</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<KStZerlegungVZ xmlns="http://finkonsens.de/elster/elsternachricht/kstzerlegungvz/v1" version="1">
+					<KStZerl2Vorausz>
+						<Steuernummer>9198011310010</Steuernummer>
+						<Allgemein>
+							<WID>DE123456788</WID>
+							<VZ>2025</VZ>
+							<Bezeichnung>Körperschaft</Bezeichnung>
+						</Allgemein>
+						<Ang_Zerl>
+							<Art>
+								<Zerlegung>1</Zerlegung>
+							</Art>
+						</Ang_Zerl>
+						<Steuerberater>
+							<Mitwirkung>
+								<Mitwirk>1</Mitwirk>
+							</Mitwirkung>
+							<Anfertigung>
+								<Name>Berater</Name>
+								<Vorname>Steuer</Vorname>
+								<Strasse_Haus>Musterweg 1</Strasse_Haus>
+								<PLZ_Ort>12345 Musteort</PLZ_Ort>
+							</Anfertigung>
+						</Steuerberater>
+					</KStZerl2Vorausz>
+					<KStZerl2VorauszBS>
+						<BS>
+							<Land>9</Land>
+						</BS>
+						<Zerl>
+							<Anteil>
+								<Zerlegungsmassstab>Zerl1</Zerlegungsmassstab>
+								<Anteil_Zerl>70</Anteil_Zerl>
+							</Anteil>
+							<Anteil>
+								<Zerlegungsmassstab>Zerl2</Zerlegungsmassstab>
+								<Anteil_Zerl>20</Anteil_Zerl>
+							</Anteil>
+							<Anteil>
+								<Zerlegungsmassstab>Zerl3</Zerlegungsmassstab>
+								<Anteil_Zerl>10</Anteil_Zerl>
+							</Anteil>
+						</Zerl>
+					</KStZerl2VorauszBS>
+				</KStZerlegungVZ>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

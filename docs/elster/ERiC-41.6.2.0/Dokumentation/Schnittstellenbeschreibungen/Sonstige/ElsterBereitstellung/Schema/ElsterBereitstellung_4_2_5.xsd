@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:bereitstellung="http://www.elster.de/ElsterBereitstellung/v2"
+           targetNamespace="http://www.elster.de/ElsterBereitstellung/v2" elementFormDefault="qualified" version="1. 1 ">
+    <xs:element name="ElsterBereitstellung">
+        <xs:annotation>
+            <xs:documentation>Rootelement, muss "Bereitstellung" enthalten, Benachrichtigung optional</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Bereitstellung" type="bereitstellung:BereitstellungType"/>
+                <xs:element name="Benachrichtigung" type="bereitstellung:BenachrichtigungType" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="BereitstellungType">
+        <xs:annotation>
+            <xs:documentation>Enthält die zu Bereitstellenden Daten und die zur Bereitstellung notwendigen Metainformationen sowie - falls
+                notwendig - einen Schlüssel
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="MetaInformationen" type="bereitstellung:MetaInformationenType"/>
+            <xs:element name="Verschluesselung" type="xs:base64Binary" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Gibt an ob und mit welchem Schlüssel der Inhalt des "Daten" - Unter e lementes
+                        (Base64 oder Xml) bzw. des
+                        DIVA - Daten - Elementes (Pdf) vor dem S peichern verschlüsselt wird. Wenn ein
+                        "Verschluesselung" Tag vorhanden ist und
+                        nicht leer ist, muss der Inhalt ein Base64 k odiertes X509 Zertifikat sein, mit dem
+                        verschlüsselt wird. Ist das Element "Verschluesselung" nicht vorhanden, wird mit dem WIESEL
+                        Poolschlüssel verschlüsselt.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Daten" type="bereitstellung:DatenType" minOccurs="0"/>
+            <xs:element name="Verwaltungsakt" type="bereitstellung:VerwaltungsaktType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="DatenType">
+        <xs:annotation>
+            <xs:documentation>Bereitzustellende Daten müssen entweder als XML oder Base64 codiert vorliegen. Es wird nu r der Inhalt der
+                Unterelemente Base64 oder Xml abgespeichert.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice>
+            <xs:element name="Base64">
+                <xs:annotation>
+                    <xs:documentation>Base64 kodierte Daten</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:base64Binary">
+                            <xs:attribute name="encoding" type="xs:string" use="optional"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Xml" type="bereitstellung:XmlDatenType"/>
+        </xs:choice>
+    </xs:complexType>
+    <xs:complexType name="XmlDatenType" mixed="false">
+        <xs:annotation>
+            <xs:documentation>Muss zulässiges XML enthalten. Die enthaltenen Elemente müssen eine Namespace Deklaration besitzen. (
+                namespace="##other" processContents="lax" )
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:any namespace="##other" processContents="lax"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="VerwaltungsaktType">
+        <xs:annotation>
+            <xs:documentation>Deprecated seit BEM 4.1.0 release.
+                Bereitzustellende DIVA-Daten müssen Base64 kodiert vorliegen. Es wird nur der Inhalt des Unterelements Pdf abgespeichert.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="Pdf" type="xs:base64Binary">
+                <xs:annotation>
+                    <xs:documentation>Base64 kodierte Daten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetaInformationenType">
+        <xs:annotation>
+            <xs:documentation>MetaInformationen, die zum Speichern und später zum Abholen der Daten benötigt werden.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="OrdnungsBegriff" type="bereitstellung:OrdnungsBegriffType" maxOccurs="unbounded"/>
+            <xs:element name="MetaAttribut" type="bereitstellung:MetaAttributType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="MetaInfoMaps" type="bereitstellung:MetaInfoMapsCType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="MetaInfoMapsCType">
+        <xs:annotation>
+            <xs:documentation>Container-Element - besitzt eine Liste von MetaInfoMap-Elementen in einer Map-Struktur
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="MetaInfoMap"	type="bereitstellung:MetaInfoMapCType" minOccurs="1" maxOccurs="unbounded">
+                <xs:unique name="UniqueMetaName">
+                    <xs:selector xpath="bereitstellung:Meta"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+                <xs:unique name="UniqueMetaListTyp">
+                    <xs:selector xpath="bereitstellung:MetaList"/>
+                    <xs:field xpath="@typ"/>
+                </xs:unique>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="MetaInfoMapCType">
+        <xs:annotation>
+            <xs:documentation>MetaInfoMap besitzt einen typ und kann eine Liste von Meta-Elementen oder auch eine Liste von MetaList beinhalten.
+                Die Bedingung ist, es muss mindestens eines der beiden angegeben sein.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                <xs:element name="Meta" type="bereitstellung:MetaCType" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element name="MetaList" type="bereitstellung:MetaListCType" minOccurs="1" maxOccurs="unbounded">
+                    <xs:unique name="UniqueMetaListName">
+                        <xs:selector xpath="bereitstellung:MetaListElement"/>
+                        <xs:field xpath="@name"/>
+                    </xs:unique>
+                </xs:element>
+            </xs:choice>
+        </xs:sequence>
+        <xs:attribute name="typ" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="[a-zA-Z0-9]+"/>
+                    <xs:maxLength value="32"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="MetaCType">
+        <xs:annotation>
+            <xs:documentation>Element Meta, ein Key-Value-Pair,  indem z.B. name=URL und eine zugehörige URL
+                hinterlegt werden können. Namen müssen eindeutig sein.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="bereitstellung:MetaValueSType">
+                <xs:attribute name="name" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="[a-zA-Z0-9]+"/>
+                            <xs:maxLength value="32"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="MetaListCType">
+        <xs:annotation>
+            <xs:documentation>Element MetaList, ein Containerelement mit einem Namen. Der 'name' muss unter allen MetaList eindeutig sein.
+                Im Element MetaList kann eine Liste mit mindestens einem MetaListElement angegeben werden.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="MetaListElement" type="bereitstellung:MetaListElementCType" minOccurs="1" maxOccurs="100"/>
+        </xs:sequence>
+        <xs:attribute name="typ" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="[a-zA-Z0-9]+"/>
+                    <xs:maxLength value="32"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="MetaListElementCType">
+        <xs:annotation>
+            <xs:documentation>Element MetaList, ein Key-Value-Pair,  indem z.B. name=URL und eine zugehörige URL
+                hinterlegt werden können. Namen müssen eindeutig sein sind jedoch optional.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="bereitstellung:MetaValueSType">
+                <xs:attribute name="name">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="[a-zA-Z0-9]+"/>
+                            <xs:maxLength value="64"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:simpleType name="MetaValueSType">
+        <xs:restriction base="xs:string">
+            <xs:maxLength value="32768" />
+        </xs:restriction>
+    </xs:simpleType>
+
+
+    <xs:complexType name="OrdnungsBegriffType">
+        <xs:annotation>
+            <xs:documentation>Ordnungsbegriff Typ und Wert</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="typ" type="xs:string" use="required" form="unqualified"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="MetaAttributType">
+        <xs:annotation>
+            <xs:documentation>Metaattribut Typ und Wert</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="typ" type="xs:string" use="required" form="unqualified"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="BenachrichtigungType">
+        <xs:annotation>
+            <xs:documentation>Auf welchem Wege sollen Benachrichtigungen erfolgen</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="EMailNachricht" type="bereitstellung:EMailNachrichtType" minOccurs="0"/>
+            <xs:element name="BescheidnachrichtEOP" type="bereitstellung:BescheidnachrichtEOPType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EMailNachrichtType">
+        <xs:annotation>
+            <xs:documentation>Benachrichtigung per Email</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice minOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Empfänger inkl. E-Mail-Adressse hinterlegen oder durch BEM ermitteln lassen.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:element name="NachrichtenEmpfaenger" type="bereitstellung:EMailEmpfaengerType" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Container Element für einen oder mehrere Empfänger. Für DIVA weiterhin verpflichtend!
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="EmpfaengerErmitteln" type="bereitstellung:EmpfaengerErmittelnType" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Kann z.B. für die Bundesdruckerei genutzt werden, um die E-Mail-Adresse des Empfänger automatisch zu
+                            ermitteln, statt ihn über
+                            NachrichtenEmpfaenger hinterlegt zu erhalten.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:choice>
+            <xs:element name="Betreff" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Betreff der Email</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Text">
+                <xs:annotation>
+                    <xs:documentation>Text der Nachricht muss base64 codiert sein. Encoding des Klartextes muss ISO - 8859 - 15 sein
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:base64Binary">
+                            <xs:attribute name="encoding">
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:enumeration value="UTF-8"/>
+                                        <xs:enumeration value="ISO-8859-15"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EMailEmpfaengerType">
+        <xs:annotation>
+            <xs:documentation>Ein oder mehrere Empfänger sind möglich. Für DIVA darf nur ein Empfänger gesetzt werden.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="EMailAdresse" type="bereitstellung:EMailAdresseType"/>
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="EMailAdresseType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="EmpfaengerErmittelnType" final="restriction">
+        <xs:annotation>
+            <xs:documentation>Enum von Optionen, wie die E-Mail-Adresse von BEM in Elster ermittelt werden kann.
+                Per Anforderung erweiterbar um explizite Typen, um bestimmte UseCases abzubilden.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="AUTOMATISCH">
+                <xs:annotation>
+                    <xs:documentation>Ermittelt die E-Mail-Adresse des Empfängers automatisch aus dem OrdnungsBegriff accountId via Wiesel.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="BescheidnachrichtEOPType">
+        <xs:annotation>
+            <xs:documentation>Benachrichtigungsinformationen an EOP. Seit BEM 4.2.0 deprecated.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="AccountId" type="bereitstellung:AccountIdType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Die AccountId sollte nach Möglichkeit immer mitgeliefert werden, um den Empfänger zu definieren.
+                        Sollte die AccountId nicht vorhanden sein, wird der Ordnungsbegriff accountid verwendet - sofern vorhanden.
+                        Die Änderung auf optional ist dem AGS zu AccountId-Mapping geschuldet, da dort die Empfänger-AccountId nicht bekannt
+                        ist.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuernummer" type="bereitstellung:SteuernummerType" minOccurs="0"/>
+            <xs:element name="Geschaeftszeichen" type="bereitstellung:GeschaeftszeichenType" minOccurs="0"/>
+            <xs:element name="Unterfallart" type="bereitstellung:UnterfallartType" minOccurs="0"/>
+            <xs:element name="Veranlagungszeitraum" type="bereitstellung:VeranlagungszeitraumType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="AccountIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="ek-[0-9A-Fa-f]{40}"/>
+            <xs:pattern value="\d{10}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4}0\d{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GeschaeftszeichenType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="UnterfallartType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="VeranlagungszeitraumType">
+        <xs:restriction base="xs:integer">
+            <xs:totalDigits value="4"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

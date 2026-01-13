@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VollfAAnlage - 10 - 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrm/vollfaanlage/v10" targetNamespace="http://finkonsens.de/elster/elsterbrm/vollfaanlage/v10" xmlns:exml="http://finkonsens.de/elster/elsterbrm/vollfaanlage/v10">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJMonatOptionalBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-2][0-9]|3[0-1])\.(10|11|12|00|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: MONAT_OPTIONAL</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollfAAnlage_Vollmachtgeber_NatuerlichePerson_Angehoerigenverhaeltnis_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Bruder">
+                <xs:annotation>
+                    <xs:documentation>Bruder</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Ehegatte/in">
+                <xs:annotation>
+                    <xs:documentation>Ehegatte/in</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Enkel">
+                <xs:annotation>
+                    <xs:documentation>Enkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Großeltern">
+                <xs:annotation>
+                    <xs:documentation>Großeltern</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Kind">
+                <xs:annotation>
+                    <xs:documentation>Kind</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Lebenspartner/in">
+                <xs:annotation>
+                    <xs:documentation>Lebenspartner/in</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Mutter">
+                <xs:annotation>
+                    <xs:documentation>Mutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Neffe">
+                <xs:annotation>
+                    <xs:documentation>Neffe</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Nichte">
+                <xs:annotation>
+                    <xs:documentation>Nichte</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Onkel">
+                <xs:annotation>
+                    <xs:documentation>Onkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Pflegekind">
+                <xs:annotation>
+                    <xs:documentation>Pflegekind</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Pflegemutter">
+                <xs:annotation>
+                    <xs:documentation>Pflegemutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Pflegevater">
+                <xs:annotation>
+                    <xs:documentation>Pflegevater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwager">
+                <xs:annotation>
+                    <xs:documentation>Schwager</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwester">
+                <xs:annotation>
+                    <xs:documentation>Schwester</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwägerin">
+                <xs:annotation>
+                    <xs:documentation>Schwägerin</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Tante">
+                <xs:annotation>
+                    <xs:documentation>Tante</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Urenkel">
+                <xs:annotation>
+                    <xs:documentation>Urenkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Urgroßeltern">
+                <xs:annotation>
+                    <xs:documentation>Urgroßeltern</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Vater">
+                <xs:annotation>
+                    <xs:documentation>Vater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Verlobte/r">
+                <xs:annotation>
+                    <xs:documentation>Verlobte/r</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeGroßeltern">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Großeltern</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeMutter">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Mutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeNichte">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Nichte</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligePflegemutter">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Pflegemutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeSchwester">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Schwester</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeSchwaegerin">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Schwägerin</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeTante">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Tante</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligeUrgroßeltern">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Urgroßeltern</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemalige/rEhegatte/in">
+                <xs:annotation>
+                    <xs:documentation>ehemalige/r Ehegatte/in</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemalige/rLebenspartner/in">
+                <xs:annotation>
+                    <xs:documentation>ehemalige/r Lebenspartner/in</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerBruder">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Bruder</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerEnkel">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Enkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerNeffe">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Neffe</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerOnkel">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Onkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerPflegevater">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Pflegevater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerSchwager">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Schwager</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerUrenkel">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Urenkel</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligerVater">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Vater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligesKind">
+                <xs:annotation>
+                    <xs:documentation>ehemaliges Kind</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaligesPflegekind">
+                <xs:annotation>
+                    <xs:documentation>ehemaliges Pflegekind</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwiegersohn">
+                <xs:annotation>
+                    <xs:documentation>Schwiegersohn</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwiegertochter">
+                <xs:annotation>
+                    <xs:documentation>Schwiegertochter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwiegervater">
+                <xs:annotation>
+                    <xs:documentation>Schwiegervater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Schwiegermutter">
+                <xs:annotation>
+                    <xs:documentation>Schwiegermutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaliger Schwiegersohn">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Schwiegersohn</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemalige Schwiegertochter">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Schwiegertochter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemaliger Schwiegervater">
+                <xs:annotation>
+                    <xs:documentation>ehemaliger Schwiegervater</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ehemalige Schwiegermutter">
+                <xs:annotation>
+                    <xs:documentation>ehemalige Schwiegermutter</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollfAAnlage_Vollmachtgeber_NatuerlichePerson_Anrede_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Herr">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Frau">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL25_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="25"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL30_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="30"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL60_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VollfAAnlage" type="VollfAAnlage_CType"/>
+    <xs:complexType name="VollfAAnlage_CType">
+        <xs:sequence>
+            <xs:element name="VollfAAnlage" type="VollfAAnlage_134886515_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="10" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VollfAAnlage_134886515_CType">
+        <xs:sequence>
+            <xs:element name="Vollmachtgeber" type="Vollmachtgeber_21401153_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ZeitlicheVertretung" type="ZeitlicheVertretung_21401153_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Steuernummern" type="Steuernummern_21401153_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Diva" type="Diva_21401153_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtgeber_21401153_CType">
+        <xs:sequence>
+            <xs:element name="NatuerlichePerson" type="NatuerlichePerson_425302830_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatuerlichePerson_425302830_CType">
+        <xs:sequence>
+            <xs:element name="Identifikationsnummer" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geburtsdatum" type="DatumTTpMMpJJJJMonatOptionalBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Geburtsdatum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anrede" type="Enum_VollfAAnlage_Vollmachtgeber_NatuerlichePerson_Anrede_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL30_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namensvorsatz" type="String_MinL1_MaxL25_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namenszusatz" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Angehoerigenverhaeltnis" type="Enum_VollfAAnlage_Vollmachtgeber_NatuerlichePerson_Angehoerigenverhaeltnis_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Angehörigenverhältnis des Antragstellers zum Vollmachtgeber</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ZeitlicheVertretung_21401153_CType">
+        <xs:sequence>
+            <xs:element name="Vollmachtsdauer" type="Vollmachtsdauer_m1604899030_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtsdauer_m1604899030_CType">
+        <xs:sequence>
+            <xs:element name="AbVZ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ab Veranlagungszeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BisVZ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bis Veranlagungszeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuernummern_21401153_CType">
+        <xs:sequence>
+            <xs:element name="BekannteSteuernummer" type="BekannteSteuernummer_366491931_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BekannteSteuernummer_366491931_CType">
+        <xs:sequence>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Diva_21401153_CType">
+        <xs:sequence>
+            <xs:element name="DivaTeilnahme" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mit dieser Vollmacht wird der Übermittlung von Verwaltungsakten und sonstigen Schreiben durch Bereitstellung zum Datenabruf (§ 122a der Abgabenordnung) zugestimmt. Auf die von Ihnen bereits zur Kenntnis genommenen Hinweise zur Bekanntgabe in elektronischer Form wird verwiesen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

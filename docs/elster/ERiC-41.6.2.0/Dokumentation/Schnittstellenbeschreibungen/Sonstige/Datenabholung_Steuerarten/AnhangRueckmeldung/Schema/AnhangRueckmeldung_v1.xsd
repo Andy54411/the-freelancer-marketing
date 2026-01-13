@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Version 1 vom 26.07.2022: Initial erstellt -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:complexType name="AnhangRueckmeldungCType_v1">
+        <xs:annotation>
+            <xs:documentation>Diese  XML-Typdefinition beschreibt die Struktur der Daten, die für die "steuerart" AnhangRueckmeldung im Datenpaket zurückgeliefert werden. Im Dokument "AnhangRueckmeldung-SSb-V1.pdf" werden die einzelnen Elemente fachlich beschrieben.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="TransferTicket"/>
+            <xs:element name="NutzdatenTicket"/>
+            <xs:element name="Datenart"/>
+            <xs:element name="OrdnungsBegriff" minOccurs="0"/>
+            <xs:element name="Anrede"/>
+            <xs:element name="Referenz"/>
+            <xs:element name="Anhaenge">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Anhang" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="Dateibezeichnung"/>
+                                    <xs:element name="Rueckmeldung"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Mittelteil"/>
+            <xs:element name="Anweisung"/>
+            <xs:element name="Grussformel"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

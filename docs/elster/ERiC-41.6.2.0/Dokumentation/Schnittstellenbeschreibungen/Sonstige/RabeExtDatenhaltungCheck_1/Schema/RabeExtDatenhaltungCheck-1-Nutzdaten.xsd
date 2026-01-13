@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:rabeExtDatenhaltungCheck="http://finkonsens.de/elster/elsterrabe/rabeextdatenhaltungcheck/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterrabe/rabeextdatenhaltungcheck/v1" schemaLocation="RabeExtDatenhaltungCheck-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="rabeExtDatenhaltungCheck:RabeExtDatenhaltungCheck"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,780 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Created>2017-11-10T11:45:50Z</Created>
+  <LastSaved>2017-11-03T06:13:37Z</LastSaved>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <AllowPNG/>
+  <RemovePersonalInformation/>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>14100</WindowHeight>
+  <WindowWidth>28800</WindowWidth>
+  <WindowTopX>0</WindowTopX>
+  <WindowTopY>0</WindowTopY>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62">
+   <Protection ss:Protected="0"/>
+  </Style>
+  <Style ss:ID="s63">
+   <Alignment ss:Vertical="Bottom" ss:WrapText="1"/>
+   <Protection ss:Protected="0"/>
+  </Style>
+  <Style ss:ID="s64">
+   <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+   <Interior ss:Color="#92D050" ss:Pattern="Solid"/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s65">
+   <Protection/>
+  </Style>
+  <Style ss:ID="s66">
+   <Alignment ss:Vertical="Top"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s67">
+   <Alignment ss:Vertical="Bottom" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="s68">
+   <NumberFormat ss:Format="@"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="geänderte Fehlernummern">
+  <Names>
+   <NamedRange ss:Name="a" ss:RefersTo="='geänderte Fehlernummern'!R2C4:R73C7"/>
+  </Names>
+  <Table ss:ExpandedColumnCount="9" ss:ExpandedRowCount="73" x:FullColumns="1"
+   x:FullRows="1" ss:StyleID="s62" ss:DefaultColumnWidth="61.5"
+   ss:DefaultRowHeight="14.4375">
+   <Column ss:StyleID="s63" ss:AutoFitWidth="0" ss:Width="164.25" ss:Span="1"/>
+   <Column ss:Index="3" ss:StyleID="s63" ss:AutoFitWidth="0" ss:Width="1077.75"/>
+   <Column ss:Index="9" ss:StyleID="s62" ss:Hidden="1" ss:AutoFitWidth="0"
+    ss:Width="81"/>
+   <Row ss:AutoFitHeight="0" ss:Height="67.5">
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Fehlernummer alt</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Fehlernummer neu</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Fehlertext</Data></Cell>
+    <Cell ss:Index="9" ss:StyleID="s65"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="15">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090100</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080001100</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein interner Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090101</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080003101</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein technisches Problem aufgetreten. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090105</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080003105</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Aufgrund eines technischen Problems ist leider eine Überprüfung Ihrer Angaben nicht möglich. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090107</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080003107</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Aufgrund eines technischen Problems ist leider eine Überprüfung Ihrer Angaben nicht möglich. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="15">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090208</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005207</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Verarbeitung des Requests wird aufgrund des aktuellen Status des Benutzerkontos abgelehnt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090216</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005212</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die verwendete Konto-ID ist nicht gültig.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090221</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005217</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der Aufruf der Operation ist nicht zulässig.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090226</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005219</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Verarbeitung der Anfrage wurde aufgrund falscher oder unvollständiger Parameter abgelehnt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090229</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005222</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie haben nicht das erforderliche Recht zur Durchführung der gewünschten Aktion</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="15">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090240</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005232</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Verarbeitung der Anfrage wird aufgrund ihres falschen Formats abgelehnt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="15">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080015003</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080005267</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die von Ihnen eingereichten Daten sind veraltet.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090228</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">081005221</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Verarbeitung ist für Test-Zertifikate nicht erlaubt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090231</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">081005223</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Verarbeitung ist für das Identifikationsmerkmal des Kontos nicht erlaubt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090232</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005224</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Bitte überprüfen Sie Ihre Angaben: Die Identifikationsnummer, das Geburtsdatum oder beide Angaben sind falsch.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090233</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005225</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Bearbeitung ist gescheitert aufgrund Ihrer vorliegenden Meldedaten. Bitte wenden Sie sich an die in Ihrem Land für die Betreuung von ELSTER zuständige Stelle. Eine Aufstellung finden Sie im Info-Assistenten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090239</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005231</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Bitte überprüfen Sie die angegebene Identifikationsnummer. Bei wiederholtem Auftreten wenden Sie sich bitte an die in Ihrem Land für die Betreuung von ELSTER zuständige Stelle. Eine Aufstellung finden Sie im Info-Assistenten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090252</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005243</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie müssen mindestens 18 Jahre alt sein, um sich bei ELSTER registrieren zu können.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="28.6875">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090256</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005247</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es sind keine weiteren Registrierungsversuche für die angegebene Steuernummer, Identifikationsnummer bzw. BZSt-Nummer möglich, da die maximal zulässige Anzahl von unabgeschlossenen Registrierungen überschritten wurde. Nähere Informationen finden Sie im Info-Assistenten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090401</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">082005262</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der von Ihnen eingegebenen Benutzerkennung konnte keine Rechteverwaltungsstelle zugeordnet werden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080073104</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370001103</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080077105</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370001104</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080073106</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370001105</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070351</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370001228</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080015015</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370001275</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein interner Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080073101</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005100</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090273</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005201</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Bearbeitung ist gescheitert aufgrund der vorliegenden Meldedaten des Dateninhabers.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090279</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005202</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Bitte überprüfen Sie die angegebene Identifikationsnummer. Bei wiederholtem Auftreten wenden Sie sich bitte an die in Ihrem Land für die Betreuung des ElsterOnline-Portals zuständige Stelle. Eine Aufstellung finden Sie bei ELIAS.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090286</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005206</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Das Suchergebnis für die Anzeige der vergebenen Rechte ist zu groß. Bitte nutzen Sie Filterkriterien, um die Anzahl der Suchergebnisse einzuschränken.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070312</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005217</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070359</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005233</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070361</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005234</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070365</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005238</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie müssen sowohl die Identifikationsnummer als auch das Geburtsdatum angeben.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080155013</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005244</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Vollmacht wurde nicht gefunden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080155024</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">370005245</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die IdNr stimmt nicht mit der IdNr in der Vollmacht überein.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080071103</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371001102</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080090272</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371003260</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Das ElsterXML wurde als Dublette erkannt und wurde nicht verarbeitet.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080075102</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371005101</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080075309</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371005207</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080745016</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371005256</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Requests mit Testmerker sind nicht erlaubt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070372</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371013242</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es konnte kein Organisationsname ermittelt werden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070373</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371013243</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es konnte kein Organisationsname ermittelt werden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070325</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015208</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070326</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015209</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070327</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015210</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist ein Fehler aufgetreten.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070328</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015211</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Es ist kein Antrag auf Erteilung einer Berechtigung zum Datenabruf bzw. keine Berechtigung zum Widerruf vorhanden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070329</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015212</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der Antrag auf Erteilung einer Berechtigung zum Datenabruf für diesen Dateninhaber ist bereits genehmigt worden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070330</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015213</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der Antrag auf Erteilung einer Berechtigung zum Datenabruf für diesen Dateninhaber bzw. der genehmigte Antrag auf Datenabruf (Berechtigung) ist bereits zurückgezogen worden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070331</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015214</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Das von Ihnen in Ihrem Antrag auf Erteilung einer Berechtigung zum Datenabruf angegebene Ende des Berechtigungszeitraumes liegt in der Vergangenheit.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070310</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015215</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Im Rahmen der Berechtigungsprüfung für den Belegabruf konnte der Datenabrufer im System nicht gefunden werden. Eine ausführlichere Fehlerbeschreibung findet sich in ELIAS.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070311</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015216</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Im Rahmen der Berechtigungsprüfung für den Belegabruf konnte der Dateninhaber im System nicht gefunden werden. Eine ausführlichere Fehlerbeschreibung findet sich in ELIAS.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070313</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015218</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Ihr Antrag auf Erteilung einer Berechtigung zum Datenabruf für eine dritte Person ist entweder noch nicht gestellt oder nicht genehmigt worden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070315</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015219</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie haben für diesen Dateninhaber in der Vergangenheit zu oft falsche Antragsdaten eingegeben. Sie können einen erneuten Antrag auf Erteilung einer Berechtigung zum Datenabruf erst wieder nach einer Wartefrist stellen.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070316</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015220</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie haben für sich selbst noch keinen Antrag auf Erteilung einer Berechtigung zum Abruf Ihrer Daten gestellt. Bitte melden Sie sich zur Teilnahme am Belegabruf an.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070318</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015221</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Bitte überprüfen Sie in Ihrem Antrag auf Erteilung einer Berechtigung zum Datenabruf die Antragsdaten für diesen Dateninhaber und versuchen Sie es erneut.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070319</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015222</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der Berechtigungszeitraum in Ihrem Antrag auf Erteilung einer Berechtigung zum Datenabruf für einen Dritten muss mehr als 10 Tage betragen.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070320</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015223</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Antragsprüfung ist fehlgeschlagen. Es besteht bereits ein offener Antrag auf Erteilung einer Berechtigung zum Datenabruf für diesen Dateninhaber.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070322</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015224</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Antragsprüfung ist fehlgeschlagen. Es besteht bereits eine Berechtigung mit der gleichen Gültigkeitsdauer.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070332</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015225</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie haben für diesen Dateninhaber mehrfach hintereinander nicht die korrekten Antragsdaten in Ihrem Antrag auf Erteilung einer Berechtigung zum Datenabruf angegeben. Das Maximum an Fehleingaben für diesen Dateninhaber ist erreicht.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="28.6875">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070333</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015226</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Sie haben für diesen Dateninhaber mehrfach hintereinander nicht die korrekten Antragsdaten in Ihrem Antrag auf Erteilung einer Berechtigung zum Datenabruf angegeben. Sie haben nur noch einen Versuch, die korrekten Antragsdaten einzugeben.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070334</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015227</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Maximalanzahl der erlaubten aktiven Berechtigungsanträge ist erreicht, weitere Anträge sind nicht möglich.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="28.6875">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070352</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015229</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der von Ihnen gewählte Antrag auf Erteilung einer Berechtigung zum Datenabruf für einen Dritten kann aus einem der folgenden Gründe nicht freigeschaltet werden: Der von Ihnen eingegebene Freischaltcode ist nicht korrekt; oder der Dritte ist bei ELSTER registriert und die Erteilung der Berechtigung zum Datenabruf kann nur durch den Dritten selbst genehmigt werden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070357</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015231</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der von Ihnen eingegebene Freischaltcode ist nicht korrekt. Sie können nur noch einmal versuchen, für diesen Dateninhaber den korrekten Freischaltcode zur Genehmigung des Antrags auf Erteilung einer Berechtigung zum Datenabruf.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="28.6875">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070358</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015232</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Der von Ihnen eingegebene Freischaltcode ist nicht korrekt. Das Maximum an Fehleingaben ist erreicht. Gleichzeitig wurde Ihr Antrag auf Erteilung einer Berechtigung zum Datenabruf widerrufen. Bitte stellen Sie für diesen Dateninhaber einen neuen Antrag.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070362</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015235</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Identifikationsnummer des Dateninhabers bzw. des Datenabrufers ist unbekannt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070363</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015236</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Identifikationsnummer, das Geburtsdatum oder beide Angaben sind falsch.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070364</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015237</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die eingegebene Identifikationsnummer hat das falsche Format.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070369</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015239</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Beantragung einer Berechtigung von einer anderen Person mit Testmerker ist nur für eine Test-IdNr. der anderen Person möglich.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070370</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015240</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Beantragung einer Berechtigung von einer anderen Person ist für diese IdNr. nicht möglich. Bitte überprüfen Sie Ihre Eingaben.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080070371</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371015241</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Die Beantragung einer Berechtigung und deren Widerruf wurden in letzter Zeit wiederholt zu oft durchgeführt.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080745001</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371025247</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Kanzlei mit gleicher ID ist schon vorhanden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080745002</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371025248</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Datenabrufer mit dieser Kanzlei-ID ist schon vorhanden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">080745011</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">371035252</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">Datenabrufer mit dieser Kanzlei-ID ist nicht in der Datenbank vorhanden.</Data></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="s68"><NamedCell ss:Name="a"/></Cell>
+    <Cell ss:StyleID="Default"><NamedCell ss:Name="a"/></Cell>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Header x:Margin="0.3"/>
+    <Footer x:Margin="0.3"/>
+    <PageMargins x:Bottom="0.78740157499999996" x:Left="0.7" x:Right="0.7"
+     x:Top="0.78740157499999996"/>
+   </PageSetup>
+   <Unsynced/>
+   <Print>
+    <ValidPrinterInfo/>
+    <PaperSizeIndex>9</PaperSizeIndex>
+    <HorizontalResolution>600</HorizontalResolution>
+    <VerticalResolution>600</VerticalResolution>
+   </Print>
+   <TabColorIndex>51</TabColorIndex>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>22</ActiveRow>
+     <ActiveCol>2</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+   <AllowSort/>
+   <AllowFilter/>
+  </WorksheetOptions>
+  <QueryTable xmlns="urn:schemas-microsoft-com:office:excel">
+   <Name>a</Name>
+   <AutoFormatFont/>
+   <AutoFormatPattern/>
+   <QuerySource>
+    <QueryType>Text</QueryType>
+    <TextWizardSettings>
+     <Name x:HRef="C:\Users\wurm.matthias\Desktop\a.txt"/>
+     <Decimal>,</Decimal>
+     <ThousandSeparator>.</ThousandSeparator>
+     <TrailingMinusNumbers/>
+     <FormatSettings>
+      <FieldType>Text</FieldType>
+      <FieldType>Text</FieldType>
+      <FieldType>Text</FieldType>
+      <FieldType>AutoFormat</FieldType>
+     </FormatSettings>
+     <Delimiters>
+      <Custom>|</Custom>
+     </Delimiters>
+    </TextWizardSettings>
+    <VersionLastEdit>4</VersionLastEdit>
+    <VersionLastRefresh>4</VersionLastRefresh>
+   </QuerySource>
+  </QueryTable>
+ </Worksheet>
+</Workbook>

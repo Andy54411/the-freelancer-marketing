@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Adapterschema für die elektronische Lohnsteuerbescheinigung 2022 (Version 202201).
+	=============
+	Änderungshistorie
+	06.05.2021: Erstellung
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://finkonsens.de/rms/elo/lstb/v202201" targetNamespace="http://finkonsens.de/rms/elo/lstb/v202201" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- RootElement = Lohnsteuerbescheinigung 2022_________________________________________________-->
+	<xs:include schemaLocation="./lstb202201.xsd"/>
+	<xs:element name="Lohnsteuerbescheinigung" type="elsterlohn:lstb_LohnsteuerbescheinigungCType"/>
+</xs:schema>

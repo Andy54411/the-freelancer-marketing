@@ -1,0 +1,98 @@
+Die Beispiele in diesem Verzeichnis dienen zur Veranschaulichung der
+verschiedenen Ausprägungen, die das Element "Vollmachtsdaten" der
+Datenart "SpezRechtListe" in bzw. ab Version 7 haben kann. Hierzu
+wird zunächst die Dateninhabersicht bzw. die Vollmachtgebersicht
+verwendet (Beispiel 1 bis 8). Mit Beispiel 9 wird die Ansicht einer
+Datenabrufer- bwz. Vollmachtnehmersicht demonstriert.
+
+Beispiel: 01_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zum Belegabruf für die IdNr 04146325796
+und zur Steuerkontoabfrage der Steuernummer 2662024700218.
+
+Beispiel: 02_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zur Steuerkontoabfrage der Steuernummer 2662024700219. 
+Das Recht zum VaSt-Belegabruf ist von dem Vollmachtgeber jedoch zu einem
+anderem Vollmachtnehmer "gewandert". Daher wurde das Recht zum
+VaSt-Belegabruf im Nachhinein ausgeschlossen, was am Flag 
+"AusschlussVerwIdNr" mit dem Wert "true" erkannt werden kann.
+
+Beispiel: 03_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigungung
+umfasst das Recht zum Belegabruf für die IdNr 04146325798 und zur
+Steuerkontoabfrage der Steuernummer 2662024700220. Das Recht zur 
+Steuerkontoabfrage ist nur wirksam, wenn die Kanzlei (Vollmachtnehmer) eine
+weitere Berechtigung für die Steuernummer innehat; das Steuerkonto ist
+zusammenveranlagt (Wert des Elements "AnzahlVG" ist "2").
+Das Element "AnzahlVG" ist die Anzahl der Inhaber des Steuerkontos, also 
+der notwendigen Vollmachtgeber für die Zulassung des Zugriffs auf ein 
+Steuerkonto. In der Regel sind nur "1" für eine Einzelveranlagung oder 
+ein Betriebskonto oder "2" für ein zusammenveranlagtes Steuerkonto möglich.
+
+Beispiel: 04_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zum Belegabruf für die IdNr 04146325799. Das Recht
+Steuerkontoabfrage ist hingegen grundsätzlich ausgeschlossen und würde
+auch dann nicht wirksam sein, wenn eine gültige Steuernummer mit der
+VDB-Berechtigung "angezeigt" werden würde.
+
+Beispiel: 05_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zur Steuerkontoabfrage der Steuernummer 2662024700221.
+Allerdings ist das Recht für den Belegabruf der IdNr 04146325800 des 
+Dateninhabers nicht wirksam, da es über das Element "Ausschluesse"
+ausgeschlossen wurde.
+
+Beispiel: 06_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zum Belegabruf für die IdNr 04146325801
+und zur Steuerkontoabfrage der Steuernummer 2662024700222. Die Berechtigung
+kann nur vom Geschäftsführer der Kanzlei (Vollmachtnehmer) benutzt werden,
+und nicht von regulären Mitarbeiter, da das Flag "Untervollmachten" auf
+den Wert "false" gesetzt ist.
+
+Beispiel: 07_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit 
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zum Belegabruf für die IdNr 04146325802
+und zur Steuerkontoabfrage der Steuernummer 2662024700223. Das Recht zum
+Belegabruf ist jedoch nur für die Jahre möglich, die vollständig ab dem
+im Element "ZeitlVertretungAb" - also ab dem Jahre 2018.
+
+Beispiel: 08_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtgeber-/Dateninhabersicht einer SpezRechtListe (Response) mit
+einer VDB-Berechtigung im Element "Vollmachtsdaten". Die Berechtigung
+umfasst das Recht zum Belegabruf für die IdNr 04146325803. Das Recht
+zum Belegtabruf ist jedoch nur für die Jahre möglich, die vollständig
+im dem Zeitraum liegen, die im Element "ZeitlicheVertretung" liegen.
+
+Beispiel: 09_SpezRechtListe_Response.xml
+----------------------------------------
+Vollmachtnehmer-/Datenabrufersicht einer SpezRechtListe (Response)
+mit einer VDB-Berechtigung im Element "Vollmachtsdaten". Bei angezeigten
+Vollmacht handelt es sich um dieselbe Vollmacht wie in Beispiel 1 mit 
+dem Unterschied, dass diese Daten von einem Mitarbeiter einer Kanzlei 
+abgerufen wurden, der die Vollmacht zugeordnet ist. Das optionale 
+Element "Vollmachtnehmer" fehlt in der Vollmachtnehmersicht. Auf diese
+Weise kann zwischen der Vollmachtgeber- und der Vollmachtnehmersicht 
+unterschieden werden. Beachte, dass die Informationen, die im Transfer- 
+bzw. Nutzdatenheader bereit gestellt werden die des Vollmachtnehmers 
+(Kanzleimitarbeiter) und nicht die des Vollmachtgebers (Steuerbürger 
+mit IdNr) sind.
+
+

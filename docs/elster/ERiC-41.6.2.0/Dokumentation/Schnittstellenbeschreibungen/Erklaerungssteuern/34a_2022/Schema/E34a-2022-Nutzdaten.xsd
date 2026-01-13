@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:e34a="http://finkonsens.de/elster/elstererklaerung/e34a/v2022" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstererklaerung/e34a/v2022" schemaLocation="E34a-2022.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="e34a:E34a"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

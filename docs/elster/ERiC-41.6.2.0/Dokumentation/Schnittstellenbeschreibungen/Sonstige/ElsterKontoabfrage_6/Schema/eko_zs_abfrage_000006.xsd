@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Version 1.03 -->
+<xs:schema targetNamespace="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06" xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema" xmlns:ekobasis="http://www.elster.de/KontoAbfrage/Basistypen000003" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:this="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06" xmlns:steuernummer="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06/strNrSteuerart"  elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.elster.de/basis08/XMLSchema" schemaLocation="./allg000008.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/Basistypen000003" schemaLocation="./eko_basistypen_000003.xsd"/>
+	<xs:element name="kontoabfrage-input">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="kontoabfrage-art">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">Sollstellungen / ZS-Abfrage</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="elsterbase:allg_BaseStringSType">
+							<xs:enumeration value="ZS"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="steuernummer" type="elsterbase:allg_StNrSType"/>
+				<xs:element name="steuerart">
+					<xs:simpleType>
+						<xs:restriction base="elsterbase:allg_BaseStringSType">
+							<xs:enumeration value="ESt"/>
+							<xs:enumeration value="KSt"/>
+							<xs:enumeration value="USt"/>
+							<xs:enumeration value="LSt"/>
+							<xs:enumeration value="GewSt"/>
+							<xs:enumeration value="ZaSt"/>
+							<xs:enumeration value="KapESt"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="zeitraum" type="elsterbase:allg_Datum_JahrSType"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

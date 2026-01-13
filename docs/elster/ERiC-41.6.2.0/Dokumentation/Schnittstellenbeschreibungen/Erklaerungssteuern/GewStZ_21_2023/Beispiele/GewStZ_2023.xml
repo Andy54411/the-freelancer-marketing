@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>GewStZ</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Entwicklung</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>	
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">3196</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERICTest</ProduktName>
+					<ProduktVersion>2009.1/0</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E21 xmlns="http://finkonsens.de/elster/elstererklaerung/gewstz/e21/v2023" version="2023">
+					<GewSt1D>
+						<Allgemein>
+							<E4100301>Mustermann AG</E4100301>
+						</Allgemein>
+						<Rechtsform>
+							<E4101203>1</E4101203>
+						</Rechtsform>
+						<Ang_Zerl>
+							<Art>
+								<E4100922>6</E4100922>
+							</Art>
+						</Ang_Zerl>
+					</GewSt1D>
+					<GewSt1D_BS>
+						<Gemeinde>1</Gemeinde>
+						<BS>
+							<Allgemein>
+								<E4101009>01234</E4101009>
+								<E4101002>Mustergemeinde 1</E4101002>
+								<E4101103>7001234</E4101103>
+							</Allgemein>
+						</BS>
+						<Zerl>
+							<Anteil>
+								<ZerlegungsmassstabBS>Zerl1</ZerlegungsmassstabBS>
+								<E4101003>6</E4101003>
+							</Anteil>
+						</Zerl>
+					</GewSt1D_BS>
+					<GewSt1D_BS>
+						<Gemeinde>2</Gemeinde>
+						<BS>
+							<Allgemein>
+								<E4101009>56789</E4101009>
+								<E4101002>Mustergemeinde 2</E4101002>
+								<E4101103>5301234</E4101103>
+							</Allgemein>
+						</BS>
+						<Zerl>
+							<Anteil>
+								<ZerlegungsmassstabBS>Zerl1</ZerlegungsmassstabBS>
+								<E4101003>2</E4101003>
+							</Anteil>
+						</Zerl>
+					</GewSt1D_BS>
+					<Vorsatz>
+						<Unterfallart>21</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>3196081508158</StNr>
+						<Zeitraum>2023</Zeitraum>
+						<AbsName>Testfallversand ERiC</AbsName>
+						<AbsStr>Testgasse 1a</AbsStr>
+						<AbsPlz>12345</AbsPlz>
+						<AbsOrt>Musterstadt</AbsOrt>
+						<Copyright>Landesamt</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E21>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

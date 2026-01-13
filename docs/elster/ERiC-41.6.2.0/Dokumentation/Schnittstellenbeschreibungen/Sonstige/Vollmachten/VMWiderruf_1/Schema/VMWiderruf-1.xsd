@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VMWiderruf - 1 - 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrm/vmwiderruf/v1" targetNamespace="http://finkonsens.de/elster/elsterbrm/vmwiderruf/v1" xmlns:exml="http://finkonsens.de/elster/elsterbrm/vmwiderruf/v1">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL25_MaxL25_Muster1910649527_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="25"/>
+            <xs:maxLength value="25"/>
+            <xs:pattern value="\d{4}G\d{20}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VMWiderruf" type="VMWiderruf_CType"/>
+    <xs:complexType name="VMWiderruf_CType">
+        <xs:sequence>
+            <xs:element name="VMWiderruf" type="VMWiderruf_1503617562_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="1" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VMWiderruf_1503617562_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtID" type="String_MinL25_MaxL25_Muster1910649527_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ID der Vollmacht</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:aenderungBankverbindung="http://finkonsens.de/elster/elsternachricht/aenderungbankverbindung/v20" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsternachricht/aenderungbankverbindung/v20" schemaLocation="AenderungBankverbindung-20.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="aenderungBankverbindung:AenderungBankverbindung"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

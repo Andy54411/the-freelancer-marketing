@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:elsterlohnersatz="http://www.elsterfachmethodik.de/Lohnersatz000003/XMLSchema" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.elsterfachmethodik.de/Lohnersatz000003/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- Version 2 -->
+	<xs:include schemaLocation="./lohnersatz_000003.xsd"/>
+	<xs:element name="Lohnersatzleistung" type="elsterlohnersatz:LohnersatzleistungCType"/>
+</xs:schema>

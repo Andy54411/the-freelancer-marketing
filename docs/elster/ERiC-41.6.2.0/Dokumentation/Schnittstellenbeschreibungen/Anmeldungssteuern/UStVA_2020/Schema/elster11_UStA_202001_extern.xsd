@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Version 2020.1 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elster="http://www.elster.de/elsterxml/schema/v11" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1">
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/th000011_extern.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Das Schema für den Transferheader wird hier eingebunden. Da es auch von anderen Schemata benutzt wird, erfolgt eine zentrale Auslieferung in dem Paket "ElsterXML-Schnittstelle_V11_V2.15.zip". Bitte kopieren Sie das Verzeichnis header von dort in das Verzeichnis, welches diese Datei enthält. 
+			</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/ndh000011.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Das Schema für den Nutzdatenheader wird hier eingebunden. Da es auch von anderen Schemata benutzt wird, erfolgt eine zentrale Auslieferung in dem Paket "ElsterXML-Schnittstelle_V11_V2.15.zip". Bitte kopieren Sie  das Verzeichnis header von dort in das Verzeichnis, welches diese Datei enthält.
+			</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="./usta_202001.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Umsatzsteuer</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<!-- RootElement = Elster _______________________________________________________________-->
+	<xs:element name="Elster">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="elster:TransferHeader"/>
+				<xs:element name="DatenTeil" type="elster:DatenTeilCType">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">verschlüsselt</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<!-- D -->
+	<xs:complexType name="DatenTeilCType">
+		<xs:sequence>
+			<xs:element name="Nutzdatenblock" type="elster:NutzdatenblockCType" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- N -->
+	<xs:complexType name="NutzdatenblockCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Der Nutzdatenblock enthält jeweils einen "NutzdatenHeader"- und einen "Nutzdaten"-Tag</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="NutzdatenHeader" type="elster:NutzdatenHeaderCType"/>
+			<xs:element name="Nutzdaten" type="elster:NutzdatenCType"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="NutzdatenCType">
+		<xs:sequence>
+			<xs:element name="Anmeldungssteuern" type="elster:usta_AnmeldungssteuernCType"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

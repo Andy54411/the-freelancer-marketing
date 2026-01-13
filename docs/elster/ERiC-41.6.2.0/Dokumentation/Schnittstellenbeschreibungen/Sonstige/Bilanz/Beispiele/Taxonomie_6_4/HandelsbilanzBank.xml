@@ -1,0 +1,799 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterBilanz</Verfahren>
+		<DatenArt>Bilanz</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931</HerstellerID>
+		<DatenLieferant>Datenlieferant als String</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel/>
+		</Datei>
+		<VersionClient>xyz</VersionClient>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>0001</NutzdatenTicket>
+				<Empfaenger id="F">5192</Empfaenger>
+				<Hersteller>
+					<ProduktName>xyz</ProduktName>
+					<ProduktVersion>VX.Y</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Datenlieferant als String</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<ebilanz:EBilanz version="000002" xmlns:ebilanz="http://rzf.fin-nrw.de/RMS/EBilanz/2016/XMLSchema">
+					<ebilanz:stichtag>20201231</ebilanz:stichtag>
+					<xbrli:xbrl
+							xmlns:de-gcd="http://www.xbrl.de/taxonomies/de-gcd-2020-04-01"
+							xmlns:link="http://www.xbrl.org/2003/linkbase"
+							xmlns:hgbref="http://www.xbrl.de/2008/ref"
+							xmlns:ref="http://www.xbrl.org/2004/ref"
+							xmlns:de-fi="http://www.xbrl.de/taxonomies/de-fi-2020-04-01"
+							xmlns:de-gaap-ci="http://www.xbrl.de/taxonomies/de-gaap-ci-2020-04-01"
+							xmlns:xbrldi="http://xbrl.org/2006/xbrldi"
+							xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+							xmlns:xhtml="http://www.w3.org/1999/xhtml"
+							xmlns:xbrli="http://www.xbrl.org/2003/instance"
+							xmlns:iso4217="http://www.xbrl.org/2003/iso4217"
+							xmlns:xlink="http://www.w3.org/1999/xlink">
+						<link:schemaRef xlink:type="simple" xlink:href="http://www.xbrl.de/taxonomies/de-gcd-2020-04-01/de-gcd-2020-04-01-shell.xsd"/>
+						<link:schemaRef xlink:type="simple" xlink:href="http://www.xbrl.de/taxonomies/de-fi-2020-04-01/de-fi-2020-04-01-shell-staffelform-fiscal.xsd"/>
+						<xbrli:context id="I-AKTJAHR">
+							<xbrli:entity>
+								<xbrli:identifier scheme="http://www.rzf-nrw.de/Steuernummer">5192050001276</xbrli:identifier>
+							</xbrli:entity>
+							<xbrli:period>
+								<xbrli:instant>2020-12-31</xbrli:instant>
+							</xbrli:period>
+						</xbrli:context>
+						<xbrli:context id="D-AKTJAHR">
+							<xbrli:entity>
+								<xbrli:identifier scheme="http://www.rzf-nrw.de/Steuernummer">5192050001276</xbrli:identifier>
+							</xbrli:entity>
+							<xbrli:period>
+								<xbrli:startDate>2020-01-01</xbrli:startDate>
+								<xbrli:endDate>2020-12-31</xbrli:endDate>
+							</xbrli:period>
+						</xbrli:context>
+						<xbrli:context id="D-BAL-bsBanks.ass.intan_taxBal-AKTJAHR">
+							<xbrli:entity>
+								<xbrli:identifier scheme="http://www.rzf-nrw.de/Steuernummer">5192050001276</xbrli:identifier>
+							</xbrli:entity>
+							<xbrli:period>
+								<xbrli:startDate>2020-01-01</xbrli:startDate>
+								<xbrli:endDate>2020-12-31</xbrli:endDate>
+							</xbrli:period>
+							<xbrli:scenario>
+								<xbrldi:explicitMember dimension="de-fi:dim_changesBanksTanIntan.nt.ass">de-fi:bsBanks.ass.intan</xbrldi:explicitMember>
+								<xbrldi:explicitMember dimension="de-gaap-ci:dim_taxTrans">de-gaap-ci:dim_taxBal</xbrldi:explicitMember>
+							</xbrli:scenario>
+						</xbrli:context>
+						<xbrli:unit id="EUR">
+							<xbrli:measure>iso4217:EUR</xbrli:measure>
+						</xbrli:unit>
+						<xbrli:unit id="PURE">
+							<xbrli:measure>xbrli:pure</xbrli:measure>
+						</xbrli:unit>
+						<de-gcd:genInfo.doc.id.generationDate contextRef="D-AKTJAHR">2020-03-28</de-gcd:genInfo.doc.id.generationDate>
+						<de-gcd:genInfo.report.id.reportType>
+							<de-gcd:genInfo.report.id.reportType.reportType.JA contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.reportType>
+						<de-gcd:genInfo.report.id.reportStatus>
+							<de-gcd:genInfo.report.id.reportStatus.reportStatus.E contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.reportStatus>
+						<de-gcd:genInfo.report.id.revisionStatus>
+							<de-gcd:genInfo.report.id.revisionStatus.revisionStatus.E contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.revisionStatus>
+						<de-gcd:genInfo.report.id.reportElement>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.B contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.BVV contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.GuV contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.BAL xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.EB xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.KKE xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.SGE xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.SGEP xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.STU contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.reportElement.reportElements.EV xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.reportElement>
+						<de-gcd:genInfo.report.id.accordingTo>
+							<de-gcd:genInfo.report.id.accordingTo.name xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.accordingTo.idNo>
+								<de-gcd:genInfo.company.id.idNo.type.companyId.ST13 xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.idNo.type.companyId.BF4 xsi:nil="true" contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.report.id.accordingTo.idNo>
+							<de-gcd:genInfo.report.id.accordingTo.yearEnd xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.accordingTo>
+						<de-gcd:genInfo.company.id.parent>
+							<de-gcd:genInfo.company.id.parent.name xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.name.formerName xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.name.dateOfLastChange xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.legalStatus>
+								<de-gcd:genInfo.company.id.parent.legalStatus.AG xsi:nil="true" contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.company.id.parent.legalStatus>
+							<de-gcd:genInfo.company.id.parent.legalStatus.dateOfLastChange xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.street xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.houseNo xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.zipCode xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.city xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.country xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.location.country.isoCode xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.parent.idNo>
+								<de-gcd:genInfo.company.id.parent.idNo.type.companyId.HRN xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.parent.idNo.type.companyId.UID xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.parent.idNo.type.companyId.ST13 xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.parent.idNo.type.companyId.STID xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.parent.idNo.type.companyId.BF4 xsi:nil="true" contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.company.id.parent.idNo>
+						</de-gcd:genInfo.company.id.parent>
+						<de-gcd:genInfo.report.id.statementType>
+							<de-gcd:genInfo.report.id.statementType.statementType.E contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.statementType>
+						<de-gcd:genInfo.report.id.statementType.tax>
+							<de-gcd:genInfo.report.id.statementType.tax.statementTypeTax.GHB xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.statementType.tax>
+						<de-gcd:genInfo.report.id.incomeStatementendswithBalProfit contextRef="D-AKTJAHR">false</de-gcd:genInfo.report.id.incomeStatementendswithBalProfit>
+						<de-gcd:genInfo.report.id.accountingStandard>
+							<de-gcd:genInfo.report.id.accountingStandard.accountingStandard.HGBM contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.accountingStandard>
+						<de-gcd:genInfo.report.id.incomeStatementFormat>
+							<de-gcd:genInfo.report.id.incomeStatementFormat.incomeStatementFormat.GKV contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.incomeStatementFormat>
+						<de-gcd:genInfo.report.id.consolidationRange>
+							<de-gcd:genInfo.report.id.consolidationRange.consolidationRange.EA contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.consolidationRange>
+						<de-gcd:genInfo.report.period.fiscalYearBegin contextRef="D-AKTJAHR">2020-01-01</de-gcd:genInfo.report.period.fiscalYearBegin>
+						<de-gcd:genInfo.report.period.fiscalYearEnd contextRef="D-AKTJAHR">2020-12-31</de-gcd:genInfo.report.period.fiscalYearEnd>
+						<de-gcd:genInfo.report.period.balSheetClosingDate contextRef="D-AKTJAHR">2020-12-31</de-gcd:genInfo.report.period.balSheetClosingDate>
+						<de-gcd:genInfo.report.period.fiscalPreviousYearBegin contextRef="D-AKTJAHR" xsi:nil="true"/>
+						<de-gcd:genInfo.report.period.fiscalPreviousYearEnd contextRef="D-AKTJAHR" xsi:nil="true"/>
+						<de-gcd:genInfo.report.period.balSheetClosingDatePreviousYear contextRef="D-AKTJAHR" xsi:nil="true"/>
+						<de-gcd:genInfo.report.audit.city contextRef="D-AKTJAHR">Musterstadt</de-gcd:genInfo.report.audit.city>
+						<de-gcd:genInfo.report.audit.date contextRef="D-AKTJAHR">2020-11-03</de-gcd:genInfo.report.audit.date>
+						<de-gcd:genInfo.report.id.specialAccountingStandard>
+							<de-gcd:genInfo.report.id.specialAccountingStandard.RKV contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.specialAccountingStandard>
+						<de-gcd:genInfo.report.id.kindOfFinancialInstitution>
+							<de-gcd:genInfo.report.id.kindOfFinancialInstitution.Bauspar contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.report.id.kindOfFinancialInstitution.Finanzdienstl contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.report.id.kindOfFinancialInstitution>
+						<de-gcd:genInfo.company.id.business contextRef="D-AKTJAHR">Bausparkasse</de-gcd:genInfo.company.id.business>
+						<de-gcd:genInfo.company.id.domesticBranchOfForeignCompany>
+							<de-gcd:genInfo.company.id.domesticBranchOfForeignCompany.other xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.company.id.domesticBranchOfForeignCompany>
+						<de-gcd:genInfo.company.id.entityWithTaxablePurposeBusiness>
+							<de-gcd:genInfo.company.id.entityWithTaxablePurposeBusiness.normal xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.company.id.entityWithTaxablePurposeBusiness>
+						<de-gcd:genInfo.company.id.incomeClassification>
+							<de-gcd:genInfo.company.id.incomeClassification.trade contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.company.id.incomeClassification>
+						<de-gcd:genInfo.company.id.legalStatus>
+							<de-gcd:genInfo.company.id.legalStatus.legalStatus.AG contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.company.id.legalStatus>
+						<de-gcd:genInfo.company.id.name contextRef="D-AKTJAHR">BRA-16_AG_HB_FIN-00</de-gcd:genInfo.company.id.name>
+						<de-gcd:genInfo.company.id.location xsi:nil="true" contextRef="D-AKTJAHR"/>
+						<de-gcd:genInfo.company.id.location.street contextRef="D-AKTJAHR">Musterstraße</de-gcd:genInfo.company.id.location.street>
+						<de-gcd:genInfo.company.id.location.houseNo contextRef="D-AKTJAHR">1</de-gcd:genInfo.company.id.location.houseNo>
+						<de-gcd:genInfo.company.id.location.zipCode contextRef="D-AKTJAHR">11111</de-gcd:genInfo.company.id.location.zipCode>
+						<de-gcd:genInfo.company.id.location.city contextRef="D-AKTJAHR">Musterstadt</de-gcd:genInfo.company.id.location.city>
+						<de-gcd:genInfo.company.id.location.country contextRef="D-AKTJAHR">NRW</de-gcd:genInfo.company.id.location.country>
+						<de-gcd:genInfo.company.id.idNo>
+							<de-gcd:genInfo.company.id.idNo.type.companyId.ST13 contextRef="D-AKTJAHR">5192050001276</de-gcd:genInfo.company.id.idNo.type.companyId.ST13>
+							<de-gcd:genInfo.company.id.idNo.type.companyId.STID xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.idNo.type.companyId.BF4 contextRef="D-AKTJAHR">5192</de-gcd:genInfo.company.id.idNo.type.companyId.BF4>
+						</de-gcd:genInfo.company.id.idNo>
+						<de-gcd:genInfo.company.id.shareholder>
+							<de-gcd:genInfo.company.id.shareholder.name xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.shareholder.id xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.shareholder.group>
+								<de-gcd:genInfo.company.id.shareholder.group.limPartner xsi:nil="true" contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.company.id.shareholder.group>
+							<de-gcd:genInfo.company.id.shareholder.currentnumber xsi:nil="true" contextRef="D-AKTJAHR" unitRef="PURE"/>
+							<de-gcd:genInfo.company.id.shareholder.taxnumber xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.shareholder.taxid xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.shareholder.legalStatus>
+								<de-gcd:genInfo.company.id.shareholder.legalStatus.legalStatus.KOER contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.company.id.shareholder.legalStatus>
+							<de-gcd:genInfo.company.id.shareholder.ShareDivideKey>
+								<de-gcd:genInfo.company.id.shareholder.ShareDivideKey.numerator xsi:nil="true" contextRef="D-AKTJAHR"/>
+								<de-gcd:genInfo.company.id.shareholder.ShareDivideKey.denominator xsi:nil="true" contextRef="D-AKTJAHR"/>
+							</de-gcd:genInfo.company.id.shareholder.ShareDivideKey>
+							<de-gcd:genInfo.company.id.shareholder.SpecialBalanceRequired xsi:nil="true" contextRef="D-AKTJAHR"/>
+							<de-gcd:genInfo.company.id.shareholder.extensionRequired xsi:nil="true" contextRef="D-AKTJAHR"/>
+						</de-gcd:genInfo.company.id.shareholder>
+						<de-fi:allBanksTanIntan xsi:nil="true" contextRef="D-BAL-bsBanks.ass.intan_taxBal-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1408461563.12</de-fi:bsBanks.ass>
+						<de-fi:bsBanks.ass.cashRes decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">567178135.35</de-fi:bsBanks.ass.cashRes>
+						<de-fi:bsBanks.ass.cashRes.cash xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.cashRes.centralBanks xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.cashRes.centralBanks.BuBa xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">55211258.25</de-fi:bsBanks.ass.debtInstruments>
+						<de-fi:bsBanks.ass.debtInstruments.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.bonds xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.bonds.otherIssuers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.bonds.otherIssuers.BuBa xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.bonds.publIssuers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.bonds.publIssuers.BuBa xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.moneyMarketPapers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.moneyMarketPapers.otherIssuers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.moneyMarketPapers.otherIssuers.BuBa xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.moneyMarketPapers.publIssuers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.moneyMarketPapers.publIssuers.BuBa xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.ownDebtInstruments xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.ownDebtInstruments.parValue xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.debtInstruments.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.deficitNotCoveredByCapital xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.fiduciaryAssets decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">136958.22</de-fi:bsBanks.ass.fiduciaryAssets>
+						<de-fi:bsBanks.ass.goodsHeld xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.intan decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">189475.22</de-fi:bsBanks.ass.intan>
+						<de-fi:bsBanks.ass.intan.advPaym xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.intan.concessionBrands xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.intan.goodwill xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.other decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1857543.53</de-fi:bsBanks.ass.other>
+						<de-fi:bsBanks.ass.other.corpTaxCredit37KStG xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.other.misc xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.particip decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">522478.33</de-fi:bsBanks.ass.particip>
+						<de-fi:bsBanks.ass.particip.banks xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.particip.corporations xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.particip.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.particip.partnerships xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.paidUpShares xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.paidUpShares.creditCoop xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.paidUpShares.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.particip.banks xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.particip.corporations xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.particip.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.participCoop.particip.partnerships xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.prepaidExp decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">3155694.05</de-fi:bsBanks.ass.prepaidExp>
+						<de-fi:bsBanks.ass.prepaidExp.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.prepaidExp.underwritingBusiness xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.publDebtRefCentralBanks xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.publDebtRefCentralBanks.bills xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.publDebtRefCentralBanks.treasury xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.publDebtRefCentralBanks.treasury.BuBaRef xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.publEquilisationClaims xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">98554999.58</de-fi:bsBanks.ass.receivBanks>
+						<de-fi:bsBanks.ass.receivBanks.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.dueOnDemandBuildingSocieties xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.homeSavingsLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.interimLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.mortgageLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.otherBuildingLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.otherBuildingSocieties xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.otherMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.otherMortgageCompanies.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.otherMortgageCompanies.mortgagingSecurities xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivBanks.publLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">674787254.99</de-fi:bsBanks.ass.receivCustomers>
+						<de-fi:bsBanks.ass.receivCustomers.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.buildingLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.buildingLoans.allotments xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.buildingLoans.interim xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.buildingLoans.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.buildingLoans.other.securedByMortgages xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.mortgageLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.otherBuildingSocieties xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.otherMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.otherMortgageCompanies.collaterisedBySecurities xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.publLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.publLoansMortgage.Companies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.relatingToGoods xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.securedByMortgages xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.receivCustomers.securedByShipMortgages xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.shares xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.shares.investmentPortfolio.bankingBook xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.shares.investmentPortfolio.tradingBook xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.shares.liquidityReserve xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.sharesInAffil decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">85596.22</de-fi:bsBanks.ass.sharesInAffil>
+						<de-fi:bsBanks.ass.sharesInAffil.banks xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.sharesInAffil.banks.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.sharesInAffil.corporations xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.sharesInAffil.lastRange xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.sharesInAffil.partnerships xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">6782169.38</de-fi:bsBanks.ass.tan>
+						<de-fi:bsBanks.ass.tan.inConstrAdvPaym xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings.buildingsOnNonOwnedLand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings.buildingsOnOwnLand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings.buildingsOnOwnLand.land xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings.landWithoutBuildings xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.landBuildings.rightEquivalentToLandWithoutBuildings xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.machinery xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tan.otherEquipm xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.taxbalanceGenerally xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.taxbalanceOrgancomp xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tradingPortfolio xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.ass.tradingPortfolio.tradingBook xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.contingLiab.contingLiab xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.contingLiab.fundsUnderManagement xsi:nil="true" contextRef="I-AKTJAHR"/>
+						<de-fi:bsBanks.contingLiab.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1408461563.12</de-fi:bsBanks.eqLiab>
+						<de-fi:bsBanks.eqLiab.Res.spec.EStG5Abs7 xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">25283076.65</de-fi:bsBanks.eqLiab.accruals>
+						<de-fi:bsBanks.eqLiab.accruals.other decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">19587032.65</de-fi:bsBanks.eqLiab.accruals.other>
+						<de-fi:bsBanks.eqLiab.accruals.other.imminentLoss.hedgeAccounting xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.pensions decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">3152044.00</de-fi:bsBanks.eqLiab.accruals.pensions>
+						<de-fi:bsBanks.eqLiab.accruals.pensions.direct xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.pensions.externalFunds xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.pensions.offsetAssets xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.pensions.shareholdersRelatedParties xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.tax decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">2544000.00</de-fi:bsBanks.eqLiab.accruals.tax>
+						<de-fi:bsBanks.eqLiab.accruals.tax.gewst xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.accruals.tax.kst xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.defIncome decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">3895790.24</de-fi:bsBanks.eqLiab.defIncome>
+						<de-fi:bsBanks.eqLiab.defIncome.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.defIncome.underwritingBusiness xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">360105922.28</de-fi:bsBanks.eqLiab.equity>
+						<de-fi:bsBanks.eqLiab.equity.InvStG decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">-420854.00</de-fi:bsBanks.eqLiab.equity.InvStG>
+						<de-fi:bsBanks.eqLiab.equity.capRes decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">339351342.93</de-fi:bsBanks.eqLiab.equity.capRes>
+						<de-fi:bsBanks.eqLiab.equity.coopPartners xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.lastRangeCapital decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">-222206.00</de-fi:bsBanks.eqLiab.equity.lastRangeCapital>
+						<de-fi:bsBanks.eqLiab.equity.partnerships xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.beginYear xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.capAdjust xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.capChange6bRes xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.capReclassifications xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.deposits xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.netIncome xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.limitedLiablePartners.withdrawals xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.beginYear xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.capAdjust xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.capChange6bRes xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.capReclassifications xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.deposits xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.netIncome xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.partnerships.unlimitedLiablePartners.withdrawals xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.profitLoss decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1698258.30</de-fi:bsBanks.eqLiab.equity.profitLoss>
+						<de-fi:bsBanks.eqLiab.equity.profitPartnership xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.reservesPartnership xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.revenueRes decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">-356940.00</de-fi:bsBanks.eqLiab.equity.revenueRes>
+						<de-fi:bsBanks.eqLiab.equity.revenueRes.legal xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.revenueRes.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.revenueRes.statutory xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.revenueResCoop xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.silentPartner decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">19056321.05</de-fi:bsBanks.eqLiab.equity.silentPartner>
+						<de-fi:bsBanks.eqLiab.equity.taxBalanceGenerally.transferDiffTaxAccounts xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.taxbalanceGenerally decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1000000.00</de-fi:bsBanks.eqLiab.equity.taxbalanceGenerally>
+						<de-fi:bsBanks.eqLiab.equity.taxbalanceGenerally.finalPrev xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.taxbalanceInvstg xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.equity.taxbalanceOrgancomp xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.fundGeneralBankingRisks decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1200000.00</de-fi:bsBanks.eqLiab.fundGeneralBankingRisks>
+						<de-fi:bsBanks.eqLiab.fundHomeLoanSavingsAssociationRules decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1625498.59</de-fi:bsBanks.eqLiab.fundHomeLoanSavingsAssociationRules>
+						<de-fi:bsBanks.eqLiab.lastRangeLiab xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">69535011.98</de-fi:bsBanks.eqLiab.liabBanks>
+						<de-fi:bsBanks.eqLiab.liabBanks.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.agreedMaturity xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.homeLoanSavingsDeposits xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.homeLoanSavingsDeposits.allotted xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.homeLoanSavingsDeposits.terminated xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.other.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.other.registeredMortgagePfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.other.registeredPublPfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.otherMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.otherMortgageCompanies.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.particip.partnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.registeredMortgagePfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabBanks.registeredPublPfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">809655020.71</de-fi:bsBanks.eqLiab.liabCustomers>
+						<de-fi:bsBanks.eqLiab.liabCustomers.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.financialServicesInstitutions xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.other.agreedMaturity xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.other.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.otherMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.otherMortgageCompanies.dueOnDemand xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.otherMortgageCompanies.registeredMortgagePfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.otherMortgageCompanies.registeredPublPfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.registeredMortgagePfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.registeredPublPfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDeposits xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDeposits.noticePeriod3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDeposits.noticePeriodAbove3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.homeLoanSavingsDeposits xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.homeLoanSavingsDeposits.allotted xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.homeLoanSavingsDeposits.terminated xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.nonInterestBearing xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.noticePeriod3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsBuildingSocieties.noticePeriodAbove3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsMortgageCompanies.noticePeriod3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabCustomers.savingsDepositsMortgageCompanies.noticePeriodAbove3months xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabFiduciaryLiab decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">135205341.45</de-fi:bsBanks.eqLiab.liabFiduciaryLiab>
+						<de-fi:bsBanks.eqLiab.liabFiduciaryLiab.fiduciaryLoans xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabOther decimals="2" contextRef="I-AKTJAHR" unitRef="EUR">1955901.22</de-fi:bsBanks.eqLiab.liabOther>
+						<de-fi:bsBanks.eqLiab.liabSecuritised xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.debtInstruments xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.debtInstrumentsMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.debtInstrumentsMortgageCompanies.mortgagePfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.debtInstrumentsMortgageCompanies.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.debtInstrumentsMortgageCompanies.publPfandbriefe xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.other xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.other.moneyMarketPapers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.other.ownAcceptances xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.other.ownAcceptances.transactionsInGoods xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.otherMortgageCompanies xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.otherMortgageCompanies.moneyMarketPapers xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabSecuritised.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabTradingPortfolio xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabTransactionsInGoods xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabTransactionsInGoods.affil xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.liabTransactionsInGoods.particip xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.pretaxRes xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.pretaxRes.res xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.profSharRights xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.profSharRights.debtEquiv xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:bsBanks.eqLiab.profSharRights.dueWithin2years xsi:nil="true" contextRef="I-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.addFundGeneralBankRisks decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-fi:isBanks.addFundGeneralBankRisks>
+						<de-fi:isBanks.addToPreTaxRes decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.addToPreTaxRes>
+						<de-fi:isBanks.addToPreTaxRes.EStG4g xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.addToPreTaxRes.EStG6b_10 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.addToPreTaxRes.EStG6b_3 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.addToPreTaxRes.substEStR6_6 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionProfSharRights xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionRevenReserves xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionRevenReserves.contingencyRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionRevenReserves.legalRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionRevenReserves.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.additionRevenReserves.statRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">16272158.54</de-fi:isBanks.adminExp>
+						<de-fi:isBanks.adminExp.other decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">3955069.25</de-fi:isBanks.adminExp.other>
+						<de-fi:isBanks.adminExp.other.businessEntertainment xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.communication xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.concessLicenses xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.donations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.energyCost xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.exchange xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.fixing xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.giftsDeductible xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.giftsNonDeductible xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.insurance xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leaseFix xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leaseFix.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leaseFix.partners xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leaseMovable xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leaseMovable.partners xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leasingAll xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leasingAll.moveable xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.leasingAll.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.legalConsulting xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.limitedDeductible xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.marketing xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.otherTaxes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.provisions xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.staffRelated xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.supervisoryboard xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.training xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.other.vehicles xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.adminExp.staff decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">12317089.29</de-fi:isBanks.adminExp.staff>
+						<de-fi:isBanks.adminExp.staff.salaries decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">9875391.08</de-fi:isBanks.adminExp.staff.salaries>
+						<de-fi:isBanks.adminExp.staff.salaries.pensions decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">452264.98</de-fi:isBanks.adminExp.staff.salaries.pensions>
+						<de-fi:isBanks.adminExp.staff.social decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">2441698.21</de-fi:isBanks.adminExp.staff.social>
+						<de-fi:isBanks.currIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.currIncome>
+						<de-fi:isBanks.currIncome.affil xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.affil.corporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.affil.partnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.coop xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.coop.corporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.coop.partnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.particip xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.particip.corporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.particip.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.particip.partnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.shares xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.currIncome.shares.tradingBook xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">589036.24</de-fi:isBanks.deprAmFixAss>
+						<de-fi:isBanks.deprAmFixAss.exceptionalDepr xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.exceptionalDepr.goodwill xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.exceptionalDepr.intan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.exceptionalDepr.tan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.goodwill xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.impairment xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.intan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.tan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.tan.allowanceEStGs6b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.tan.buildings xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.tan.lowValueAs xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmFixAss.tan.lowValueAsCollItem xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmParticip decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.deprAmParticip>
+						<de-fi:isBanks.deprAmParticip.corporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1866325.00</de-fi:isBanks.deprAmReceivAddLoanProv>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.addLoanProv xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.deprAmReceiv xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.deprAmReceiv.KStG8b_3 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.deprAmReceiv.globValAllowances xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.deprAmReceiv.nonTradingBook xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmReceivAddLoanProv.deprAmReceiv.specValAllowances xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.deprAmRevenueRevalParticipResult decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.deprAmRevenueRevalParticipResult>
+						<de-fi:isBanks.deprAmRevenueRevalReceivResult decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-1866325.00</de-fi:isBanks.deprAmRevenueRevalReceivResult>
+						<de-fi:isBanks.earningProfSharing decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.earningProfSharing>
+						<de-fi:isBanks.extraord decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.extraord>
+						<de-fi:isBanks.extraordExpenses decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.extraordExpenses>
+						<de-fi:isBanks.extraordExpenses.merger xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.extraordIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.extraordIncome>
+						<de-fi:isBanks.extraordIncome.merger xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.extraordIncome.subjectToVat xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.feeExpenses decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">9690489.93</de-fi:isBanks.feeExpenses>
+						<de-fi:isBanks.feeExpenses.contracts decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">8281959.98</de-fi:isBanks.feeExpenses.contracts>
+						<de-fi:isBanks.feeExpenses.other decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1408529.95</de-fi:isBanks.feeExpenses.other>
+						<de-fi:isBanks.feeIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">13241788.61</de-fi:isBanks.feeIncome>
+						<de-fi:isBanks.feeIncome.contracts decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">6768753.09</de-fi:isBanks.feeIncome.contracts>
+						<de-fi:isBanks.feeIncome.interimLoans decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">258394.44</de-fi:isBanks.feeIncome.interimLoans>
+						<de-fi:isBanks.feeIncome.loansAfterAllotment decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1059398.03</de-fi:isBanks.feeIncome.loansAfterAllotment>
+						<de-fi:isBanks.feeIncome.other decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">5155243.05</de-fi:isBanks.feeIncome.other>
+						<de-fi:isBanks.feeIncome.subjectToVat xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.gainLoss decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.gainLoss>
+						<de-fi:isBanks.grossProfitOnGoodsTrading xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.grossProfitOnGoodsTrading.cogs xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.grossProfitOnGoodsTrading.sales xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.incomeFrParticip xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.incomeReleasePreTaxRes decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.incomeReleasePreTaxRes>
+						<de-fi:isBanks.incomeReleasePreTaxRes.EStG4g xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.incomeReleasePreTaxRes.EStG6b_10 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.incomeReleasePreTaxRes.EStG6b_3 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.incomeReleasePreTaxRes.substEStR6_6 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.interestExpenses decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">24144635.76</de-fi:isBanks.interestExpenses>
+						<de-fi:isBanks.interestExpenses.discounting xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.interestExpenses.other decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">8156399.76</de-fi:isBanks.interestExpenses.other>
+						<de-fi:isBanks.interestExpenses.savingsDeposits decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">15988236.00</de-fi:isBanks.interestExpenses.savingsDeposits>
+						<de-fi:isBanks.interestIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">44329102.95</de-fi:isBanks.interestIncome>
+						<de-fi:isBanks.interestIncome.commercialPartnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.interestIncome.discounting xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.interestIncome.fixedIncomeSecurities decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">3521966.29</de-fi:isBanks.interestIncome.fixedIncomeSecurities>
+						<de-fi:isBanks.interestIncome.moneyMarketTransactions decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">40807136.66</de-fi:isBanks.interestIncome.moneyMarketTransactions>
+						<de-fi:isBanks.interestIncome.moneyMarketTransactions.homeSavingsLoans decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">7256632.25</de-fi:isBanks.interestIncome.moneyMarketTransactions.homeSavingsLoans>
+						<de-fi:isBanks.interestIncome.moneyMarketTransactions.interimLoans decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">22699347.36</de-fi:isBanks.interestIncome.moneyMarketTransactions.interimLoans>
+						<de-fi:isBanks.interestIncome.moneyMarketTransactions.otherBuildingLoans decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">7955821.01</de-fi:isBanks.interestIncome.moneyMarketTransactions.otherBuildingLoans>
+						<de-fi:isBanks.interestIncome.moneyMarketTransactions.otherMoneyMarketTransactions decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">2895336.04</de-fi:isBanks.interestIncome.moneyMarketTransactions.otherMoneyMarketTransactions>
+						<de-fi:isBanks.interestIncome.subjectToVat decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">256998.25</de-fi:isBanks.interestIncome.subjectToVat>
+						<de-fi:isBanks.leaseExpenses decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.leaseExpenses>
+						<de-fi:isBanks.leaseIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.leaseIncome>
+						<de-fi:isBanks.lossFrParticip decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.lossFrParticip>
+						<de-fi:isBanks.netFeeIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">3551298.68</de-fi:isBanks.netFeeIncome>
+						<de-fi:isBanks.netIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1673249.07</de-fi:isBanks.netIncome>
+						<de-fi:isBanks.netIncomeAndRetainedEarnings decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.netIncomeAndRetainedEarnings>
+						<de-fi:isBanks.netIncomeAndRetainedEarningsAndCapRes decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.netIncomeAndRetainedEarningsAndCapRes>
+						<de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenRes decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenRes>
+						<de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfShar decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfShar>
+						<de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfSharAndAdditionRevenRes decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1698258.30</de-fi:isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfSharAndAdditionRevenRes>
+						<de-fi:isBanks.netInterest decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">20184467.19</de-fi:isBanks.netInterest>
+						<de-fi:isBanks.netTradingIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.netTradingIncome>
+						<de-fi:isBanks.otherCost decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">728684.86</de-fi:isBanks.otherCost>
+						<de-fi:isBanks.otherCost.donations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherCost.interestAO233a.corpTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherCost.interestAO233a.tradeTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">588321.09</de-fi:isBanks.otherOpRevenue>
+						<de-fi:isBanks.otherOpRevenue.disposFixAss xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.disposalCurrentAssets xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.disposalCurrentAssets.sharesInDomesticCorporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.interestAO233a.corpTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.interestAO233a.tradeTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.releaseLiab xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalCurrAss xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.intangible xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.domesticCorporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.domesticLoan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.domesticLoan.25pt xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.domesticLoan.less25pt xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.foreignCorporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.foreignLoan xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.foreignLoan.25pt xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.foreignLoan.less25pt xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.securities.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.revalFixAss.tangible xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherOpRevenue.subjectToVat xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.otherTaxes.notIncludedInOtherCost decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">81829.98</de-fi:isBanks.otherTaxes.notIncludedInOtherCost>
+						<de-fi:isBanks.otherTaxes.taxResult decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">2194633.25</de-fi:isBanks.otherTaxes.taxResult>
+						<de-fi:isBanks.profSharing xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.regularIncome decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">4867882.32</de-fi:isBanks.regularIncome>
+						<de-fi:isBanks.releaseCapReserves xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseProfSharRights xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseRevenReserves xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseRevenReserves.contingencyRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseRevenReserves.legalRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseRevenReserves.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.releaseRevenReserves.statRes xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.retainedEarningsPrevYear decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">25009.23</de-fi:isBanks.retainedEarningsPrevYear>
+						<de-fi:isBanks.revenueRevalParticip decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.revenueRevalParticip>
+						<de-fi:isBanks.revenueRevalParticip.corporations xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">0.00</de-fi:isBanks.revenueRevalReceivReleaseLoanProv>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv.ReleaseLoanProv xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv.revenueRevalReceiv xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv.revenueRevalReceiv.globValAllowances xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv.revenueRevalReceiv.nonTradingBook xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.revenueRevalReceivReleaseLoanProv.revenueRevalReceiv.specValAllowances xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.tax decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">2112803.27</de-fi:isBanks.tax>
+						<de-fi:isBanks.taxAdjItemAudit xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.tradingExpense xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.tradingExpense.securities xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-fi:isBanks.tradingIncome xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:BVV.profitLoss decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">2673249.07</de-gaap-ci:BVV.profitLoss>
+						<de-gaap-ci:BVV.profitLoss.EStG6b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:BVV.profitLoss.assetsCurrentYear decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">360105922.28</de-gaap-ci:BVV.profitLoss.assetsCurrentYear>
+						<de-gaap-ci:BVV.profitLoss.assetsPreviousYear decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">357432673.21</de-gaap-ci:BVV.profitLoss.assetsPreviousYear>
+						<de-gaap-ci:BVV.profitLoss.assetsPreviousYear.assets decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">357432673.21</de-gaap-ci:BVV.profitLoss.assetsPreviousYear.assets>
+						<de-gaap-ci:BVV.profitLoss.assetsPreviousYear.capAdjustments xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:BVV.profitLoss.contribution xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:BVV.profitLoss.withdrawalDistrib xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additionDeductsTpl xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additionDeductsTpl.div2Years xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additionDeductsTpl.div3Years xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additionDeductsTpl.fullValueYearChange xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.AStG1 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.EStG4_4a xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.EStG4k xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.EarningsStrippingRuleEStG4h xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.KStG8b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.OtherEgAO160 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.UmwStG4_6 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.UmwStG7 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.additionsEStG4f xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.costOfRightsEStG4j xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableDeductionsESTG3c xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableDeductionsESTG3c.operatingCostsRelatingToDoubleTaxationTaxExemptCosts xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableDeductionsESTG3c.sub2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableDeductionsESTG3c.sub3 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableDeductionsESTG3c.sub4etc xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.nonDeductableExpEStG4_5EStG4_7 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.otherPersonalTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.profitMarkupEStG6b_10 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.profitMarkupEStG6b_7 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.releaseInvestmentDeductionEStG7g_2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.releaseInvestmentDeductionEStG7g_2.reversal2PrevYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.releaseInvestmentDeductionEStG7g_2.reversal3PrevYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.releaseInvestmentDeductionEStG7g_2.reversalPrevYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.restrictedSpecialBusinessExpenses xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.additions.tradeTaxEStG4_5b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.EarningsStrippingRuleEStG4h xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g._3_1follYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g._3_2follYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g._3_3follYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g._4_4follYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.InvestmentDeductionEStG7g.currYear xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.nonTaxableProfitsIncomeTax.investmentGrant xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.nonTaxableProfitsIncomeTax.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.Other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.deductionsEStG4f xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.nonTaxableProfitsIncomeTax xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsDBA xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsEStG3_40 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b.TakeoverUmwStG4_7sent2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b.add5ptSub3_5 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b.addNonDeductKStG8b_10 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b.KStG8b_3sent8 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsKStG8b.sub1_2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeProfitsTakeoverUmwStG4_7sent2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFreeRecapitalisationGainsEStG3a xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.deductions.taxFrerProfitsOther xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectionsPartPartnerships.EStG3_40EStG3c_2KStG8b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectionsPartPartnerships.other xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsPartPartnerships xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.ExpenseFromChangeOfAdjustmentItem xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.IncomeFromChangeOfAdjustmentItem xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.LossCompensationByParent xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.ProfitRecordedWithParent xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.earningProfSharingPreconsoliRemittShortfall xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.fiscalCorrectonsTaxGroup.earningProfSharingPreconsoliRemittSurplus xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fpl.netIncome xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxExempt xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b.addNonDeductKStG8b_10 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b.less5ptSub3_5 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b.plusKStG8b_3sent8 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b.sub1_2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsKStG8b.takeoverUmwStG4_7sent2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.add.taxFreeProfitsTakeoverUmwStG4_7sent2 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.correctionsEStG3_40EStG3c_2KStG8b xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.deduct xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.deduct.EStGs3c xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.deduct.KStG8b_3sent3etSeq xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.deduct.UmwStGs4_6 xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.net xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:fplgm.netmethod xsi:nil="true" contextRef="D-AKTJAHR" unitRef="EUR"/>
+						<de-gaap-ci:kke xsi:nil="true" contextRef="I-AKTJAHR"/>
+						<de-gaap-ci:hbst.transfer>
+							<de-gaap-ci:hbst.transfer.kind>
+								<de-gaap-ci:hbst.transfer.kind.changeValue contextRef="D-AKTJAHR">Wertansätze</de-gaap-ci:hbst.transfer.kind.changeValue>
+							</de-gaap-ci:hbst.transfer.kind>
+							<de-gaap-ci:hbst.transfer.bsAss>
+								<de-gaap-ci:hbst.transfer.bsAss.name contextRef="D-AKTJAHR">bsBanks.ass</de-gaap-ci:hbst.transfer.bsAss.name>
+								<de-gaap-ci:hbst.transfer.bsAss.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-2625498.59</de-gaap-ci:hbst.transfer.bsAss.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsAss>
+							<de-gaap-ci:hbst.transfer.bsAss>
+								<de-gaap-ci:hbst.transfer.bsAss.name contextRef="D-AKTJAHR">bsBanks.ass.cashRes</de-gaap-ci:hbst.transfer.bsAss.name>
+								<de-gaap-ci:hbst.transfer.bsAss.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-2625498.59</de-gaap-ci:hbst.transfer.bsAss.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsAss>
+						</de-gaap-ci:hbst.transfer>
+						<de-gaap-ci:hbst.transfer>
+							<de-gaap-ci:hbst.transfer.kind>
+								<de-gaap-ci:hbst.transfer.kind.changeValue contextRef="D-AKTJAHR">Wertanstze</de-gaap-ci:hbst.transfer.kind.changeValue>
+							</de-gaap-ci:hbst.transfer.kind>
+							<de-gaap-ci:hbst.transfer.bsEqLiab>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.name contextRef="D-AKTJAHR">bsBanks.eqLiab.fundHomeLoanSavingsAssociationRules</de-gaap-ci:hbst.transfer.bsEqLiab.name>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-1625498.59</de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsEqLiab>
+							<de-gaap-ci:hbst.transfer.bsEqLiab>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.name contextRef="D-AKTJAHR">bsBanks.eqLiab.fundGeneralBankingRisks</de-gaap-ci:hbst.transfer.bsEqLiab.name>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-1200000.00</de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsEqLiab>
+							<de-gaap-ci:hbst.transfer.bsEqLiab>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.name contextRef="D-AKTJAHR">bsBanks.eqLiab.liabBanks</de-gaap-ci:hbst.transfer.bsEqLiab.name>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">200000.00</de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsEqLiab>
+							<de-gaap-ci:hbst.transfer.bsEqLiab>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.name contextRef="D-AKTJAHR">bsBanks.eqLiab</de-gaap-ci:hbst.transfer.bsEqLiab.name>
+								<de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-2625498.59</de-gaap-ci:hbst.transfer.bsEqLiab.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.bsEqLiab>
+						</de-gaap-ci:hbst.transfer>
+						<de-gaap-ci:hbst.transfer>
+							<de-gaap-ci:hbst.transfer.kind>
+								<de-gaap-ci:hbst.transfer.kind.changeValue contextRef="D-AKTJAHR">Wertanstze</de-gaap-ci:hbst.transfer.kind.changeValue>
+							</de-gaap-ci:hbst.transfer.kind>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncome</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.gainLoss</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.addFundGeneralBankRisks</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">-1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncomeAndRetainedEarnings</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncomeAndRetainedEarningsAndCapRes</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenRes</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfShar</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+							<de-gaap-ci:hbst.transfer.isChangeNetIncome>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.name contextRef="D-AKTJAHR">isBanks.netIncomeAndRetainedEarningsAndCapResAndReleaseRevenResAndProfSharAndAdditionRevenRes</de-gaap-ci:hbst.transfer.isChangeNetIncome.name>
+								<de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod decimals="2" contextRef="D-AKTJAHR" unitRef="EUR">1000000.00</de-gaap-ci:hbst.transfer.isChangeNetIncome.changeValueActualPeriod>
+							</de-gaap-ci:hbst.transfer.isChangeNetIncome>
+						</de-gaap-ci:hbst.transfer>
+					</xbrli:xbrl>
+				</ebilanz:EBilanz>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

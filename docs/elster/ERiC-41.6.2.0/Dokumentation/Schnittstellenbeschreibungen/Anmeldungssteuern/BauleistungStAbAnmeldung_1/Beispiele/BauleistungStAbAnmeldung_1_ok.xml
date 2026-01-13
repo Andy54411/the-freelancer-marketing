@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterAnmeldung</Verfahren>
+        <DatenArt>BauleistungStAbAnmeldung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">2293</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <BauleistungStAbAnmeldung xmlns="http://finkonsens.de/elster/elsteranmeldung/bauleistungstabanmeldung/v1" version="1">
+                    <BauleistungStAbAnmeldung>
+                        <Anmeldezeitraum>1980-01</Anmeldezeitraum>
+                        <Anmeldungsart>0</Anmeldungsart>
+                        <Leistender>
+                            <Bundesfinanzamtsnummer>2293</Bundesfinanzamtsnummer>
+                            <Identifikationsnummer>03219161545</Identifikationsnummer>
+                            <WIdentifikationsnummer>DE365011290</WIdentifikationsnummer>
+                            <Bezeichnung>Aut voluptatem facere quae.</Bezeichnung>
+                            <Anschrift>
+                                <StrAdr>
+                                    <Str>Musterfeld</Str>
+                                    <HausNr>525</HausNr>
+                                    <HausNrZu>F</HausNrZu>
+                                    <AdressErg>6 OG</AdressErg>
+                                    <Plz>91919</Plz>
+                                    <Ort>Musterheim</Ort>
+                                </StrAdr>
+                            </Anschrift>
+                        </Leistender>
+                        <Leistungsempfaenger>
+                            <SteuernummerLE>2866012083749</SteuernummerLE>
+                            <IdentifikationsnummerLE>09251746582</IdentifikationsnummerLE>
+                            <WIdentifikationsnummerLE>DE722485907</WIdentifikationsnummerLE>
+                            <Bezeichnung>Ad et numquam aspernatur voluptatem.</Bezeichnung>
+                            <Geburtsdatum>27.01.2025</Geburtsdatum>
+                            <Rechtsform>31</Rechtsform>
+                            <ArtTaetigkeit>sit</ArtTaetigkeit>
+                            <Telefon>0942178635619</Telefon>
+                            <Abrechnungspflicht>1</Abrechnungspflicht>
+                            <Anschrift>
+                                <StrAdr>
+                                    <Str>Mustergasse</Str>
+                                    <HausNr>134</HausNr>
+                                    <HausNrZu>a</HausNrZu>
+                                    <AdressErg>Suite 695</AdressErg>
+                                    <Plz>89898</Plz>
+                                    <Ort>Musterzing</Ort>
+                                </StrAdr>
+                            </Anschrift>
+                        </Leistungsempfaenger>
+                        <Bauleistungen>
+                            <Einzelaufstellung>
+                                <Bauleistung>modi</Bauleistung>
+                                <Rechnungsdatum>01.01.2025</Rechnungsdatum>
+                                <Zahlungstag>01.01.1980</Zahlungstag>
+                                <Leistungszeitraum>01.01.1980-31.12.1980</Leistungszeitraum>
+                                <Gegenleistung>5.00</Gegenleistung>
+                                <Steuerabzug>1.75</Steuerabzug>
+                            </Einzelaufstellung>
+                            <Einzelaufstellung>
+                                <Bauleistung>Reiciendis alias eum consectetur est autem laborum.</Bauleistung>
+                                <Rechnungsdatum>01.01.2000</Rechnungsdatum>
+                                <Zahlungstag>01.01.1980</Zahlungstag>
+                                <Leistungszeitraum>01.01.2000-31.12.2000</Leistungszeitraum>
+                                <Gegenleistung>90.00</Gegenleistung>
+                                <Steuerabzug>14.50</Steuerabzug>
+                            </Einzelaufstellung>
+                            <Summe>
+                                <SummeGegenleistungen>95.00</SummeGegenleistungen>
+                                <SummeSteuerabzug>16.25</SummeSteuerabzug>
+                            </Summe>
+                        </Bauleistungen>
+                    </BauleistungStAbAnmeldung>
+                </BauleistungStAbAnmeldung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

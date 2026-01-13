@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterDatenabholung</Verfahren>
+        <DatenArt>PostfachBestaetigung</DatenArt>
+        <Vorgang>send-NoSig</Vorgang>
+    <Testmerker>700000001</Testmerker>
+    <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+    <DatenLieferant>Lieferant</DatenLieferant>
+    <EingangsDatum>20210412150638</EingangsDatum>
+    <Datei>
+      <Verschluesselung>CMSEncryptedData</Verschluesselung>
+      <Kompression>GZIP</Kompression>
+      <TransportSchluessel />
+    </Datei>
+    <RC>
+      <Rueckgabe>
+        <Code>0</Code>
+        <Text>Ihr Request wurde bearbeitet</Text>
+      </Rueckgabe>
+      <Stack>
+        <Code>0</Code>
+        <Text>Ihr Request wurde bearbeitet</Text>
+      </Stack>
+    </RC>
+    <VersionClient>Client 2024</VersionClient>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Test-Programm</ProduktName>
+                    <ProduktVersion>V 1.0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ElsterBasisQS</DatenLieferant>
+                <RC>
+                    <Rueckgabe>
+                        <Code>67890</Code>
+                        <Text>Der Empfang von mindestens einer der Daten wurde nicht erfolgreich bestaetigt.</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>67890</Code>
+                        <Text>Der Empfang von mindestens einer der Daten wurde nicht erfolgreich bestaetigt.</Text>
+                    </Stack>
+                </RC>
+                <Zusatz>
+                    <Info>....</Info>
+                </Zusatz>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+                    <!-- Fingerprint name="Fingerprint">Signatur ueber den Fingerprint</Fingerprint --> 
+                    <Fingerprint name="d8f285140739ab939030efc84e7afd5c">MIICqwYJKoZIhvcNAQcCoIICnDCCApgCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHATGCAncwggJzAgEBMIGbMIGVMQswCQYDVQQGEwJERTEPMA0GA1UEChMGRUxT
+VEVSMQ4wDAYDVQQLEwVDUllQVDETMBEGA1UEAxMKTXVzdGVybWFubjEWMBQGA1UE
+BxQNODAzMzNNyHVuY2hlbjEUMBIGA1UECRMLSGF1cHRzdHIuIDExIjAgBgNVBAUM
+GVRodSBBdWcgMTEgMTU6MTY6NDAgMjAwNQoCAQAwCQYFKw4DAhoFAKCBsTAYBgkq
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA1MTMxMjI3
+NDFaMCMGCSqGSIb3DQEJBDEWBBQTNrhQY+tfimt86puZoLZqoKL2ZzBSBgkqhkiG
+9w0BCQ8xRTBDMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0D
+AgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAW
+bGharzFLq2VaeJJ3SHd0vqZ1GgmYT26bmRlCfeOOxdYiI2RMW48BP1H7iqAED2TN
+0yeKm1Qiuf2zUctUztD/OBVkGG4hppvnhASW/swl0dpB1osrVdX91fkh2VKPjFdd
+uyqSlmrvUQ29xatURef1E0Rn9ydLmByQ+JXNv70SM3AFl1urgrD6tEviP1bSjeqf
+fxXvcBpfl+HTbBZV5SFWFgFYaP40eoWy0+O1k7cv768V8GrOxy6y8F7Yz8YWp+hR
+rFJRFiHVaom1TbetRCuDzuSjbAfNTNG6JjnmNv7UrWmf41El9aT7OcsM3j1Zn/sk
+q88vx1VkCcuO6EFB/QWU</Fingerprint>
+                    <PostfachBestaetigungAntwort>
+                      <Bereitstellungen>
+                        <Bereitstellung id="eh0360chxuw2dx0mq5f7sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>0</Code>
+                                <Text>Datensatz erfolgreich bestaetitgt.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                        <Bereitstellung id="eh0875chxuw2dx0mqa32sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>194346573</Code>
+                                <Text>Datensatz nicht gefunden.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                        <Bereitstellung id="eh0115chxuw2bg5mqa99sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>1943226573</Code>
+                                <Text>Bitte versuchen Sie es noch einmal.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                       </Bereitstellungen>
+                    </PostfachBestaetigungAntwort>
+                </Datenabholung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>2</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Test-Programm</ProduktName>
+                    <ProduktVersion>V 1.0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ElsterBasisQS</DatenLieferant>
+                <RC>
+                    <Rueckgabe>
+                        <Code>0</Code>
+                        <Text>Der Empfang der Daten wurde erfolgreich bestaetigt.</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>0</Code>
+                        <Text>Der Empfang der Daten wurde erfolgreich bestaetigt.</Text>
+                    </Stack>
+                </RC>
+                <Zusatz>
+                    <Info>....</Info>
+                </Zusatz>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+                    <!-- Fingerprint name="Fingerprint">Signatur ueber den Fingerprint</Fingerprint --> 
+                    <Fingerprint name="d8f285111139ab939030efc84e7afd5c">MIICqwYJKoZIhvcNAQcCoIICnDCCApgCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHATGCAncwggJzAgEBMIGbMIGVMQswCQYDVQQGEwJERTEPMA0GA1UEChMGRUxT
+VEVSMQ4wDAYDVQQLEwVDUllQVDETMBEGA1UEAxMKTXVzdGVybWFubjEWMBQGA1UE
+BxQNODAzMzNNyHVuY2hlbjEUMBIGA1UECRMLSGF1cHRzdHIuIDExIjAgBgNVBAUM
+GVRodSBBdWcgMTEgMTU6MTY6NDAgMjAwNQoCAQAwCQYFKw4DAhoFAKCBsTAYBgkq
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA1MTMxMjI3
+NDFaMCMGCSqGSIb3DQEJBDEWBBQTNrhQY+tfimt86puZoLZqoKL2ZzBSBgkqhkiG
+9w0BCQ8xRTBDMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0D
+AgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAW
+bGharzFLq2VaeJJ3SHd0vqZ1GgmYT26bmRlCfeOOxdYiI2RMW48BP1H7iqAED2TN
+0yeKm1Qiuf2zUctUztD/OBVkGG4hppvnhASW/swl0dpB1osrVdX91fkh2VKPjFdd
+uyqSlmrvUQ29xatURef1E0Rn9ydLmByQ+JXNv70SM3AFl1urgrD6tEviP1bSjeqf
+fxXvcBpfl+HTbBZV5SFWFgFYaP40eoWy0+O1k7cv768V8GrOxy6y8F7Yz8YWp+hR
+rFJRFiHVaom1TbetRCuDzuSjbAfNTNG6JjnmNv7UrWmf41El9aT7OcsM3j1Zn/sk
+q88vx1VkCcuO6EFB/QWU</Fingerprint>
+                    <PostfachBestaetigungAntwort>
+                      <Bereitstellungen>
+                        <Bereitstellung id="eh0111chxuw2dx0mq5f7sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>0</Code>
+                                <Text>Datensatz erfolgreich bestaetitgt.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                        <Bereitstellung id="eh0222chxuw2dx0mqa32sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>0</Code>
+                                <Text>Datensatz erfolgreich bestaetitgt.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                        <Bereitstellung id="eh0333chxuw2bg5mqa99sxndvtizzg7i">
+                            <Rueckgabe>
+                                <Code>0</Code>
+                                <Text>Datensatz erfolgreich bestaetitgt.</Text>
+                            </Rueckgabe>
+                        </Bereitstellung>
+                       </Bereitstellungen>
+                    </PostfachBestaetigungAntwort>
+                </Datenabholung>
+            </Nutzdaten>
+        </Nutzdatenblock>        
+    </DatenTeil>
+</Elster>

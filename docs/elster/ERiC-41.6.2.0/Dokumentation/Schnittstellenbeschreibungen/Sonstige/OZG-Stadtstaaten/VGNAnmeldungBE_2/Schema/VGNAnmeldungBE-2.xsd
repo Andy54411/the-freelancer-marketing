@@ -1,0 +1,1006 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VGNAnmeldungBE - 2 - 5.2 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsteranmeldung/vgnanmeldungbe/v2" targetNamespace="http://finkonsens.de/elster/elsteranmeldung/vgnanmeldungbe/v2" xmlns:exml="http://finkonsens.de/elster/elsteranmeldung/vgnanmeldungbe/v2">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMailBaseSType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([^@]+)(@)([^@]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumMMBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(10|11|12|01|02|03|04|05|06|07|08|09)">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:pattern value="\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMail_MinLm1_MaxL128_SType">
+        <xs:restriction base="EMailBaseSType">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="128"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_FeststellungBMG_G_Geraetedaten_G_GKategorie_G_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>G 1</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>G 2</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>G 3</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_Feststellung_BMG_U_W_Geraetedaten_U_W_GKategorie_U_W_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>U 1</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>U 2</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>U 3</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="4">
+                <xs:annotation>
+                    <xs:documentation>W 1</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>W 2</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_Finanzamt_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1123">
+                <xs:annotation>
+                    <xs:documentation>Wedding</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_Mitwirkung_Allg_Angaben_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>Firma</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_PersAngaben_PersAngabenUeberschrift_NNatPers_AnredeId_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>Firma</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VGNAnmeldungBE_TestFA_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1197">
+                <xs:annotation>
+                    <xs:documentation>Berlin - Testsystem</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullSType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType"/>
+    </xs:simpleType>
+    <xs:simpleType name="Ja1BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MaxL72_Muster90562_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:maxLength value="72"/>
+            <xs:pattern value="\D*"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL100_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL100_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL10_Muster91555_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="10"/>
+            <xs:pattern value="\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL20_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL46_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="46"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL4_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="4"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL89_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="89"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL13_Muster1255396078_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="13"/>
+            <xs:pattern value="\d+-?\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL2_MaxL7_Musterm1317310723_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="2"/>
+            <xs:maxLength value="7"/>
+            <xs:pattern value="(00|\+)\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL5_MaxL5_Muster2084297628_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="5"/>
+            <xs:maxLength value="5"/>
+            <xs:pattern value="([0]{1}[1-9]{1}[0-9]{3})|([1-9]{1}[0-9]{4})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VGNAnmeldungBE" type="VGNAnmeldungBE_CType"/>
+    <xs:complexType name="VGNAnmeldungBE_CType">
+        <xs:sequence>
+            <xs:element name="VGNAnmeldungBE" type="VGNAnmeldungBE_1140640054_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="2" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VGNAnmeldungBE_1140640054_CType">
+        <xs:sequence>
+            <xs:element name="Finanzamt" type="Enum_VGNAnmeldungBE_Finanzamt_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="TestFA" type="Enum_VGNAnmeldungBE_TestFA_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Test-Finanzamt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StNr" type="StNr_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Anmeldezeitraum" type="Anmeldezeitraum_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="PersAngaben" type="PersAngaben_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="FeststellungBMG_G" type="FeststellungBMG_G_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Summe_BMG_G" type="Summe_BMG_G_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bestandsentwicklung_G" type="Bestandsentwicklung_G_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Feststellung_BMG_U_W" type="Feststellung_BMG_U_W_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Summe_BMG_U_W" type="Summe_BMG_U_W_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bestandsentwicklung_U_W" type="Bestandsentwicklung_U_W_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Berechnung" type="Berechnung_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Mitwirkung" type="Mitwirkung_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EOP" type="EOP_2140743329_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="StNr_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anmeldezeitraum_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Jahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Monat" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Monat</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berichtigt" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Berichtigte Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PersAngaben_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="PersAngabenUeberschrift" type="PersAngabenUeberschrift_1481978157_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PersAngabenUeberschrift_1481978157_CType">
+        <xs:sequence>
+            <xs:element name="NNatPers" type="NNatPers_1998504899_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NNatPers_1998504899_CType">
+        <xs:sequence>
+            <xs:element name="AnredeId" type="Enum_VGNAnmeldungBE_PersAngaben_PersAngabenUeberschrift_NNatPers_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenbezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Inlandsadresse" type="Inlandsadresse_192607210_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kontakt" type="Kontakt_192607210_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Inlandsadresse_192607210_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Plz" type="String_MinL5_MaxL5_Muster2084297628_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MaxL72_Muster90562_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kontakt_192607210_CType">
+        <xs:sequence>
+            <xs:element name="Tel" type="Tel_1945182092_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="Email" type="Email_1945182092_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Tel_1945182092_CType">
+        <xs:sequence>
+            <xs:element name="IntVorw" type="String_MinL2_MaxL7_Musterm1317310723_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl international</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NatVorw" type="String_MinL1_MaxL10_Muster91555_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl national</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RufNr" type="String_MinL2_MaxL13_Muster1255396078_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rufnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Email_1945182092_CType">
+        <xs:sequence>
+            <xs:element name="Adresse" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="FeststellungBMG_G_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Geraetedaten_G" type="Geraetedaten_G_m323272231_CType" minOccurs="0" maxOccurs="100"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Geraetedaten_G_m323272231_CType">
+        <xs:sequence>
+            <xs:element name="Aufstellort_G" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Aufstellort (Firmenname, Anschrift)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anschrift_Inhaber_G" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name und Anschrift der/des Inhaberin/Inhabers der genutzten Räume</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="GKategorie_G" type="Enum_VGNAnmeldungBE_FeststellungBMG_G_Geraetedaten_G_GKategorie_G_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gerätekategorie</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geraetenummer_G" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gerätenummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Zulassungsnummer_G" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zulassungsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Datum_ZAusdruck_G" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Datum Zählwerksausdruck</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Lfd_Nummer_Ausdruck_G" type="String_MinL1_MaxL100_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Lfd. Nr. des Ausdrucks</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Positiver_Saldo_G" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Positiver Saldo 1 aller Ausdrucke im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Summe_BMG_G_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Summe_BMG_G1" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie G 1 im Auslesezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_G2" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie G 2 im Auslesezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_G3" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie G 3 im Auslesezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bestandsentwicklung_G_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Bestandsentwicklung_G1_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie G1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G1_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie G1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G1_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie G1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G1_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie G1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G2_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie G2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G2_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie G2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G2_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie G2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G2_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie G2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G3_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie G3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G3_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie G3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G3_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie G3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_G3_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie G3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Feststellung_BMG_U_W_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Geraetedaten_U_W" type="Geraetedaten_U_W_893832084_CType" minOccurs="0" maxOccurs="100"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Geraetedaten_U_W_893832084_CType">
+        <xs:sequence>
+            <xs:element name="Aufstellort_U_W" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Aufstellort (Firmenname, Anschrift)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anschrift_Inhaber_U_W" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name und Anschrift der/des Inhaberin/Inhabers der genutzten Räume</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="GKategorie_U_W" type="Enum_VGNAnmeldungBE_Feststellung_BMG_U_W_Geraetedaten_U_W_GKategorie_U_W_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gerätekategorie</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geraetenummer_U_W" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gerätenummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Zulassungsnummer_U_W" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zulassungsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Tag_Aufstellung" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Tag der ersten Aufstellung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Tag_Entfernung" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Tag der endgültigen Entfernung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Austausch_U" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Dieser Spielautomat wurde innerhalb des Kalendermonats am selben Aufstellort durch einen anderen Spielautomaten ersetzt. (Gilt nur bei U 1, U 2 oder U 3)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Summe_BMG_U_W_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Summe_BMG_U1" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie U 1 im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_U2" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie U 2 im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_U3" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie U 3 im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_W1" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie W 1 im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_BMG_W2" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen Gerätekategorie W 2 im Anmeldezeitraum</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bestandsentwicklung_U_W_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Bestandsentwicklung_U1_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie U1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U1_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie U1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U1_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie U1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U1_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie U1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U2_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie U2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U2_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie U2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U2_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie U2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U2_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie U2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U3_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie U3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U3_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie U3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U3_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie U3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_U3_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie U3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W1_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie W1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W1_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie W1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W1_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie W1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W1_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie W1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W2_AB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anfangsbestand Gerätekategorie W2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W2_Zugang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge Gerätekategorie W2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W2_Abgang" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge Gerätekategorie W2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bestandsentwicklung_W2_EB" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Endbestand Gerätekategorie W2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Berechnung_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="GeraetekategorieG" type="GeraetekategorieG_m313873030_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="GeraetekategorieU" type="GeraetekategorieU_m313873030_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="GeraetekategorieW" type="GeraetekategorieW_m313873030_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Sum" type="Sum_m313873030_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="GeraetekategorieG_m313873030_CType">
+        <xs:sequence>
+            <xs:element name="Berechnung_Summe_BMG_G1" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie G 1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berechnung_Summe_BMG_G2" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie G 2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berechnung_Summe_BMG_G3" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie G 3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_G1" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie G 1&#10;(Summe der Bemessungsgrundlagen x Steuersatz 25 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_G2" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie G 2&#10;(Summe der Bemessungsgrundlagen x Steuersatz 25 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_G3" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie G 3&#10;(Summe der Bemessungsgrundlagen x Steuersatz 40 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_VGN_G" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Vergnügungsteuer zu G 1, G 2, G 3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="GeraetekategorieU_m313873030_CType">
+        <xs:sequence>
+            <xs:element name="Berechnung_Summe_BMG_U1" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie U 1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berechnung_Summe_BMG_U2" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie U 2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berechnung_Summe_BMG_U3" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie U 3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_U1" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie U 1&#10;(Summe der Bemessungsgrundlagen x Steuersatz 153,39 €)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_U2" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie U 2&#10;(Summe der Bemessungsgrundlagen x Steuersatz 12,78 €)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_U3" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie U 3&#10;(Summe der Bemessungsgrundlagen x Steuersatz 613,55 €)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_VGN_U" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Vergnügungsteuer zu U 1, U 2, U 3</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="GeraetekategorieW_m313873030_CType">
+        <xs:sequence>
+            <xs:element name="Berechnung_Summe_BMG_W1" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie W 1</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berechnung_Summe_BMG_W2" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Bemessungsgrundlagen der Gerätekategorie W 2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_W1" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie W 1&#10;(Summe der Bemessungsgrundlagen x Steuersatz 306,78 €)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZWSumme_VGN_W2" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zwischensumme der Vergnügungsteuer der Gerätekategorie W 2&#10;(Summe der Bemessungsgrundlagen x Steuersatz 25,56 €)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Summe_VGN_W" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Vergnügungsteuer zu W 1, W 2</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m313873030_CType">
+        <xs:sequence>
+            <xs:element name="SummeVGN" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der zu entrichtenden Vergnügungsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Mitwirkung_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Allg_Angaben" type="Allg_Angaben_1711871946_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Allg_Angaben_1711871946_CType">
+        <xs:sequence>
+            <xs:element name="AnredeId" type="Enum_VGNAnmeldungBE_Mitwirkung_Allg_Angaben_AnredeId_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Firmenname" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Firmenbezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Inlandsadresse" type="Inlandsadresse_m1193573887_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kontakt" type="Kontakt_m1193573887_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Inlandsadresse_m1193573887_CType">
+        <xs:sequence>
+            <xs:element name="Str" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNr" type="String_MinL1_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="HausNrZu" type="String_MinL1_MaxL20_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hausnummerzusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdressErg" type="String_MinL1_MaxL46_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Adressergänzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Plz" type="String_MinL5_MaxL5_Muster2084297628_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ort" type="String_MaxL72_Muster90562_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kontakt_m1193573887_CType">
+        <xs:sequence>
+            <xs:element name="Tel" type="Tel_m721397217_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="Email" type="Email_m721397217_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Tel_m721397217_CType">
+        <xs:sequence>
+            <xs:element name="IntVorw" type="String_MinL2_MaxL7_Musterm1317310723_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl international</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NatVorw" type="String_MinL1_MaxL10_Muster91555_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorwahl national</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RufNr" type="String_MinL2_MaxL13_Muster1255396078_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rufnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Email_m721397217_CType">
+        <xs:sequence>
+            <xs:element name="Adresse" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EOP_2140743329_CType">
+        <xs:sequence>
+            <xs:element name="Transferaufgabe" type="String_MinL1_MaxL89_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Transferaufgabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

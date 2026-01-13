@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elster="http://www.elster.de/elsterxml/schema/v11" xmlns:bereitstellung="http://www.elster.de/ElsterBereitstellung/v2" xmlns:exml="http://finkonsens.de/elster/anhaenge/simple/v4" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1">
+    <xs:include schemaLocation="../../../ElsterBasisSchema/Schema/th000011_extern.xsd">
+        <xs:annotation>
+            <xs:documentation xml:lang="DE">TransferHeader-Schema mit der Version 11</xs:documentation>
+        </xs:annotation>
+    </xs:include>
+    <xs:import namespace="http://www.elster.de/ElsterBereitstellung/v2" schemaLocation="ElsterBereitstellung_4_2_5.xsd"/>
+    <xs:import namespace="http://finkonsens.de/elster/anhaenge/simple/v4" schemaLocation="Anhaenge-simple-4.xsd"/>
+    <xs:include schemaLocation="../../../ElsterBasisSchema/Schema/ndh000011.xsd">
+        <xs:annotation>
+            <xs:documentation xml:lang="DE">NutzdatenHeader-Schema mit der Version 11</xs:documentation>
+        </xs:annotation>
+    </xs:include>
+    <!-- RootElement = Elster _______________________________________________________________-->
+    <xs:element name="Elster">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="TransferHeader" type="elster:TransferHeaderCType"/>
+                <xs:element name="DatenTeil" type="elster:DatenTeilCType">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="DE">Das Element DatenTeil enthaelt einen oder bei Sammellieferungen mehrere Nutzdatenbloecke.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!-- D -->
+    <xs:complexType name="DatenTeilCType">
+        <xs:sequence>
+            <xs:element name="Nutzdatenblock" type="elster:NutzdatenblockCType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- N -->
+    <xs:complexType name="NutzdatenblockCType">
+        <xs:annotation>
+            <xs:documentation xml:lang="DE">Der Nutzdatenblock enthaelt jeweils ein Element "NutzdatenHeader" und ein Element "Nutzdaten"</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="NutzdatenHeader" type="elster:NutzdatenHeaderCType"/>
+            <xs:element name="Nutzdaten">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element ref="bereitstellung:ElsterBereitstellung" minOccurs="1" maxOccurs="1"/>
+                        <xs:element ref="exml:Anhaenge" minOccurs="0" maxOccurs="1"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

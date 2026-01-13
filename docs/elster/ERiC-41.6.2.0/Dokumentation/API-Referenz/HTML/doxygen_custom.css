@@ -1,0 +1,12 @@
+dl.section.return dd ul, dl.section.see dd ul {
+  margin-block-start: 0px;
+}
+
+a.link_extern::after {
+  /* Externer Link ist ein Link auf eine Datei     */
+  /* außerhalb des ERiC Dokumentationspakets       */
+	
+  content: url(link_extern_blau.svg);
+  padding-left: 3px;
+  
+}

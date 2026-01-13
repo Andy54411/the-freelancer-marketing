@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VollfAUpdate - 10 - 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrm/vollfaupdate/v10" targetNamespace="http://finkonsens.de/elster/elsterbrm/vollfaupdate/v10" xmlns:exml="http://finkonsens.de/elster/elsterbrm/vollfaupdate/v10">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz VDM-ZulZeich-ohne-Soft-Hyphen, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VollfAUpdate_Vollmachtgeber_NatuerlichePerson_Anrede_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Herr">
+                <xs:annotation>
+                    <xs:documentation>Herr</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="Frau">
+                <xs:annotation>
+                    <xs:documentation>Frau</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL25_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="25"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL30_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="30"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL60_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL25_MaxL25_Muster1910649527_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="25"/>
+            <xs:maxLength value="25"/>
+            <xs:pattern value="\d{4}G\d{20}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VollfAUpdate" type="VollfAUpdate_CType"/>
+    <xs:complexType name="VollfAUpdate_CType">
+        <xs:sequence>
+            <xs:element name="VollfAUpdate" type="VollfAUpdate_709078652_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="10" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="VollfAUpdate_709078652_CType">
+        <xs:sequence>
+            <xs:element name="VollmachtID" type="String_MinL25_MaxL25_Muster1910649527_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ID der Vollmacht</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vollmachtgeber" type="Vollmachtgeber_1215680353_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Steuernummern" type="Steuernummern_1215680353_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Diva" type="Diva_1215680353_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vollmachtgeber_1215680353_CType">
+        <xs:sequence>
+            <xs:element name="NatuerlichePerson" type="NatuerlichePerson_1619582030_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NatuerlichePerson_1619582030_CType">
+        <xs:sequence>
+            <xs:element name="Anrede" type="Enum_VollfAUpdate_Vollmachtgeber_NatuerlichePerson_Anrede_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anrede</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL30_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namensvorsatz" type="String_MinL1_MaxL25_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Namenszusatz" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuernummern_1215680353_CType">
+        <xs:sequence>
+            <xs:element name="BekannteSteuernummer" type="BekannteSteuernummer_1560771131_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BekannteSteuernummer_1560771131_CType">
+        <xs:sequence>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Diva_1215680353_CType">
+        <xs:sequence>
+            <xs:element name="DivaTeilnahme" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mit dieser Vollmacht wird der Übermittlung von Verwaltungsakten und sonstigen Schreiben durch Bereitstellung zum Datenabruf (§ 122a der Abgabenordnung) zugestimmt. Auf die von Ihnen bereits zur Kenntnis genommenen Hinweise zur Bekanntgabe in elektronischer Form wird verwiesen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

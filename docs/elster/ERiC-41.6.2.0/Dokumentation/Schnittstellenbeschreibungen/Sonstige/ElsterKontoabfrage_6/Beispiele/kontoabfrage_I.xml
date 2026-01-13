@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterKontoabfrage</Verfahren>
+        <DatenArt>Kontoabfrage</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>230000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>73fc25f75f63024cdcfdcbebae6bc7c1</NutzdatenTicket>
+                <Empfaenger id="F">2657</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <ns4:kontoabfrage version="6"
+                                  xmlns="http://www.elster.de/KontoAbfrage/I-Abfrage/06"
+                                  xmlns:ns2="http://www.elster.de/KontoAbfrage/O-Abfrage/06"
+                                  xmlns:ns4="http://finkonsens.de/elster/elsterkontoabfrage/kontoabfrage/v6"
+                                  xmlns:ns3="http://www.elster.de/KontoAbfrage/ZS-Abfrage/06">
+                    <ns4:kontoabfrage-teil>
+                        <kontoabfrage-input>
+                            <kontoabfrage-art>I</kontoabfrage-art>
+                            <steuernummer>2657086132381</steuernummer>
+                            <steuerart>ESt</steuerart>
+                            <wertstellungsdatum option="V">25052020</wertstellungsdatum>
+                        </kontoabfrage-input>
+                        <ns4:kontoabfrage-output>
+                            <ns4:abfrage-tagesdatum>08.05.2023 15:19:34</ns4:abfrage-tagesdatum>
+                            <ns4:abfrage-steuernummer>199/262/11407</ns4:abfrage-steuernummer>
+                            <ns4:abfrage-steuerart>
+                                <ns4:steuerart-klartext>Einkommensteuer</ns4:steuerart-klartext>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2020</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>26.04.2021</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-2.061,00</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2021</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>29.06.2022</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-2.113,00</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2022</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>05.06.2023</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-3.314,00</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-gesamtbetrag>-7.488,00</ns4:steuerart-gesamtbetrag>
+                            </ns4:abfrage-steuerart>
+                            <ns4:abfrage-steuerart>
+                                <ns4:steuerart-klartext>Solidaritätszuschlag zur Einkommensteuer</ns4:steuerart-klartext>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2020</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>26.04.2021</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-113,16</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2021</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>29.06.2022</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-1,05</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-teilbetrag>
+                                    <ns4:teilbetrag-zeitraum>2022</ns4:teilbetrag-zeitraum>
+                                    <ns4:teilbetrag-faelligkeit>05.06.2023</ns4:teilbetrag-faelligkeit>
+                                    <ns4:teilbetrag-wert>-0,88</ns4:teilbetrag-wert>
+                                    <ns4:teilbetrag-erlaeuterung>Erstattung</ns4:teilbetrag-erlaeuterung>
+                                </ns4:steuerart-teilbetrag>
+                                <ns4:steuerart-gesamtbetrag>-115,09</ns4:steuerart-gesamtbetrag>
+                            </ns4:abfrage-steuerart>
+                            <ns4:abfrage-gesamtsumme>-7.603,09</ns4:abfrage-gesamtsumme>
+                        </ns4:kontoabfrage-output>
+                        <ns4:bearbeitungshinweis>
+                            <ns4:return-code>0</ns4:return-code>
+                            <ns4:return-text>Ihre Kontoabfrage wurde erfolgreich durchgeführt.</ns4:return-text>
+                            <ns4:stack-code>0</ns4:stack-code>
+                            <ns4:stack-text/>
+                        </ns4:bearbeitungshinweis>
+                    </ns4:kontoabfrage-teil>
+                </ns4:kontoabfrage>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

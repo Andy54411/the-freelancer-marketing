@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRMOrg</Verfahren>
+        <DatenArt>VNoVMVUpdate</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>BRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>EOP</ProduktName>
+                    <ProduktVersion>R44</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ElsterOnline-Portal</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VNoVMVUpdate xmlns="http://finkonsens.de/elster/elsterbrmorg/vnovmvupdate/v11" version="11">
+                    <VNoVMVUpdate>
+                        <Anschrift>
+                            <AdresseAusland>
+                                <Strasse>Nebenstraße</Strasse>
+                                <Hausnummer>2</Hausnummer>
+                                <Postleitzahl>12346</Postleitzahl>
+                                <Ort>Venedig</Ort>
+                                <Land>IT</Land>
+                            </AdresseAusland>
+                        </Anschrift>
+                    </VNoVMVUpdate>
+                </VNoVMVUpdate>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

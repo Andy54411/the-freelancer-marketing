@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:stAbS50a="http://finkonsens.de/elster/elsteranmeldung/stabs50a/v2025" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsteranmeldung/stabs50a/v2025" schemaLocation="StAbS50a-2025.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="stAbS50a:StAbS50a"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

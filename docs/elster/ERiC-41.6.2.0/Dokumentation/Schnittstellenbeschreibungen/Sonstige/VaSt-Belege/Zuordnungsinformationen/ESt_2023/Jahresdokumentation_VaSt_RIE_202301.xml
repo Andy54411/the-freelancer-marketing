@@ -1,0 +1,2557 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+
+  <Styles>
+	<Style ss:ID="Default" ss:Name="Default">
+		<Alignment ss:WrapText="1"/>
+	</Style>
+	<Style ss:ID="grau" ss:Name="grau">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#CCCCCC" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="weiss" ss:Name="weiss">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="bold_grau">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#CCCCCC" ss:Pattern="Solid"/>
+		<Font ss:Bold="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="anw_geaendert" ss:Name="anw_geaendert">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+		<Font ss:Color="#0000FF"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="anw_geaendert_zebra" ss:Name="anw_geaendert_zebra">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#CCCCCC" ss:Pattern="Solid"/>
+		<Font ss:Color="#0000FF"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="reihenfolge" ss:Name="reihenfolge">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+		<Font ss:Color="#0000FF"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="reihenfolge_zebra" ss:Name="reihenfolge_zebra">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#CCCCCC" ss:Pattern="Solid"/>
+		<Font ss:Color="#0000FF"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="bold">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Font ss:Bold="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="green">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Font ss:Bold="1"/>
+		<Interior ss:Color="#339966" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="neu">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFC7CE" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="geloescht">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Font  ss:StrikeThrough="1"/>
+		<Interior ss:Color="#FFC7CE" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="geaendert">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFE375" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="geaendert_alt">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFF99" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="pflicht_geaendert">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFFCC" ss:Pattern="Solid"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="kontext_geaendert">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+		<Font ss:Color="#FF0000"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+	<Style ss:ID="kontext_geaendert_zebra">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Interior ss:Color="#CCCCCC" ss:Pattern="Solid"/>
+		<Font ss:Color="#FF0000"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>		
+		</Borders>
+		<NumberFormat ss:Format="General Date"/>
+	</Style>
+
+	<Style ss:ID="tableBody">
+		<Alignment ss:Vertical="Top" ss:WrapText="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2"/>
+		</Borders>
+		<Font ss:FontName="Courier New" x:Family="Modern"/>
+	</Style>
+	<Style ss:ID="tableHeader">
+		<Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2"/>
+		</Borders>
+		<Font x:Family="Swiss" ss:Bold="1"/>
+		<Interior ss:Color="#339966" ss:Pattern="Solid"/>
+	</Style>
+	<Style ss:ID="heading">
+		<Alignment ss:Vertical="Top" ss:WrapText="1"/>
+		<Font ss:Bold="1"/>
+	</Style>
+	<Style ss:ID="Block" ss:Name="Block">
+		<Interior ss:Color="#339966" ss:Pattern="Solid"/>
+		<Alignment ss:WrapText="1"/>
+	</Style>
+	<Style ss:ID="Feld" ss:Name="Feld">
+		<Alignment ss:WrapText="1"/>
+	</Style>
+	<Style ss:ID="tableThinBottomLine">
+		<Alignment ss:Vertical="Top" ss:WrapText="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2"/>
+		</Borders>
+		<Font ss:FontName="Courier New" x:Family="Modern"/>
+	</Style>
+	<Style ss:ID="tableThinBottomAndTopLine">
+		<Alignment ss:Vertical="Top" ss:WrapText="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+		</Borders>
+		<Font ss:FontName="Courier New" x:Family="Modern"/>
+	</Style>
+	<Style ss:ID="tableThinTopLine">
+		<Alignment ss:Vertical="Top" ss:WrapText="1"/>
+		<Borders>
+			<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>
+			<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+		</Borders>
+		<Font ss:FontName="Courier New" x:Family="Modern"/>
+	</Style>
+	<Style ss:ID="bold_font">
+		<Alignment ss:WrapText="1" ss:Horizontal="Left"/>
+		<Font ss:Bold="1"/>
+	</Style>
+</Styles>
+
+  <Worksheet ss:Name="VaSt_RIE - Kontexte">
+   <Table>
+        <Column ss:Width="200"/> 
+        <Column ss:Width="120"/> 
+        <Column ss:Width="200"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Kontext</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >max. Wiederholbarkeit</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Annotationen</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="VaSt_RIE - Felder">
+   <Table>
+        <Column ss:Width="200"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="500"/> 
+        <Column ss:Width="70"/> 
+        <Column ss:Width="600"/> 
+        <Column ss:Width="250"/> 
+        <Column ss:Width="105"/> 
+        <Column ss:Width="70"/> 
+        <Column ss:Width="70"/> 
+        <Column ss:Width="100"/> 
+        <Column ss:Width="200"/> 
+        <Column ss:Width="75"/> 
+        <Column ss:Width="75"/> 
+        <Column ss:Width="200"/> 
+        <Column ss:Width="100"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="200"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Kontext</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Beschreibung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >max. Zeilen</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Format</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Format als regulärer Ausdruck</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Formatkennzeichen</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Min. Länge</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Max. Länge</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Pflichtfeld</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Pflichtfeld Fehlertext</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Indexfeld</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Vordruckzeile</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Drucktext</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Internes ERiC Feld</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Zusatz-Informationen</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Annotationen</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Eingangsdatum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String mit Muster &apos;((0[1-9])|([12]\d)|(3[01]))\.((0[1-9])|(1[0-2]))\.2\d{3} (([01]\d)|(2[0-4])):[0-5]\d:([0-5]\d)&apos;&#10;Fehlertext: Das Feld &apos;$Feld$&apos; enthält einen ungültigen Wert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >((0[1-9])|([12]\d)|(3[01]))\.((0[1-9])|(1[0-2]))\.2\d{3} (([01]\d)|(2[0-4])):[0-5]\d:([0-5]\d)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >19</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >19</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BetroffenerFall</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Meldejahr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Meldejahr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum JJJJ mit Zusatzprüfung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >\d\d\d\d</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >O</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Meldejahr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Identifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Benutzerdefinierte Typdefinition: IDNr - 1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >[0-9]{11}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >I</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >9</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Identifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Titel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Titel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Titel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vorname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vorname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vorname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >NamensVorsatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Namensvorsatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Namensvorsatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >NamensZusatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Namenszusatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Namenszusatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Blockname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anbieternummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anbieternummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String mit Muster &apos;\d+&apos;&#10;Fehlertext: Das Feld &apos;$Feld$&apos; darf nur Ziffern enthalten.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >^(?=.{10,10}$)\d+</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >O</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >10</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >10</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anbieternummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name der Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name der Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >EinwilligDat</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Einwilligungsdatum (zur Datenübermittlung)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum JJJJMMTT mit Zusatzprüfung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >\d\d\d\d\d\d\d\d</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >8</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Einwilligungsdatum (zur Datenübermittlung)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >VertragsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ZertifiNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zertifizierungsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zertifizierungsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >SozialversicherungsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Sozialversicherungs-/Zulagenummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String mit Muster &apos;[0]{12}|[0-9]{8}[A-Za-z][0-9]{3}&apos;&#10;Fehlertext: Die Sozialversicherungsnummer/Zulagennummer im Feld &apos;$Feld$&apos; ist  zwölfstellig, ohne Trenn-/Leerzeichen und gemäß dem amtlichen Aufbau anzugeben (Ehemann).</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >^(?=.{12,12}$)[0]{12}|[0-9]{8}[A-Za-z][0-9]{3}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >12</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >12</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >8</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Sozialversicherungs-/Zulagenummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Mitgliedsnummer der landwirtschaftlichen Alterskasse</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String mit Muster &apos;\d+&apos;&#10;Fehlertext: Das Feld &apos;$Feld$&apos; darf nur Ziffern enthalten.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >^(?=.{11,11}$)\d+</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >O</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >10</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Mitgliedsnummer der landwirtschaftlichen Alterskasse</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >SteuerlBerueckAV</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Eine steuerliche Berücksichtigung ist beabsichtigt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String mit Muster &apos;Nein&apos;&#10;Fehlertext: Das Feld &apos;$Feld$&apos; ist nicht korrekt gefüllt.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Eine steuerliche Berücksichtigung ist beabsichtigt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BetragArt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Beitragsart</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >.{1,99999}</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >C</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >99999</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Beitragsart</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Betrag</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Höhe der Beiträge/Tilgungsleistungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent ohne Vorzeichen, mit 12 Vorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >^(?=.{4,15}$)(?!0\d)\d{1,12}(\.\d{2,2})$</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >%</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >15</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Höhe der Beiträge/Tilgungsleistungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="VaSt_RIE - Texte">
+   <Table>
+        <Column ss:Width="30"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="20"/> 
+        <Column ss:Width="110"/> 
+        <Column ss:Width="110"/> 
+        <Column ss:Width="400"/> 
+        <Column ss:Width="470"/> 
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="2" ss:MergeAcross="10"><ss:Data ss:Type="String">Anbieterbescheinigung Riester-Rente</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="3" ss:MergeAcross="9"><ss:Data ss:Type="String">Versicherungsnehmer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1010</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">9</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Identifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Titel</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Titel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Vorname</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Vorname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Namensvorsatz</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK NamensVorsatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Name</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Namenszusatz</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK NamensZusatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Name</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Blockname</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall/NatPerson</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]/NatPerson[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="3" ss:MergeAcross="9"><ss:Data ss:Type="String">Betroffenes Jahr</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1020</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Meldejahr</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Meldejahr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/BetroffenerFall</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/BetroffenerFall[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="3" ss:MergeAcross="9"><ss:Data ss:Type="String">Anbieter</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1030</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Name der Versicherung</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Name</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Versicherung[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Anbieternummer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Anbieternummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Versicherung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Versicherung[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Einwilligungsdatum (zur Datenübermittlung)</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK EinwilligDat</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="3" ss:MergeAcross="9"><ss:Data ss:Type="String">Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1040</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Vertragsnummer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK VertragsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Zertifizierungsnummer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK ZertifiNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">8</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Sozialversicherungs-/Zulagenummer</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK SozialversicherungsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">10</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Mitgliedsnummer der landwirtschaftlichen Alterskasse</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Beitragsdaten</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1040010</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]/BeitragsDaten[2]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="5" ss:MergeAcross="7"><ss:Data ss:Type="String">Beitragsart</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK BetragArt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]/BeitragsDaten[2]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String">4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="5" ss:MergeAcross="7"><ss:Data ss:Type="String">Höhe der Beiträge/Tilgungsleistungen</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Betrag</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten/BeitragsDaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]/BeitragsDaten[2]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Block" ss:Index="3" ss:MergeAcross="9"><ss:Data ss:Type="String">Sonstige Informationen</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">B 1050</ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="bold_font"><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Eine steuerliche Berücksichtigung ist beabsichtigt</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK SteuerlBerueckAV</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE/Vertragsdaten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]/Vertragsdaten[1]</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:AutoFitHeight="0" ss:Height="15.75">
+  	   	<Cell><ss:Data ss:Type="String"></ss:Data></Cell>
+  	   	<Cell ss:StyleID="Feld" ss:Index="4" ss:MergeAcross="8"><ss:Data ss:Type="String">Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</ss:Data></Cell>
+  	   	<Cell ss:Index="13" ss:StyleID="Feld"><ss:Data ss:Type="String">FK Eingangsdatum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">VaSt_RIE</ss:Data></Cell>
+  	   	<Cell ss:StyleID="Default"><ss:Data ss:Type="String">/VaSt_RIE[1]</ss:Data></Cell>
+  	   </Row>
+    </Table>	
+  </Worksheet>
+  <Worksheet ss:Name="Benutzerdefinierte Typen">
+   <Table>
+        <Column ss:Width="150"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="500"/> 
+        <Column ss:Width="600"/> 
+        <Column ss:Width="70"/> 
+        <Column ss:Width="70"/> 
+        <Column ss:Width="500"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Version</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Beschreibung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Format</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Min. Länge</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Max. Länge</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Wird verwendet von</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >11</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson/IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Zuordnungen">
+   <Table>
+        <Column ss:Width="150"/> 
+        <Column ss:Width="480"/> 
+        <Column ss:Width="280"/> 
+        <Column ss:Width="50"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Zuordnung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Quelle</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Ziel</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Index</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Bedingung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Index der Bedingung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten/MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >E2003815 Fuer &quot;PersonA&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson/IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >E2003901 Fuer &quot;PersonA&quot;-&quot;1&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten/MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >E2003815 Fuer &quot;PersonB&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson/IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >E2003901 Fuer &quot;PersonB&quot;-&quot;1&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten/MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >E2003815 Fuer &quot;PersonA&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >3</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson/IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;LEER&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >3</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >/VaSt_RIE/Vertragsdaten/MitgliedsNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >E2003815 Fuer &quot;PersonB&quot;-KeineErneuteEinfuellung</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >/VaSt_RIE/BetroffenerFall/NatPerson/IdNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;LEER&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >2</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >4</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Zuordnungsgruppen">
+   <Table>
+        <Column ss:Width="250"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="150"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Zuordnung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Gruppenindex</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Gemeinsam</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >WerteReplikation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Standard_Einzelzuordnungen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >1</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Nein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Bedingungen">
+   <Table>
+        <Column ss:Width="150"/> 
+        <Column ss:Width="500"/> 
+        <Column ss:Width="500"/> 
+        <Column ss:Width="135"/> 
+        <Column ss:Width="150"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Name</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Beschreibung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Bedingung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsinformation</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Änderungsdetails</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ERE-12255 (Jahresanpassung 2016)&#10;ERE-18997 (Jahresanpassung 2019)&#10;&#10;ERU-15507 (eXML-Umstellung)&#10;ERE-22754 (Jahresanpassung 2021)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >AlleFelderAngegeben(//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr, //E10/ESt1A/Allg/A/E0100081)&#10;Und&#10;[//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr] == [//E10/ESt1A/Allg/A/E0100081] &#10;Und&#10;FeldNichtAngegeben(//VaSt_RIE/VaSt_RIE/Vertragsdaten/SteuerlBerueckAV)&#10;Und&#10;(           FeldAngegeben(//E10/N/ArbL/LStB_1_5_Sum/E0200201 Fuer &quot;PersonA&quot;) &#10;   Oder MindestensEinFeldAngegeben(//E10/N/ArbL/LStB_1_5_Einz*/E0200204 Fuer &quot;PersonA&quot;) &#10;   Oder FeldAngegeben(//E10/N/ArbL/Ersatzleist/Betrag/Sum/E0202001 Fuer &quot;PersonA&quot;) &#10;   Oder MindestensEinFeldAngegeben(//E10/N/ArbL/Ersatzleist/Betrag/Einz*/E0202605 Fuer &quot;PersonA&quot;)&#10;   Oder FeldAngegeben(//E10/ESt1A/Eink_Ers/Inl/Sum/E0104801 Fuer &quot;PersonA&quot;)&#10;   Oder MindestensEinFeldAngegeben(//E10/ESt1A/Eink_Ers/Inl/Einz*/E0104113 Fuer &quot;PersonA&quot;)&#10;)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Lohnvorhanden_IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ERE-12255 (Jahresanpassung 2016)&#10;ERE-18997 (Jahresanpassung 2019)&#10;&#10;ERU-15507 (eXML-Umstellung)&#10;ERE-22754 (Jahresanpassung 2021)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >AlleFelderAngegeben(//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr, //E10/ESt1A/Allg/B/E0100082)&#10;Und&#10;[//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr] == [//E10/ESt1A/Allg/B/E0100082] &#10;Und&#10;FeldNichtAngegeben(//VaSt_RIE/VaSt_RIE/Vertragsdaten/SteuerlBerueckAV)&#10;Und&#10;(           FeldAngegeben(//E10/N/ArbL/LStB_1_5_Sum/E0200201 Fuer &quot;PersonB&quot;) &#10;   Oder MindestensEinFeldAngegeben(//E10/N/ArbL/LStB_1_5_Einz*/E0200204 Fuer &quot;PersonB&quot;) &#10;   Oder FeldAngegeben(//E10/N/ArbL/Ersatzleist/Betrag/Sum/E0202001 Fuer &quot;PersonB&quot;) &#10;   Oder MindestensEinFeldAngegeben(//E10/N/ArbL/Ersatzleist/Betrag/Einz*/E0202605 Fuer &quot;PersonB&quot;)&#10;   Oder FeldAngegeben(//E10/ESt1A/Eink_Ers/Inl/Sum/E0104801 Fuer &quot;PersonB&quot;)&#10;   Oder MindestensEinFeldAngegeben(//E10/ESt1A/Eink_Ers/Inl/Einz*/E0104113 Fuer &quot;PersonB&quot;)&#10;)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IdNr_Stpfl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ERE-8075&#10;ERE-18997 (Jahresanpassung 2019)&#10;&#10;ERU-15507 (eXML-Umstellung)&#10;ERE-22754 (Jahresanpassung 2021)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >AlleFelderAngegeben(//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr, //E10/ESt1A/Allg/A/E0100081)&#10;Und&#10;FeldNichtAngegeben(//VaSt_RIE/VaSt_RIE/Vertragsdaten/SteuerlBerueckAV)&#10;Und&#10;[//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr] == [//E10/ESt1A/Allg/A/E0100081] </ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IdNr_Ehegatte</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ERE-8075&#10;ERE-18997 (Jahresanpassung 2019)&#10;&#10;ERU-15507 (eXML-Umstellung)&#10;ERE-22754 (Jahresanpassung 2021)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >AlleFelderAngegeben(//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr, //E10/ESt1A/Allg/B/E0100082) &#10;Und&#10;FeldNichtAngegeben(//VaSt_RIE/VaSt_RIE/Vertragsdaten/SteuerlBerueckAV)&#10;Und&#10;[//VaSt_RIE/VaSt_RIE/BetroffenerFall/NatPerson/IdNr] == [//E10/ESt1A/Allg/B/E0100082]  </ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >KEIN_DELTA</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Allg. Information">
+   <Table>
+        <Column ss:Width="600"/>
+        <Row ss:Autoheight="1">
+        	<Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Deltadokumentation für Datenart VaSt_RIE (Riester) für Anwendung eric</ss:Data></Cell>
+        </Row>
+        <Row ss:Autoheight="1">
+        	<Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Dokumentation erzeugt für Version 202301 ERiC 41.6 (Versionslabel 1.0) verglichen mit Version 202201 ERiC 40.3.4.0 (Versionslabel 1.0)</ss:Data></Cell>
+        </Row>
+  	   <Row />
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Einstellungen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zeichensatz: Standard_E_V2</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zulässige Zeichen (Unicode Codepoints): 0x000a, 0x000d, 0x0020-0x007e, 0x00a1-0x00a3, 0x00a5, 0x00a7, 0x00aa-0x00ac, 0x00ae-0x00b3, 0x00b5, 0x00b9-0x00bb, 0x00bf-0x00ff, 0x0152-0x0153, 0x0160-0x0161, 0x0178, 0x017d-0x017e, 0x20ac</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Dezimaltrennzeichen: .</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Verwendete Applikationsbedingungen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >keine</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Vordrucke</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >VaSt_RIE - max. lfd. Nr. Vordruck: 1</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Annotationen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Einstellungen für zugehöriges XML-Schema</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="geaendert"><ss:Data ss:Type="String" xmlns="http://www.w3.org/TR/REC-html40">Für Nutzdaten muss der Namensraum &apos;http://finkonsens.de/elster/elstervast/vastrie/v202<B>3</B>01&apos; angegeben werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="geaendert_alt"><ss:Data ss:Type="String" xmlns="http://www.w3.org/TR/REC-html40">Für Nutzdaten muss der Namensraum &apos;http://finkonsens.de/elster/elstervast/vastrie/v202<B>2</B>01&apos; angegeben werden. (alt)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Als Name des Nutzdaten-Wurzelelements wird der Vordruckname &apos;VaSt_RIE&apos; verwendet.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Legende</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="neu"><ss:Data ss:Type="String" >Neu (NEU)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="geloescht"><ss:Data ss:Type="String" >Gelöscht (GELOESCHT)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="geaendert"><ss:Data ss:Type="String" >Geändert (GEAENDERT)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="geaendert_alt"><ss:Data ss:Type="String" >Geändert (alt) (GEAENDERT_ALTE_VERSION)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="anw_geaendert"><ss:Data ss:Type="String" >Anwendungseinschränkungen geändert (NUR_ANWENDUNG_GEAENDERT)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="pflicht_geaendert"><ss:Data ss:Type="String" >Pflichtfeldeigenschaft geändert (PFLICHT_GEAENDERT)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" xmlns="http://www.w3.org/TR/REC-html40"><B>Geänderter Text</B></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Bemerkung</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die formale Zusatz-Prüfung der Indexfelder mit der Fehler-Id 'solitaryIndex' wird nicht durchgeführt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Version des Dokumentformats: 2</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="bold_grau"><ss:Data ss:Type="String" >Formatkennzeichen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >%: Zahl mit 2 Nachkommastellen bzw. GeldbetragMitCent&#10;    Ohne Vorzeichen, Null ist erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >A: Steuernummer im ELSTER-Steuernummerformat, nur Ziffern erlaubt, genau dreizehn Stellen, fünfte Stelle muss per Definition 0 sein </ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >B: DatumBereich mit Format TT.MM-TT.MM</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >C: alle Felder, die kein gesondertes Formatkennzeichen enthalten</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >D: Datum mit Format TT.MM.JJJJ</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >E: Datum mit Format TT.MM.JJ</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >F: Zahl mit variablen Nachkommastellen (0-4) ohne Vorzeichen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >G: Zahl ohne Nachkommastellen bzw. GeldbetragOhneCent&#10;    Ohne Vorzeichen, Null nicht erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >H: Listenfeld: Textfeld für das eine Auswahlmöglichkeit aus einer Werteliste vorgegeben wird</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >I: einheitliche Identifikationsnummer nach § 139 AO; nur Ziffern erlaubt, genau elf Stellen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >J: JaFeld mit Wert für Ja 1</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >K: Datum mit Format MM</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >L: Datum mit Format MM.JJ</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >M: Zahl ohne Nachkommastellen bzw. GeldbetragOhneCent&#10;    Mit Vorzeichen, Null nicht erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >N: Zahl ohne Nachkommastellen bzw. GeldbetragOhneCent&#10;    Mit Vorzeichen, Null erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >O: optionales Formatkennzeichen für Strings, die nur aus Ziffern bestehen dürfen und für Datum mit Format JJJJ</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >P: Zahl mit 2 Nachkommastellen bzw. GeldbetragMitCent&#10;    Mit Vorzeichen , Null erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >R: Zahl mit 2 Nachkommastellen bzw. GeldbetragMitCent&#10;    Ohne Vorzeichen, Null nicht erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >S: Zahl mit 2 Nachkommastellen bzw. GeldbetragMitCent&#10;    Mit Vorzeichen, Null nicht erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >T: Datum mit Format TT.MM.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >U: Zahl ohne Nachkommastellen bzw. GeldbetragOhneCent&#10;    Ohne Vorzeichen, Null erlaubt</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >V: Zahl mit variablen Nachkommastellen (0-4) mit Vorzeichen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >W: Datumbereich mit Format JJJJ/JJJJ</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >X: JaFeld mit Wert für Ja X (Ankreuzfeld)</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Y: JaNeinFeld mit Wert für Ja 1 und Wert für Nein 2</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Z: Datumsbereich mit Format TT.MM.JJJJ-TT.MM.JJJJ</ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Formale Fehler">
+   <Table>
+        <Column ss:Width="100"/> 
+        <Column ss:Width="100"/> 
+        <Column ss:Width="300"/> 
+        <Column ss:Width="300"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Feldtyp</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Fehler-Id</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Beschreibung</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Fehlertext</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >feldLeer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Leerstring ist als Feldwert nicht zugelassen.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Wert des Feldes &apos;$&lt;FeldSchluessel&gt;$&apos; darf kein Leerstring sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >wertZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Es wurde ein Feldwert übergeben, der länger ist als die maximal erlaubte Anzahl an Zeichen.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Wert des Feldes &apos;$&lt;FeldSchluessel&gt;$&apos; überschreitet die maximal erlaubte Anzahl an Zeichen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ZeichenNichtImZeichensatz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Ein Zeichen des Feldwertes ist nicht aus dem für diese Datenart und diesen Veranlagungszeitraum definierten Zeichensatz.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; enthält ein oder mehrere ungültige Zeichen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zuGrosseLfdNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Eine Feldspezifikation verwendet eine laufende Nummer Vordruck, die größer ist als die für den verwendeten Feldnamen spezifizierte maximale laufende Nummer Vordruck.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Laufende Nummer für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist größer als die maximal erlaubte laufende Nummer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zuKleineLfdNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde eine laufende Nummer Vordruck verwendet, die kleiner als 1 ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldName&gt;$&apos; befindet sich auf einem Vordruck mit ungültiger Nummer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zuGrosseZeile</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde eine Zeilennummer verwendet, die größer als die höchste für dieses Feld definierte Zeilennummer ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zeilenangabe für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist größer als die maximal erlaubte Zeilenangabe.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zuKleineZeile</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde eine Zeilennummer verwendet ist, die kleiner als 1 ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldName&gt;$&apos; hat eine ungültige Zeilennummer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >keinUsbAngegeben</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde kein USB spezifiziert, obwohl das Feld für einen Vordruck mit USB spezifiziert wurde.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; wurde kein oder ein ungültiger USB angegeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >usbAngegebenBeiMaxUsbNull</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde ein USB spezifiziert, obwohl das Feld für einen Vordruck ohne USB spezifiziert wurde.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; wurde ein USB angegeben, obwohl es auf einem Vordruck ohne USB liegt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zuGrosserUsb</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde ein USB spezifiziert, der größer als der maximale für diese Feld definierte USB ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der angegebene USB für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist größer als der maximal erlaubte USB.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zuKleinerUsb</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >In einer Feldspezifikation wurde ein USB spezifiziert, der kleiner 1 ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldName&gt;$&apos; hat einen ungültigen USB.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >fuehrendesBlank</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Ein Feldwert enthält führende Leerzeichen.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Wert des Feldes &apos;$&lt;FeldSchluessel&gt;$&apos; darf nicht mit einem Leerzeichen beginnen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >nachfolgendesBlank</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Ein Feldwert enthält Leerzeichen am Ende.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Wert des Feldes &apos;$&lt;FeldSchluessel&gt;$&apos; darf nicht mit einem Leerzeichen enden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >falscheAnzahlIndices</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für den FeldIdentifier wurde nicht die korrekte Anzahl an Kontext-Instanznummern in dem Index-Array spezifiziert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für das Feld &apos;$&lt;FeldPfadname&gt;$&apos; wurden &lt;AnzahlIndicesAngegeben&gt; Indices spezifiziert, aber &lt;AnzahlIndicesErwartet&gt; Indices erwartet.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zuKleineKontextnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Eine spezifizierte Kontext-Instanznummer ist nicht größer 0.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Die Instanznummer für Kontext &apos;$&lt;KontextName&gt;$&apos; wurde mit &lt;KontextIndexAngegeben&gt; spezifiziert, es sind aber nur Zahlen größer 0 erlaubt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zuGrosseKontextnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Eine spezifizierte Kontext-Instanznummer ist größer als der maximal erlaubte Wiederholungsindex.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die Instanznummer für Kontext &apos;$&lt;KontextName&gt;$&apos; wurde mit &lt;KontextIndexAngegeben&gt; spezifiziert, es sind aber maximal &lt;MaxKontextIndex&gt; erlaubt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >feldUnbekannt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Es wurde ein Feld übergeben, welches für den angegebenen Veranlagungszeitraum bzw. für die angegebene Veranlagungsart nicht definiert ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldName&gt;$&apos; wird im angegebenen Veranlagungszeitraum bzw. bei der angegebenen Veranlagungsart nicht unterstützt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >mandatoryField</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Ein Pflichtfeld wurde nicht angegeben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldName&gt;$&apos;: Das Feld muss angegeben werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >uniqueIndex</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Die Werte von Indexfeldern müssen auf ihrer Wiederholungsebene eindeutig sein.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldName&gt;$&apos;: Die Werte des Feldes müssen eindeutig sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >solitaryIndex</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Indexfelder dürfen in ihrer Wiederholungsebene nicht alleine angegeben werden. (Wird nicht in allen Datenarten geprüft - siehe Tabellenblatt Allg. Information - Bemerkungen)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Sie haben angegeben, dass Sie Angaben für &apos;$&lt;FeldName&gt;.Wert$&apos; machen möchten, haben aber außer der Angabe im Feld &apos;$&lt;FeldName&gt;$&apos; keine weiteren Angaben getätigt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatFuehrendeNullen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl hat führende Nullen, obwohl ohne führende Nullen definiert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; sind führende Nullen nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuKurz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl ist angegeben aber kürzer als die angegebene minimale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss mindestens &lt;MinLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl ist länger als die angegebene maximale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;MaxLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuKlein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl ist kleiner als der angegebene minimale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer oder gleich &lt;MinWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuGross</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl ist größer als der angegebene maximale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss kleiner oder gleich &lt;MaxWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stelligkeitZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die Summe der Vorkomma- und Nachkommastellen ist größer als die angegebene maximale Länge oder als 15.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nur maximal &lt;MaxLaenge&gt; Stellen umfassen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlNullEnthaeltVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl 0 enthält ein  Vorzeichen. Diese Meldung wird nur ausgegeben, wenn der Wert null erlaubt ist. Sonst wird die spezifischere Fehlermeldung zahlIstNull ausgegeben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Wert &lt;NullWert&gt; sowie positive Werte müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlMitVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl enthält Vorzeichen, obwohl ohne Vorzeichen definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Werte müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatDezimalTrenner</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl hat Dezimaltrenner, obwohl ohne Dezimaltrenner definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nur einen ganzzahligen Wert enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlMitPlus</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert ist eine Zahl, aber mit einem Plus-Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Werte müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl mit Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Wert &lt;NullWert&gt; sowie positive Werte müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlOhneDezimalTrenner</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl hat keinen Dezimaltrenner, obwohl mit Dezimaltrenner definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlFalscheAnzahlNachkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl hat falsche Anzahl Nachkommastellen. Es wurde ein Bereich Von-Bis für die Nachkommastellen definiert und die Anzahl der Nachkommastellen ist nicht in diesem Bereich.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatUngueltigeZeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Wert enthält ein ungültiges Zeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl ohne Nachkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nur einen ganzzahligen Wert enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl mit festen Nachkommastellen, d.h. Nachkommastellen &gt; 0 und NachkommastellenBis nicht angegeben. Kein Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss vom Format &apos;0&lt;DezimalTrenner&gt;&lt;Nullen&gt;&apos; mit genau &lt;AnzahlNachkommastellen&gt; Nachkommastellen sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl mit festen Nachkommastellen, d.h. Nachkommastellen &gt; 0 und NachkommastellenBis nicht angegeben. Vorzeichen erlaubt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss vom Format &apos;0&lt;DezimalTrenner&gt;&lt;Nullen&gt;&apos; oder &apos;-0&lt;DezimalTrenner&gt;&lt;Nullen&gt;&apos; mit genau &lt;AnzahlNachkommastellen&gt; Nachkommastellen sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl mit variablen Nachkommastellen, d.h. Nachkommastellen &gt; 0 und NachkommastellenBis &gt; 0.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss eine Zahl mit &lt;AnzahlNachkommastellen&gt; bis &lt;AnzahlNachkommastellenBis&gt; Nachkommastellen sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl mit Leerzeichen oder einem Zeichen, das nicht der spezifizierte Dezimaltrenner ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss eine Zahl sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuvieleVorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl hat zu viele Vorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl mit Nachkommastellen, ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Vorkommastellen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl mit Nachkommastellen, NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Vorkommastellen und ein negatives Vorzeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl ohne Nachkommastellen, ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Stellen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl ohne Nachkommastellen, NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Stellen und ein negatives Vorzeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlIstNull</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl ist 0 obwohl ohne 0 definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zahl ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer als 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss ungleich 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatUngueltigeZeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent hat ein ungültiges Zeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragOhneCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Volle Geldbeträge müssen als Ziffernfolge ohne Punkt, Leerzeichen oder Komma eingetragen werden. Negative Geldbeträge sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragOhneCent NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Volle Geldbeträge müssen als Ziffernfolge ohne Punkt, Leerzeichen oder Komma eingetragen werden. Negativen Geldbeträgen ist ein negatives Vorzeichen voranzustellen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stelligkeitZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die Summe der Vorkomma- und Nachkommastellen ist größer als die angegebene maximale Länge oder als 15.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nur maximal &lt;MaxLaenge&gt; Stellen umfassen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlMitVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent enthält Vorzeichen, obwohl ohne Vorzeichen definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Geldbeträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlNullEnthaeltVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl 0 enthält ein  Vorzeichen. Diese Meldung wird nur ausgegeben, wenn der Wert null erlaubt ist. Sonst wird die spezifischere Fehlermeldung zahlIstNull ausgegeben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Betrag 0 sowie positive Beträge müssen ohne Vorzeichen eingegeben werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatDezimalTrenner</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent hat Dezimaltrenner, obwohl ohne Dezimaltrenner definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragOhneCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Volle Geldbeträge müssen als Ziffernfolge ohne Punkt, Leerzeichen oder Komma eingetragen werden. Negative Geldbeträge sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragOhneCent NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Volle Geldbeträge müssen als Ziffernfolge ohne Punkt, Leerzeichen oder Komma eingetragen werden. Negativen Geldbeträgen ist ein negatives Vorzeichen voranzustellen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlHatFuehrendeNullen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragOhneCent hat führenden Nullen , obwohl ohne führende Nullen definiert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; sind führende Nullen nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuKurz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent ist angegeben aber kürzer als die angegebene minimale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss mindestens &lt;MinLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragOhneCent ist länger als die angegebene maximale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;MaxLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuKlein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent ist kleiner als der angegebene minimale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer oder gleich &lt;MinWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuGross</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragOhneCent ist größer als der angegebene maximale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss kleiner oder gleich &lt;MaxWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlMitPlus</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent ist Zahl, aber mit einem Plus-Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragOhneCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Geldbeträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragOhneCent NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Betrag 0 sowie positive Beträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuvieleVorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragOhneCent hat zu viele Vorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragOhneCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Stellen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragOhneCent NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Stellen und ein negatives Vorzeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlIstNull</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragOhneCent ist 0 obwohl ohne Null definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragOhneCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer als 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag ohne Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragOhneCent NurMinusVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss ungleich 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stelligkeitZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die Summe der Vorkomma- und Nachkommastellen ist größer als die angegebene maximale Länge oder als 15.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nur maximal &lt;MaxLaenge&gt; Stellen umfassen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlMitVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent enthält Vorzeichen, obwohl ohne Vorzeichen definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Geldbeträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlNullEnthaeltVorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl 0 enthält ein  Vorzeichen. Diese Meldung wird nur ausgegeben, wenn der Wert null erlaubt ist. Sonst wird die spezifischere Fehlermeldung zahlIstNull ausgegeben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Betrag 0&lt;DezimalTrenner&gt;00 sowie positive Beträge müssen ohne Vorzeichen eingegeben werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatFuehrendeNullen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent hat führenden Nullen , obwohl ohne führende Nullen definiert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; sind führende Nullen nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuKurz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragMitCent ist angegeben aber kürzer als die angegebene minimale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss mindestens &lt;MinLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent ist länger als die angegebene maximale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;MaxLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuKlein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragMitCent ist kleiner als der angegebene minimale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer oder gleich &lt;MinWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlZuGross</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent ist größer als der angegebene maximale Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss kleiner oder gleich &lt;MaxWert&gt; sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlMitPlus</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragMitCent ist Zahl, aber mit einem Plus-Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragMitCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Geldbeträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragMitCent mit Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Vorzeichen. Der Betrag 0&lt;DezimalTrenner&gt;00 sowie positive Beträge müssen ohne Vorzeichen eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlOhneDezimalTrenner</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent hat keinen Dezimaltrenner</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlFalscheAnzahlNachkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldBetragMitCent hat falsche Anzahl Nachkommastellen.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlHatUngueltigeZeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent hat ein ungültiges Zeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragMitCent Keine Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Geldbeträge müssen vom Format &apos;0&lt;DezimalTrenner&gt;00&apos; mit genau 2 Nachkommastellen sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragMitCent mit Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Geldbeträge müssen vom Format &apos;0&lt;DezimalTrenner&gt;00&apos; oder &apos;-0&lt;DezimalTrenner&gt;00&apos; mit genau 2 Nachkommastellen sein. Leerzeichen oder &lt;DezimalTrennerFalsch&gt; sind nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >zahlZuvieleVorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zahl hat zu viele Vorkommastellen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragMitCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Vorkommastellen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragMitCent mit Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;AnzahlVorkommastellen&gt; Vorkommastellen und ein negatives Vorzeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >zahlIstNull</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldBetragMitCent ist null obwohl ohne Null definiert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >GeldbetragMitCent ohne Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss größer als 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Geldbetrag mit Cent</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" ></ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >GeldbetragMitCent mit Vorzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; eingegebene Wert muss ungleich 0 sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stringFalschesMuster</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String entspricht nicht dem vorgegebenen Muster</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Fehlertext für diese Fehler-ID variiert je nach Feld und wird der jeweiligen Dokumentation entnommen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >stringZuKurz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String ist angegeben aber kürzer als die angegebene minimale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; muss mindestens &lt;MinLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stringZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String ist länger als die maximale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;MaxLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >String</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >stringMitNewline</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Im String ist ein Zeilenumbruch enthalten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf keine Zeilenumbrüche enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Ja</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >feldJaFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert enthält einen anderes Zeichen als &apos;&lt;WahrWert&gt;&apos;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Zeichen: Es darf nur &apos;&lt;WahrWert&gt;&apos; (für Ja) eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >JaNein</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >feldJaNeinFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Wert enthält ein anderes Zeichen als &apos;&lt;WahrWert&gt;&apos; oder &apos;&lt;FalschWert&gt;&apos;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Unzulässiges Zeichen: Es darf nur &apos;&lt;WahrWert&gt;&apos; (für Ja) oder &apos;&lt;FalschWert&gt;&apos; (für Nein) eingetragen werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFormatFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert ist kein gültiges Datum. In C++ erscheint der Fehler auch, wenn das Datum gültig ist, aber vor dem 1.1.1400 liegt.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Datum im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist nicht gültig. (Erforderliches Format: &lt;Datumformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Datum liegt vor dem 16.10.1583.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Datum im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nicht vor dem 16.10.1583 liegen. Falls ein älteres Datum zutreffend ist, tragen Sie bitte hilfsweise den 16.10.1583 als Datum ein. (Erforderliches Format: &lt;Datumformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Datum liegt vor 1900. Fehler tritt nur auf wenn bei dem Feld, &quot;ZusatzPruefung&quot; auf wahr gesetzt ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Datum im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf nicht vor dem Jahr 1900 liegen. (Erforderliches Format: &lt;Datumformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;TagOptional&apos;, &apos;MonatOptional&apos; oder &apos;JahrOptional&apos; wurde &apos;0&apos; für den Tag spezifiziert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Tag spezifiziert, obwohl eine genaue Tagesangabe oder die Angabe &apos;00&apos; erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;MonatOptional&apos; oder &apos;JahrOptional&apos; wurde der Tag mit &apos;0&apos; spezifiziert, es muss aber &apos;00&apos; sein, da der Monat nicht bekannt, d.h. &apos;00&apos; ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Tag spezifiziert, obwohl die Angabe &apos;00&apos; erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;TagOptional&apos; wurde &apos;00&apos; für den Monat spezifiziert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;00&apos; für den Monat spezifiziert, obwohl eine Monatsangabe erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;MonatOptional&apos; oder &apos;JahrOptional&apos; ist der Monat &apos;00&apos;, aber der Tag ungleich &apos;00&apos;.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;00&apos; für den Monat spezifiziert, daher muss &apos;00&apos; für den Tag spezifiziert werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;TagOptional&apos; wurde &apos;0&apos; für den Monat spezifiziert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Monat spezifiziert, obwohl eine Monatsangabe erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;JahrOptional&apos; ist der Monat &apos;0&apos;, muss aber &apos;00&apos; sein, da das Jahr &apos;0000&apos; ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Monat spezifiziert, obwohl die Angabe &apos;00&apos; erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;MonatOptional&apos; oder &apos;JahrOptional&apos; wurde der Monat mit &apos;0&apos; spezifiziert, der Tag ist nicht bekannt, d.h. &apos;00&apos;.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Monat spezifiziert, obwohl eine genaue Monatsangabe oder die Angabe &apos;00&apos; erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;MonatOptional&apos; oder &apos;JahrOptional&apos; wurde der Monat mit &apos;0&apos; spezifiziert, der Tag ist bekannt, d.h. ungleich &apos;00&apos;.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0&apos; für den Monat spezifiziert. Dies ist nicht zulässig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;TagOptional&apos; oder &apos;MonatOptional&apos; wurde &apos;0000&apos; für das Jahr spezifiziert.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0000&apos; für das Jahr spezifiziert, obwohl eine Jahresangabe erfolgen muss.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Für ein Datum mit der Teilbekanntheit &apos;JahrOptional&apos; ist das Jahr &apos;0000&apos;, aber der Tag oder der Monat ist bekannt, d.h. ungleich &apos;00&apos;.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&apos;$&lt;FeldSchluessel&gt;$&apos;: Es wurde &apos;0000&apos; für das Jahr spezifiziert, daher muss &apos;00&apos; für den Tag und &apos;00&apos; für den Monat spezifiziert werden.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >DatumBereich</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumBereichTrennerFehlt</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Feldwert entspricht nicht dem definierten Datumsformat</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Datumsbereich im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist nicht gültig. (Erforderliches Format: &lt;Datumsbereichsformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >DatumBereich</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumBereichFormatFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Feldwert entspricht nicht dem definierten Format</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Datumsbereich im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist nicht gültig. (Erforderliches Format: &lt;Datumsbereichsformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >DatumBereich</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumBereichNichtGueltig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Ende des Datumsbereiches liegt vor dem Beginn.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der Datumsbereich im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; beschreibt kein gültiges Datumsintervall, da das Ende des Datumsbereiches vor dem Anfang des Datumsbereiches liegt. (Erforderliches Format: &lt;Datumsbereichsformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >DatumBereich</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >datumBereichDatumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Ein Datum des Datumsbereiches liegt vor dem 16.10.1583.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datumsangaben für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; dürfen nicht vor dem 16.10.1583 liegen. Falls ein älteres Datum zutreffend ist, tragen Sie bitte hilfsweise den 16.10.1583 als Datum ein. (Erforderliches Format: &lt;Datumsbereichsformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >DatumBereich</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >datumBereichDatumFalsch</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Ein Datum des Datumsbereiches liegt vor 1900. Fehler tritt nur auf wenn bei der Definition des Feldes, &quot;ZusatzPruefung&quot; auf wahr gesetzt ist.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datumsangaben für das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; dürfen nicht vor dem Jahr 1900 liegen. (Erforderliches Format: &lt;Datumsbereichsformat&gt;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Email</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeEmail</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert enthält ungültige Zeichen oder ungültigen Aufbau</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: ungültige E-Mail-Adresse.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IDNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >testIDNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Wert ist eine gültige IDNummer, allerdings handelt es sich um eine TestIDNummer, d.h. sie beginnt mit 0.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist eine Test-Identifikationsnummer und nur für den Testbetrieb zugelassen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IDNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeIDNummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die IDNummer ist ungültig (falsches Format oder Prüfsummenfehler)</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Identifikationsnummer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeIBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBAN ist formal falsch aufgebaut. Eine formal korrekte IBAN ist folgendermaßen aufgebaut:   Zwei Großbuchstaben für Länderkennung, zwei Prüfziffern, Basic BAN mit 1-30 Ziffern/Buchstaben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN: IBAN muss aus zweistelligem Ländercode gefolgt von zweistelliger Prüfziffer gefolgt von der Basic Bank Account Number bestehen. Achten Sie auch darauf, keine Leerzeichen einzugeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeIBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die ersten zwei Zeichen der IBAN definieren kein gültiges Land.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN: Der angegebene Ländercode ist ungültig oder wird aktuell im ELSTER-Verfahren nicht unterstützt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeIBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Die IBAN entspricht nicht dem für das spezifizierte Land geforderten Format.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN: Die angegebene IBAN entspricht nicht dem für das angegebene Land definierten formalen Aufbau der IBAN.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeIBAN</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Falsche Prüfziffer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN: Die Prüfziffernberechnung zur angegebenen IBAN führt zu einer abweichenden Prüfziffer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BIC</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeBIC</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >BIC ist formal falsch aufgebaut. Eine formal korrekte BIC ist folgendermaßen aufgebaut:   BIC-Format 1:  Bankcode:      vier Buchstaben,  Ländercode:    zwei Buchstaben,  Ortscodierung: zwei Buchstaben/Ziffern.   BIC-Format 2:  Wie Format 1, aber zusätzlich:  Filial- oder Abteilungskennzeichen: drei Buchstaben/Ziffern.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültiger BIC: Der formale Aufbau des angegebenen BIC ist ungültig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >BIC</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeBIC</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die zwei Zeichen des Ländercodes definieren kein gültiges Land.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültiger BIC: Der angegebene Ländercode ist ungültig oder wird aktuell im ELSTER-Verfahren nicht unterstützt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Bundesfinanzamtsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeBundesfinanzamtsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Bundesfinanzamtsnummer: Der formale Aufbau der angegebenen Bundesfinanzamtsnummer ist ungültig. Die Bundesfinanzamtsnummer ist als vierstellige Zahl anzugeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Bundesfinanzamtsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeBundesfinanzamtsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Bundesfinanzamtsnummer ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Bundesfinanzamtsnummer: Die Bundesfinanzamtsnummer ist ungültig oder wird aktuell im ELSTER-Verfahren nicht unterstützt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Länderkürzel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigesLaenderkuerzel</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Länderkürzel ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültiges Länderkürzel: Das Länderkürzel ist ungültig oder wird aktuell im ELSTER-Verfahren nicht unterstützt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. Die UStIDNr muss mit zwei Großbuchstaben beginnen, dem Länderkürzel. Die folgenden Zeichen können Kleinbuchstaben, Großbuchstaben, Ziffern oder die Sonderzeichen &apos;+&apos; und &apos;*&apos;, jedoch keine anderen Sonderzeichen, keine Leerzeichen und keine Umlaute sein.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Falsche Länge einer deutschen UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. In Deutschland muss die UStIDNr nach dem zweistelligen Länderkürzel genau 9 Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Ausländische UStIDNr zu kurz</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. Die UStIDNr muss nach dem zweistelligen Länderkürzel mindestens 5 Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Ausländische UStIDNr zu lang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. Die UStIDNr darf nach dem zweistelligen Länderkürzel maximal 12 Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >UStIDNr ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Die angegebene Umsatzsteuer-Identifikationsnummer ist ungültig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Steuernummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeSteuernummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Sie haben eine ungültige Steuernummer angegeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Bundesteuernummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeBundessteuernummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Bundessteuernummer ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Sie haben eine ungültige Bundessteuernummer angegeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >deutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeDeutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. In Deutschland besteht die UStIDNr aus 9 Ziffern, wobei die erste Ziffer von 0 verschieden ist.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >deutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeDeutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Falsche Länge einer deutschen UStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Der formale Aufbau der angegebenen UStIDNr ist ungültig. In Deutschland muss die UStIDNr genau 9 Ziffern enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >deutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeDeutscheUStIDNr</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Deutsche UStIDNr ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige UStIDNr: Die angegebene Umsatzsteuer-Identifikationsnummer ist ungültig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum &apos;MM.JJ&apos;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigesDatumMMJJ</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Datum ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Datum im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist nicht gültig. (Erforderliches Format: MM.JJ).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum &apos;TT.MM.JJ&apos;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigesDatumTTMMJJ</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Datum ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Datum im Feld &apos;$&lt;FeldSchluessel&gt;$&apos; ist nicht gültig. (Erforderliches Format: TT.MM.JJ).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >NichtAbgeschlosseneEnumeration</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stringZuLang</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String ist länger als die maximale Länge</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf maximal &lt;MaxLaenge&gt; Zeichen enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >NichtAbgeschlosseneEnumeration</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >stringMitNewline</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Im String ist ein Zeilenumbruch enthalten</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldSchluessel&gt;$&apos; darf keine Zeilenumbrüche enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >EinheitswertAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigesEinheitswertAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Einheitswert-Aktenzeichen ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Sie haben ein ungültiges Aktenzeichen angegeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >WirtschaftsIdentifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeWirtschaftsIdentifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Wirtschafts-Identifikationsnummer: Der formale Aufbau der angegebenen Wirtschafts-Identifikationsnummer ist ungültig. Die Wirtschafts-Identifikationsnummer muss nach dem Präfix DE genau 9 Ziffern enthalten.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >WirtschaftsIdentifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeWirtschaftsIdentifikationsnummer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wirtschafts-Identifikationsnummer ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Wirtschafts-Identifikationsnummer: Die angegebene Wirtschafts-Identifikationsnummer ist ungültig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >StrafAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigesStrafAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültiges Straf-Aktenzeichen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >StrafAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigesStrafAktenzeichen</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Straf-Aktenzeichen ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültiges Straf-Aktenzeichen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >WirtschaftsIdentifikationsnummerU</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeWirtschaftsIdentifikationsnummerU</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Formaler Fehler</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Wirtschafts-Identifikationsnummer mit Unterscheidungsnummer: Der formale Aufbau der angegebenen Wirtschafts-Identifikationsnummer mit Unterscheidungsnummer ist ungültig. Die Wirtschafts-Identifikationsnummer muss mit DE beginnen, dann müssen 9 Ziffern, ein Bindestrich und die 5-stellige Unterscheidungsnummer folgen.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >WirtschaftsIdentifikationsnummerU</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeWirtschaftsIdentifikationsnummerU</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wirtschafts-Identifikationsnummer mit Unterscheidungsnummer ist ungültig</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige Wirtschafts-Identifikationsnummer mit Unterscheidungsnummer: Die angegebene Wirtschafts-Identifikationsnummer mit Unterscheidungsnummer ist ungültig.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeIBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBAN (International) ist formal falsch aufgebaut. Eine formal korrekte IBAN (International) ist folgendermaßen aufgebaut:   Zwei Großbuchstaben für Länderkennung, zwei Prüfziffern, Basic BAN mit 1-30 Ziffern/Buchstaben.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN (International): IBAN (International) muss aus zweistelligem Ländercode gefolgt von zweistelliger Prüfziffer gefolgt von der Basic Bank Account Number bestehen. Achten Sie auch darauf, keine Leerzeichen einzugeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >IBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >ungueltigeIBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Die IBAN (International) entspricht nicht dem für das spezifizierte Land geforderten Format.</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN (International): Die angegebene IBAN (International) entspricht nicht dem für das angegebene Land definierten formalen Aufbau der IBAN.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >IBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >ungueltigeIBANinternational</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Falsche Prüfziffer</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Feld &apos;$&lt;FeldSchluessel&gt;$&apos;: Ungültige IBAN (International): Die Prüfziffernberechnung zur angegebenen IBAN (International) führt zu einer abweichenden Prüfziffer.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Enumeration</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >stringFalschesMuster</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >String entspricht nicht dem vorgegebenen Muster</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Das Feld &apos;$&lt;FeldName&gt;$&apos; enthält einen ungültigen Wert.</ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+  <Worksheet ss:Name="Parameter für Fehlertexte">
+   <Table>
+        <Column ss:Width="200"/> 
+        <Column ss:Width="300"/> 
+        <Row>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Parameter</ss:Data></Cell>
+        <Cell ss:StyleID="tableHeader"><ss:Data ss:Type="String" >Ersetzung</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;FeldName&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name des Feldes</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;FeldName&gt;.Wert</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert des Feldes</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;KontextName&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Name des Kontextes</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;FeldSchluessel&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Name des Feldes/lfdNr.Zeile@USB</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;FeldPfadname&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >PfadName des Feldes als String. Ein Pfadname beginnt mit Slash und listet beginnend vom Vordruck alle Namen aller umgebenden MetaContainer auf. Der letzte Name im PfadName ist der Name des Feldes.   Im Unterschied zu &lt;FeldSchluessel&gt; werden hier keine Indizes angegeben.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;MaxLaenge&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >maximale Länge</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;MinLaenge&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >minimale Länge</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;MaxWert&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >maximaler Feldwert</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;MinWert&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >minimaler Feldwert</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;AnzahlIndicesErwartet&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anzahl der erwarteten Indices</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;AnzahlIndicesAngegeben&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Anzahl der angegebenen Indices</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;MaxKontextIndex&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der für diesen Kontext maximale Index.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;KontextIndexAngegeben&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Der für diesen Kontext angegebene Index.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;FalschWert&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Wert für &apos;Nein&apos;, der für dieses JaNein-Feld definierte wurde.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;WahrWert&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Wert für &apos;Ja&apos;, der für dieses Ja- bzw. JaNein-Feld definierte wurde.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;AnzahlNachkommastellen&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anzahl der Nachkommastellen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;AnzahlNachkommastellenBis&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Anzahl der maximalen Nachkommastellen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;AnzahlVorkommastellen&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Anzahl der maximalen Vorkommastellen</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;Nullen&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Wird mit einer Folge von Nullen ersetzt, die so lang ist wie die Anzahl der Nachkommastellen. Ist. Z.B. die Anzahl der Nachkommastellen gleich 4, so wird dies mit &apos;0000&apos; ersetzt.</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;NullWert&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Der Wert 0 bzw. 0 mit den evtl. erforderlichen Nachkommastellen (z.B. &apos;0.00&apos;).</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;Datumformat&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Format, das für dieses Datum definiert wurde</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;Datumsbereichsformat&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Format, das für diesen Datumsbereich definiert wurde</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >&lt;DezimalTrenner&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="grau"><ss:Data ss:Type="String" >Zeichen, das als Dezimaltrenner verwendet wird</ss:Data></Cell>
+  	   </Row>
+  	   <Row ss:Autoheight="1">
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >&lt;DezimalTrennerFalsch&gt;</ss:Data></Cell>
+  	   	<Cell ss:StyleID="weiss"><ss:Data ss:Type="String" >Zeichen, das den nicht verwendeten Dezimaltrenner bezeichnet.</ss:Data></Cell>
+  	   </Row>
+    </Table>
+ 	<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+ 		<Selected />
+ 		<FreezePanes />
+ 		<SplitHorizontal>1</SplitHorizontal>
+ 		<TopRowBottomPane>1</TopRowBottomPane>
+ 		<ActivePane>2</ActivePane>
+ 		<Panes>
+ 			<Pane>
+ 				<Number>3</Number>
+ 			</Pane>
+ 			<Pane>
+ 				<Number>2</Number>
+ 				<ActiveRow>0</ActiveRow>
+ 			</Pane>
+ 		</Panes>
+ 	</WorksheetOptions>
+  </Worksheet>
+</Workbook>

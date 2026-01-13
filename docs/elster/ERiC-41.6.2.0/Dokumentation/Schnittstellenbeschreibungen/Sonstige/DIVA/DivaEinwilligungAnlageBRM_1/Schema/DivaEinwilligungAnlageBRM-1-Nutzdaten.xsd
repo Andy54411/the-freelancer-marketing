@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:divaEinwilligungAnlageBRM="http://finkonsens.de/elster/elsterbrm/divaeinwilligunganlagebrm/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/divaeinwilligunganlagebrm/v1" schemaLocation="DivaEinwilligungAnlageBRM-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="divaEinwilligungAnlageBRM:DivaEinwilligungAnlageBRM"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,2277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- E76 - 2022 - 12.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elstererklaerung/gewinnermittlung13aestg/e76/v2022" targetNamespace="http://finkonsens.de/elster/elstererklaerung/gewinnermittlung13aestg/e76/v2022" xmlns:exml="http://finkonsens.de/elster/elstererklaerung/gewinnermittlung13aestg/e76/v2022">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <xs:simpleType name="AttributeAlias">
+        <xs:restriction base="xs:string">
+            <xs:maxLength value="300"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:complexType name="DezimalzahlNichtNegOhneFuehrNullBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="[1-9][0-9]*(,[0-9]+)?">
+                    <xs:annotation>
+                        <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+                <xs:pattern value="0,[0-9]*[1-9][0-9]*">
+                    <xs:annotation>
+                        <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+                <xs:pattern value="0(,0+)?">
+                    <xs:annotation>
+                        <xs:documentation>Nullwerte</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="DezimalzahlPosOhneFuehrNullBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="[1-9][0-9]*(,[0-9]+)?">
+                    <xs:annotation>
+                        <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+                <xs:pattern value="0,[0-9]*[1-9][0-9]*">
+                    <xs:annotation>
+                        <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="EMailBaseCType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="([^@]+)(@)([^@]+)"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNegBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="NonNegativeIntegerBaseWithAliasCType">
+                <xs:pattern value="[0-9].*">
+                    <xs:annotation>
+                        <xs:documentation>Kein Vorzeichen</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNegOhneFuehrNullBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="NonNegativeIntegerBaseWithAliasCType">
+                <xs:pattern value="[1-9].*|0">
+                    <xs:annotation>
+                        <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlOhneFuehrNullBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="IntegerBaseWithAliasCType">
+                <xs:pattern value="-?[1-9].*|0">
+                    <xs:annotation>
+                        <xs:documentation>Vorzeichen '+' und Einträge der Form '-0' nicht zugelassen, erste Ziffer ungleich '0'</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlPosBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="PositiveIntegerBaseWithAliasCType">
+                <xs:pattern value="[0-9].*">
+                    <xs:annotation>
+                        <xs:documentation>Kein Vorzeichen</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="IntegerBaseWithAliasCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:integer">
+                <xs:attribute name="alias" type="AttributeAlias"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="NonNegativeIntegerBaseWithAliasCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:nonNegativeInteger">
+                <xs:attribute name="alias" type="AttributeAlias"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="PositiveIntegerBaseWithAliasCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:positiveInteger">
+                <xs:attribute name="alias" type="AttributeAlias"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="StringBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                    <xs:annotation>
+                        <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="StringBaseWithAliasCType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="alias" type="AttributeAlias"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="DatumTTpMMpBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.">
+                    <xs:annotation>
+                        <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="DatumTTpMMpJJJJBekanntBaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                    <xs:annotation>
+                        <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                    </xs:annotation>
+                </xs:pattern>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="DezimalzahlNichtNegOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType">
+        <xs:simpleContent>
+            <xs:restriction base="DezimalzahlNichtNegOhneFuehrNullBaseCType">
+                <xs:pattern value="\d{1,2}(,\d{2,2})"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="DezimalzahlPosOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType">
+        <xs:simpleContent>
+            <xs:restriction base="DezimalzahlPosOhneFuehrNullBaseCType">
+                <xs:pattern value="\d{1,2}(,\d{2,2})"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="EMail_MinL1_MaxL290_CType">
+        <xs:simpleContent>
+            <xs:restriction base="EMailBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="290"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="Enum_Anl_13a_Allg_Betr_E2940501_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:enumeration value="130">
+                    <xs:annotation>
+                        <xs:documentation>Land- und Forstwirt</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="200">
+                    <xs:annotation>
+                        <xs:documentation>Atypisch stille Gesellschaft</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="210">
+                    <xs:annotation>
+                        <xs:documentation>Offene Handelsgesellschaft</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="220">
+                    <xs:annotation>
+                        <xs:documentation>Kommanditgesellschaft</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="270">
+                    <xs:annotation>
+                        <xs:documentation>Gesellschaft bürgerlichen Rechts</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="290">
+                    <xs:annotation>
+                        <xs:documentation>Sonstige Personengesellschaften</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="920">
+                    <xs:annotation>
+                        <xs:documentation>Ausländische Rechtsform, die einer Personengesellschaft entspricht</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="520">
+                    <xs:annotation>
+                        <xs:documentation>Eingetragener Verein</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="540">
+                    <xs:annotation>
+                        <xs:documentation>Rechtsfähige Stiftung des Privatrechts</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="590">
+                    <xs:annotation>
+                        <xs:documentation>Sonstige juristische Person des privaten Rechts</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="940">
+                    <xs:annotation>
+                        <xs:documentation>Ausländische Rechtsform, die einer sonstigen juristischen Person des privaten Rechts entspricht</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="610">
+                    <xs:annotation>
+                        <xs:documentation>Nicht rechtsfähige(r) Verein, Anstalt, Stiftung und nicht rechtsfähiges anderes Zweckvermögen</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="621">
+                    <xs:annotation>
+                        <xs:documentation>Nicht rechtsfähiger Verein</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="650">
+                    <xs:annotation>
+                        <xs:documentation>Nicht rechtsfähige Stiftung des Privatrechts</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="950">
+                    <xs:annotation>
+                        <xs:documentation>Ausländische Rechtsform, die einer Personenvereinigung oder Vermögensmasse im Sinne des § 1 Absatz 1 Nummer 5 KStG entspricht</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="834">
+                    <xs:annotation>
+                        <xs:documentation>Sonstige juristische Person des öffentlichen Rechts</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="Enum_Anl_13a_Allg_Betr_E2940601_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:enumeration value="1">
+                    <xs:annotation>
+                        <xs:documentation>Steuerpflichtige Person / Ehemann / Person A / Gesellschaft / Gemeinschaft / Körperschaft</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="2">
+                    <xs:annotation>
+                        <xs:documentation>Ehefrau / Person B</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="3">
+                    <xs:annotation>
+                        <xs:documentation>Beide Ehegatten / Lebenspartner</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="Enum_Anl_13a_Allg_Betr_E2940702_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:enumeration value="1">
+                    <xs:annotation>
+                        <xs:documentation>Veräußerung oder Aufgabe (bitte Zeile 98 beachten)</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="2">
+                    <xs:annotation>
+                        <xs:documentation>Unentgeltliche Übertragung</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="Enum_Vorsatz_Vorgang_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:enumeration value="01">
+                    <xs:annotation>
+                        <xs:documentation>Veranlagung</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseCType">
+                <xs:totalDigits value="10"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseCType">
+                <xs:totalDigits value="12"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseCType">
+                <xs:totalDigits value="8"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlNichtNeg_Muster1432008080_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlNichtNegBaseCType">
+                <xs:pattern value=".{0,6}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlOhneFuehrNull_MaxVK10_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlOhneFuehrNullBaseCType">
+                <xs:totalDigits value="10"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlOhneFuehrNull_MaxVK12_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlOhneFuehrNullBaseCType">
+                <xs:totalDigits value="12"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlOhneFuehrNull_MaxVK8_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlOhneFuehrNullBaseCType">
+                <xs:totalDigits value="8"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlPos_Muster1432007987_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlPosBaseCType">
+                <xs:pattern value=".{0,3}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlPos_Muster1432008018_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlPosBaseCType">
+                <xs:pattern value=".{0,4}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="GanzzahlPos_Muster1432008049_CType">
+        <xs:simpleContent>
+            <xs:restriction base="GanzzahlPosBaseCType">
+                <xs:pattern value=".{0,5}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="IDNrBaseCType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="[0-9]{11}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="JaNein12BaseCType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:enumeration value="1">
+                    <xs:annotation>
+                        <xs:documentation>Ja</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+                <xs:enumeration value="2">
+                    <xs:annotation>
+                        <xs:documentation>Nein</xs:documentation>
+                    </xs:annotation>
+                </xs:enumeration>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="SteuernummerBaseCType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseWithAliasCType">
+                <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL13_MaxL13_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="13"/>
+                <xs:maxLength value="13"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL10_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="10"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL1_Muster83686_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="1"/>
+                <xs:pattern value="S|O"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL2997_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="2997"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL29_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="29"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL30_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="30"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL45_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="45"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL50_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="50"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL55_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="55"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL60_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="60"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL1_MaxL999_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="1"/>
+                <xs:maxLength value="999"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL2_MaxL2_Muster1759_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="2"/>
+                <xs:maxLength value="2"/>
+                <xs:pattern value="76"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL3_MaxL3_Muster1991846654_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="3"/>
+                <xs:maxLength value="3"/>
+                <xs:pattern value="([A-Z]|[0-9]){3}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL4_MaxL4_Musterm1643987249_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="4"/>
+                <xs:maxLength value="4"/>
+                <xs:pattern value="[0-9]+"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL5_MaxL5_Muster2084297628_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="5"/>
+                <xs:maxLength value="5"/>
+                <xs:pattern value="([0]{1}[1-9]{1}[0-9]{3})|([1-9]{1}[0-9]{4})"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="String_MinL5_MaxL5_Muster676297287_CType">
+        <xs:simpleContent>
+            <xs:restriction base="StringBaseCType">
+                <xs:minLength value="5"/>
+                <xs:maxLength value="5"/>
+                <xs:pattern value="[0-9]{5}"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:element name="E76" type="E76_CType"/>
+    <xs:complexType name="E76_CType">
+        <xs:sequence>
+            <xs:element name="Anl_13a" type="Anl_13a_68099_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="AV13a" type="AV13a_68099_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Vorsatz" type="Vorsatz_68099_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="2022" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="Anl_13a_68099_CType">
+        <xs:sequence>
+            <xs:element name="Allg_Betr" type="Allg_Betr_m659024506_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Gew_Erm" type="Gew_Erm_m659024506_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Erg_Ang" type="Erg_Ang_m659024506_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Steuerberater" type="Steuerberater_m659024506_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Allg_Betr_m659024506_CType">
+        <xs:sequence>
+            <xs:element name="E2940301" type="SteuernummerBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>(Betriebs-)Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940201" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name der steuerpflichtigen Person / Gesellschaft / Gemeinschaft / Körperschaft</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940302" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940403" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße, Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940502" type="String_MinL5_MaxL5_Muster2084297628_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940503" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940602" type="SteuernummerBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Leitsteuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940601" type="Enum_Anl_13a_Allg_Betr_E2940601_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebsinhaber</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940501" type="Enum_Anl_13a_Allg_Betr_E2940501_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsform des Betriebs</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940401" type="DatumTTpMMpBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940402" type="DatumTTpMMpJJJJBekanntBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940702" type="Enum_Anl_13a_Allg_Betr_E2940702_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wurde im Kalenderjahr / Wirtschaftsjahr der Betrieb beendet?</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gew_Erm_m659024506_CType">
+        <xs:sequence>
+            <xs:element name="Landw_Ntz" type="Landw_Ntz_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Forst_Ntz" type="Forst_Ntz_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Sond_Nutz" type="Sond_Nutz_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Sond_Gew" type="Sond_Gew_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="VuV_WG_BV" type="VuV_WG_BV_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="KapV_Betr" type="KapV_Betr_816689886_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Erm_Gew_DSS" type="Erm_Gew_DSS_816689886_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Landw_Ntz_816689886_CType">
+        <xs:sequence>
+            <xs:element name="Gbetr_sbew_Fl" type="Gbetr_sbew_Fl_1027216895_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Zuschl_Tier" type="Zuschl_Tier_1027216895_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gbetr_sbew_Fl_1027216895_CType">
+        <xs:sequence>
+            <xs:element name="E2940701" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Eigentumsflächen des Betriebsvermögens, die am 15. Mai des Wirtschaftsjahres der landwirtschaftlichen Nutzung dienen (ohne Sondernutzungen)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940801" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hof- / Gebäudeflächen (ohne Grund und Boden für Wohngebäude), die am 15. Mai des Wirtschaftsjahres der landwirtschaftlichen Nutzung dienen oder ihr zugeordnet werden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940901" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>In den Zeilen $E2940701.Vordruckzeile$ und $E2940801.Vordruckzeile$ nicht enthaltene, am 15. Mai des Wirtschaftsjahres zugepachtete oder unentgeltlich von Dritten überlassene Flächen der landwirtschaftlichen Nutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941001" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>In den Zeilen $E2940701.Vordruckzeile$ bis $E2940901.Vordruckzeile$ enthaltene, am 15. Mai des Wirtschaftsjahres verpachtete oder unentgeltlich an Dritte überlassene Flächen der landwirtschaftlichen Nutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941101" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Selbst bewirtschaftete Flächen der landwirtschaftlichen Nutzung am 15. Mai des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Grundbetrag für die selbst bewirtschafteten Flächen der landwirtschaftlichen Nutzung (Fläche laut Zeile $E2941101.Vordruckzeile$ x 350 € / ha)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Zuschl_Tier_1027216895_CType">
+        <xs:sequence>
+            <xs:element name="E2941401" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Tierbestand des Betriebs - Gesamtsumme der Vieheinheiten (VE) laut Anlage L (gegebenenfalls &quot;0&quot;)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941501" type="DezimalzahlPosOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Im Rahmen von Tätigkeiten laut Zeile $E2946201.Vordruckzeile$ berücksichtigter Tierbestand</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941601" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Maßgebender Tierbestand (Zeile $E2941401.Vordruckzeile$ abzüglich Zeile $E2941501.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941801" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK2_MinNK2_MaxNK2_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Für den Zuschlag für Tierzucht und Tierhaltung maßgebender Tierbestand (Zeile $E2941601.Vordruckzeile$ abzüglich 25,00 VE)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942001" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zuschlag für Tierzucht und Tierhaltung (Tierbestand laut Zeile $E2941801.Vordruckzeile$ x 300 € / VE)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der landwirtschaftlichen Nutzung (Zeile $E2941301.Vordruckzeile$ zuzüglich Zeile $E2942001.Vordruckzeile$; Übertrag in Zeile $E2947601.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Forst_Ntz_816689886_CType">
+        <xs:sequence>
+            <xs:element name="E2942201" type="GanzzahlNichtNeg_Muster1432008080_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Selbst bewirtschaftete Flächen der forstwirtschaftlichen Nutzung am 15. Mai des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebseinnahmen aus der Verwertung von Holz auf dem Stamm</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942302" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Pauschale Betriebsausgaben aus der Verwertung von Holz auf dem Stamm (20 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942401" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebseinnahmen aus der Verwertung von eingeschlagenem Holz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942402" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Pauschale Betriebsausgaben aus der Verwertung von eingeschlagenem Holz (55 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942503" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wiederaufforstungskosten und Minderung des Buchwerts des Wirtschaftsguts Baumbestand</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942601" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebseinnahmen aus der übrigen Forstwirtschaft</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942602" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebsausgaben aus der übrigen Forstwirtschaft</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2942701" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der forstwirtschaftlichen Nutzung (Übertrag in Zeile $E2947701.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sond_Nutz_816689886_CType">
+        <xs:sequence>
+            <xs:element name="Pauschal_Gewinn" type="Pauschal_Gewinn_m1715585498_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Weit_SN" type="Weit_SN_m1715585498_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Gew" type="Gew_m1715585498_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Pauschal_Gewinn_m1715585498_CType">
+        <xs:sequence>
+            <xs:element name="WB" type="WB_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Obst" type="Obst_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Gem_FL" type="Gem_FL_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Gem_UG" type="Gem_UG_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Blum_FL" type="Blum_FL_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Blum_UG" type="Blum_UG_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Baum" type="Baum_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Hopfen" type="Hopfen_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Teichw" type="Teichw_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Spargel" type="Spargel_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Fisch_Z" type="Fisch_Z_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="WB_Kul" type="WB_Kul_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Binnen_F" type="Binnen_F_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Imker" type="Imker_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Schaef" type="Schaef_m323457708_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="WB_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943101" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943102" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Obst_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943103" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943104" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gem_FL_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943201" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943202" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gem_UG_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943203" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943204" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Blum_FL_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943301" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943302" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Blum_UG_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943303" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943304" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Baum_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943401" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943402" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Hopfen_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943403" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943404" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Teichw_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943501" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943502" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Spargel_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943503" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943504" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Fisch_Z_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943601" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943602" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="WB_Kul_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943603" type="GanzzahlPos_Muster1432008049_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Am 15. Mai des Wirtschaftsjahres selbst bewirtschaftete Fläche</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943604" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Binnen_F_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943701" type="GanzzahlPos_Muster1432008018_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Jahresfang in kg</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943702" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Imker_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943703" type="GanzzahlPos_Muster1432007987_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Völker</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943704" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Schaef_m323457708_CType">
+        <xs:sequence>
+            <xs:element name="E2943801" type="GanzzahlPos_Muster1432007987_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der Mutterschafe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2943802" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Weit_SN_m1715585498_CType">
+        <xs:sequence>
+            <xs:element name="E2944001" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Tabakanbau</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944101" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kurzumtriebsplantagen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Sonst" type="Sonst_m1416716667_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sonst_m1416716667_CType">
+        <xs:sequence>
+            <xs:element name="E2944201" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944202" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945801" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945802" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gew_m1715585498_CType">
+        <xs:sequence>
+            <xs:element name="E2944401" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzungen (Ergebnis der Zeilen $E2943102.Vordruckzeile$ bis $E2945801.Vordruckzeile$; Übertrag in Zeile $E2947801.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sond_Gew_816689886_CType">
+        <xs:sequence>
+            <xs:element name="Verae_Ent_GuB_etc" type="Verae_Ent_GuB_etc_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Verae_Ent_ueb_WG" type="Verae_Ent_ueb_WG_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Entschae" type="Entschae_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Weitere1" type="Weitere1_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Gewe_Taet" type="Gewe_Taet_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Weitere2" type="Weitere2_m864813100_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Verae_Ent_GuB_etc_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2944501" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Veräußerungspreis / Entnahmewert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944601" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>davon abziehbare Betriebsausgaben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944602" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Verae_Ent_ueb_WG_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2944701" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Veräußerungspreis / Entnahmewert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944801" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>davon abziehbare Betriebsausgaben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2944802" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Entschae_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2944901" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Entschädigungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945001" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>davon abziehbare Betriebsausgaben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945002" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Weitere1_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2945101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bildung von Rücklagen, Übertragung von stillen Reserven (§ 6c EStG, R 6.6 EStR; Übertrag aus Zeile $E2948501.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945201" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinne aus der Auflösung von Rücklagen (§ 6c EStG, R 6.6 EStR; Übertrag aus Zeile $E2948502.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946902" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinnzuschlag § 6c in Verbindung mit § 6b Absatz 7 und 10 EStG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945301" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebseinnahmen nach § 9b Absatz 2 EStG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2945401" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebsausgaben nach § 9b Absatz 2 EStG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Gewe_Taet_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2946101" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus dem Absatz von Erzeugnissen gemäß R 15.5 Absatz 3 bis 8 EStR</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946201" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Dienstleistungen gemäß R 15.5 Absatz 9 und 10 EStR</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946301" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Einnahmen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946401" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Pauschale Betriebsausgaben (60 %)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946402" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946501" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen des Betriebs im Sinne der R 15.5 Absatz 11 EStR (nur erforderlich, wenn die Zeilen $E2946101.Vordruckzeile$ bis $E2946301.Vordruckzeile$ auszufüllen sind)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Weitere2_m864813100_CType">
+        <xs:sequence>
+            <xs:element name="E2946601" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rückvergütungen nach § 22 KStG aus Hilfs- und Nebengeschäften</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946701" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Sondergewinne (Ergebnis der Zeilen $E2944602.Vordruckzeile$ bis $E2946601.Vordruckzeile$; Übertrag in Zeile $E2947901.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="VuV_WG_BV_816689886_CType">
+        <xs:sequence>
+            <xs:element name="E2946801" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Vermietung von bebauten Grundstücken</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2946901" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Vermietung und Verpachtung von unbebauten Grundstücken</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947001" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Vermietung und Verpachtung von übrigen Wirtschaftsgütern</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947101" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Vermietung und Verpachtung von Wirtschaftsgütern des land- und forstwirtschaftlichen Betriebsvermögens (Übertrag in Zeile $E2948001.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="KapV_Betr_816689886_CType">
+        <xs:sequence>
+            <xs:element name="E2947201" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Kapitalvermögen, die nach § 3 Nummer 40 EStG oder § 8b KStG (teilweise) steuerfrei sind (Eintrag in voller Höhe)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947301" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Nach § 3 Nummer 40 EStG oder § 8b KStG steuerfreier Teil</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947302" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Überschuss</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947401" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Kapitalvermögen, die in voller Höhe steuerpflichtig sind</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947501" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Kapitalvermögen, soweit sie zu den Einkünften aus Land- und Forstwirtschaft gehören (§ 20 Absatz 8 EStG; Übertrag in Zeile $E2948101.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Erm_Gew_DSS_816689886_CType">
+        <xs:sequence>
+            <xs:element name="E2947601" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der landwirtschaftlichen Nutzung (Übertrag aus Zeile $E2942101.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947701" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der forstwirtschaftlichen Nutzung (Übertrag aus Zeile $E2942701.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947801" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gewinn der Sondernutzungen (Übertrag aus Zeile $E2944401.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2947901" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Sondergewinne (Übertrag aus Zeile $E2946701.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948001" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Vermietung und Verpachtung von Wirtschaftsgütern des land- und forstwirtschaftlichen Betriebsvermögens (Übertrag aus Zeile $E2947101.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948101" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Einnahmen aus Kapitalvermögen, soweit sie zu den Einkünften aus Land- und Forstwirtschaft gehören (Übertrag aus Zeile $E2947501.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948201" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Nach Durchschnittssätzen ermittelter Gewinn (§ 13a EStG) für das Wirtschaftsjahr $VZ$ / $VZ+1$ ($VZ$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948303" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hinzurechnungen und Abrechnungen bei Wechsel der Gewinnermittlungsart (Betrag)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948304" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hinzurechnungen und Abrechnungen bei Wechsel der Gewinnermittlungsart (Bezeichnung)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948402" type="GanzzahlOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuerpflichtiger Gewinn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Erg_Ang_m659024506_CType">
+        <xs:sequence>
+            <xs:element name="Rueckl_st_R" type="Rueckl_st_R_m646631_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Rueckl_st_R_m646631_CType">
+        <xs:sequence>
+            <xs:element name="Bild_Ueb" type="Bild_Ueb_m1151911190_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Aufloes" type="Aufloes_m1151911190_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Erlaeut" type="Erlaeut_m1151911190_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bild_Ueb_m1151911190_CType">
+        <xs:sequence>
+            <xs:element name="E2948301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rücklagen nach § 6c in Verbindung mit § 6b EStG, R 6.6 EStR</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948401" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Übertragung von stillen Reserven nach § 6c in Verbindung mit § 6b EStG, R 6.6 EStR</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gesamtsumme</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Aufloes_m1151911190_CType">
+        <xs:sequence>
+            <xs:element name="E2948302" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rücklagen nach § 6c in Verbindung mit § 6b EStG, R 6.6 EStR</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2948502" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Gesamtsumme (Übertrag in Zeile $E2945201.Vordruckzeile$)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Erlaeut_m1151911190_CType">
+        <xs:sequence>
+            <xs:element name="E2948503" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erläuterungen zur Bildung / Übertragung / Auflösung von Rücklagen und stillen Reserven</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuerberater_m659024506_CType">
+        <xs:sequence>
+            <xs:element name="Anfertigung" type="Anfertigung_1892959733_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anfertigung_1892959733_CType">
+        <xs:sequence>
+            <xs:element name="E2940351" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940451" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940551" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße, Hausnummer, Postfach</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940651" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl, Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940751" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Telefon</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940851" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>zusätzliche Angaben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2940951" type="String_MinL1_MaxL60_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mandantennummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2941051" type="String_MinL1_MaxL55_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bearbeiterkennzeichen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AV13a_68099_CType">
+        <xs:sequence>
+            <xs:element name="G_u_B" type="G_u_B_1941898427_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Aufwuchs" type="Aufwuchs_1941898427_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Geb" type="Geb_1941898427_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Immat_WG" type="Immat_WG_1941898427_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bet" type="Bet_1941898427_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="G_u_B_1941898427_CType">
+        <xs:sequence>
+            <xs:element name="Bew_P55_Abs_2_4" type="Bew_P55_Abs_2_4_m934073255_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Bew_P55_Abs_5" type="Bew_P55_Abs_5_m934073255_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Ans_AK_HK" type="Ans_AK_HK_m934073255_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bew_P55_Abs_2_4_m934073255_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m1167771877_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m1167771877_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m1167771877_CType">
+        <xs:sequence>
+            <xs:element name="E2950403" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950404" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950504" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950604" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950704" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950804" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m1167771877_CType">
+        <xs:sequence>
+            <xs:element name="E2950501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950502" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950503" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950505" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950506" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bew_P55_Abs_5_m934073255_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_563777869_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_563777869_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_563777869_CType">
+        <xs:sequence>
+            <xs:element name="E2950907" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950908" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951007" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951107" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951207" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951304" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_563777869_CType">
+        <xs:sequence>
+            <xs:element name="E2950601" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950602" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950603" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950605" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950606" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Ans_AK_HK_m934073255_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m17271396_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m17271396_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m17271396_CType">
+        <xs:sequence>
+            <xs:element name="E2951404" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951407" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951601" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951801" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m17271396_CType">
+        <xs:sequence>
+            <xs:element name="E2950701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950702" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950703" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950705" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950706" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Aufwuchs_1941898427_CType">
+        <xs:sequence>
+            <xs:element name="Steh_Holz" type="Steh_Holz_95708055_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Dauerkult" type="Dauerkult_95708055_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steh_Holz_95708055_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m911869111_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m911869111_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m911869111_CType">
+        <xs:sequence>
+            <xs:element name="E2951901" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951902" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952001" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952101" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952201" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m911869111_CType">
+        <xs:sequence>
+            <xs:element name="E2950801" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950802" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950803" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950805" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950806" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Dauerkult_95708055_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m864513214_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m864513214_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m864513214_CType">
+        <xs:sequence>
+            <xs:element name="E2952401" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952402" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952601" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952801" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2952901" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m864513214_CType">
+        <xs:sequence>
+            <xs:element name="E2950901" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950902" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950903" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950904" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950905" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2950906" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Geb_1941898427_CType">
+        <xs:sequence>
+            <xs:element name="Wirt_Geb" type="Wirt_Geb_2010600317_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Wohn_Geb" type="Wohn_Geb_2010600317_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Wirt_Geb_2010600317_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_2089992934_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_2089992934_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_2089992934_CType">
+        <xs:sequence>
+            <xs:element name="E2953001" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953002" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953201" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953401" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_2089992934_CType">
+        <xs:sequence>
+            <xs:element name="E2951001" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951002" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951003" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951004" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951005" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951006" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Wohn_Geb_2010600317_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m61340068_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m61340068_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m61340068_CType">
+        <xs:sequence>
+            <xs:element name="E2953601" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953602" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953801" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2953901" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954001" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m61340068_CType">
+        <xs:sequence>
+            <xs:element name="E2951101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951102" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951103" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951104" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951105" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951106" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Immat_WG_1941898427_CType">
+        <xs:sequence>
+            <xs:element name="Abnb" type="Abnb_1329987820_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="N_abnb" type="N_abnb_1329987820_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Abnb_1329987820_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_1799242297_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_1799242297_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_1799242297_CType">
+        <xs:sequence>
+            <xs:element name="E2954201" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954202" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954401" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954501" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954601" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_1799242297_CType">
+        <xs:sequence>
+            <xs:element name="E2951201" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951202" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951203" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951204" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Absetzung für Abnutzung (AfA)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951205" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951206" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="N_abnb_1329987820_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_m1049681048_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_m1049681048_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_m1049681048_CType">
+        <xs:sequence>
+            <xs:element name="E2954801" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954802" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2954901" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955001" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955101" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955201" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_m1049681048_CType">
+        <xs:sequence>
+            <xs:element name="E2951301" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951302" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951303" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951305" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951306" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Bet_1941898427_CType">
+        <xs:sequence>
+            <xs:element name="Einz" type="Einz_2006000010_CType" minOccurs="0" maxOccurs="99"/>
+            <xs:element name="Sum" type="Sum_2006000010_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einz_2006000010_CType">
+        <xs:sequence>
+            <xs:element name="E2955301" type="String_MinL1_MaxL999_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955302" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955401" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955501" type="GanzzahlOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955601" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2955701" type="GanzzahlNichtNegOhneFuehrNull_MaxVK8_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_2006000010_CType">
+        <xs:sequence>
+            <xs:element name="E2951401" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschaffungs- / Herstellungskosten oder an deren Stelle tretender Wert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951402" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert zu Beginn des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951403" type="GanzzahlOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zugänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951405" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abgänge</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="E2951406" type="GanzzahlNichtNegOhneFuehrNull_MaxVK10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Buchwert am Ende des Wirtschaftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vorsatz_68099_CType">
+        <xs:sequence>
+            <xs:element name="Unterfallart" type="String_MinL2_MaxL2_Muster1759_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Unterfallart (bei der Anlage § 13a EStG ist der Wert 76 zu verwenden)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorgang" type="Enum_Vorsatz_Vorgang_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorgang</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StNr" type="SteuernummerBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ordnungsbegriff" type="String_MinL13_MaxL13_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ordnungsbegriff</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ID" type="IDNrBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer steuerpflichtige Person / Ehemann / Person A</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="IDEhefrau" type="IDNrBaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer Ehefrau / Person B</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Zeitraum" type="String_MinL4_MaxL4_Musterm1643987249_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Jahr der Erklärung (Veranlagungszeitraum)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbsName" type="String_MinL1_MaxL45_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name des Absenders der Erklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbsStr" type="String_MinL1_MaxL30_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße des Absenders der Erklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbsPlz" type="String_MinL5_MaxL5_Muster676297287_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl des Absenders der Erklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbsOrt" type="String_MinL1_MaxL29_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ort des Absenders der Erklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Copyright" type="String_MinL1_MaxL50_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Copyrightvermerk des Herstellers der Steuersoftware</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="TeleNummer" type="String_MinL3_MaxL3_Muster1991846654_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>TeleNummer (für finanzamtsinterne Zwecke; keine Eingabe durch Anwender)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="OrdNrArt" type="String_MinL1_MaxL1_Muster83686_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art der Ordnungsnummer (zulässig sind die Werte &quot;S&quot; für Steuernummer und &quot;O&quot; für Ordnungsbegriff).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rueckuebermittlung" type="Rueckuebermittlung_m1635470920_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Rueckuebermittlung_m1635470920_CType">
+        <xs:sequence>
+            <xs:element name="Bescheid" type="JaNein12BaseCType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wird die elektronische Bereitstellung der Bescheiddaten gewünscht?</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArtRueckuebermittlung" type="String_MinL1_MaxL10_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art der Benachrichtigung über vorliegende Bescheiddaten zur Abholung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SchluesselRueckuebermittlung" type="String_MinL1_MaxL2997_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Schlüssel unter dem die Bescheiddaten verschlüsselt zur Abholung bereitgestellt werden sollen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AdresseRueckuebermittlung" type="EMail_MinL1_MaxL290_CType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Benachrichtigungsadresse (in der Regel E-Mail-Adresse) für die Benachrichtigung über die elektronische Bereitstellung der Bescheiddaten.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

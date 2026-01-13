@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterExtern</Verfahren>
+		<DatenArt>ZMDO</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>abc-soft</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel />
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>1</NutzdatenTicket>
+				<Empfaenger id="L">BF</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<zm version="000005">
+					<unternehmer>
+						<knri>DE554367942</knri>
+						<zulassNr>
+							<zulnr1>N</zulnr1>
+							<zulnr2>1111111</zulnr2>
+						</zulassNr>
+						<anschrift>
+							<name>Mustername</name>
+							<adresszusatz>Musterzusatz</adresszusatz>
+							<strasse>Musterstraße</strasse>
+							<hausnr>10</hausnr>
+							<hausnrzusatz>a</hausnrzusatz>
+							<plz>80803</plz>
+							<ort>Musterort</ort>
+							<staat>DE</staat>
+							<telefon>04711</telefon>
+						</anschrift>
+						<zm-zeilen waehrung="1" meldeart="10">
+							<anzeige>true</anzeige>
+							<widerruf>false</widerruf>
+							<mzr>
+								<quart>25</quart>
+								<jahr>2021</jahr>
+							</mzr>
+							<zeile umsatzart="L">
+								<knre>PL5630292567</knre>
+								<betrag>999999999</betrag>
+							</zeile>
+							<zeile umsatzart="S">
+								<knre>DK13585627</knre>
+								<betrag>-999988</betrag>
+							</zeile>
+						</zm-zeilen>
+					</unternehmer>
+				</zm>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

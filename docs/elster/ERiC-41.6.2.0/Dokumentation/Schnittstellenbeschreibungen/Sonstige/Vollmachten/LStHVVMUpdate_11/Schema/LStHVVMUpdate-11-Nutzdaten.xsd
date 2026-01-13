@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:lStHVVMUpdate="http://finkonsens.de/elster/elsterbrm/lsthvvmupdate/v11" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/lsthvvmupdate/v11" schemaLocation="LStHVVMUpdate-11.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="lStHVVMUpdate:LStHVVMUpdate"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

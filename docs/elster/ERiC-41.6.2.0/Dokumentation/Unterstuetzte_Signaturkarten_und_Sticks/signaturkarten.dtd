@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Description: DTD fuer Zusatzinformationen fuer Signaturkarten
+	Created: 26.08.2005, 16:49:42
+	File name: signaturkarten.dtd
+	File version: 62.0.0.0
+	Stand: 15.01.2025
+-->
+
+<!ELEMENT signaturkarten (karte+)>
+
+<!ELEMENT karte (#PCDATA  | barrierefreieBezeichnung  | bezeichnung)* >
+<!ATTLIST karte
+	name CDATA #REQUIRED
+	pindlgtxtsig CDATA #REQUIRED
+	pindlgtxtdec CDATA #REQUIRED
+	url CDATA #REQUIRED
+	win32dll CDATA #IMPLIED
+	win64dll CDATA #IMPLIED
+	linux32dll CDATA #IMPLIED
+	linux64dll CDATA #IMPLIED
+	mac32dllintl CDATA #IMPLIED
+	mac64dllintl CDATA #IMPLIED
+	description CDATA #IMPLIED
+>
+
+<!ELEMENT bezeichnung (#PCDATA)* >
+<!ATTLIST bezeichnung>
+
+<!ELEMENT barrierefreieBezeichnung (#PCDATA   | abbr | span)* >
+<!ATTLIST barrierefreieBezeichnung
+	title CDATA #IMPLIED
+>
+
+<!ELEMENT abbr (#PCDATA)>
+<!ATTLIST abbr
+	title CDATA #IMPLIED
+>
+
+<!ELEMENT span (#PCDATA)>
+<!ATTLIST span
+	lang CDATA #IMPLIED
+>

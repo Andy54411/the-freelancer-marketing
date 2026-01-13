@@ -1,0 +1,1755 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Created>2015-03-12T10:14:46Z</Created>
+  <LastSaved>2021-11-09T15:18:12Z</LastSaved>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <AllowPNG/>
+  <RemovePersonalInformation/>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>14100</WindowHeight>
+  <WindowWidth>28800</WindowWidth>
+  <WindowTopX>0</WindowTopX>
+  <WindowTopY>0</WindowTopY>
+  <TabRatio>690</TabRatio>
+  <RefModeR1C1/>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62" ss:Name="Standard 2">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s63" ss:Name="Standard 3">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="m362116624" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116644">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116664">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="m362116684" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116704">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116724">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="m362115376">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+  </Style>
+  <Style ss:ID="m362115396" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115416">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115436">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362115456" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115476">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115496">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362115168" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115228" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115248">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115268">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362114960" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114980">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115000">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362115020" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115040">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362115060">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362114752" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114772">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114792">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362114812" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114832">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114852">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362114544" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114564">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114584">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362114604" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114624">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362114644">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362116000" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116020">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116040">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="m362116060" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116080">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362116100">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="m362113504" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113524">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113544">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="m362113564" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113584">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+  </Style>
+  <Style ss:ID="m362113604">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="m362113296" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113316" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113336" ss:Parent="s62">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="m362113356" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113376">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="m362113396">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="s64">
+   <Alignment ss:Vertical="Top"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s65">
+   <Alignment ss:Vertical="Top"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s66">
+   <Alignment ss:Vertical="Top"/>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Size="12" ss:Color="#0066CC"
+    ss:Bold="1"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s67">
+   <Alignment ss:Vertical="Top"/>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Bold="1"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s69" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Size="11" ss:Bold="1"/>
+   <Interior ss:Color="#99CCFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s70">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Size="11" ss:Bold="1"/>
+   <Interior ss:Color="#99CCFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s71" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Size="11" ss:Bold="1"/>
+   <Interior ss:Color="#99CCFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s96">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s97">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s98">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s99">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s100">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s101" ss:Parent="s62">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s102" ss:Parent="s62">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s103">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s104">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s124" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s132">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s133">
+   <Alignment ss:Vertical="Top"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s141" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s142" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s143" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s145">
+   <Alignment ss:Vertical="Top"/>
+   <Borders/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s146" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s161" ss:Parent="s62">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s162" ss:Parent="s62">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s163">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s164" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s165">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Color="#000000"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s173" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s174" ss:Parent="s63">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s175">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s186">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s196">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s198">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Bold="1"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s203">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s204">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders/>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s205">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="s206">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s207">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s214" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s215" ss:Parent="s63">
+   <Alignment ss:Vertical="Top"/>
+   <Borders/>
+   <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s228">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss"/>
+   <Interior/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Testszenarien">
+  <Table ss:ExpandedColumnCount="6" ss:ExpandedRowCount="152" x:FullColumns="1"
+   x:FullRows="1" ss:StyleID="s64" ss:DefaultColumnWidth="62.25"
+   ss:DefaultRowHeight="13.3125">
+   <Column ss:StyleID="s65" ss:AutoFitWidth="0" ss:Width="65.25"/>
+   <Column ss:StyleID="s65" ss:AutoFitWidth="0" ss:Width="114"/>
+   <Column ss:StyleID="s64" ss:AutoFitWidth="0" ss:Width="350.25"/>
+   <Column ss:StyleID="s64" ss:Width="140.25"/>
+   <Column ss:StyleID="s64" ss:AutoFitWidth="0" ss:Width="566.25"/>
+   <Row ss:AutoFitHeight="0" ss:Height="15.5625">
+    <Cell ss:StyleID="s66"><Data ss:Type="String">Testfälle für VZ 2021</Data></Cell>
+    <Cell ss:StyleID="s67"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="15.5625">
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s67"/>
+   </Row>
+   <Row ss:Index="4" ss:AutoFitHeight="0" ss:Height="13.6875">
+    <Cell ss:StyleID="s69"><Data ss:Type="String">Szenario</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">IdNrn.</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">verbale Beschreibung</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">einbezogene Belegarten</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Besonderheiten</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="11" ss:StyleID="m362113296"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:MergeDown="11" ss:StyleID="m362113316"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">04452397687&#10;06642573191&#10;08842963173&#10;01153674826&#10;03392674814&#10;&#10;<B>je 11 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="11" ss:StyleID="m362113336"><Data ss:Type="String">Sozialversicherungspflichtiger Arbeitnehmer, &#10;Bezug von Lohnersatzleistungen,&#10;Zahlungen in Riester- und Rüruprente,&#10;Vermögensbildungsbescheinigung</Data></Cell>
+    <Cell ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RUE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s101"><Data ss:Type="String">Versicherungsnehmer BetroffenerFall/NatPerson &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RUE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s101"><Data ss:Type="String">Versicherungsnehmer BetroffenerFall/NatPerson &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s102"><Data ss:Type="String">Versicherungsnehmer BetroffenerFall/NatPerson &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s102"><Data ss:Type="String">Versicherungsnehmer BetroffenerFall/NatPerson &#45;-&gt; Name, Vorname; SteuerlBerueckAV = Nein</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s103"><Data ss:Type="String">VaSt_VWL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s104"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s97"/>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="4" ss:StyleID="m362113356"><Data ss:Type="Number">2</Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362113376"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">04452317681&#10;09942573184&#10;08842593174&#10;01153674891&#10;03352974816&#10;&#10;<B>je 5 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362113396"><Data ss:Type="String">Arbeitnehmer mit freiwillig gesetzlicher Krankenversicherung (Firmenzahler),&#10;Bezug von Lohnersatzleistungen, &#10;Zahlung in einen &quot;Wohn-Riester&quot;-Vertrag</Data></Cell>
+    <Cell ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s99"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="12.5625">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Arbeitnehmer mit freiwilliger ges. KV (Firmenzahler)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s124"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="12.5625">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s124"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="6" ss:StyleID="m362113504"><Data ss:Type="Number">3</Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362113524"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">09952417688&#10;07742563186&#10;08842563192&#10;01159674820&#10;03352694810&#10;&#10;<B>je 7 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362113544"><Data ss:Type="String">Arbeitnehmer mit freiwillig gesetzlicher Krankenversicherung (Selbstzahler),&#10;Bezug von Lohnersatzleistungen</Data></Cell>
+    <Cell ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s132"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s133"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Arbeitnehmer mit freiwilliger ges. KV (Selbstzahler)&#10;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s133"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s102"><Data ss:Type="String">KVPV: Beitragstragung durch Versicherungsnehmer; gezahlte Beiträge zur gesetzlichen Kranken- und Pflegeversicherung;  Versicherungsnehmer + Versicherte Person &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s101"><Data ss:Type="String">KVPV: Beitragstragung durch Versicherungsnehmer; gezahlte Beiträge zur gesetzlichen Kranken- und Pflegeversicherung; Versicherungsnehmer + Versicherte Person &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s101"><Data ss:Type="String">KVPV: Prüfung der Addition innerhalb des Beleges; gezahlte Beiträge zur gesetzlichen Kranken- und Pflegeversicherung; Versicherungsnehmer + Versicherte Person &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="2" ss:StyleID="m362113564"><Data ss:Type="String">4</Data></Cell>
+    <Cell ss:MergeDown="2" ss:StyleID="m362113584"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352417692&#10;07742563983&#10;09942563179&#10;01153679822&#10;03352674918&#10;&#10;<B>je 3 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="2" ss:StyleID="m362113604"><Data ss:Type="String">Arbeitnehmer mit Zahlung einer Abfindung</Data></Cell>
+    <Cell ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="69">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">LStB &quot;Zahlung Abfindung&quot;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s143"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="7" ss:StyleID="m362116000"><Data ss:Type="String">5</Data></Cell>
+    <Cell ss:MergeDown="7" ss:StyleID="m362116020"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352419681&#10;07792563183&#10;00153674828&#10;01193674829&#10;09952674812&#10;&#10;<B>je 8 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="7" ss:StyleID="m362116040"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer mit 4 Lohnsteuerbescheinigungen (2x Steuerklasse I, 2x Steuerklasse VI)</Data></Cell>
+    <Cell ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s96"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer mit Steuerklasse I&#10;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer mit Steuerklasse I</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer mit Steuerklasse VI</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer mit Steuerklasse 0</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer; das Element &quot;ELSTAM&quot; ist 2x vorhanden; 1x ist Steuerklasse I und 1x ist Steuerklasse IV enthalten </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">sozialversicherungspflichtiger Arbeitnehmer; das Element &quot;ELSTAM&quot; ist 2x vorhanden; 1x ist Steuerklasse I und 1x ist Steuerklasse VI enthalten</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:StyleID="s145">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s146"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:StyleID="s145">
+    <Cell ss:MergeDown="6" ss:StyleID="m362116060"><Data ss:Type="String">6</Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362116080"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352417981&#10;08842569173&#10;04531672808&#10;01153974829&#10;04452673816&#10;&#10;<B>je 7 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362116100"><Data ss:Type="String">Rentenempfänger Altersrente (Krankenversicherungsbeiträge werden vom Rentenversicherungsträger abgeführt),&#10;Bezug einer privaten Rente,&#10;Freistellungsauftrag</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s161"><Data ss:Type="String">Die in der RBM enthaltenen &quot;BeitragDaten&quot; umfassen die Zahlung zur gesetzlichen Kranken- und Pflegeversicherung; Leistungsempfänger &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s162"><Data ss:Type="String">Die in der RBM enthaltenen &quot;BeitragDaten&quot; umfassen die Zahlung zur gesetzlichen Kranken- und Pflegeversicherung; Leistungsempfänger &#45;-&gt; Name, Vorname</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s104"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Test neue Zuordnung Vorzeitraum bei Rechtsgrund 06</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s163"><Data ss:Type="String">VaSt_FSA, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s164"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s146"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="6" ss:StyleID="m362114544"><Data ss:Type="String">7</Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362114564"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03392417683&#10;00953674825&#10;04539672800&#10;09953674821&#10;04452673890&#10;&#10;<B>je 7 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362114584"><Data ss:Type="String">Empfänger Versorgungsbezüge (inkl. einmaliger Versorgungsbezug),&#10;Rente aus einem Rentenvertrag (Kleinbetragsrente)</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Empfänger einmaliger Versorgungsbezüge</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Empfänger Versorgungsbezüge; das Element VBez ist 2x vorhanden; Test der Zuordnung bei Wiederholung des Elements Vbez</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="39.5625">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Empfänger Versorgungsbezüge; das Element VBez ist 2x vorhanden, in der ersten Wiederholung hat das Element VBez/Wert den Wert 0.00; Test der Zuordnung bei Wiederholung des Elements VBez und Nichtzuordnung der Wiederholung mit VBez/Wert=0</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s165"><Data ss:Type="String">Test der Zuordnung bei Wiederholung des Elements VBez; Hinweis: Dies ist ein reiner Testfall für die Zuordnung. LStB mit Angaben zu VBez enthalten auch immer Angaben zum BmgFreibetrag</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s146"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="5" ss:StyleID="m362114604"><Data ss:Type="String">8</Data></Cell>
+    <Cell ss:MergeDown="5" ss:StyleID="m362114624"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352917681&#10;04531972802&#10;00153674893&#10;02253674813&#10;04459673812&#10;&#10;<B>je 6 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="5" ss:StyleID="m362114644"><Data ss:Type="String">Rentner (1x Altersrente, 1x Witwenrente, 2x Rente mit 2 Teilleistungen aus geförderten/nicht geförderten Kapital wegen schädlicher Verwendung)</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s99"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">In RBM enthaltene KVPV-Beiträge sowohl Zahlung als auch Erstattung </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="33.75">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s173"/>
+    <Cell ss:StyleID="s173"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s175"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="3" ss:StyleID="m362114752"><Data ss:Type="String">9</Data></Cell>
+    <Cell ss:MergeDown="3" ss:StyleID="m362114772"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03359417681&#10;01153694820&#10;04531679806&#10;02253674897&#10;04452679811&#10;&#10;<B>je 4 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="3" ss:StyleID="m362114792"><Data ss:Type="String">Beamter,&#10;privat krankenversichert</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB Beamter</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="66">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">KVPV: Beitragstragung durch den Versicherungsnehmer&#10;Gezahlte und erstattete Beiträge zur Krankenversicherung&#10;Gezahlte und erstattete Beiträge zur Pflegeversicherung&#10;Gezahlte und erstattete Gesamtbeiträge zur Krankenversicherung&#10;Gezahlte und erstattete Gesamtbeiträge zur Pflegeversicherung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="6" ss:StyleID="m362114812"><Data ss:Type="String">10</Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362114832"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352497685&#10;01153674922&#10;00159674829&#10;02259674819&#10;04492673812&#10;&#10;<B>je 7 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="6" ss:StyleID="m362114852"><Data ss:Type="String">Arbeitnehmer mit Zahlung Kurzarbeitergeld,&#10;Rürup-Verträge,&#10;Zuschuss zum Rürup-Vertrag</Data></Cell>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB &quot;Zahlung Kurzarbeitergeld&quot;&#10;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RUE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Element &quot;Werte&quot; kommt 2x vor</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RUE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RUE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Währung=USD</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_ZUS, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s175"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="4" ss:StyleID="m362114960"><Data ss:Type="String">11</Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362114980"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">03352417684&#10;07749563187&#10;04591672809&#10;02253679810&#10;04452973815&#10;&#10;<B>je 5 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362115000"><Data ss:Type="String">Empfänger Versorgungsbezüge,&#10;Rente aus Pensionsfonds&#10;</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB &quot;Empfänger Versorgungsbezüge&quot;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB &quot;Empfänger erm. besteuerte Versorgungsbezüge&quot;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="49.5">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s175"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="5" ss:StyleID="m362115020"><Data ss:Type="String">12</Data></Cell>
+    <Cell ss:MergeDown="5" ss:StyleID="m362115040"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">09953417687&#10;07742569184&#10;00153679821&#10;02293674814&#10;04452693813&#10;&#10;<B>je 6 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="5" ss:StyleID="m362115060"><Data ss:Type="String">Rentenempfänger Altersrente (mit Zuschuss zur Krankenversicherung),&#10;2x private Krankenversicherung,&#10;Zuschuss zur Krankenversicherung</Data></Cell>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">erste KVPV: Gezahlte und erstattete Beiträge zur privaten Krankenversicherung mit Beitragstragung<B><Font
+        html:Color="#FF0000"> </Font></B><Font html:Color="#000000">durch unbekannt </Font></ss:Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">zweite KVPV: Gezahlte und erstattete Beiträge zur privaten Krankenversicherung mit Beitragstragung durch Dritte</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="32.25">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_ZUS, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s196"/>
+    <Cell ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="26" ss:StyleID="m362115168"><Data ss:Type="String">13/14/15</Data></Cell>
+    <Cell ss:MergeDown="23" ss:StyleID="s198"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40"><B>(Ehemann, IdNr. 13)</B><Font>&#10;02253417695&#10;07742963187&#10;09531672807&#10;02253974819&#10;04452673912&#10;</Font><B>je 13 Belege</B><Font>&#10;&#10;</Font><B>(Ehefrau, IdNr. 14)</B><Font>&#10;02253419684&#10;07742593185&#10;00193674826&#10;02253694817&#10;09952673813&#10;</Font><B>je 10 Belege</B><Font>&#10;&#10;</Font><B>(Kind, IdNr. 15)</B><Font>&#10;02253417986&#10;07742563194&#10;04931672805&#10;02253674910&#10;05542673815&#10;</Font><B>je 4 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="23" ss:StyleID="s186"><Data ss:Type="String">Ehemann Beamter,&#10;Ehefrau Beamtin,&#10;Bezug von Lohnersatzleistungen durch Ehemann und Ehefrau&#10;&#10;2x private Krankenversicherung (Ehemann = versicherte Person, Ehemann = Versicherungsnehmer)&#10;&#10;private Krankenversicherung (Ehefrau = versicherte Person, Ehemann = Versicherungsnehmer)&#10;&#10;private Krankenversicherung (Ehefrau = versicherte Person, Ehefrau = Versicherungsnehmer)&#10;&#10;private Krankenversicherung (Kind = versicherte Person, Ehemann = Versicherungsnehmer)&#10;&#10;private Krankenversicherung (Kind = versicherte Person, Ehefrau = Versicherungsnehmer)&#10;&#10;private Krankenversicherung (Kind = versicherte Person, Kind = Versicherungsnehmer)&#10;&#10;2 Riester-Verträge Ehemann&#10;&#10;Riester-Vertrag Ehefrau&#10;&#10;Vermögensbildungsbescheinigung für Ehemann / Ehefrau / Kind&#10;&#10;Freistellungsauftrag für Ehemann / Ehefrau / Ehegatten</Data></Cell>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) Steuerkontoinhaber </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14) Ehegatte/Lebenspartner</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15) Kind</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) Steuerkontoinhaber </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14) Ehegatte/Lebenspartner</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15) Kind</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="118.6875">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) LStB &quot;Beamter&quot; dritte KVPV: Beitragstragung unbekannt; gezahlte+erstattete private KV.&#10;&#10;Beleg KVPV Kind darf nicht zur Verfügung gestellt werden, wenn Belege für IdNr. Ehemann oder Ehefrau abgeholt werden.&#10;&#10;Beleg KVPV Ehefrau=versicherte Person darf nicht zur Verfügung gestellt werden, wenn Belege für IdNr. Ehemann abgeholt werden.&#10;&#10;Beleg KVPV Ehemann=Versicherungsnehmer, darf nicht zur Verfügung gestellt werden, wenn Belege für IdNr. Kind abgeholt werden.</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14) LStB &quot;Beamter&quot; </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LErsL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="66">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13 = versicherte Person; IdNr. 13 = Versicherungsnehmer)  erste KVPV: Beitragstragung durch Versicherungsnehmer: gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung, gezahlter Beitrag zur gesetzlichen Pflegepflichtversicherung, erstatteter Beitrag zur gesetzlichen Pflegepflichtversicherung, Gesamtbeitrag zur Krankenversicherung, erstatteter Gesamtbeitrag zur Krankenversicherung, Gesamtbeitrag zur Pflegeversicherung, erstatteter Gesamtbeitrag zur Pflegeversicherung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="52.6875">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13 = versicherte Person; IdNr. 13 = Versicherungsnehmer) zweite KVPV: Beitragstragung durch Versicherungsnehmer: gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung, gezahlter Beitrag zur gesetzlichen Pflegepflichtversicherung, erstatteter Beitrag zur gesetzlichen Pflegepflichtversicherung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="66">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14 = versicherte Person; IdNr. 13 = Versicherungsnehmer) dritte KVPV: Beitragstragung durch Versicherungsnehmer: gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung, gezahlter Beitrag zur gesetzlichen Pflegepflichtversicherung, erstatteter Beitrag zur gesetzlichen Pflegepflichtversicherung; alle Beiträge sind doppelt vorhanden&#10;Testfall: Beleg darf nur bei Abholung mit IdNr.=13 erfolgen; bei Abholung mit IdNr.=14 darf Beleg nicht bereitgestellt werden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="39.5625">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14 = versicherte Person; IdNr. 14 = Versicherungsnehmer) vierte KVPV: Beitragstragung durch Versicherungsnehmer: gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung, gezahlter Beitrag zur gesetzlichen Pflegepflichtversicherung, erstatteter Beitrag zur gesetzlichen Pflegepflichtversicherung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="66">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15 = versicherte Person; IdNr. 13 = Versicherungsnehmer) fünfte KVPV: Beitragstragung durch unbekannt; gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung&#10;Testfall: Beleg darf nur bei Abholung mit IdNr.=13 erfolgen; bei Abholung mit IdNr.=15 darf Beleg nicht bereitgestellt werden&#10;Neben den Beiträgen (wie bisher) wird nunmehr auch der Vorname und das GebDatum des Kindes auf der Anlage Kind eingefüllt (Test für EOP)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="66">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15 = versicherte Person; IdNr. 14 = Versicherungsnehmer) sechste KVPV: Beitragstragung durch unbekannt; gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung&#10;Testfall: Beleg darf nur bei Abholung mit IdNr.=14 erfolgen; bei Abholung mit IdNr.=15 darf Beleg nicht bereitgestellt werden&#10;Neben den Beiträgen (wie bisher) wird nunmehr auch der Vorname und das GebDatum des Kindes auf der Anlage Kind eingefüllt (Test für EOP)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="52.6875">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_KRV, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15 = versicherte Person; IdNr. 15 = Versicherungsnehmer) siebte KVPV: Beitragstragung durch Versicherungsnehmer: gezahlter Beitrag zur privaten Krankenversicherung, erstatteter Beitrag zur privaten Krankenversicherung, gezahlter Beitrag zur gesetzlichen Pflegepflichtversicherung, erstatteter Beitrag zur gesetzlichen Pflegepflichtversicherung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) Element Beitragsdaten 2x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_RIE, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_VWL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_VWL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_VWL, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 15)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="2" ss:StyleID="s203"/>
+    <Cell ss:StyleID="s204"/>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_FSA, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) Ehemann (betroffene Person) + Ehefrau (Ehegatte betroffene Person)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="2" ss:StyleID="s203"/>
+    <Cell ss:StyleID="s204"/>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_FSA, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 13) Ehemann (betroffene Person) </Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="2" ss:StyleID="s205"/>
+    <Cell ss:StyleID="s206"/>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_FSA, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">(IdNr. 14) Ehefrau (betroffene Person)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s142"/>
+    <Cell ss:StyleID="s174"/>
+    <Cell ss:StyleID="s207"/>
+    <Cell ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="7" ss:StyleID="m362115228"><Data ss:Type="String">16</Data></Cell>
+    <Cell ss:MergeDown="7" ss:StyleID="m362115248"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">02293417683&#10;09942563187&#10;00153974821&#10;09953674813&#10;05542673899&#10;&#10;<B>je 8 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="7" ss:StyleID="m362115268"><Data ss:Type="String">Rentner (1x Altersrente, 1x Witwenrente, 2x Rente aus geförderten/nicht geförderten Kapital wegen schädlicher Verwendung, 2x Rente aus Zusatzversorgungskasse)</Data></Cell>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:MergeDown="5" ss:StyleID="m362115376"><Data ss:Type="String">In RBM enthaltene KVPV-Beiträge sowohl Zahlung als auch Erstattung (Zahlungen jeweils 2x enthalten)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s141"/>
+    <Cell ss:StyleID="s214"/>
+    <Cell ss:StyleID="s215"/>
+    <Cell ss:StyleID="s207"/>
+    <Cell ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="9" ss:StyleID="m362115396"><Data ss:Type="String">17</Data></Cell>
+    <Cell ss:MergeDown="9" ss:StyleID="m362115416"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">02253917685&#10;08842563176&#10;00153694827&#10;03352674811&#10;05549673813&#10;&#10;<B>je 10 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="9" ss:StyleID="m362115436"><Data ss:Type="String">Testfälle RBM zur Prüfung besonderer Zuordnungen/Validierungsbedingungen</Data></Cell>
+    <Cell ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="26.4375">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Die &quot;BeitragDaten&quot;  haben das gleiche ESt-Zielfeld.&#10;Test der Addition innerhalb des Beleges (gleiche Wiederholungsgruppe)</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Währung= USD</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Das Element &quot;Vorzeitraum&quot; ist 3x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Das Element &quot;Vorzeitraum&quot; ist 4x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">2x Teilleistung</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">&quot;Teilleistung&quot;, der Leistungsbetrag ist negativ</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">&quot;Teilleistung&quot;, der Leistungsbetrag ist negativ</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_RBM, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">&quot;Teilleistung&quot;, das Element Teilleistung/Geburtsdatum enthält den Wert &quot;1934-00-00&quot;</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="4" ss:StyleID="m362115456"><Data ss:Type="String">18</Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362115476"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">02259417680&#10;08842563971&#10;04531692805&#10;03352674895&#10;05542679814&#10;&#10;<B>je 5 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="4" ss:StyleID="m362115496"><Data ss:Type="String">Testfälle LStB zur Prüfung besonderer Zuordnungen/Validierungsbedingungen</Data></Cell>
+    <Cell ss:StyleID="s98"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB Maximalfall; das Element VBez ist 5x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:Index="4" ss:StyleID="s98"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB Maximalfall; das Element VBez ist 3x vorhanden; das Element ErmStVBezMKalJahr ist 2x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="42.75">
+    <Cell ss:Index="4" ss:StyleID="s100"><Data ss:Type="String">VaSt_LStB, Version 202101</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">LStB Maximalfall; das Element ErmStVBezMKalJahr ist 5x vorhanden</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:Index="6" ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="1" ss:StyleID="m362116624"><Data ss:Type="String">19</Data></Cell>
+    <Cell ss:MergeDown="1" ss:StyleID="m362116644"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">02253497683&#10;08849563175&#10;00153674924&#10;03359674817&#10;05592673817&#10;&#10;<B>je 2 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="1" ss:StyleID="m362116664"><Data ss:Type="String">Einfacher Testfall nur mit Stammdaten eines Steuerkontoinhabers</Data></Cell>
+    <Cell ss:StyleID="s228"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Steuerkontoinhaber</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="84.75">
+    <Cell ss:Index="4" ss:StyleID="s228"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:Index="6" ss:StyleID="s145"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:MergeDown="1" ss:StyleID="m362116684"><Data ss:Type="String">20</Data></Cell>
+    <Cell ss:MergeDown="1" ss:StyleID="m362116704"><ss:Data ss:Type="String"
+      xmlns="http://www.w3.org/TR/REC-html40">02253417687&#10;08892563171&#10;04531672904&#10;03352679815&#10;05542973813&#10;&#10;<B>je 2 Belege</B></ss:Data></Cell>
+    <Cell ss:MergeDown="1" ss:StyleID="m362116724"><Data ss:Type="String">Einfacher Testfall nur mit Stammdaten eines Ehegatten/Lebenspartners</Data></Cell>
+    <Cell ss:StyleID="s228"><Data ss:Type="String">VaSt_Pers1, Version 4</Data></Cell>
+    <Cell ss:StyleID="s97"><Data ss:Type="String">Ehegatte/Lebenspartner</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0" ss:Height="81">
+    <Cell ss:Index="4" ss:StyleID="s228"><Data ss:Type="String">VaSt_Pers2, Version 1</Data></Cell>
+    <Cell ss:StyleID="s97"/>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Layout x:Orientation="Landscape"/>
+    <Header x:Margin="0.19685039370078741"/>
+    <Footer x:Margin="0.19685039370078741"/>
+    <PageMargins x:Bottom="0.39370078740157483" x:Left="0.39370078740157483"
+     x:Right="0.39370078740157483" x:Top="0.39370078740157483"/>
+   </PageSetup>
+   <Unsynced/>
+   <Print>
+    <ValidPrinterInfo/>
+    <PaperSizeIndex>9</PaperSizeIndex>
+    <HorizontalResolution>600</HorizontalResolution>
+    <VerticalResolution>600</VerticalResolution>
+   </Print>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>3</ActiveRow>
+     <ActiveCol>1</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+ </Worksheet>
+</Workbook>

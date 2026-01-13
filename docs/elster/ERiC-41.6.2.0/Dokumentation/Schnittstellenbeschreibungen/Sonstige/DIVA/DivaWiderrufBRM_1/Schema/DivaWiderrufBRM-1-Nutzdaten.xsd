@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:divaWiderrufBRM="http://finkonsens.de/elster/elsterbrm/divawiderrufbrm/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/divawiderrufbrm/v1" schemaLocation="DivaWiderrufBRM-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="divaWiderrufBRM:DivaWiderrufBRM"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

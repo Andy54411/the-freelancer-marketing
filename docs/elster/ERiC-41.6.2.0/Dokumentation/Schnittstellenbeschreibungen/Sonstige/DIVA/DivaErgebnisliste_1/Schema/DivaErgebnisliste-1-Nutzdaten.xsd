@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:divaErgebnisliste="http://finkonsens.de/elster/elsterbrm/divaergebnisliste/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/divaergebnisliste/v1" schemaLocation="DivaErgebnisliste-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="divaErgebnisliste:DivaErgebnisliste"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Version 1.02 -->
+<xs:schema targetNamespace="http://www.elster.de/KontoAbfrage/Basistypen000003" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ekobasis="http://www.elster.de/KontoAbfrage/Basistypen000003" xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.elster.de/basis08/XMLSchema" schemaLocation="./allg000008.xsd"/>
+	<!-- Definierung globaler simple Types________________________________________________________-->
+	<xs:simpleType name="Nutzerrolle_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">welche Rolle hat der aktuelle Nutzer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Steuerpflichtiger"/>
+			<xs:enumeration value="Bevollmaechtigter"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Nutzerrolle_Stpfl_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">welche Rolle hat der aktuelle Nutzer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Steuerpflichtiger"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Nutzerrolle_Bevollm_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">welche Rolle hat der aktuelle Nutzer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Bevollmaechtigter"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Nutzerrolle_Steuerberater_SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Steuerberater"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Nutzerrolle_Bevollmaechtigter_SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Firmenvertreter"/>
+			<xs:enumeration value="Sonstiger"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="NutzerAnrede_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">welche Rolle hat der aktuelle Nutzer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Herr"/>
+			<xs:enumeration value="Frau"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="FirmenAnrede_SType">
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:enumeration value="Firma"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AllgemeineAnrede_Union">
+		<xs:union memberTypes="ekobasis:NutzerAnrede_SType ekobasis:FirmenAnrede_SType"/>
+	</xs:simpleType>
+	<xs:simpleType name="Titel_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Titel des Nutzers - leeres Feld unzulässig ! </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="30"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Nachname_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Firmenname_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringLightSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Vorname_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Geburtsdatum_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:length value="8"/>
+			<xs:pattern value="[0-3][0-9](([0][1-9])|([1][0-2]))(((18)(8|9)\d)|((19|20)\d{2}))"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Postleitzahl_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_PLZSType"/>
+	</xs:simpleType>
+	<xs:simpleType name="Ort_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="30"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Strasse_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Hausnummer_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="5"/>
+			<xs:pattern value="\d*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Hausnummernzusatz_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_HausnummernZusatzSType"/>
+	</xs:simpleType>
+	<xs:simpleType name="EMail_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="255"/>
+			<xs:pattern value="[a-zA-ZÄäÖöÜü0-9.!#$&amp;%'*+/=?^_`{|}~-]+@[a-zA-ZÄäÖöÜü0-9]([a-zA-ZÄäÖöÜü0-9-]{0,61}[a-zA-ZÄäÖöÜü0-9])?(\.[a-zA-ZÄäÖöÜü0-9]([a-zA-ZÄäÖöÜü0-9-]{0,61}[a-zA-ZÄäÖöÜü0-9])?)*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="EMail_Versand_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Email-Versand ja - nein</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:maxLength value="4"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="EMail_Ordnungsbegriff_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">eigener Ordnungsbegriff des Nutzers bei Email-Benachrichtigung</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Telefon_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Hilfetext </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_TelefonnummerSType">
+			<xs:maxLength value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="ReturnCode_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">9-stelliger nummerischer ReturnCode</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="9"/>
+			<xs:pattern value="0"/>
+			<xs:pattern value="\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Antragsdatum_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Format: TT.MM.JJJJ hh:mm:ss</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:length value="19"/>
+			<xs:pattern value="[0-9]{2}.[0-9]{2}.[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="FingerPrint_SType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">17-stellig nummerisch</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:length value="17"/>
+			<xs:pattern value="\d{17}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="DatumDDMMYYYYSType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Datum 8-stellig ohne Trennzeichen</xs:documentation>
+			<xs:documentation xml:lang="DE">Format : JJJJMMTT</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="elsterbase:allg_BaseStringSType">
+			<xs:length value="8"/>
+			<xs:pattern value="[0-3][0-9](([0][0-9])|([1][0-2]))(((18)(8|9)\d)|((19|20)\d{2}))"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Complexe Typen -->
+</xs:schema>

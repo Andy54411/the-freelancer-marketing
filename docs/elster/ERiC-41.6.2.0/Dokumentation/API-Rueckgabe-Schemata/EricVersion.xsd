@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:eric="http://www.elster.de/EricXML/1.0/EricVersion"
+        targetNamespace="http://www.elster.de/EricXML/1.0/EricVersion"
+        elementFormDefault="qualified">
+
+    <annotation>
+        <documentation xml:lang="de">
+            XML-Daten mit diesem Schema werden von der ERiC-Funktion EricVersion im Rückgabepuffer zurückgegeben.
+        </documentation>
+    </annotation>
+
+    <element name="EricVersion">
+        <annotation>
+            <documentation xml:lang="de">
+                Wurzelelement für Rückgabedaten. Enthält eine Auflistung der von ERiC verwendeten Bibliotheken und
+                Versionsinformationen über diese.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <sequence>
+                <element name="Bibliothek" type="eric:BibliothekTyp" maxOccurs="unbounded" />
+            </sequence>
+        </complexType>
+    </element>
+
+    <complexType name="BibliothekTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Eine der von ERiC verwendeten Bibliotheken. Es wird der Name der Bibliothek,
+                deren Produktversion-Eigenschaft, sowie deren Dateiversion-Eigenschaft
+                zurückgegeben.
+            </documentation>
+        </annotation>
+
+        <sequence>
+            <element name="Name" type="string" />
+            <element name="Produktversion" type="string" />
+            <element name="Dateiversion" type="string" />
+            <element name="PruefModul" type="eric:PruefModulTyp" minOccurs="0" maxOccurs="unbounded" />
+        </sequence>
+    </complexType>
+
+    <complexType name="PruefModulTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Versionsstand des intern verwendeten Prüf-Moduls.
+            </documentation>
+        </annotation>
+
+        <sequence>
+            <element name="Datenartversion" type="string" />
+            <element name="Label" type="string" />
+            <element name="Runtime" type="string" />
+        </sequence>
+    </complexType>
+</schema>

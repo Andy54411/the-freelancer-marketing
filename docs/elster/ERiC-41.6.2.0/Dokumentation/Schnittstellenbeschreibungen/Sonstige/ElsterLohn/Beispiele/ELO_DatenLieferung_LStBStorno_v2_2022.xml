@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Dies ist eine beispielhafte Datenlieferung zur Stornierung einer
+	Lohnsteuerbescheinigung. Die Stornierung (LStBStorno) ist in Version "2".
+	Dieses Beispiel zeigt eine noch nicht verschlüsselte oder
+	signierte Datenlieferung inklusive TransferHeader. Die Lieferung
+	enthält einen Nutzdatenblock mit einer Bescheinigung.
+-->
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterLohn</Verfahren>
+		<DatenArt>LStB</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>220000000</Testmerker>
+		<SigUser>
+			<!-- entsprechend den Vorgaben aus ElsterBasis // Beschreibung des allgemeinen XML-Aufbaus bei ELSTER -->
+		</SigUser>
+		<Empfaenger id="L">
+			<Ziel>CS</Ziel>
+		</Empfaenger>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Testdatenlieferant; Roßstr. 131;-133 ; ; 40476; Düsseldorf; Deutschland; 0211-1234-0 ; kontakt@testdatenlieferant.de</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<!-- Das Nutzdatenticket dient der späteren Zuordnung von Fehlern und muss eindeutig innerhalb der Lieferung sein. -->
+				<NutzdatenTicket>1aStornierung</NutzdatenTicket>
+				<Empfaenger id="L">NW</Empfaenger>
+				<Hersteller>
+					<ProduktName>MyLohnbuchhaltung-Testtool</ProduktName>
+					<ProduktVersion>0.9</ProduktVersion>
+				</Hersteller>
+				<!-- Der Datenlieferant dieses Nutzdatenblocks -->
+				<DatenLieferant>Testdatenlieferant; Roßstr. 131;-133 ; ; 40476; Düsseldorf; Deutschland; 0211-1234-0 ; kontakt@testdatenlieferant.de</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<LStBStorno xmlns="http://finkonsens.de/rms/elo/lstbstorno/v2" version="2">
+					<Anweisung art="Storno">
+						<KmId>2022-LST-20013456978-01013112-5313058590230-OM_42-STO</KmId>
+						<!-- Durch Angabe dieser RefKmId wird die Bescheinigung aus ELO_DatenLieferung_LStB_202201_Korrektur.xml referenziert, um diese zu stornieren. -->
+						<RefKmId>2022-LST-20013456978-01013112-5313058590230-OM_42-KOR-001</RefKmId>
+					</Anweisung>
+					<Zuflussjahr>2022</Zuflussjahr>
+					<Allgemein>
+						<IdNr>20013456978</IdNr>
+						<Ordnungsmerkmal>OM_42</Ordnungsmerkmal>
+					</Allgemein>
+					<Arbeitgeber>
+						<ArbGName>Dagobert-Duck AG</ArbGName>
+						<ArbGStNr>5313058590230</ArbGStNr>
+					</Arbeitgeber>
+				</LStBStorno>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

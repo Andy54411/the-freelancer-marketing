@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Adapterschema für die elektronische Lohnsteuerbescheinigung 2019 (Version 201901).
+	=============
+	Änderungshistorie
+	Version 1: Erstellung
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://www.elsterlohn.de/2019-01/XMLSchema" targetNamespace="http://www.elsterlohn.de/2019-01/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- RootElement = Lohnsteuerbescheinigung 2019_________________________________________________-->
+	<xs:include schemaLocation="./lstb201901.xsd"/>
+	<xs:element name="Lohnsteuerbescheinigung" type="elsterlohn:lstb_LohnsteuerbescheinigungCType"/>
+</xs:schema>

@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:kapEStA="http://finkonsens.de/elster/elsterkapest/kapesta/v2023" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterkapest/kapesta/v2023" schemaLocation="KapEStA-2023.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="kapEStA:KapEStA"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

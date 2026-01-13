@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vaSt_FSA="http://finkonsens.de/elster/elstervast/vastfsa/v202101" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstervast/vastfsa/v202101" schemaLocation="VaSt_FSA-202101.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="vaSt_FSA:VaSt_FSA"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

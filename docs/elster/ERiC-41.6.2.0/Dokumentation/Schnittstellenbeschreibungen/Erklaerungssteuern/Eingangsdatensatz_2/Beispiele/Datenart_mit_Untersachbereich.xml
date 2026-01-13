@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<!-- datenart_mit_Untersachbereich: 
+        FEIN Unterfallart 90 
+		Naehere Informationen zur Datenart und Schnittstelle sind unter dem entsprechenden 
+		Kapitel der o.g. Datenart im Entwicklerhandbuch zu finden. -->
+		<DatenArt>FEIN</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<Empfaenger id="L">
+			<Ziel>NW</Ziel>
+		</Empfaenger>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Beispiel-Software-Hersteller</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel />
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfojasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">5217</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<Jahressteuererklaerung version="2">
+					<Vorsatz unterfallart="90" ordNrArt="S" vorgang="01">
+						<StNr>5217050000924</StNr>
+						<Zeitraum>2019</Zeitraum>
+						<Erstelldatum>20190502</Erstelldatum>
+						<Erstellzeit>183952</Erstellzeit>
+						<AbsName>Max Mustermann</AbsName>
+						<AbsStr>Musterstr. 1</AbsStr>
+						<AbsPlz>08150</AbsPlz>
+						<AbsOrt>Musterstadt</AbsOrt>
+						<Copyright>Beispiel-Steuer-Software</Copyright>
+						<Rueckuebermittlung bescheid="nein" />
+					</Vorsatz>
+					<Feld nr="9011011" index="01" lfdNr="00001" wert="1"/>
+					<Feld nr="9750005" index="01" lfdNr="00001" wert="TestOHG"/>
+					<Feld nr="9750021" index="01" lfdNr="00001" wert="Testgasse"/>
+					<Feld nr="9750022" index="01" lfdNr="00001" wert="1"/>
+					<Feld nr="9750023" index="01" lfdNr="00001" wert="a"/>
+					<Feld nr="9750007" index="01" lfdNr="00001" wert="12345"/>
+					<Feld nr="9750008" index="01" lfdNr="00001" wert="Musterstadt"/>
+					<Feld nr="9750900" index="01" lfdNr="00001" wert="X"/>
+					<Feld nr="9750903" index="01" lfdNr="00001" wert="X"/>
+					<Feld nr="9750901" index="01" lfdNr="00001" wert="X"/>
+					<Feld nr="9011040" index="01" lfdNr="00001" wert="2"/>
+					
+					<Feld nr="9013102" index="01" lfdNr="00001" wert="84,36"/>
+					<!-- Beginn Untersachbereich 1 -->
+					<Usb nr="1">
+						<Feld nr="9146013" index="01" lfdNr="00001" wert="Vorname"/>
+						<Feld nr="9146011" index="01" lfdNr="00001" wert="Tester1"/>
+						<Feld nr="9113102" index="01" lfdNr="00001" wert="42,18"/>
+						<Feld nr="9846024" index="01" lfdNr="00001" wert="Testgasse 1a"/>
+						<Feld nr="9846027" index="01" lfdNr="00001" wert="80807"/>
+						<Feld nr="9846028" index="01" lfdNr="00001" wert="Musterstadt"/>
+						<Feld nr="9850012" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9850011" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9852001" index="01" lfdNr="00001" wert="01.01.2019"/>
+						<Feld nr="9145101" index="01" lfdNr="00001" wert="8"/>
+						<Feld nr="9145770" index="01" lfdNr="00001" wert="0"/>
+					</Usb>
+					<!-- Ende Untersachbereich 1 -->
+					<!-- Beginn Untersachbereich 2 -->
+					<Usb nr="100">
+						<Feld nr="9146013" index="01" lfdNr="00001" wert="Vorname"/>
+						<Feld nr="9146011" index="01" lfdNr="00001" wert="Tester1"/>
+						<Feld nr="9113102" index="01" lfdNr="00001" wert="42,18"/>
+						<Feld nr="9846024" index="01" lfdNr="00001" wert="Testgasse 1a"/>
+						<Feld nr="9846027" index="01" lfdNr="00001" wert="80807"/>
+						<Feld nr="9846028" index="01" lfdNr="00001" wert="Musterstadt"/>
+						<Feld nr="9850012" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9850011" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9852001" index="01" lfdNr="00001" wert="01.01.2019"/>
+						<Feld nr="9145101" index="01" lfdNr="00001" wert="8"/>
+						<Feld nr="9145770" index="01" lfdNr="00001" wert="0"/>
+					</Usb>
+					<!-- Ende Untersachbereich 2 -->
+					<!-- Beginn Untersachbereich 3 -->
+					<Usb nr="12345">
+						<Feld nr="9146013" index="01" lfdNr="00001" wert="Vorname"/>
+						<Feld nr="9146011" index="01" lfdNr="00001" wert="Tester1"/>
+						<Feld nr="9846024" index="01" lfdNr="00001" wert="Testgasse 1a"/>
+						<Feld nr="9846027" index="01" lfdNr="00001" wert="80807"/>
+						<Feld nr="9846028" index="01" lfdNr="00001" wert="Musterstadt"/>
+						<Feld nr="9850012" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9850011" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9852001" index="01" lfdNr="00001" wert="01.01.2019"/>
+						<Feld nr="9145101" index="01" lfdNr="00001" wert="8"/>
+						<Feld nr="9145770" index="01" lfdNr="00001" wert="0"/>
+					</Usb>
+					<!-- Ende Untersachbereich 3 -->
+					<!-- Beginn Untersachbereich 4 -->
+					<Usb nr="42">
+						<Feld nr="9146013" index="01" lfdNr="00001" wert="Vorname"/>
+						<Feld nr="9146011" index="01" lfdNr="00001" wert="Tester1"/>
+						<Feld nr="9846024" index="01" lfdNr="00001" wert="Testgasse 1a"/>
+						<Feld nr="9846027" index="01" lfdNr="00001" wert="80807"/>
+						<Feld nr="9846028" index="01" lfdNr="00001" wert="Musterstadt"/>
+						<Feld nr="9850012" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9850011" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9852001" index="01" lfdNr="00001" wert="01.01.2019"/>
+						<Feld nr="9145101" index="01" lfdNr="00001" wert="8"/>
+						<Feld nr="9145770" index="01" lfdNr="00001" wert="0"/>
+					</Usb>
+					<!-- Ende Untersachbereich 4 -->
+					<!-- Beginn Untersachbereich 5 -->
+					<Usb nr="9999">
+						<Feld nr="9146013" index="01" lfdNr="00001" wert="Vorname"/>
+						<Feld nr="9146011" index="01" lfdNr="00001" wert="Tester1"/>
+						<Feld nr="9846024" index="01" lfdNr="00001" wert="Testgasse 1a"/>
+						<Feld nr="9846027" index="01" lfdNr="00001" wert="80807"/>
+						<Feld nr="9846028" index="01" lfdNr="00001" wert="Musterstadt"/>
+						<Feld nr="9850012" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9850011" index="01" lfdNr="00001" wert="10000000000,78"/>
+						<Feld nr="9852001" index="01" lfdNr="00001" wert="01.01.2019"/>
+						<Feld nr="9145101" index="01" lfdNr="00001" wert="8"/>
+						<Feld nr="9145770" index="01" lfdNr="00001" wert="0"/>
+					</Usb>
+					<!-- Ende Untersachbereich 5 -->
+				</Jahressteuererklaerung>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VaSt_RBM - 202101 - 3.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elstervast/vastrbm/v202101" targetNamespace="http://finkonsens.de/elster/elstervast/vastrbm/v202101" xmlns:exml="http://finkonsens.de/elster/elstervast/vastrbm/v202101">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="-?[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJMMTTBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])(10|11|12|01|02|03|04|05|06|07|08|09)(0[1-9]|[1-2][0-9]|3[0-1])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJMMTTMonatOptionalBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])(10|11|12|00|01|02|03|04|05|06|07|08|09)([0-2][0-9]|3[0-1])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: MONAT_OPTIONAL</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumMMBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(10|11|12|01|02|03|04|05|06|07|08|09)">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:pattern value="\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_RBM_Mitteilung_Auszahlungsform_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="01">
+                <xs:annotation>
+                    <xs:documentation>Laufende Leistung in Form einer lebenslangen Leibrente oder Ratenzahlungen im Rahmen eines Auszahlungsplanes („Alters- oder Erwerbsminderungsleistungen“)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="02">
+                <xs:annotation>
+                    <xs:documentation>Laufende Leistung an den Hinterbliebenen in Form einer lebenslangen Leibrente</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="03">
+                <xs:annotation>
+                    <xs:documentation>Einmalige Teilkapitalauszahlung und zusätzlich laufende Leistung in Form einer lebenslangen Leibrente oder Ratenzahlungen im Rahmen eines Auszahlungsplanes („Alters- oder Erwerbsminderungsleistungen“)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="04">
+                <xs:annotation>
+                    <xs:documentation>Abfindung einer Kleinbetragsrente</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="05">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Zahlungsformen (z. B. Auflösung oder Verminderung des Wohnförderkontos)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_RBM_Mitteilung_Krankenversicherung_Beitragsart_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="01">
+                <xs:annotation>
+                    <xs:documentation>Geleistete Beiträge zur Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="03">
+                <xs:annotation>
+                    <xs:documentation>Geleistete Beiträge zur Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="04">
+                <xs:annotation>
+                    <xs:documentation>Erstattete Beiträge zur Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="06">
+                <xs:annotation>
+                    <xs:documentation>Erstattete Beiträge zur Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="02">
+                <xs:annotation>
+                    <xs:documentation>Geleisteter Beitragszuschuss zur Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="05">
+                <xs:annotation>
+                    <xs:documentation>Zurückgeforderter Beitragszuschuss zur Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_RBM_Mitteilung_Leistung_Teilleistung_Grundlage_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="01">
+                <xs:annotation>
+                    <xs:documentation>Leibrente aus einer gesetzlichen Rentenversicherung, landwirtschaftlichen Alterskasse, berufsständischen Versorgungseinrichtung oder aus einem zertifizierten Basisrentenvertrag</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="02">
+                <xs:annotation>
+                    <xs:documentation>Leibrente aus einer inländischen privaten Rentenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="03">
+                <xs:annotation>
+                    <xs:documentation>Leibrente aus einer inländischen privaten Rentenversicherung mit zeitlich befristeter Laufzeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="04">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag, einem Pensionsfonds, einer Pensionskasse oder aus einer Direktversicherung lt. Nummer 1 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="05">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Pensionsfonds laut Nummer 2 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="06">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einer betrieblichen Altersversorgung laut Nummer 4 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="07">
+                <xs:annotation>
+                    <xs:documentation>Leibrente aus einem Altersvorsorgevertrag oder aus einer betrieblichen Altersversorgung laut Nummer 5 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12a">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag wegen schädlicher Verwendung laut Nummer 9a der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="08">
+                <xs:annotation>
+                    <xs:documentation>Abgekürzte Leibrente aus einem Altersvorsorgevertrag oder aus einer betrieblichen Altersversorgung laut Nummer 6 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12b">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag wegen schädlicher Verwendung laut Nummer 9b der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="10">
+                <xs:annotation>
+                    <xs:documentation>Leistung laut Nummer 7 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="11">
+                <xs:annotation>
+                    <xs:documentation>Leistung laut Nummer 8 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12c">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag wegen schädlicher Verwendung laut Nummer 9c der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12d">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag wegen schädlicher Verwendung laut Nummer 9d der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="14">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag; Verminderungsbetrag bei Aufgabe der Selbstnutzung oder der Reinvestitionsabsicht vor dem Beginn der Auszahlungsphase laut Bescheid der Zentralen Zulagestelle für Altersvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="15">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag; Auflösungsbetrag bei Aufgabe der Selbstnutzung oder der Reinvestitionsabsicht vor dem Beginn der Auszahlungsphase laut Bescheid der Zentralen Zulagestelle für Altersvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="18">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag wegen schädlicher Verwendung laut Nummer 10 der Leistungsmitteilung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="16">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag; Auflösungsbetrag bei Wahl der Einmalbesteuerung des Wohnförderkontos laut Bescheid der Zentralen Zulagestelle für Altersvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="17">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem Altersvorsorgevertrag; Auflösungsbetrag bei Aufgabe der Selbstnutzung oder der Reinvestitionsabsicht nach dem Beginn der Auszahlungsphase laut Bescheid der Zentralen Zulagestelle für Altersvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_RBM_Mitteilung_Leistung_Teilleistung_Rentenart_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="01">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einer inländischen gesetzlichen Rentenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="02">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus der inländischen landwirtschaftlichen Alterskasse</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="03">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einer inländischen berufsständischen Versorgungseinrichtung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="04">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einem zertifizierten Basisrentenvertrag</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="09">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus einer ausländischen Versicherung oder einem ausländischen Rentenvertrag</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="99">
+                <xs:annotation>
+                    <xs:documentation>Leistung aus sonstigen Verträgen oder aus sonstigen Verpflichtungsgründen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaTrueBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="true"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL19_MaxL19_Muster712713037_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="19"/>
+            <xs:maxLength value="19"/>
+            <xs:pattern value="((0[1-9])|([12]\d)|(3[01]))\.((0[1-9])|(1[0-2]))\.2\d{3} (([01]\d)|(2[0-4])):[0-5]\d:([0-5]\d)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VaSt_RBM" type="VaSt_RBM_CType"/>
+    <xs:complexType name="VaSt_RBM_CType">
+        <xs:sequence>
+            <xs:element name="Eingangsdatum" type="String_MinL19_MaxL19_Muster712713037_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="LeistungsEmpfaenger" type="LeistungsEmpfaenger_m2062363639_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Mitteilung" type="Mitteilung_m2062363639_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="202101" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="LeistungsEmpfaenger_m2062363639_CType">
+        <xs:sequence>
+            <xs:element name="IdNr" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Titel" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Titel</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NamensVorsatz" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namensvorsatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Name" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NamensZusatz" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Namenszusatz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Blockname" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Mitteilung_m2062363639_CType">
+        <xs:sequence>
+            <xs:element name="Zuflussjahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zuflussjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ordnungsmerkmal" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vom Datenübermittler verwendetes Ordnungsmerkmal</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="MitteilungsPflichtigerName" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Renten-/Leistungserbringer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="VertragsNr" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vertragsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Auszahlungsform" type="Enum_VaSt_RBM_Mitteilung_Auszahlungsform_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Auszahlungsform</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Leistung" type="Leistung_1496424457_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Vorzeitraum" type="Vorzeitraum_1496424457_CType" minOccurs="0" maxOccurs="30"/>
+            <xs:element name="Krankenversicherung" type="Krankenversicherung_1496424457_CType" minOccurs="0" maxOccurs="96"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Leistung_1496424457_CType">
+        <xs:sequence>
+            <xs:element name="Anpassungsbetrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rentenanpassungsbetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BetragEinbehalt" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuerabzugsbetrag auf Grund einer Anordnung nach § 50a Absatz 7 EStG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Waehrung" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Währung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Beginn" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn der Rente/Leistung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ende der Rente/Leistung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Teilleistung" type="Teilleistung_m1990336412_CType" minOccurs="0" maxOccurs="55"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Teilleistung_m1990336412_CType">
+        <xs:sequence>
+            <xs:element name="Grundlage" type="Enum_VaSt_RBM_Mitteilung_Leistung_Teilleistung_Grundlage_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsgrundlage</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Renten-/Leistungsbetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbfindungKleinbetragsrente" type="JaTrueBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Abfindung einer Kleinbetragsrente</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rentenart" type="Enum_VaSt_RBM_Mitteilung_Leistung_Teilleistung_Rentenart_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rentenart</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EnthalteneNachzahlung" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Im Renten-/Leistungsbetrag enthaltene Nachzahlungen für mehrere vorangegangene Kalenderjahre</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Geburtsdatum" type="DatumJJJJMMTTMonatOptionalBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Geburtsdatum des Erblassers bei Garantiezeitrenten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Beginn" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn der Rente des Erblassers</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="VersFB" type="VersFB_m1501635691_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="VersFB_m1501635691_CType">
+        <xs:sequence>
+            <xs:element name="BMG" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage für den Versorgungsfreibetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>maßgebendes Kalenderjahr des Versorgungsbeginns</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Beginn" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bei unterjähriger Zahlung: Erster Monat, für den Versorgungsbezüge gezahlt wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bei unterjähriger Zahlung: Letzter Monat, für den Versorgungsbezüge gezahlt wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vorzeitraum_1496424457_CType">
+        <xs:sequence>
+            <xs:element name="Beginn" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn einer vorhergehenden Rente/Leistung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ende einer vorhergehenden Rente/Leistung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Krankenversicherung_1496424457_CType">
+        <xs:sequence>
+            <xs:element name="Beitragsart" type="Enum_VaSt_RBM_Mitteilung_Krankenversicherung_Beitragsart_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beitragsart zur Kranken-/Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Beginn" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>erster Monat des Zeitraums, für den die Beiträge/Zuschüsse zur Kranken-/Pflegeversicherung geleistet/erstattet wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>letzter Monat des Zeitraums, für den die Beiträge/Zuschüsse zur Kranken-/Pflegeversicherung geleistet/erstattet wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kalenderjahr, für das Beiträge/Zuschüsse zur Kranken-/Pflegeversicherung geleistet/erstattet wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Betrag" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Höhe der geleisteten/erstatteten Beiträge/Zuschüsse zur Kranken-/Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

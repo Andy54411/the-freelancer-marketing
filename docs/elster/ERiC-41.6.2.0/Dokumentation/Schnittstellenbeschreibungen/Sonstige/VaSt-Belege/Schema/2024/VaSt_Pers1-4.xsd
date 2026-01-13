@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 1.8 -->
+<!-- VaSt_Pers1 - 4 - 5.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://www.elster.de/2002/XMLSchema" targetNamespace="http://www.elster.de/2002/XMLSchema">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <xs:simpleType name="ContentSType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100000"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="FieldCType">
+        <xs:simpleContent>
+            <xs:extension base="ContentSType"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:simpleType name="ContentSTypeNoMaxLen">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="FieldCTypeNoMaxLen">
+        <xs:simpleContent>
+            <xs:extension base="ContentSTypeNoMaxLen"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:element name="VaSt_Pers1">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="Inhaber">
+                    <xs:complexType>
+                        <xs:choice minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="NatPers">
+                                <xs:complexType>
+                                    <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                        <xs:element name="AdrKette">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                    <xs:element name="AuslAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="AuslPlz" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="PostfAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Postfach" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="StrAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="BankKonto">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                    <xs:element name="BIC" type="FieldCType"/>
+                                                    <xs:element name="Blz" type="FieldCType"/>
+                                                    <xs:element name="IBAN" type="FieldCType"/>
+                                                    <xs:element name="Kontonummer" type="FieldCType"/>
+                                                    <xs:element name="NameInstitut" type="FieldCType"/>
+                                                    <xs:element name="Ort" type="FieldCType"/>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="GebDat" type="FieldCType"/>
+                                        <xs:element name="Name" type="FieldCType"/>
+                                        <xs:element name="NamensVorsatz" type="FieldCType"/>
+                                        <xs:element name="NamensZusatz" type="FieldCType"/>
+                                        <xs:element name="QuellHinweis" type="FieldCType"/>
+                                        <xs:element name="SteuerIDs">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                    <xs:element name="PersIdNr" type="FieldCType"/>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="Titel" type="FieldCType"/>
+                                        <xs:element name="Vorname" type="FieldCType"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Vertreter">
+                    <xs:complexType>
+                        <xs:choice minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="NNatPers">
+                                <xs:complexType>
+                                    <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                        <xs:element name="AdrKette">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                    <xs:element name="AuslAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="AuslPlz" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="GrossempfAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="PostfAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Postfach" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="StrAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="Firmenname" type="FieldCType"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="NatPers">
+                                <xs:complexType>
+                                    <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                        <xs:element name="AdrKette">
+                                            <xs:complexType>
+                                                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                    <xs:element name="AuslAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="AuslPlz" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="PostfAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Postfach" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="StrAdr">
+                                                        <xs:complexType>
+                                                            <xs:choice minOccurs="1" maxOccurs="unbounded">
+                                                                <xs:element name="AdressErg" type="FieldCType"/>
+                                                                <xs:element name="HausNr" type="FieldCType"/>
+                                                                <xs:element name="HausNrZu" type="FieldCType"/>
+                                                                <xs:element name="Ort" type="FieldCType"/>
+                                                                <xs:element name="Plz" type="FieldCType"/>
+                                                                <xs:element name="Str" type="FieldCType"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="Name" type="FieldCType"/>
+                                        <xs:element name="NamensVorsatz" type="FieldCType"/>
+                                        <xs:element name="NamensZusatz" type="FieldCType"/>
+                                        <xs:element name="Titel" type="FieldCType"/>
+                                        <xs:element name="Vorname" type="FieldCType"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+            <xs:attribute name="version" fixed="4" use="required"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

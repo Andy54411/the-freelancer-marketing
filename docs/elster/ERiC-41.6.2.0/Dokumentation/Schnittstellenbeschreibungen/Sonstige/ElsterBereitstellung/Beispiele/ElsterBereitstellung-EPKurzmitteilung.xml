@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBereitstellung</Verfahren>
+        <DatenArt>EPKurzmitteilung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Lieferant</DatenLieferant> 
+        <Datei> 
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei> 
+        <VersionClient>ERiC Beispiele</VersionClient>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>TestProdukt</ProduktName>
+                    <ProduktVersion>1.0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Lieferanteninfo</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <ElsterBereitstellung xmlns="http://www.elster.de/ElsterBereitstellung/v2">
+
+                    <Bereitstellung>
+                        <MetaInformationen>
+                            <!-- geschaeftszeichen wird erwartet, aber nicht validiert. -->
+                            <OrdnungsBegriff typ="geschaeftszeichen">1234567890</OrdnungsBegriff> 
+                            <!-- accountId Pflichtfeld. -->
+                            <OrdnungsBegriff typ="accountId">20200828</OrdnungsBegriff> 
+                            <!-- bekanntgabevorgangsid Pflichtfeld. Die ID muss pro Bescheid eindeutig sein, wird u.a. für die Duplikatsprüfung verwendet -->
+                            <OrdnungsBegriff typ="bekanntgabevorgangsid">b7afeeac-c12f-4a59-ba12-571edff5eb84</OrdnungsBegriff>
+                            <!-- lieferticket kann alles mögliche sein und stammt in der Regel nicht von ELSTER. Wird erwartet, aber nicht validiert. -->    
+                            <OrdnungsBegriff typ="lieferticket">ie2391sg5syh4s146jjrb1qatnvwf4w9</OrdnungsBegriff>                  
+                            <!-- sendername wird erwartet, aber nicht validiert. -->
+                            <OrdnungsBegriff typ="sendername">Stadt Mühldorf</OrdnungsBegriff>
+                            <!-- bezeichnungnachricht wird erwartet, aber nicht validiert. -->
+                            <OrdnungsBegriff typ="bezeichnungnachricht">Test EPKurzmitteilung</OrdnungsBegriff> 
+
+                            <MetaInfoMaps>
+                                <!-- Kurznachricht, base64-codiert -->
+                                <MetaInfoMap typ="ANSCHREIBEN">
+                                    <Meta name="sendername">Datbinich</Meta>
+                                    <Meta name="bezeichnungnachricht">Test EPKurzmitteilung</Meta>
+                                    <Meta name="textnachricht">S3VyemVyIE1pdHRlaWx1bmdzdGV4dA</Meta>
+                                </MetaInfoMap>                            
+
+                                <!-- Antwortmöglichkeit aktivieren -->
+                                <MetaInfoMap typ="ANTWORT">
+                                    <Meta name="zuordnungskriterium">914b50d8-ae93-11ed-afa1-0242ac120002</Meta>
+                                    <MetaList typ="antwortbetreff">
+                                        <MetaListElement>Betreff - Test Antwortmöglichkeit</MetaListElement>
+                                    </MetaList>
+                                </MetaInfoMap>
+                            </MetaInfoMaps>
+
+                        </MetaInformationen>
+                        <Verschluesselung/>
+                    </Bereitstellung>
+
+                    <Benachrichtigung>
+                        <EMailNachricht>
+                            <NachrichtenEmpfaenger>
+                                <EMailAdresse>irgend.jemand@irgend.was</EMailAdresse>
+                            </NachrichtenEmpfaenger>
+                            <Betreff>Test EPKurzmitteilung mit Antwortmöglichkeit</Betreff>
+                            <Text>IkJpdHRlIEt1cnptaXR0ZWlsdW5nIGFiaG9sZW4uIERhbmtlISINCg==</Text>
+                        </EMailNachricht>
+                    </Benachrichtigung>
+
+                </ElsterBereitstellung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:eric="http://www.elster.de/EricXML/1.0/EricHoleFinanzamtsdaten" targetNamespace="http://www.elster.de/EricXML/1.0/EricHoleFinanzamtsdaten" elementFormDefault="qualified">
+	<complexType name="AdresseType">
+		<annotation>
+			<documentation>Die Adresse eines Finanzamts (z.B. eine Grosskundenadresse)</documentation>
+		</annotation>
+		<sequence>
+			<element name="PLZ">
+				<annotation>
+					<documentation>Die PLZ der Adresse</documentation>
+				</annotation>
+			</element>
+			<element name="Ort">
+				<annotation>
+					<documentation>Der Ort der Adresse</documentation>
+				</annotation>
+			</element>
+			<element name="Postfachnummer" minOccurs="0">
+				<annotation>
+					<documentation>Die Postfachnummer der Postfachadresse</documentation>
+				</annotation>
+			</element>
+			<element name="Strasse" minOccurs="0">
+				<annotation>
+					<documentation>Die Strasse der Hausanschrift, ggf. inkl Hausnummer und -zusatz</documentation>
+				</annotation>
+			</element>
+		</sequence>
+		<attribute name="typ">
+			<annotation>
+				<documentation>Typ der Adresse: Großkundenadresse, Hausanschrift, Postfachadresse</documentation>
+			</annotation>
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="Großkundenadresse"/>
+					<enumeration value="Hausanschrift"/>
+					<enumeration value="Postfachadresse"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+	</complexType>
+	<complexType name="KontaktType">
+		<annotation>
+			<documentation>Ein Kontakt kann eine Telefonnummer, eine Faxnummer, E-Mail usw. sein</documentation>
+		</annotation>
+		<sequence>
+			<element name="Bezeichnung">
+				<annotation>
+					<documentation>Die Bezeichnung des Kontaktes. Der Text soll nach Möglichkeit für die Anzeige verwendet werden.</documentation>
+				</annotation>
+			</element>
+			<element name="Inhalt">
+				<annotation>
+					<documentation>Der eigentliche Wert für den Kontakt</documentation>
+				</annotation>
+			</element>
+		</sequence>
+	</complexType>
+	<complexType name="FinanzamtsdatenType">
+		<annotation>
+			<documentation>Definiiert die Informationen zu einem Finanzamt</documentation>
+		</annotation>
+		<sequence>
+			<element name="BuFaNr" type="eric:BuFaNummerTyp">
+				<annotation>
+					<documentation>Die Bundesfinanzamtsnummer</documentation>
+				</annotation>
+			</element>
+			<element name="Name" minOccurs="0">
+				<annotation>
+					<documentation>Der Name des Finanzamts</documentation>
+				</annotation>
+			</element>
+			<element name="AdresseListe" minOccurs="0">
+				<annotation>
+					<documentation>Die Liste der Adressen zu einem Finanzamt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="Adresse" type="eric:AdresseType" maxOccurs="unbounded">
+							<annotation>
+								<documentation>Die einzelne Adresse. Kann eine Grosskundenadresse (AdresseType), eine Postfachadresse oder eine Hausanschrift sein.</documentation>
+							</annotation>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="KontaktListe" minOccurs="0">
+				<annotation>
+					<documentation>Die Liste der Kontaktangaben zu einem Finanzamt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="Kontakt" type="eric:KontaktType" maxOccurs="unbounded">
+							<annotation>
+								<documentation>Die einzelne Kontaktangabe, z.B. Telefonnummer, Fax, Mail, usw.</documentation>
+							</annotation>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="BankverbindungListe" minOccurs="0">
+				<annotation>
+					<documentation>Die Liste der Bankverbindungen zu dem Finanzamt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="Bankverbindung" type="eric:BankverbindungType" maxOccurs="unbounded">
+							<annotation>
+								<documentation>Die einzelne Bankverbindung</documentation>
+							</annotation>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="OeffnungszeitListe" minOccurs="0">
+				<annotation>
+					<documentation>Die Liste der Angaben zu den Oeffnungszeiten zu dem Finanzamt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="Oeffnungszeit" type="string" maxOccurs="unbounded">
+							<annotation>
+								<documentation>Die einzelne Angabe zu den Oeffnungszeiten als String</documentation>
+							</annotation>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="BemerkungListe" minOccurs="0">
+				<annotation>
+					<documentation>Die Liste der Bemerkungen zu dem Finanzamt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="Bemerkung" type="string" maxOccurs="unbounded">
+							<annotation>
+								<documentation>Die einzelne Bemerkung als String</documentation>
+							</annotation>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="Hauptstelle" minOccurs="0">
+				<annotation>
+					<documentation>Angabe der Hauptstelle, falls es sich um eine Nebenstelle handelt</documentation>
+				</annotation>
+				<complexType>
+					<sequence>
+						<element name="BuFaNr" type="eric:BuFaNummerTyp">
+							<annotation>
+								<documentation>Bundesfinanzamtsnummer der Hauptstelle</documentation>
+							</annotation>
+						</element>
+						<element name="Name">
+							<annotation>
+								<documentation>Bezeichnung der Hauptstelle</documentation>
+							</annotation>
+							<simpleType>
+								<restriction base="string">
+									<pattern value="Außenstelle v\. .*"/>
+								</restriction>
+							</simpleType>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="Aussenstellen" type="string" fixed="zugehörige Außenstellen" minOccurs="0">
+				<annotation>
+					<documentation>zugehörige Außenstellen</documentation>
+				</annotation>
+			</element>
+		</sequence>
+	</complexType>
+	<complexType name="BankverbindungType">
+		<annotation>
+			<documentation>Beschreibung einer Bankverbindung</documentation>
+		</annotation>
+		<sequence>
+			<element name="IBAN">
+				<annotation>
+					<documentation>Die IBAN der Bankverbindung</documentation>
+				</annotation>
+			</element>
+			<element name="BIC" minOccurs="0">
+				<annotation>
+					<documentation>Die BIC der Bankverbindung</documentation>
+				</annotation>
+			</element>
+			<element name="Finanzinstitut" minOccurs="0">
+				<annotation>
+					<documentation>Der Name des Finanzinstituts der Bankverbindung</documentation>
+				</annotation>
+			</element>
+			<element name="Kontoinhaber" minOccurs="0">
+				<annotation>
+					<documentation>Der Name des Kontoinhabers der Bankverbindung</documentation>
+				</annotation>
+			</element>
+			<element name="Kontonummer" minOccurs="0">
+				<annotation>
+					<documentation>Die Kontonummer der Bankverbindung</documentation>
+				</annotation>
+			</element>
+			<element name="BLZ" minOccurs="0">
+				<annotation>
+					<documentation>Die Bankleitzahl der Bankverbindung</documentation>
+				</annotation>
+			</element>
+		</sequence>
+	</complexType>
+	<annotation>
+		<documentation xml:lang="de">
+			XML-Daten mit diesem Schema werden von der ERiC-Funktion EricHoleFinanzamtsdaten im Rückgabepuffer zurückgegeben.
+		</documentation>
+	</annotation>
+	<element name="EricHoleFinanzamtsdaten">
+		<annotation>
+			<documentation xml:lang="de">Wurzelelement für Rückgabedaten. Enthält die Informationen zu dem betreffenden Finanzant mit der beim Aufruf angegebenen Bundesfinanzamtsnummer.
+			</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element name="Finanzamtsdaten" type="eric:FinanzamtsdatenType"/>
+			</sequence>
+			<attribute name="version" fixed="1" use="required"/>
+		</complexType>
+	</element>
+	<simpleType name="BuFaNummerTyp">
+		<restriction base="string">
+			<pattern value="\d{4}"/>
+		</restriction>
+	</simpleType>
+</schema>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterAnmeldung</Verfahren>
+        <DatenArt>LStA</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <SigUser />
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>datenlieferant</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel />
+        </Datei>
+        <VersionClient>Programm XY</VersionClient>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>234234234</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+                <Zusatz>
+                    <Info>....</Info>
+                </Zusatz>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Anmeldungssteuern xmlns="http://finkonsens.de/elster/elsteranmeldung/lsta/v2025" version="2025">
+                    <Erstellungsdatum>20240102</Erstellungsdatum>
+                    <DatenLieferant>
+                        <Name>Bayerisches Landesamt für Steuern</Name>
+                        <Strasse>Meiserstr. 6</Strasse>
+                        <PLZ>80335</PLZ>
+                        <Ort>München</Ort>
+                        <Telefon>089/0815 0815</Telefon>
+                        <Email>email@adresse.de</Email>
+                    </DatenLieferant>
+                    <Steuerfall>
+                        <Berater>
+                            <Bezeichnung>Beratername</Bezeichnung>
+                            <Name>Name</Name>
+                            <Vorname>Vorname</Vorname>
+                            <Namensvorsatz>Prof. Dr.</Namensvorsatz>
+                            <Namenszusatz>von</Namenszusatz>
+                            <Str>Weg</Str>
+                            <Hausnummer>3</Hausnummer>
+                            <HNrZusatz>a</HNrZusatz>
+                            <AnschriftenZusatz>3.Stock</AnschriftenZusatz>
+                            <Ort>München</Ort>
+                            <PLZ>80333</PLZ>
+                            <Telefon>0890815</Telefon>
+                            <Email>adresse@AdresseDerEmail.de</Email>
+                        </Berater>
+                        <Mandant>
+                            <Name>Name</Name>
+                            <Vorname>Vorname</Vorname>
+                            <MandantenNr>12</MandantenNr>
+                            <Bearbeiterkennzeichen>Kennzeichen</Bearbeiterkennzeichen>
+                        </Mandant>
+                        <Unternehmer>
+                            <Bezeichnung>Unternehmensbezeichnung</Bezeichnung>
+                            <Str>Bedeutende Straße</Str>
+                            <Hausnummer>1</Hausnummer>
+                            <HNrZusatz>a</HNrZusatz>
+                            <AnschriftenZusatz>Rückgebäude</AnschriftenZusatz>
+                            <Ort>München</Ort>
+                            <PLZ>81234</PLZ>
+                            <Telefon>0890123456789</Telefon>
+                            <Email>email@emailAdresse.de</Email>
+                        </Unternehmer>
+                        <Lohnsteueranmeldung>
+                            <Jahr>2025</Jahr>
+                            <Zeitraum>19</Zeitraum>
+                            <Steuernummer>9198011310134</Steuernummer>
+							<Kz09>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></Kz09>
+                            <Kz10>1</Kz10>
+                            <Kz26>1</Kz26>
+                            <Kz29>1</Kz29>
+                            <Kz33>1.00</Kz33>
+                            <Kz41>1.00</Kz41>
+                            <Kz42_Vorjahr>1.00</Kz42_Vorjahr>
+                            <Kz42>1.00</Kz42>
+                            <Kz44>1.00</Kz44>
+                            <Kz47>1.00</Kz47>
+                            <Kz48>2.00</Kz48>
+                            <Kz49_Vorjahr>1.00</Kz49_Vorjahr>
+                            <Kz49>1.00</Kz49>
+                            <Kz61_Vorjahr>1.00</Kz61_Vorjahr>
+                            <Kz61>1.00</Kz61>
+                            <Kz62_Vorjahr>1.00</Kz62_Vorjahr>
+                            <Kz62>1.00</Kz62>
+                            <Kz63_Vorjahr>1.00</Kz63_Vorjahr>
+                            <Kz63>1.00</Kz63>
+                            <Kz64_Vorjahr>1.00</Kz64_Vorjahr>
+                            <Kz64>1.00</Kz64>
+                            <Kz83>8.00</Kz83>
+                            <Kz86>1</Kz86>
+                        </Lohnsteueranmeldung>
+                    </Steuerfall>
+                </Anmeldungssteuern>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

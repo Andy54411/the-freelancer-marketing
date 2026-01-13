@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>VollfAUpdate</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>BRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VollfAUpdate xmlns="http://finkonsens.de/elster/elsterbrm/vollfaupdate/v10" version="10">
+                    <VollfAUpdate>
+                        <VollmachtID>0303G91234567072110324362</VollmachtID>
+                        <Vollmachtgeber>
+                            <NatuerlichePerson>
+                                <Anrede>Herr</Anrede>
+                                <Vorname>Norbert</Vorname>
+                                <Name>Neugierig</Name>
+                            </NatuerlichePerson>
+                        </Vollmachtgeber>
+                        <Steuernummern>
+                            <BekannteSteuernummer>
+                                <Steuernummer>2653081508158</Steuernummer>
+                            </BekannteSteuernummer>
+                        </Steuernummern>
+                    </VollfAUpdate>
+                </VollfAUpdate>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

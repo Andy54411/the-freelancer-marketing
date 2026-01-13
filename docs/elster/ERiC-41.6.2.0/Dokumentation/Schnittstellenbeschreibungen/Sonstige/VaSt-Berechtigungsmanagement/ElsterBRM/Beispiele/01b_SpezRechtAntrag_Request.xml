@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>SpezRechtAntrag</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ElsterBRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel />
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>2</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <SpezRechtAntrag version="3">
+                    <DateninhaberIdNr>04452317681</DateninhaberIdNr>
+                    <DateninhaberGeburtstag>1985-01-01</DateninhaberGeburtstag>
+                    <Recht>AbrufEBelege</Recht>
+                    <GueltigBis>9999-12-31</GueltigBis>
+                    <DateninhaberOrdnungsbegriff>Ordnungsbegriff .. Müller</DateninhaberOrdnungsbegriff>
+                    <DatenabruferMail>max.mustermann@somedomain.de</DatenabruferMail>
+                    <Veranlagungszeitraum>
+                        <Unbeschraenkt>false</Unbeschraenkt>
+                        <Zeitspanne>
+                            <Von>2013</Von>
+                            <Bis>2222</Bis>
+                        </Zeitspanne>
+                    </Veranlagungszeitraum>
+                </SpezRechtAntrag>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

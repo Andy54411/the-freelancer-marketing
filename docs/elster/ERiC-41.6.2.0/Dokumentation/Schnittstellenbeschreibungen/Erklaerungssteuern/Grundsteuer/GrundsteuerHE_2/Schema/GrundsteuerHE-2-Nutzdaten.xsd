@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:grundsteuerHE="http://finkonsens.de/elster/elstererklaerung/grundsteuerhe/e88/v2" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstererklaerung/grundsteuerhe/e88/v2" schemaLocation="GrundsteuerHE-2.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="grundsteuerHE:E88"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

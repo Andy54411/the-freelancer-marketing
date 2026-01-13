@@ -1,0 +1,19 @@
+<map id="platform.h" name="platform.h">
+<area shape="rect" id="Node000001" title="Konstanten für verschiedene Betriebssysteme." alt="" coords="155,5,234,32"/>
+<area shape="rect" id="Node000002" href="$eric__types_8h.html" title="Definition von Datenstrukturen und Datentypen." alt="" coords="24,80,117,107"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="162,42,94,82,91,77,159,38"/>
+<area shape="rect" id="Node000003" href="$ericapi_8h.html" title="Deklaration der ERiC API&#45;Funktionen für die Singlethreading&#45;API." alt="" coords="103,155,174,181"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="140,24,106,30,72,40,40,57,14,82,9,94,10,106,18,116,31,127,66,144,104,156,102,161,64,149,28,131,14,120,5,108,3,94,10,78,36,53,70,35,105,25,139,19"/>
+<area shape="rect" id="Node000004" href="$ericmtapi_8h.html" title="Deklaration der ERiC API&#45;Funktionen für die Multithreading&#45;API." alt="" coords="208,155,293,181"/>
+<area shape="poly" id="edge11_Node000001_Node000004" title=" " alt="" coords="251,22,279,29,309,40,336,56,358,79,364,91,363,104,347,125,320,143,290,156,288,152,317,138,343,122,358,102,358,92,354,81,333,60,307,44,278,34,249,27"/>
+<area shape="rect" id="Node000005" href="$ericapi_export_8h.html" title="Attribute für dynamische Bibliotheken." alt="" coords="140,80,249,107"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="197,48,197,80,192,80,192,48"/>
+<area shape="rect" id="Node000006" href="$ericdef_8h.html" title="Konstanten und Definitionen für Übergabeparameter." alt="" coords="272,80,344,107"/>
+<area shape="poly" id="edge8_Node000001_Node000006" title=" " alt="" coords="228,38,289,77,287,82,226,43"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,116,129,152,125,156,91,120"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="117,110,220,152,218,157,115,115"/>
+<area shape="poly" id="edge6_Node000005_Node000003" title=" " alt="" coords="178,121,150,156,146,153,174,117"/>
+<area shape="poly" id="edge7_Node000005_Node000004" title=" " alt="" coords="216,117,243,153,239,156,211,121"/>
+<area shape="poly" id="edge9_Node000006_Node000003" title=" " alt="" coords="266,116,169,156,167,152,263,111"/>
+<area shape="poly" id="edge10_Node000006_Node000004" title=" " alt="" coords="291,121,263,156,258,153,286,117"/>
+</map>

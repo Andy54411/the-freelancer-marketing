@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Version 1  -->
+<xs:schema
+	 xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	 xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema"
+	 xmlns:elsterbasisTH8="http://www.elster.de/elsterxml/schema/v11"
+	 xmlns:elsterbasisNDH10="http://www.elster.de/elsterxml/schema/v11"
+	 xmlns:elster="http://www.elster.de/elsterxml/schema/v11" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/ndh000011.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Nutzdatenheader</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="../../../ElsterBasisSchema/Schema/th000011_extern.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">TransferHeader</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<xs:include schemaLocation="KapEStInvStG.xsd">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Kapitalertragsteuer-Anmeldung-InvestmentSteuergesetz</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+	<!--  RootElement = Elster _______________________________________________________________ -->
+	<xs:element name="Elster">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TransferHeader" type="elster:TransferHeaderCType" />
+				<xs:element name="DatenTeil" type="elster:DatenTeilCType">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">verschlüsselt</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<!--  D  -->
+	<xs:complexType name="DatenTeilCType">
+		<xs:sequence>
+			<xs:element name="Nutzdatenblock" type="elster:NutzdatenblockCType" maxOccurs="unbounded" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--  N  -->
+	<xs:complexType name="NutzdatenblockCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="DE">Der Nutzdatenblock enthält jeweils einen "NutzdatenHeader"- und einen "Nutzdaten"-Tag			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="NutzdatenHeader" type="elster:NutzdatenHeaderCType" />
+			<xs:element name="Nutzdaten">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="KapEStInvStG" type="elster:KapEStInvStGType" maxOccurs="unbounded" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

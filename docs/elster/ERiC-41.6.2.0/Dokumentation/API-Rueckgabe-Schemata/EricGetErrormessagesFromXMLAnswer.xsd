@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:eric="http://www.elster.de/EricXML/1.0/EricGetErrormessagesFromXMLAnswer"
+		targetNamespace="http://www.elster.de/EricXML/1.0/EricGetErrormessagesFromXMLAnswer"
+		elementFormDefault="qualified">
+		
+	<annotation>
+		<documentation xml:lang="de">
+			XML-Daten mit diesem Schema werden von der ERiC-Funktion EricGetErrormessagesFromXMLAnswer im Rückgabepuffer zurückgegeben.
+		</documentation>
+	</annotation>		
+	
+	<element name="EricGetErrormessagesFromXMLAnswer">
+		<annotation>
+			<documentation xml:lang="de">
+				Wurzelelement für Rückgabedaten. Enthält Fehlerelemente mit Fehlercode und Fehlermeldung, falls in der
+				an EricGetErrormessagesFromXMLAnswer übergebenen XML vorhanden.
+			</documentation>
+		</annotation>
+	
+		<complexType>
+			<sequence>
+				<element name="Fehler" type="eric:FehlerTyp" minOccurs="0" maxOccurs="unbounded" />
+			</sequence>
+		</complexType>
+	</element>
+	
+	<complexType name="FehlerTyp">
+		<annotation>
+			<documentation xml:lang="de">
+				Einer der aus den XML-Daten extrahierten Fehler, bestehend aus vom Server zurückgegebenen
+				Fehlercode und der dazugehörigen Fehlermeldung.
+			</documentation>
+		</annotation>
+			
+		<sequence>
+			<element name="Code" type="integer" />
+			<element name="Meldung" type="string" />
+		</sequence>
+	</complexType>
+</schema>

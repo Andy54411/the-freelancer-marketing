@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Version 1.03 -->
+<xs:schema targetNamespace="http://www.elster.de/KontoAbfrage/I-Abfrage/06" xmlns:this="http://www.elster.de/KontoAbfrage/I-Abfrage/06" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ekobasis="http://www.elster.de/KontoAbfrage/Basistypen000003" xmlns:elsterbase="http://www.elster.de/basis08/XMLSchema" elementFormDefault="qualified" xmlns:steuernummer="http://www.elster.de/KontoAbfrage/I-Abfrage/06/strNrSteuerart" xmlns:idNummer="http://www.elster.de/KontoAbfrage/I-Abfrage/06/idNrSteuerart" attributeFormDefault="unqualified">
+	<xs:import namespace="http://www.elster.de/basis08/XMLSchema" schemaLocation="./allg000008.xsd"/>
+	<xs:import namespace="http://www.elster.de/KontoAbfrage/Basistypen000003" schemaLocation="./eko_basistypen_000003.xsd"/>
+	<xs:element name="kontoabfrage-input">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="kontoabfrage-art">
+					<xs:annotation>
+						<xs:documentation xml:lang="DE">Istbuchungen / I-Abfrage</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="elsterbase:allg_BaseStringSType">
+							<xs:enumeration value="I"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="steuernummer" type="elsterbase:allg_StNrSType"/>
+				<xs:element name="steuerart">
+					<xs:simpleType>
+						<xs:restriction base="elsterbase:allg_BaseStringSType">
+							<xs:enumeration value="alle"/>
+							<xs:enumeration value="ESt"/>
+							<xs:enumeration value="KSt"/>
+							<xs:enumeration value="USt"/>
+							<xs:enumeration value="LSt"/>
+							<xs:enumeration value="GewSt"/>
+							<xs:enumeration value="ZaSt"/>
+							<xs:enumeration value="KapESt"/>
+						</xs:restriction>
+					</xs:simpleType>				
+				</xs:element>
+				<xs:element name="wertstellungsdatum">
+					<xs:complexType>
+						<xs:simpleContent>
+							<xs:extension base="ekobasis:DatumDDMMYYYYSType">
+								<xs:attribute name="option" use="required">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="J"/>
+											<xs:enumeration value="V"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+							</xs:extension>
+						</xs:simpleContent>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

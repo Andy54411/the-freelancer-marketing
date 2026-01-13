@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:e21="http://finkonsens.de/elster/elstererklaerung/gewstz/e21/v2021" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstererklaerung/gewstz/e21/v2021" schemaLocation="E21-2021.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="e21:E21"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

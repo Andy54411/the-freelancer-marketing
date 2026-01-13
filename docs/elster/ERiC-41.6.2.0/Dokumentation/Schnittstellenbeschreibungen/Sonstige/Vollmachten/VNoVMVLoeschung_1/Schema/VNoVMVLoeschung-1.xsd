@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 38.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VNoVMVLoeschung - 1 - 1.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterbrmorg/vnovmvloeschung/v1" targetNamespace="http://finkonsens.de/elster/elsterbrmorg/vnovmvloeschung/v1" xmlns:exml="http://finkonsens.de/elster/elsterbrmorg/vnovmvloeschung/v1">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:element name="VNoVMVLoeschung" type="VNoVMVLoeschung_CType"/>
+    <xs:complexType name="VNoVMVLoeschung_CType">
+        <xs:sequence/>
+        <xs:attribute name="version" fixed="1" use="required"/>
+    </xs:complexType>
+</xs:schema>

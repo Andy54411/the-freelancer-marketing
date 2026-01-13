@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE signaturkarten SYSTEM "signaturkarten.dtd">
+<!--
+	Description: Zusatzinformationen fuer Signaturkarten
+	Created: 26.08.2005, 16:25:10
+	File name: signaturkarten.xml
+	File version: 62.0.0.0
+	Stand: 15.01.2025
+-->
+<signaturkarten>
+	<karte name="datev classic 2048"
+			pindlgtxtsig="PIN" pindlgtxtdec="PIN" url="https://www.datev.de/shop/66832"
+			win32dll="dvccsap11002.dll" 
+			win64dll="dvccsap11002.dll"
+			description="DATEV Smartcard Classic">
+			<barrierefreieBezeichnung>
+				DATEV <span lang="en">SmartCard classic</span> 2048Bit (DATEV)
+			</barrierefreieBezeichnung>
+			<bezeichnung>
+				DATEV SmartCard classic 2048Bit (DATEV)
+			</bezeichnung>
+	</karte>
+	<karte name="datev mIDentity"
+			pindlgtxtsig="PIN" pindlgtxtdec="PIN" url="https://www.datev.de/shop/40942"
+			win32dll="dvccsap11002.dll" 
+			win64dll="dvccsap11002.dll" 
+			description="DATEV mIDentity">
+			<barrierefreieBezeichnung>
+				DATEV <span lang="en">mIDentity</span> (DATEV)
+			</barrierefreieBezeichnung>
+			<bezeichnung>
+				DATEV mIDentity (DATEV)
+			</bezeichnung>
+	</karte>
+	<karte name="datev Mitgliedsausweis"
+			pindlgtxtsig="PIN" pindlgtxtdec="PIN" url="https://www.datev.de/web/de/service/antworten-finden/signatur-und-verschluesselung/nutzung-der-smartcard-funktion/"
+			win32dll="dvccsap11002.dll" 
+			win64dll="dvccsap11002.dll" 
+			description="Mitgliedsausweis einer Steuerberaterkammer">
+			<barrierefreieBezeichnung>
+				Mitgliedsausweis einer Steuerberaterkammer (DATEV)
+			</barrierefreieBezeichnung>
+			<bezeichnung>
+				Mitgliedsausweis einer Steuerberaterkammer (DATEV)
+			</bezeichnung>
+	</karte>
+	<karte name="datev classic BT"
+			pindlgtxtsig="PIN" pindlgtxtdec="PIN" url="https://www.datev.de/shop/60730"
+			win32dll="dvccsap11002.dll" 
+			win64dll="dvccsap11002.dll" 
+			description="DATEV SmartCard classic für Berufsträger">
+			<barrierefreieBezeichnung>
+				DATEV SmartCard classic für Berufsträger (DATEV)
+			</barrierefreieBezeichnung>
+			<bezeichnung>
+				DATEV SmartCard classic für Berufsträger (DATEV)
+			</bezeichnung>
+	</karte>
+	<karte name="dtrust personal"
+			pindlgtxtsig="Card PIN für Verschlüsselung und Authentisierung" pindlgtxtdec="Card PIN für Verschlüsselung und Authentisierung" url="https://www.bundesdruckerei.de/de/bestellen"
+			win32dll="personal.dll" 
+			win64dll="personal64.dll" 
+			description="D-Trust card (D-TRUST)">
+			<barrierefreieBezeichnung>
+				<span lang="en">D-Trust card</span> (<span lang="en">D-TRUST</span>)
+			</barrierefreieBezeichnung>
+			<bezeichnung>
+				D-Trust card (D-TRUST)
+			</bezeichnung>
+	</karte>
+</signaturkarten>

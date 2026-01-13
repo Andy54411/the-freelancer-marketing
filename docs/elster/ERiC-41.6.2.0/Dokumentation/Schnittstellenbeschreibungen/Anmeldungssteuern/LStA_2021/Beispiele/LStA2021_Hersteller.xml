@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterAnmeldung</Verfahren>
+		<DatenArt>LStA</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Test;Mustergasse;42;a;im Hinterhof;12345;Musterstadt;Deutschland;089/1234567890;tester@test.de</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>1</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+				<Hersteller>
+					<ProduktName>Test</ProduktName>
+					<ProduktVersion>42</ProduktVersion>
+				</Hersteller>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<Anmeldungssteuern xmlns="http://finkonsens.de/elster/elsteranmeldung/lsta/v2021" version="2021">
+					<Erstellungsdatum>20200512</Erstellungsdatum>
+					<DatenLieferant>
+						<Name>Max Mustermann</Name>
+						<Strasse>Musterstraße 11a</Strasse>
+						<PLZ>12345</PLZ>
+						<Ort>Beraterhausen</Ort>
+						<Telefon>123456789</Telefon>
+						<Email>Max_Mustermann@email.de</Email>
+					</DatenLieferant>
+					<Steuerfall>
+						<Berater>
+							<Bezeichnung>Steuerberater</Bezeichnung>
+							<Name>Max</Name>
+							<Vorname>Mustermann</Vorname>
+							<Str>Musterstraße</Str>
+							<Hausnummer>11</Hausnummer>
+							<HNrZusatz>a</HNrZusatz>
+							<AnschriftenZusatz>1.OG</AnschriftenZusatz>
+							<Ort>Beraterhausen</Ort>
+							<PLZ>12345</PLZ>
+							<Telefon>0123456789</Telefon>
+							<Email>Max_Mustermann@email.de</Email>
+						</Berater>
+						<Mandant>
+							<Name>Beispiel</Name>
+							<Vorname>Beate</Vorname>
+							<MandantenNr>0001</MandantenNr>
+							<Bearbeiterkennzeichen>1234</Bearbeiterkennzeichen>
+						</Mandant>
+						<Unternehmer>
+							<Bezeichnung>Onlinehandel</Bezeichnung>
+							<Name>Beispiel</Name>
+							<Vorname>Beate</Vorname>
+							<Str>Bahnhofstraße</Str>
+							<Hausnummer>8</Hausnummer>
+							<HNrZusatz>c</HNrZusatz>
+							<Ort>Musterhausen</Ort>
+							<PLZ>54321</PLZ>
+							<Telefon>987654321</Telefon>
+							<Email>beispiel.beate@email.com</Email>
+						</Unternehmer>
+						<Lohnsteueranmeldung>
+							<Jahr>2021</Jahr>
+							<Zeitraum>01</Zeitraum>
+							<Steuernummer>9198081508152</Steuernummer>
+							<Kz09>74931</Kz09>
+							<Kz41>3000.00</Kz41>
+							<Kz42_Vorjahr>-5000.00</Kz42_Vorjahr>
+							<Kz42_lfdJahr>14000.00</Kz42_lfdJahr>
+							<Kz42>9000.00</Kz42>
+							<Kz44>4000.00</Kz44>
+							<Kz48>16000.00</Kz48>
+							<Kz49_Vorjahr>-50.00</Kz49_Vorjahr>
+							<Kz49_lfdJahr>110.00</Kz49_lfdJahr>
+							<Kz49>60.00</Kz49>
+							<Kz61_Vorjahr>100.00</Kz61_Vorjahr>
+							<Kz61_lfdJahr>200.00</Kz61_lfdJahr>
+							<Kz61>300.00</Kz61>
+							<Kz62_Vorjahr>100.00</Kz62_Vorjahr>
+							<Kz62_lfdJahr>200.00</Kz62_lfdJahr>
+							<Kz62>300.00</Kz62>
+							<Kz63_Vorjahr>200.00</Kz63_Vorjahr>
+							<Kz63_lfdJahr>200.00</Kz63_lfdJahr>
+							<Kz63>400.00</Kz63>
+							<Kz83>17060.00</Kz83>
+							<Kz86>14</Kz86>
+						</Lohnsteueranmeldung>
+					</Steuerfall>
+				</Anmeldungssteuern>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

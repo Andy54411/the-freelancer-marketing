@@ -1,0 +1,764 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VaSt_LStB - 202101 - 2.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elstervast/vastlstb/v202101" targetNamespace="http://finkonsens.de/elster/elstervast/vastlstb/v202101" xmlns:exml="http://finkonsens.de/elster/elstervast/vastlstb/v202101">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlNichtNullOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="-?[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="-?[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlPosOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumMMBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(10|11|12|01|02|03|04|05|06|07|08|09)">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTMMBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])(10|11|12|01|02|03|04|05|06|07|08|09)">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlNichtNullOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlPosOhneFuehrNull_MaxVK1_MinNK3_MaxNK3_SType">
+        <xs:restriction base="DezimalzahlPosOhneFuehrNullBaseSType">
+            <xs:pattern value="\d{1,1}(\.\d{3,3})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Kirchensteuerabzug_Ehegkonfession_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ak">
+                <xs:annotation>
+                    <xs:documentation>Altkatholisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ev">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="lt">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch lutherisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="rf">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch reformiert</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fr">
+                <xs:annotation>
+                    <xs:documentation>Französisch-reformiert</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fa">
+                <xs:annotation>
+                    <xs:documentation>Freie Religionsgemeinschaft Alzey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fm">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Gemeinde Mainz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fs">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Gemeinde Offenbach</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fb">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Landesgemeinde Baden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fg">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Landesgemeinde Pfalz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ib">
+                <xs:annotation>
+                    <xs:documentation>Israelitische Religionsgemeinschaft Baden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="iw">
+                <xs:annotation>
+                    <xs:documentation>Israelitische Religionsgemeinschaft Württemberg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="is">
+                <xs:annotation>
+                    <xs:documentation>Israelitisch/Jüdisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="jd">
+                <xs:annotation>
+                    <xs:documentation>Jüdisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="jh">
+                <xs:annotation>
+                    <xs:documentation>Jüdische Gemeinde Hamburg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="il">
+                <xs:annotation>
+                    <xs:documentation>Jüdische Gemeinden im Landesverband Hessen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="--">
+                <xs:annotation>
+                    <xs:documentation>keiner steuererhebenden Religionsgesellschaft angehörend</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="na">
+                <xs:annotation>
+                    <xs:documentation>neuapostolisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="rk">
+                <xs:annotation>
+                    <xs:documentation>Römisch-Katholisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Kirchensteuerabzug_Konfession_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ak">
+                <xs:annotation>
+                    <xs:documentation>Altkatholisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ev">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="lt">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch lutherisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="rf">
+                <xs:annotation>
+                    <xs:documentation>Evangelisch reformiert</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fr">
+                <xs:annotation>
+                    <xs:documentation>Französisch-reformiert</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fa">
+                <xs:annotation>
+                    <xs:documentation>Freie Religionsgemeinschaft Alzey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fm">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Gemeinde Mainz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fs">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Gemeinde Offenbach</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fb">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Landesgemeinde Baden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="fg">
+                <xs:annotation>
+                    <xs:documentation>Freireligiöse Landesgemeinde Pfalz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ib">
+                <xs:annotation>
+                    <xs:documentation>Israelitische Religionsgemeinschaft Baden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="iw">
+                <xs:annotation>
+                    <xs:documentation>Israelitische Religionsgemeinschaft Württemberg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="is">
+                <xs:annotation>
+                    <xs:documentation>Israelitisch/Jüdisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="jd">
+                <xs:annotation>
+                    <xs:documentation>Jüdisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="jh">
+                <xs:annotation>
+                    <xs:documentation>Jüdische Gemeinde Hamburg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="il">
+                <xs:annotation>
+                    <xs:documentation>Jüdische Gemeinden im Landesverband Hessen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="--">
+                <xs:annotation>
+                    <xs:documentation>keiner steuererhebenden Religionsgesellschaft angehörend</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="na">
+                <xs:annotation>
+                    <xs:documentation>neuapostolisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="rk">
+                <xs:annotation>
+                    <xs:documentation>Römisch-Katholisch</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Steuerklasse_Klasse_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0">
+                <xs:annotation>
+                    <xs:documentation>0</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>1</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>2</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>3</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="4">
+                <xs:annotation>
+                    <xs:documentation>4</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="5">
+                <xs:annotation>
+                    <xs:documentation>5</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="6">
+                <xs:annotation>
+                    <xs:documentation>6</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullSType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType"/>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:totalDigits value="12"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL14_MaxL14_Muster260629128_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="14"/>
+            <xs:maxLength value="14"/>
+            <xs:pattern value="[A-Z]{8}[0-9]{2}[A-L][0-9]{2}[A-Z]"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL19_MaxL19_Muster712713037_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="19"/>
+            <xs:maxLength value="19"/>
+            <xs:pattern value="((0[1-9])|([12]\d)|(3[01]))\.((0[1-9])|(1[0-2]))\.2\d{3} (([01]\d)|(2[0-4])):[0-5]\d:([0-5]\d)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VaSt_LStB" type="VaSt_LStB_CType"/>
+    <xs:complexType name="VaSt_LStB_CType">
+        <xs:sequence>
+            <xs:element name="ArbGName" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name des Arbeitgebers</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Eingangsdatum" type="String_MinL19_MaxL19_Muster712713037_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Allgemein" type="Allgemein_491074567_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Dauer" type="Dauer_491074567_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Besteuerungsmerkmal" type="Besteuerungsmerkmal_491074567_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Besteuerungsgrund" type="Besteuerungsgrund_491074567_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="202101" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="Allgemein_491074567_CType">
+        <xs:sequence>
+            <xs:element name="eTIN" type="String_MinL14_MaxL14_Muster260629128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>eTIN</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="IdNr" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Dauer_491074567_CType">
+        <xs:sequence>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beschäftigungsjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anfang" type="DatumTTMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>vom</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumTTMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bis</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Besteuerungsmerkmal_491074567_CType">
+        <xs:sequence>
+            <xs:element name="ELStAM" type="ELStAM_2071614152_CType" minOccurs="0" maxOccurs="12"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ELStAM_2071614152_CType">
+        <xs:sequence>
+            <xs:element name="GueltigAb" type="DatumTTMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Besteuerungsmerkmale gültig ab</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuerfreibetrag" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>eingetragener Steuerfreibetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Hinzurechnungsbetrag" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>eingetragener Hinzurechnungsbetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuerklasse" type="Steuerklasse_m1012334086_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Kirchensteuerabzug" type="Kirchensteuerabzug_m1012334086_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuerklasse_m1012334086_CType">
+        <xs:sequence>
+            <xs:element name="Klasse" type="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Steuerklasse_Klasse_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuerklasse</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Faktor" type="DezimalzahlPosOhneFuehrNull_MaxVK1_MinNK3_MaxNK3_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Faktor</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kirchensteuerabzug_m1012334086_CType">
+        <xs:sequence>
+            <xs:element name="Konfession" type="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Kirchensteuerabzug_Konfession_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kirchensteuermerkmal (Konfession)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ehegkonfession" type="Enum_VaSt_LStB_Besteuerungsmerkmal_ELStAM_Kirchensteuerabzug_Ehegkonfession_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kirchensteuermerkmal (Konfession) des Ehegatten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Besteuerungsgrund_491074567_CType">
+        <xs:sequence>
+            <xs:element name="AnzahlU" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Zeiträume ohne Anspruch auf Arbeitslohn (Anzahl U)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Grossbuchstaben" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bescheinigter Großbuchstabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BruttoArbLohn" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bruttoarbeitslohn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="LSteuer" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Lohnsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Soli" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltener Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnKiSteuer" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Kirchensteuer des Arbeitnehmers</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EhegKiSteuer" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Kirchensteuer des Ehegatten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ErmStBetrMKalJahr" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ermäßigt besteuerter Arbeitslohn für mehrere Kalenderjahre und ermäßigt besteuerte Entschädigungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="LSteuerMKalJahr" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Lohnsteuer bei ermäßigt besteuertem Arbeitslohn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SoliMKalJahr" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltener Solidaritätszuschlag bei ermäßigt besteuertem Arbeitslohn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="KiSteuerArbnMKalJahr" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Kirchensteuer des Arbeitnehmers bei ermäßigt besteuertem Arbeitslohn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="KiSteuerEhegMKalJahr" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einbehaltene Kirchensteuer des Ehegatten bei ermäßigt besteuertem Arbeitslohn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StPflichtArbLohnMKalJahr" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerpflichtige Entschädigungen und Arbeitslohn für mehrere Kalenderjahre, die nicht ermäßigt besteuert wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="KurzArbGeld" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kurzarbeitergeld, Zuschuss zum Mutterschaftsgeld, Verdienstausfallentschädigung (Infektionsschutzgesetz), Aufstockungsbetrag und Altersteilzeitzuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiArbLohnDBA" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreier Arbeitslohn nach Doppelbesteuerungsabkommen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiArbLohnATE" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreier Arbeitslohn nach Auslandstätigkeitserlass</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbgAnteilRenVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitgeberanteil zur gesetzlichen Rentenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbgAnteilBerufsVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitgeberanteil an berufsständische Versorgungseinrichtungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilRenVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmeranteil zur gesetzlichen Rentenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilBerufsVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmeranteil an berufsständische Versorgungseinrichtungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiGeKrankVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberzuschüsse zur gesetzlichen Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiPrKrankVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberzuschüsse zur privaten Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiGePflegVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberzuschüsse zur gesetzlichen Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilKrankVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmerbeiträge zur gesetzlichen Krankenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilPflegVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmerbeiträge zur sozialen Pflegeversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilArblVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmerbeiträge zur Arbeitslosenversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BeitrPrKrankVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>nachgewiesene Beiträge zur privaten Krankenversicherung und Pflege-Pflichtversicherung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilWBUmlage" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmerbeitrag zur Winterbeschäftigungs-Umlage</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbgAnteilZusatzVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerpflichtiger Beitrag zur Zusatzversorgung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArbnAnteilZusatzVers" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Arbeitnehmeranteil zur Zusatzversorgung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnzahlArbTag" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl Arbeitstage</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiArbgLeistg" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberleistungen für Fahrten zwischen Wohnung und Arbeitsstätte</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="PauschArbgLeistg" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>pauschal besteuerte Arbeitgeberleistungen für Fahrten zwischen Wohnung und Arbeitsstätte</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiFahrtKAusw" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberleistungen für Fahrtkosten bei Auswärtstätigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiVerpfleg" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreier Arbeitgeberzuschuss für Verpflegung bei Auswärtstätigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StFreiDopHaushalt" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerfreie Arbeitgeberleistungen bei doppelter Haushaltsführung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="FreibetragDbaTuerkei" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Freibetrag DBA Türkei</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="VBez" type="VBez_m1083715281_CType" minOccurs="0" maxOccurs="12"/>
+            <xs:element name="ErmStVBezMKalJahr" type="ErmStVBezMKalJahr_m1083715281_CType" minOccurs="0" maxOccurs="12"/>
+            <xs:element name="NErmStVBezMKalJahr" type="NErmStVBezMKalJahr_m1083715281_CType" minOccurs="0" maxOccurs="12"/>
+            <xs:element name="Kammerbeitrag" type="Kammerbeitrag_m1083715281_CType" minOccurs="0" maxOccurs="2"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="VBez_m1083715281_CType">
+        <xs:sequence>
+            <xs:element name="Wert" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>steuerbegünstigte Versorgungsbezüge (im Bruttoarbeitslohn enthalten)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Beginn" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bei unterjähriger Zahlung: erster Monat, für den Versorgungsbezug gezahlt wurde</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumMMBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>bei unterjähriger Zahlung: letzter Monat, für den Versorgungsbezug gezahlt wurde</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>maßgebendes Kalenderjahr des Versorgungsbeginns</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BmgFreibetrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage für Versorgungsfreibetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Einmversbezug" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>einmalige Versorgungsbezüge (Sterbegeld, Kapitalauszahlungen, Abfindungen und Nachzahlungen - in steuerbegünstigten Versorgungsbezügen enthalten)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ErmStVBezMKalJahr_m1083715281_CType">
+        <xs:sequence>
+            <xs:element name="Wert" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ermäßigt besteuerte Versorgungsbezüge für mehrere Kalenderjahre</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>maßgebendes Kalenderjahr des Versorgungsbeginns bei ermäßigt besteuerten Versorgungsbezügen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="NErmStVBezMKalJahr_m1083715281_CType">
+        <xs:sequence>
+            <xs:element name="Wert" type="DezimalzahlNichtNullOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Versorgungsbezüge für mehrere Kalenderjahre, die nicht ermäßigt besteuert wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Jahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>maßgebendes Kalenderjahr bei Versorgungsbezügen für mehrere Kalenderjahre, die nicht ermäßigt besteuert wurden</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Kammerbeitrag_m1083715281_CType">
+        <xs:sequence>
+            <xs:element name="Wert" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kammerbeitrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bundesland" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kammerbeitrag/maßgebendes Bundesland</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,1118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- KapEStInvStG_Jahresvers - 2022 - 12.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsterkapest/kapestinvstg_jahresvers/v2022" targetNamespace="http://finkonsens.de/elster/elsterkapest/kapestinvstg_jahresvers/v2022" xmlns:exml="http://finkonsens.de/elster/elsterkapest/kapestinvstg_jahresvers/v2022">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Positive Zahlen ab 1</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus dem offenen Intervall (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="-?[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxL15_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value=".{0,15}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMailBaseSType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([^@]+)(@)([^@]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:integer">
+            <xs:pattern value="-?[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Vorzeichen '+' und Einträge der Form '-0' nicht zugelassen, erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumBereichTTpMMpJJJJbTTpMMpJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])-(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:pattern value="\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNull_MaxL15_SType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMail_MinLm1_MaxL128_SType">
+        <xs:restriction base="EMailBaseSType">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="128"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_KapEStInvStG_BArt_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0">
+                <xs:annotation>
+                    <xs:documentation>erstmalige elektronische Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>berichtigte elektronische Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_KapEStInvStG_KapEStAnm_Monat_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="01">
+                <xs:annotation>
+                    <xs:documentation>01</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="02">
+                <xs:annotation>
+                    <xs:documentation>02</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="03">
+                <xs:annotation>
+                    <xs:documentation>03</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="04">
+                <xs:annotation>
+                    <xs:documentation>04</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="05">
+                <xs:annotation>
+                    <xs:documentation>05</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="06">
+                <xs:annotation>
+                    <xs:documentation>06</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="07">
+                <xs:annotation>
+                    <xs:documentation>07</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="08">
+                <xs:annotation>
+                    <xs:documentation>08</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="09">
+                <xs:annotation>
+                    <xs:documentation>09</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="10">
+                <xs:annotation>
+                    <xs:documentation>10</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="11">
+                <xs:annotation>
+                    <xs:documentation>11</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12">
+                <xs:annotation>
+                    <xs:documentation>12</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_KapEStInvStG_PersSoll_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0">
+                <xs:annotation>
+                    <xs:documentation>0</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>1</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullSType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType"/>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:totalDigits value="12"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlOhneFuehrNull_MaxVK12_SType">
+        <xs:restriction base="GanzzahlOhneFuehrNullBaseSType">
+            <xs:totalDigits value="12"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL11_MaxL11_Muster655970207_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="11"/>
+            <xs:maxLength value="11"/>
+            <xs:pattern value="[A-Z]{2}[0-9]{9}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL12_MaxL12_Muster1119788282_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="12"/>
+            <xs:maxLength value="12"/>
+            <xs:pattern value="[A-Z]{2}[A-Z0-9]{9}[0-9]{1}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL14_MaxL14_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="14"/>
+            <xs:maxLength value="14"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL12_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="12"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL20_Musterm554494466_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+            <xs:pattern value="[0-9/+-]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL256_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="256"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL50_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="50"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL72_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="72"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL4_MaxL4_Musterm1643987249_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="4"/>
+            <xs:maxLength value="4"/>
+            <xs:pattern value="[0-9]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL6_MaxL8_Muster676297380_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="6"/>
+            <xs:maxLength value="8"/>
+            <xs:pattern value="[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="KapEStInvStG" type="KapEStInvStG_CType"/>
+    <xs:complexType name="KapEStInvStG_CType">
+        <xs:sequence>
+            <xs:element name="EDat" type="String_MinL14_MaxL14_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+            </xs:element>
+            <xs:element name="PersSoll" type="Enum_KapEStInvStG_PersSoll_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+            </xs:element>
+            <xs:element name="ArPlNr" type="String_MinL1_MaxL12_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Arbeitsplatznummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="KapEAnm" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer-Anmeldung nach § 50 und § 53 Absatz 3 Satz 1 InvStG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnmZahl36a" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anmeldung nach § 36a Absatz 4 Satz 1 EStG / § 31 Absatz 3 Satz 5 InvStG für &#10;Investmentfonds</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="WID" type="String_MinL11_MaxL11_Muster655970207_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wirtschaftsidentifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StNr" type="SteuernummerBaseSType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BArt" type="Enum_KapEStInvStG_BArt_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art der Anmeldung:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="StNrVorh" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer der zu berichtigenden Anmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Allg_Ang" type="Allg_Ang_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="KapEStAnm" type="KapEStAnm_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Anm_Zahlung_P31_3" type="Anm_Zahlung_P31_3_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Zerlegungsdaten" type="Zerlegungsdaten_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Erg_Ang" type="Erg_Ang_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Schlusserklaerung" type="Schlusserklaerung_m1418607328_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="2022" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="Allg_Ang_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="Investmentfonds" type="Investmentfonds_705625057_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Vertreter" type="Vertreter_705625057_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Investmentfonds_705625057_CType">
+        <xs:sequence>
+            <xs:element name="Name" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ISIN" type="String_MinL12_MaxL12_Muster1119788282_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ISIN</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Vertreter_705625057_CType">
+        <xs:sequence>
+            <xs:element name="Bezeichnung" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Telefon" type="String_MinL1_MaxL20_Musterm554494466_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Telefonnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Email" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BaFinID" type="String_MinL6_MaxL8_Muster676297380_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>BaFin-ID</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="KapEStAnm_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="AnmKJ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anmeldung für das Kalenderjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Monat" type="Enum_KapEStInvStG_KapEStAnm_Monat_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>für Monat</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AuslSteuern" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Im Steuerabzugsverfahren wurde entsprechend der Nichtbeanstandungsregel in Randziffer 50.10 des BMF-Schreibens vom 21.05.2019 (BStBl I 2019, 527) in der jeweils gültigen Fassung von der Berücksichtigung der ausländischen Steuer gemäß § 50 Absatz 2 Satz 1 in Verbindung mit § 47 InvStG abgesehen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Schlussausschuettung" type="Schlussausschuettung_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Zwischenausschuettung_1" type="Zwischenausschuettung_1_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Zwischenausschuettung_2" type="Zwischenausschuettung_2_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Thesaurierung" type="Thesaurierung_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Veraeusserung" type="Veraeusserung_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="AbzufuehrendeAbzugsbetraege" type="AbzufuehrendeAbzugsbetraege_m1281773938_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Schlussausschuettung_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="Geschaeftsjahr" type="String_MinL4_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>für das Geschäftsjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttung am</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsBeschlDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttungsbeschluss vom</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50_Nr1" type="P50_Nr1_m1414133520_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_1_3" type="P50_Nr1_P33_1_3_m1414133520_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_4" type="P50_Nr1_P33_4_m1414133520_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_m1414133520_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_1_3_m1414133520_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_4_m1414133520_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Zwischenausschuettung_1_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="ZwischenAusschuettungZeitraum" type="DatumBereichTTpMMpJJJJbTTpMMpJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>für die Zeit von - bis</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttung am</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsBeschlDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttungsbeschluss vom</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50_Nr1" type="P50_Nr1_937889198_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_1_3" type="P50_Nr1_P33_1_3_937889198_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_4" type="P50_Nr1_P33_4_937889198_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_937889198_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_1_3_937889198_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_4_937889198_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Zwischenausschuettung_2_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="ZwischenAusschuettungZeitraum" type="DatumBereichTTpMMpJJJJbTTpMMpJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>für die Zeit von - bis (Bei mehr als zwei Zwischenausschüttungen innerhalb eines Anmeldezeitraums ist der Zeitraum der letzten im Anmeldezeitraum erfolgten Zwischenausschüttung einzutragen.)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttung am</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AusschuettungsBeschlDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ausschüttungsbeschluss vom</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50_Nr1" type="P50_Nr1_937890159_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_1_3" type="P50_Nr1_P33_1_3_937890159_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_4" type="P50_Nr1_P33_4_937890159_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_937890159_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_1_3_937890159_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_4_937890159_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Thesaurierung_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="Geschaeftsjahr" type="String_MinL4_MaxL4_Musterm1643987249_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>für das Geschäftsjahr</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EndeTagGeschaeftsjahr" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Letzter Tag des Geschäftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ThesaurierungsBeschlDat" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beschluss vom</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50_Nr1" type="P50_Nr1_m633267008_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_1_3" type="P50_Nr1_P33_1_3_m633267008_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_4" type="P50_Nr1_P33_4_m633267008_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_m633267008_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_1_3_m633267008_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_4_m633267008_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Veraeusserung_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="Veraeusserungsdatum" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Veräußerungsdatum (Bei mehreren Veräußerungen innerhalb eines Anmeldezeitraums ist das Datum der letzten im Anmeldezeitraum erfolgten Veräußerung einzutragen.)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AnzVeraeusserungen" type="GanzzahlNichtNegOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anzahl der innerhalb des Anmeldezeitraums erfolgten Veräußerungen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50_Nr1" type="P50_Nr1_1898660607_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_1_3" type="P50_Nr1_P33_1_3_1898660607_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr1_P33_4" type="P50_Nr1_P33_4_1898660607_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="P50_Nr2" type="P50_Nr2_1898660607_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_1898660607_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1_VorAbstandnahme" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1St" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1Sz" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_1_3_1898660607_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4_VorAbstandnahme" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4St" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs1bis3undP6Abs4Sz" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr1_P33_4_1898660607_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5_VorAbstandnahme" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Erträge (vor Abstandnahme)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2, § 44a Absatz 1, 4 und 5 EStG, Steuerbefreiung gemäß § 42 Absatz 4 und 5 InvStG und Teilfreistellung gemäß § 43 Absatz 3 in Verbindung mit § 20 InvStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5St" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr1iVmP33Abs4undP6Abs5Sz" type="DezimalzahlNichtNegOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P50_Nr2_1898660607_CType">
+        <xs:sequence>
+            <xs:element name="P50Abs1S2Nr2" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage (nach Abstandnahme gemäß § 43 Absatz 2 Satz 2 und 3 bis 8 sowie § 44a Absatz 1, 4 und 5 EStG)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr2St" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P50Abs1S2Nr2Sz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AbzufuehrendeAbzugsbetraege_m1281773938_CType">
+        <xs:sequence>
+            <xs:element name="AbzugsbetragSt" type="GanzzahlOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="AbzugsbetragSz" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Solidaritätszuschlag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anm_Zahlung_P31_3_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="LetzterTagGeschaeftsjahr" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Letzter Tag des Geschäftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="P31_3" type="P31_3_m1397624901_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="P31_3_m1397624901_CType">
+        <xs:sequence>
+            <xs:element name="ZahlungP36aAbs4" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bemessungsgrundlage</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZahlungP36aAbs4St" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer in Höhe von 15 %</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Zerlegungsdaten_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="Einzel" type="Einzel_731857198_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Sum" type="Sum_731857198_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Einzel_731857198_CType">
+        <xs:sequence>
+            <xs:element name="ZBW" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Baden-Württemberg</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZBY" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bayern</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZBE" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Berlin</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZBB" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Brandenburg</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZHB" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bremen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZHH" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hamburg</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZHE" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Hessen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZMV" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mecklenburg-Vorpommern</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZND" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Niedersachsen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZNW" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Nordrhein-Westfalen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZRP" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rheinland-Pfalz</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZSL" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Saarland</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZSN" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Sachsen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZST" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Sachsen-Anhalt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZSH" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Schleswig-Holstein</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZTH" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Thüringen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZoZ" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kapitalertragsteuer, bei der eine Zuordnung nach dem Wohnsitz oder Sitz des Gläubigers der Kapitalerträge nicht erfolgen konnte</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Sum_731857198_CType">
+        <xs:sequence>
+            <xs:element name="ZSum" type="DezimalzahlOhneFuehrNull_MaxL15_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Zerlegungswerte nach § 8 ZerlG</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Erg_Ang_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="WeitereSachvText" type="String_MinL1_MaxL256_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ergänzende Angaben zur Steueranmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="WeitereSachvAuswahl" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Über die Angaben in der Steueranmeldung hinaus sind weitere oder abweichende Angaben oder Sachverhalte zu berücksichtigen. Diese ergeben sich aus der beigefügten Anlage, welche mit der Überschrift &quot;Ergänzende Angaben zur Steueranmeldung&quot; gekennzeichnet ist.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Schlusserklaerung_m1418607328_CType">
+        <xs:sequence>
+            <xs:element name="Berater" type="Berater_149141651_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Berater_149141651_CType">
+        <xs:sequence>
+            <xs:element name="StBer" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Die Steueranmeldung wurde unter Mitwirkung eines Angehörigen der steuerberatenden Berufe im Sinne der §§ 3 und 4 StBerG angefertigt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Mitwirkung" type="Mitwirkung_2029923968_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Mitwirkung_2029923968_CType">
+        <xs:sequence>
+            <xs:element name="Bezeichnung" type="String_MinL1_MaxL50_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung oder Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Anschrift" type="String_MinL1_MaxL72_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Anschrift</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Telefon" type="String_MinL1_MaxL20_Musterm554494466_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Telefonnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Email" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

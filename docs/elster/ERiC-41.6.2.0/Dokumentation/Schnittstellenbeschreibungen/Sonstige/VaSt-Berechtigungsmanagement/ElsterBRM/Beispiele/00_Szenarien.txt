@@ -1,0 +1,67 @@
+Schnittstellendokumentation für Verfahren ElsterBRM
+
+Versionen der Datenarten:
+SpezRechtAntrag 3
+SpezRechtFreischaltung 1
+SpezRechtStorno 3
+SpezRechtListe 4
+SpezRechtTeilnahme 1
+
+Abkürzungen:
+DI: Dateninhaber
+DI-EV: Dateninhaber im Papierersatzverfahren
+DA: Datenabrufer
+EOP: ElsterOnline-Portal
+
+Im folgenden Szenario werden alle Datenarten einmal exemplarisch verwendet:
+SpezRechtAntrag (Stellen eines Antrags)
+SpezRechtFreischaltung (Genehmigen eines Antrags seitens des DAs im Ersatzverfahren)
+SpezRechtWiderruf (Stornieren eines offenen oder genehmigten Antrags seitens DI, DA oder Rechteverwalter)
+SpezRechtListe (Anzeigen aller Anträge einer Person)
+
+Beteiligte: 
+Datenabrufer (DA-ORG) Kanzlei Meier & Moser: StNr (Organisation) 1642921352, ElsterOnline-Portal-AccountID 1000000863
+Datenabrufer (DA) Max Mustermann: Mit IdNr registrierter ElsterOnline-Portal-Account
+Dateninhaber (DI-1) Susi Huber: IdNr 04452397687, ElsterOnline-Portal-AccountID 1000000864
+Dateninhaber (DI-2) Michael Müller: IdNr 04452317681, ElsterOnline-Portal-AccountID 1000000865
+Dateninhaber (DI-EV) Max Schulze: IdNr 09952417688, keine ElsterOnline-Portal-AccountID (Ersatzverfahren)
+
+Die Kanzlei Meier & Moser stellt drei Anträge - an Susi Huber, Michael  Müller und Max Schulze. Folgende Datensätze sind involviert:
+* 01a_SpezRechtAntrag_Request.xml: Request von DA-ORG
+* 01b_SpezRechtAntrag_Request.xml: Request von DA-ORG
+* 01c_SpezRechtAntrag_Request.xml: Request von DA-ORG
+* 02a_SpezRechtAntrag_Response.xml: Response an DA-ORG
+* 02b_SpezRechtAntrag_Response.xml: Response an DA-ORG
+* 02c_SpezRechtAntrag_Response.xml: Response an DA-ORG
+
+Die Kanzlei Meier & Moser lässt sich ihre Anträge anzeigen. Folgende Datensätze sind involviert:
+* 03_SpezRechtListe_Request.xml: Request von DA-ORG
+* 04_SpezRechtListe_Response.xml: Response an DA-ORG
+
+Michael Müller lehnt den offenen Antrag der Kanzlei Meier & Moser ab. Folgende Datensätze sind involviert:
+* 07_SpezRechtStorno_Request.xml: Request von DI-2
+Hinweis: Die im Datensatz anzugebende AntragsID kann Herr Müller durch die Übermittlung eines Datensatzes zur Datenart SpezRechtListe ermitteln (die benötigte AntragsID wird in der Response zurückgeliefert). 
+* 08_SpezRechtStorno_Response.xml: Response an DI-2
+
+Die Kanzlei Meier & Moser hat den Freischaltcode von Max Schulze erhalten und schaltet ihren Antrag frei. Folgende Datensätze sind involviert:
+* 09_SpezRechtFreischaltung_Request.xml: Request von DA-ORG
+Hinweis: Die im Datensatz anzugebende AntragsID kann die Kanzlei Meier & Moser durch die Übermittlung eines Datensatzes zur Datenart SpezRechtListe ermitteln (die benötigte AntragsID wird in der Response zurückgeliefert). Der im Datensatz anzugebende Freischaltcode muss der Kanzlei Meier & Moser von Max Schulze mitgeteilt worden sein. 
+* 10_SpezRechtFreischaltung_Response.xml: Response an DA-ORG
+
+Die Kanzlei Meier & Moser widerruft den soeben freigeschalteten Antrag an Max Schulze. Folgende Datensätze sind involviert:
+* 11_SpezRechtStorno_Request.xml: Request von DA-ORG
+Hinweis: Die im Datensatz anzugebende AntragsID kann die Kanzlei Meier & Moser durch die Übermittlung eines Datensatzes zur Datenart SpezRechtListe ermitteln (die benötigte AntragsID wird in der Response zurückgeliefert). 
+* 12_SpezRechtStorno_Response.xml: Response an DA-ORG
+
+Susi Huber sieht sich ihre Anträge und erteilten Vollmachten an. Folgende Datensätze sind involviert:
+* 13_SpezRechtListe_Susi_Huber_Request.xml: Request von DI-1
+* 14_SpezRechtListe_Susi_Huber_Response.xml: Response an DI-1
+
+Die Kanzlei Meier & Moser lässt sich ihre Anträge anzeigen. Folgende Datensätze sind involviert:
+* 15_SpezRechtListe_Suchkriterien_Request.xml: Request von DA-ORG
+* 16_SpezRechtListe_Suchkriterien_Response.xml: Response an DA-ORG
+
+Max Mustermann meldet sich zur Teilnahme am Belegabruf an:
+* 05_SpezRechtTeilnahme_Request.xml: Request von DA
+* 06_SpezRechtTeilnahme_Response.xml: Response an DA
+

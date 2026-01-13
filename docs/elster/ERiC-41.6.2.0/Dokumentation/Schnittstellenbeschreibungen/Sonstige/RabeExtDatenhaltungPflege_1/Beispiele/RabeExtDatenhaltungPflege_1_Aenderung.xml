@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterRabe</Verfahren>
+        <DatenArt>RabeExtDatenhaltungPflege</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000001</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller ID ersetzen--></HerstellerID>
+        <DatenLieferant>ERiC Beispiele</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>Block 1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <RabeExtDatenhaltungPflege xmlns="http://finkonsens.de/elster/elsterrabe/rabeextdatenhaltungpflege/v1" version="1">
+                    <Aenderung>
+                        <RabeId>rc000000000000000000000000000000</RabeId>
+                        <BaseUrl>https://example.com</BaseUrl>
+                        <ApiKey>123456</ApiKey>
+                        <Ansprechpartner>
+                            <Name>Max Mustermann</Name>
+                            <EMail>mustermann@example.com</EMail>
+                            <Telefon>03023125999</Telefon>
+                        </Ansprechpartner>
+                        <Fingerprints>
+                            <Fingerprint>
+                                <Sha256>ca:97:81:12:ca:1b:bd:ca:fa:c2:31:b3:9a:23:dc:4d:a7:86:ef:f8:14:7c:4e:72:b9:80:77:85:af:ee:48:bb</Sha256>
+                            </Fingerprint>
+                        </Fingerprints>
+                    </Aenderung>
+                </RabeExtDatenhaltungPflege>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

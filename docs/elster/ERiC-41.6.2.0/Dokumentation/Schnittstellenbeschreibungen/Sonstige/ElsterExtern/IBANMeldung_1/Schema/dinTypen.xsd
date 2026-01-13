@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Mit XMLSpy v2023 sp1 (x64) (http://www.altova.com) generiertes W3C XML-Schema-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://www.itzbund.de/iban/std/01.00" xmlns:din91379="urn:xoev-de:kosit:xoev:datentyp:din-91379_2022-08" targetNamespace="http://www.itzbund.de/iban/std/01.00" elementFormDefault="qualified">
+	<xs:import namespace="urn:xoev-de:kosit:xoev:datentyp:din-91379_2022-08" schemaLocation="din-norm-91379-datatypes.xsd"/>
+	<xs:annotation>
+		<xs:documentation>Verfahrensübergreifende Standardtypen, die auf die DIN Spec 91379 eingeschränkt sind</xs:documentation>
+	</xs:annotation>
+	<xs:complexType name="Meldung_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Abstrakter Typ für Meldung</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="ns1:Meldung_Protokoll_AbstractType">
+				<xs:attribute name="Erstellungszeitpunkt" type="xs:dateTime" use="required" form="unqualified">
+					<xs:annotation>
+						<xs:documentation>Erstellungszeitpunkt der Meldung</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Meldung_Protokoll_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Abstrakter Typ für Meldung und Protokoll</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="MeldUUID" type="ns1:UUIDType" use="required" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>UUID der Meldung</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="KdOrdBegriff" type="ns1:Beschreibung40Type" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>Max. 40-stelliger Kunden-Ordnungsbegriff, z.B. Kontonummer, kann vom Melder frei vergeben werden</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="InlandsAdresse">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine Inlandsadresse</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="ns1:Adresse_AbstractType">
+				<xs:sequence>
+					<xs:element name="Plz" type="ns1:InlPLZType">
+						<xs:annotation>
+							<xs:documentation>Inlands-Postleitzahl</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="AuslandsAdresse">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine Auslandsadresse</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="ns1:Adresse_AbstractType">
+				<xs:sequence>
+					<xs:element name="Plz" type="ns1:AuslPLZType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Auslands-Postleitzahl</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="AdressErg" type="ns1:AuslandsAdressErgaenzungsType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Optionale Ergaenzungs-Information fuer Auslandsadresse</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="StaatId" type="ns1:StaatIdType">
+						<xs:annotation>
+							<xs:documentation>2-stellige ID des Staats der Auslandsadresse</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Adresse_AbstractType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine Adresse, entweder Inland oder Ausland</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Str" type="ns1:AdressBestandteilType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Strassenname</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="HausNr" type="ns1:HausNrType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Hausnummer</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="HausNrZu" type="ns1:NamensErgaenzungsType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Optionaler Hausnummer-Zusatz, Buchstabe(n) oder Zusatzziffer(n)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Ort" type="ns1:OrtType"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="NachrichtType">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine Nachricht zurueck an den Datenlieferanten, mit optionalem Datensatz-Bezug (ueber UUID-Angabe)</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="DatensatzUUID" type="ns1:UUIDType" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>Wenn angegeben, gibt diese UUID den Bezug zu einem Datensatz wieder.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Nachricht" type="ns1:BeschreibungsType" use="required" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>Nachrichtentext (Freitext)</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="ListenRumpfType">
+		<xs:annotation>
+			<xs:documentation>Rumpftyp für Anfrage und -Antwortliste</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="UUID" use="required" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>UUID der Liste</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="OrdBegriff" form="unqualified">
+			<xs:annotation>
+				<xs:documentation>Max. 40-stelliger Ordnungsbegriff zur Kennzeichnung der Meldedatei. Wird im Falle einer Rückmeldung aus der Meldedatei übernommen.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="ns1:Beschreibung40Type">
+					<xs:minLength value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:simpleType name="AuslPLZType">
+		<xs:annotation>
+			<xs:documentation>auslaendische Postleitzahl: max. 12-stellig, alphanumerisch. Zusaetzlich gelten die Einschraenkungen des StringCharDigitSymbDelimOneLineSTypes</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="12"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="NameType">
+		<xs:annotation>
+			<xs:documentation>Basis-Type fuer Zeichenketten des Grundtyps String.Latin, die nicht mit einem Leerzeichen beginnt</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="din91379:datatypeC"/>
+	</xs:simpleType>
+	<xs:simpleType name="EmailType">
+		<xs:annotation>
+			<xs:documentation>Emailadresse</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="320"/>
+			<xs:pattern value=".+@.+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AllgPLZType">
+		<xs:union memberTypes="ns1:AuslPLZType ns1:InlPLZType"/>
+	</xs:simpleType>
+	<xs:simpleType name="AdressBestandteilType">
+		<xs:annotation>
+			<xs:documentation>Adressbestandteil so wie Strasse oder Ort. Alphanumerisch, max. 72-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="72"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="OrtType">
+		<xs:annotation>
+			<xs:documentation>Ort: alphanumerisch, max. 72-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="72"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AuslandsAdressErgaenzungsType">
+		<xs:annotation>
+			<xs:documentation>Optionale Ergaenzung fuer Auslandsadressen, max. 46-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="46"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="VornameType">
+		<xs:annotation>
+			<xs:documentation>Vorname: alphanumerisch, max. 35-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="35"/>
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="NachnameType">
+		<xs:annotation>
+			<xs:documentation>Nachname: alphanumerisch, max. 45-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="45"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="NamensErgaenzungsType">
+		<xs:annotation>
+			<xs:documentation>Ergaenzungen zum Nachnamen, so wie Titel oder Namenszusatz. Alphanumerisch, max. 20-stellig</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="BeschreibungsType">
+		<xs:annotation>
+			<xs:documentation>Maximal 255 Zeichen lange Beschreibung einer Entitaet</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="255"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Beschreibung40Type">
+		<xs:annotation>
+			<xs:documentation>Maximal 40 Zeichen lange Beschreibung einer Entitaet</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="ns1:NameType">
+			<xs:maxLength value="40"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:annotation>
+		<xs:documentation>Verfahrensübergreifende Standardtypen</xs:documentation>
+	</xs:annotation>
+	<xs:complexType name="KontoAngabeBasisType">
+		<xs:annotation>
+			<xs:documentation> Typ fuer eine Kontoangabe bestehend aus IBAN und optionalem BIC</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="IBAN" type="ns1:InternationalIbanType">
+				<xs:annotation>
+					<xs:documentation>IBAN</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="BIC" type="ns1:BICType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>BIC</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="IbanType">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine IBAN-Angabe</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="34"/>
+			<xs:pattern value="[A-Z\d]{15}[A-Z\d]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="InternationalIbanType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine internationale IBAN</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="36"/>
+			<xs:minLength value="5"/>
+			<xs:pattern value="[A-Z]{2}\d{2}[A-Z\d]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="BICType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine BIC-Angabe</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[A-Z\d]{4}[A-Z]{2}[A-Z\d]{2}([A-Z\d]{3})?"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KISTAZulassungsNrType">
+		<xs:annotation>
+			<xs:documentation>Typ fuer eine KiStA-Zulassungsnummer, mit der ein Verfahrensteilnehmer gekennzeichnet wird</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[0-9]{11}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="TelefonnummerType">
+		<xs:annotation>
+			<xs:documentation>Telefonnummer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="30"/>
+			<xs:pattern value="[\d/ \-+]+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KMKWReturnCodeType">
+		<xs:annotation>
+			<xs:documentation>Aufzaehlung der ReturnCodes fuer eine KiStAM-Anfrage</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="2"/>
+			<xs:pattern value="\d{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="UUIDType">
+		<xs:annotation>
+			<xs:documentation>Eine UUID basiert auf Typ String, als 32-digit Hex String mit [8]-[4]-[4]-[4]-[12] Zeichen.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[1-5][A-Fa-f0-9]{3}-[ABab89][A-Fa-f0-9]{3}-[A-Fa-f0-9]{12}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Datum0Type">
+		<xs:annotation>
+			<xs:documentation>Datumstyp in der Form jhjj-mm-00 oder jhjj-00-00,
+                Jahresangabe vor 1880 und nach 2099 unzulaessig
+            </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="10"/>
+			<xs:pattern value="(((18)(8|9)\d)|(19|20)\d{2})-((12|11|10|0[0-9])-00)"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Datum1880Type">
+		<xs:annotation>
+			<xs:documentation>Datumstyp in der Form jhjj-mm-tt,Datum muss
+                logisch sein, fruehestes gueltiges Datum ist der 01.01.1880
+            </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:date">
+			<xs:minInclusive value="1880-01-01"/>
+			<xs:maxInclusive value="2099-12-31"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Datum0000Type">
+		<xs:annotation>
+			<xs:documentation>Unbekanntes Datum in der Form 0000-00-00
+            </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="10"/>
+			<xs:pattern value="[0]{4}-[0]{2}-[0]{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="DatumMit0Type">
+		<xs:annotation>
+			<xs:documentation>Vereinigung aus DatumType und Datum0Type, findet
+                Anwendung bei Geburtsdaten
+            </xs:documentation>
+		</xs:annotation>
+		<xs:union memberTypes="ns1:Datum0Type ns1:Datum1880Type ns1:Datum0000Type"/>
+	</xs:simpleType>
+	<xs:simpleType name="IdNrType">
+		<xs:annotation>
+			<xs:documentation>IdNr: 11-stellig, numerisch. Pruefziffer wird nicht abgebildet. Erlaubt auch den Beginn mit 0, obwohl dies bei "echten" IdNr nicht vorgesehen ist.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="11"/>
+			<xs:pattern value="[0-9]{11}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="InlPLZType">
+		<xs:annotation>
+			<xs:documentation>Inlaendische Postleitzahl: 5-stellig, numerisch, Wertebereich 01001 - 99999</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="5"/>
+			<xs:pattern value="((0[1-9][0-9]{3})|([1-9][0-9]{4}))"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="HausNrType">
+		<xs:annotation>
+			<xs:documentation>Hausnummer: numerisch, Wert zwischen 0 und 99999 erlaubt</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0"/>
+			<xs:maxInclusive value="99999"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="StaatIdType">
+		<xs:annotation>
+			<xs:documentation>Staat-ID fuer Auslandsadressen gemaess ISO 3166-1 alpha-2</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[a-zA-Z]{2}|--"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="FAMKAZulassungsNrType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine FamKaZulassungsnummer</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[A-Z]{2}\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KOWAZulassungsNrType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine Zulassungsnummer zum Übermitteln von Vergeblichkeitsmeldungen an das Verfahren Kontenwahrheit</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="VM\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="IBANZulassungsNrType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine Zulassungsnummer zum Übermitteln von Bankverbindungen an das Verfahren Kontenwahrheit</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="IB\d{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:annotation>
+		<xs:documentation>Basistypen für das Verfahren zur IBAN-Meldung</xs:documentation>
+	</xs:annotation>
+	<xs:complexType name="KontoAngabeType">
+		<xs:annotation>
+			<xs:documentation> Typ fuer eine Kontoangabe bestehend aus IBAN und optionalem BIC sowie ggf. einer Ausnahmebegründung</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="ns1:KontoAngabeBasisType">
+				<xs:sequence>
+					<xs:element name="Ausnahmebegruendung" type="ns1:MeldungsgrundType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Ausnahmebegründung für Meldung zu einem Minderjährigen. Erlaubte Werte:
+- AKGFK (aufgehobene Kindergeldfestsetzung für ein minderjähriges Kind)
+- KKGFK (keine Kindergeldfestsetzung für ein minderjähriges Kind)
+- ABKGG (Auszahlung des Kindergeldes nach dem BKGG)</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="PersonenDatenType">
+		<xs:annotation>
+			<xs:documentation>Typ fuer die Beschreibung einer Person</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="NName" type="ns1:NachnameType">
+				<xs:annotation>
+					<xs:documentation>Nachname</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="VName" type="ns1:VornameType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Vorname</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="GebDt" type="ns1:DatumMit0Type">
+				<xs:annotation>
+					<xs:documentation>Geburtsdatum. Angabe eines teilbekannten Datums ist moeglich. D.h. der tt-, mm- oder jjjj-Teil darf aus 00 bzw. 0000 bestehen, wenn das entsprechende Teildatum in den amtlichen Meldedaten unbekannt ist.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="MeldungsgrundType">
+		<xs:annotation>
+			<xs:documentation>Schlüsseltyp für einen Meldungsgrund bei einer Leermeldung</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:length value="5"/>
+			<xs:pattern value="[A-Z]{5}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="ZulassungsNrType">
+		<xs:annotation>
+			<xs:documentation>Typ für eine Zulassungsnummer, die bei der IBAN-Übermittlung verwendet werden kann</xs:documentation>
+		</xs:annotation>
+		<xs:union memberTypes="ns1:IdNrType ns1:IBANZulassungsNrType"/>
+	</xs:simpleType>
+</xs:schema>

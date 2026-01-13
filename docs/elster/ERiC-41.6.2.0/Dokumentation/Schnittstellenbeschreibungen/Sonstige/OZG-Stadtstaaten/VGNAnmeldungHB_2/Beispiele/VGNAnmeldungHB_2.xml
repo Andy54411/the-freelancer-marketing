@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterAnmeldung</Verfahren>
+        <DatenArt>VGNAnmeldungHB</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>	
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">2460</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VGNAnmeldungHB xmlns="http://finkonsens.de/elster/elsteranmeldung/vgnanmeldunghb/v2" version="2">
+                    <VGNAnmeldungHB>
+                        <Finanzamt>2460</Finanzamt>
+                        <Besteuerungszeitraum>
+                            <Steuernummer>2497012301233</Steuernummer>
+                            <Angabe>12.19</Angabe>
+                        </Besteuerungszeitraum>
+                        <Persoenliche_Angaben>
+                            <NichtNurNatuerlichePerson>
+                                <AnredeId>3</AnredeId>
+                                <Firmenname>Testfirma</Firmenname>
+                                <Inlandsadresse>
+                                    <Str>Teststraße</Str>
+                                    <HausNr>0</HausNr>
+                                    <Plz>12345</Plz>
+                                    <Ort>Testort</Ort>
+                                </Inlandsadresse>
+                            </NichtNurNatuerlichePerson>
+                        </Persoenliche_Angaben>
+                        <Anmeldung>
+                            <Vergnuegungssteuer>
+                                <A2>400.00</A2>
+                                <Gesamt>400.00</Gesamt>
+                            </Vergnuegungssteuer>
+                        </Anmeldung>
+                    </VGNAnmeldungHB>
+                    <VGNAnmeldungHBA2>
+                        <GSG_ohne_Zaehlwerk>
+                            <Aufstellort>Ort</Aufstellort>
+                            <Geraet>
+                                <Aufstellung>01.01.2023</Aufstellung>
+                                <Herausnahme>31.01.2023</Herausnahme>
+                            </Geraet>
+                        </GSG_ohne_Zaehlwerk>
+                        <Gesamtsumme>
+                            <Vergnuegungssteuer_Summe_A2>400.00</Vergnuegungssteuer_Summe_A2>
+                        </Gesamtsumme>
+                    </VGNAnmeldungHBA2>
+                </VGNAnmeldungHB>      
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

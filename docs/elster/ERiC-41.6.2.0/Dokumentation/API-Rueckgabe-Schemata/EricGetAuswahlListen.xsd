@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:eric="http://www.elster.de/EricXML/1.0/EricGetAuswahlListen"
+		targetNamespace="http://www.elster.de/EricXML/1.0/EricGetAuswahlListen"
+		elementFormDefault="qualified">
+		
+	<annotation>
+		<documentation xml:lang="de">
+			XML-Daten mit diesem Schema werden von der ERiC-Funktion EricGetAuswahlListen im Rückgabepuffer zurückgegeben.
+		</documentation>
+	</annotation>
+	
+	<element name="EricGetAuswahlListen">
+		<annotation>
+			<documentation xml:lang="de">
+				Wurzelelement für Rückgabedaten. Enthält die Auswahllisten in Elementen mit Namen "AuswahlListe". 
+			</documentation>
+		</annotation>
+		
+		<complexType>
+			<sequence>
+				<element name="AuswahlListe" type="eric:AuswahlListenTyp" minOccurs="0" maxOccurs="unbounded" />
+			</sequence>
+		</complexType>
+	</element>
+	
+	<complexType name="AuswahlListenTyp">
+		<annotation>
+			<documentation xml:lang="de">
+				Dieser Typ ist ein Container für alle Listenelemente einer AuswahlListe, die als Wert
+				in die angegebene Feldkennung eingetragen werden können. Der Name des Feldes für die
+				die Listenelemente zur Auswahl angeboten werden können, befindet sich im "Feldkennung"-Element.
+				Die möglichen Auswahllistenelemente befinden sich unterhalb in den "ListenElement"-Elementen.
+			</documentation>
+		</annotation>
+	
+		<sequence>
+			<element name="Feldkennung" type="string" minOccurs="1" />
+			<element name="ListenElement" type="string" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+</schema>

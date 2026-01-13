@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterErklaerung</Verfahren>
+        <DatenArt>Grundsteuerwert</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">1121</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERICTest</ProduktName>
+                    <ProduktVersion>2009.1/0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <E88 xmlns="http://finkonsens.de/elster/elstererklaerung/grundsteuerwert/e88/v2" version="2">
+                    <GW1>
+                        <Ang_Feststellung>
+                            <E7401311>1</E7401311>
+                            <E7401310>1</E7401310>
+                        </Ang_Feststellung>
+                        <Lage>
+                            <E7401122>Musterstadt</E7401122>
+                        </Lage>
+                        <Gemarkungen>
+                            <Einz>
+                                <E7401141>1</E7401141>
+                                <E7401143>111</E7401143>
+                                <E7401144>1</E7401144>
+                                <E7401145>1</E7401145>
+                                <E7411001>1000</E7411001>
+                                <E7410702>0,5000</E7410702>
+                                <E7410703>10</E7410703>
+                                <E7410704>3</E7410704>
+                            </Einz>
+                        </Gemarkungen>
+                        <Eigentumsverh>
+                            <E7401340>1</E7401340>
+                        </Eigentumsverh>
+                        <Eigentuemer>
+                            <Beteiligter>1</Beteiligter>
+                            <E7404510>01</E7404510>
+                            <E7404513>Michael</E7404513>
+                            <E7404511>Mustermann</E7404511>
+                            <E7404524>Hauptstraße</E7404524>
+                            <E7404525>1</E7404525>
+                            <E7404526>a</E7404526>
+                            <E7404540>11111</E7404540>
+                            <E7404522>Musterstadt</E7404522>
+                            <E7404519>02476291358</E7404519>
+                        </Eigentuemer>
+                    </GW1>
+                    <GW2>
+                        <Ang_Grundstuecksart>
+                            <E7401322>1</E7401322>
+                        </Ang_Grundstuecksart>
+                        <Ang_Grund>
+                            <Ang_Flaeche>
+                                <E7403010>30</E7403010>
+                                <E7403011>12,00</E7403011>
+                            </Ang_Flaeche>
+                            <Ang_Flaeche>
+                                <E7403010>20</E7403010>
+                                <E7403011>99,90</E7403011>
+                            </Ang_Flaeche>
+                        </Ang_Grund>
+                    </GW2>
+                    <Vorsatz>
+                        <Unterfallart>88</Unterfallart>
+                        <Vorgang>01</Vorgang>
+                        <StNr>1121081508150</StNr>
+                        <Zeitraum>2022</Zeitraum>
+                        <AbsName>ABC</AbsName>
+                        <AbsStr>ABC-Straße</AbsStr>
+                        <AbsPlz>12345</AbsPlz>
+                        <AbsOrt>A-Dorf</AbsOrt>
+                        <Copyright>Bay.Landesamt</Copyright>
+                        <OrdNrArt>S</OrdNrArt>
+                        <Rueckuebermittlung>
+                            <Bescheid>2</Bescheid>
+                        </Rueckuebermittlung>
+                    </Vorsatz>
+                </E88>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

@@ -1,0 +1,16 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:grundsteuerAendAZHH="http://finkonsens.de/elster/elsternachricht/grundsteueraendazhh/v2" xmlns:anhaenge="http://finkonsens.de/elster/anhaenge/simple/v3" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsternachricht/grundsteueraendazhh/v2" schemaLocation="GrundsteuerAendAZHH-2.xsd"/>
+    <xs:import namespace="http://finkonsens.de/elster/anhaenge/simple/v3" schemaLocation="Anhaenge-simple-3.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="grundsteuerAendAZHH:GrundsteuerAendAZHH"/>
+            <xs:element ref="anhaenge:Anhaenge" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Es dürfen maximal 100 Anhänge übermittelt werden.</xs:documentation>
+                    <xs:documentation>Der Eintrag unter &quot;Dateiinhalt&quot; darf nicht mehr als 10.485.760 Bytes umfassen (maximale Länge der Daten vor der Base64-Enkodierung).</xs:documentation>
+                    <xs:documentation>Abweichend vom allgemeinen XML-Schema (http://finkonsens.de/elster/anhaenge/simple/v3) sind für die Datenart &quot;GrundsteuerAendAZHH&quot; folgende Einschränkungen definiert: Der Eintrag unter &quot;Dateiinhalt&quot; wird eingeschränkt: PDF-Scan mit maximal 100 Seiten.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

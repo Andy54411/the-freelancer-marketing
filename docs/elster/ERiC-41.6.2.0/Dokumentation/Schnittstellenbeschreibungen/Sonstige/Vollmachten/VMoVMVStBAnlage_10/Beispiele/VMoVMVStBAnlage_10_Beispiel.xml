@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>VMoVMVStBAnlage</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>BRM</DatenLieferant>
+        <EingangsDatum>20200311193032</EingangsDatum>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <VMoVMVStBAnlage xmlns="http://finkonsens.de/elster/elsterbrm/vmovmvstbanlage/v10" version="10">
+                    <VMoVMVStBAnlage>
+                        <Vollmachtgeber>
+                            <NatuerlichePerson>
+                                <Identifikationsnummer>02476291358</Identifikationsnummer>
+                                <Geburtsdatum>01.01.1987</Geburtsdatum>
+                                <Anrede>Frau</Anrede>
+                                <Titel>Magister</Titel>
+                                <Vorname>Marie</Vorname>
+                                <Namensvorsatz>Von</Namensvorsatz>
+                                <Name>Magie</Name>
+                                <Namenszusatz>Zu</Namenszusatz>
+                            </NatuerlichePerson>
+                        </Vollmachtgeber>
+                        <ZeitlicheVertretung>
+                            <Vollmachtsdauer>
+                                <AbVZ>2018</AbVZ>
+                                <BisVZ>2019</BisVZ>
+                            </Vollmachtsdauer>
+                        </ZeitlicheVertretung>
+                        <ErloeschenVollmacht>
+                            <VollmachtErloeschen>BisherigeVollmachtenLoeschen</VollmachtErloeschen>
+                        </ErloeschenVollmacht>
+                        <Steuernummern>
+                            <BekannteSteuernummer>
+                                <Steuernummer>2653081508158</Steuernummer>
+                            </BekannteSteuernummer>
+                        </Steuernummern>
+                    </VMoVMVStBAnlage>
+                </VMoVMVStBAnlage>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

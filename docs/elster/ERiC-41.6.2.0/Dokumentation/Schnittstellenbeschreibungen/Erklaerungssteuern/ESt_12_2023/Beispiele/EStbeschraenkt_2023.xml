@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>EStbeschraenkt</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>NO_BASE64</Kompression>
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E12 xmlns="http://finkonsens.de/elster/elstererklaerung/estbeschraenkt/e12/v2023" version="2023">
+					<ESt1C>
+						<Art_Erkl>
+							<E7100101>X</E7100101>
+						</Art_Erkl>
+						<Belege>
+							<E7100012>X</E7100012>
+						</Belege>
+						<Allg>
+							<StPfl>
+								<E7100602>20.07.1989</E7100602>
+								<E7100601>Daumer</E7100601>
+								<E7100701>Hermine</E7100701>
+								<E7101301>Einzelhändlerin</E7101301>
+								<E7100904>Fritz-Fendt-Straße</E7100904>
+								<E7101003>1</E7101003>
+								<E7100902>CH-4026</E7100902>
+								<E7100903>Zug</E7100903>
+								<E7101001>Schweiz</E7101001>
+								<E7101201>Ingolstadt</E7101201>
+								<E7101903>Land</E7101903>
+								<Staatsang>
+									<E7101101>deutsch</E7101101>
+								</Staatsang>
+							</StPfl>
+							<BV>
+								<E7101501>DE89370400440532013000</E7101501>
+							</BV>
+						</Allg>
+						<Mitwirk>
+							<E7108001>Södermeier</E7108001>
+							<E7108002>Maria</E7108002>
+							<E7108003>Miniskusweg 5</E7108003>
+							<E7108004>Münchberg</E7108004>
+							<E7108005>Deutschland</E7108005>
+							<E7108006>wichtige zusätzliche Angaben</E7108006>
+							<E7108007>09778 7897</E7108007>
+							<E7108008>FH973</E7108008>
+							<E7108009>6767868</E7108009>
+							<E7108401>1</E7108401>
+						</Mitwirk>
+						<Inl_Ek>
+							<Ek_nichts_Arb>
+								<Einz>
+									<E7102501>Deutschland</E7102501>
+									<E7103204>01.09-30.11</E7103204>
+									<E7102504>8976</E7102504>
+									<E7102602>124</E7102602>
+								</Einz>
+								<Sum>
+									<E7102503>8976</E7102503>
+									<E7102601>124</E7102601>
+								</Sum>
+							</Ek_nichts_Arb>
+						</Inl_Ek>
+						<Erw_besch_Stpfl>
+							<E7106603>2</E7106603>
+						</Erw_besch_Stpfl>
+					</ESt1C>
+					<Vorsatz>
+						<Unterfallart>12</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>9198011310010</StNr>
+						<Zeitraum>2023</Zeitraum>
+						<AbsName>Thomas Meier</AbsName>
+						<AbsStr>Feringastr. 78</AbsStr>
+						<AbsPlz>98877</AbsPlz>
+						<AbsOrt>Münchberg</AbsOrt>
+						<Copyright>CR ELSTER</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E12>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+  <TransferHeader version="11">
+    <Verfahren>ElsterDatenabholung</Verfahren>
+    <DatenArt>PostfachAnfrage</DatenArt>
+    <Vorgang>send-Auth</Vorgang>
+    <Testmerker>700000001</Testmerker>
+    <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+    <DatenLieferant>Lieferant</DatenLieferant>
+    <Datei>
+      <Verschluesselung>CMSEncryptedData</Verschluesselung>
+      <Kompression>GZIP</Kompression>
+      <TransportSchluessel/>
+    </Datei>
+    <VersionClient>Client 2024</VersionClient>
+  </TransferHeader>
+  <DatenTeil>
+    <Nutzdatenblock>
+      <NutzdatenHeader version="11">
+        <NutzdatenTicket>1</NutzdatenTicket>
+        <Empfaenger id="L">CS</Empfaenger>
+        <Hersteller>
+          <ProduktName>Programm</ProduktName>
+          <ProduktVersion>V 1.0</ProduktVersion>
+        </Hersteller>
+        <DatenLieferant>Lieferant</DatenLieferant>
+      </NutzdatenHeader>
+      <Nutzdaten>
+        <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+            <PostfachAnfrage einschraenkung="alle" max="1000" >
+              <DatenartBereitstellung name="ESB"/>
+              <DatenartBereitstellung name="EPMitteilung"/>
+            </PostfachAnfrage>
+        </Datenabholung>
+      </Nutzdaten>
+    </Nutzdatenblock>
+  </DatenTeil>
+</Elster>

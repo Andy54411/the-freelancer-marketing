@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterAnmeldung</Verfahren>
+        <DatenArt>UStVA</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Test;Mustergasse;42;a;im Hinterhof;12345;Musterstadt;Deutschland;089/1234567890;tester@test.de</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Test</ProduktName>
+                    <ProduktVersion>42</ProduktVersion>
+                </Hersteller>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Anmeldungssteuern xmlns="http://finkonsens.de/elster/elsteranmeldung/ustva/v2024" version="2024">
+                    <Erstellungsdatum>20220105</Erstellungsdatum>
+                    <DatenLieferant>
+                        <Name>Alois Mustermann</Name>
+                        <Strasse>Testgasse 13</Strasse>
+                        <PLZ>08151</PLZ>
+                        <Ort>Musterstadt</Ort>
+                        <Telefon>0815/99999999</Telefon>
+                        <Email>Mustermann@Geschaeft.de</Email>
+                    </DatenLieferant>
+                    <Steuerfall>
+                        <Unternehmer>
+                            <Bezeichnung>Ihr Laden</Bezeichnung>
+                            <Name>Mustermann</Name>
+                            <Vorname>Alois</Vorname>
+                            <Str>Testgasse</Str>
+                            <Hausnummer>13</Hausnummer>
+                            <HNrZusatz>a</HNrZusatz>
+                            <AnschriftenZusatz>Ums Eck</AnschriftenZusatz>
+                            <Ort>Musterstadt</Ort>
+                            <PLZ>08151</PLZ>
+                            <Telefon>0815/99999999</Telefon>
+                            <Email>Mustermann@Geschaeft.de</Email>
+                        </Unternehmer>
+                        <Umsatzsteuersondervorauszahlung>
+                            <Jahr>2024</Jahr>
+                            <Steuernummer>9198011310134</Steuernummer>
+                            <Kz09>74931</Kz09>
+                            <Kz10>1</Kz10>
+                            <Kz26>1</Kz26>
+                            <Kz29>1</Kz29>
+                            <Kz38>9999999999999</Kz38>
+                        </Umsatzsteuersondervorauszahlung>
+                    </Steuerfall>
+                </Anmeldungssteuern>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

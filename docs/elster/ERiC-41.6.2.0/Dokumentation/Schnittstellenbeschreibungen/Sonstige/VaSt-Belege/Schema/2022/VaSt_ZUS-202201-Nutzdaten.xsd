@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vaSt_ZUS="http://finkonsens.de/elster/elstervast/vastzus/v202201" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstervast/vastzus/v202201" schemaLocation="VaSt_ZUS-202201.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="vaSt_ZUS:VaSt_ZUS"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

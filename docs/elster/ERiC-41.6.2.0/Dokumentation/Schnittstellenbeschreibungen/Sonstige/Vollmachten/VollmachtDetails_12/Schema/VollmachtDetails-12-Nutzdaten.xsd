@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vollmachtDetails="http://finkonsens.de/elster/elsterbrm/vollmachtdetails/v12" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrm/vollmachtdetails/v12" schemaLocation="VollmachtDetails-12.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="vollmachtDetails:VollmachtDetails"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

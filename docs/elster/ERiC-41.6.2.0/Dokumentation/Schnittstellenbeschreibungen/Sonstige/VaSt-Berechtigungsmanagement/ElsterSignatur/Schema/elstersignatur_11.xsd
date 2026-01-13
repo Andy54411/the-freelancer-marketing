@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xs:schema xmlns="http://www.elster.de/elsterxml/schema/v11" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" targetNamespace="http://www.elster.de/elsterxml/schema/v11" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1" jxb:version="1.0">
+	<xs:annotation>
+		<xs:appinfo>version: 1</xs:appinfo>
+		<xs:appinfo>revision: 2</xs:appinfo>
+	</xs:annotation>
+	<xs:annotation>
+		<xs:documentation xml:lang="de"><![CDATA[
+		Release Notes:
+		- 2014-08-20 v1.2: Entfernung der veralteten Datenart AbrufcodeBrief
+		- 2014-08-29 v1.2: Hinzufügen der neuen Datenart Kontoinformation
+        ]]></xs:documentation>
+	</xs:annotation>
+	<xs:annotation>
+		<xs:documentation xml:lang="de"><![CDATA[
+ElsterXML-Schema des Verfahrens ElsterSignatur (nur Request-Datentypen)
+<p>
+Dieses Schema enthält alle Request-Nutzdatentypen für die Datenarten 'AbrufcodeAntrag' und 'AbrufcodeStorno'.
+<p>
+Gemäß ElsterXML-Konvention enthalten die Nutzdaten - sofern nicht abweichend angegeben - 
+in der Serverantwort die eingereichten Nutzdaten, ergänzt um weitere Informationen des Servers.
+Aus diesem Grund sind die Request-Datentypen Basis-Typen für die Response-Datentypen (d.h. die 
+Response-Datentypen sind von den Request-Datentypen abgeleitet). 
+        ]]></xs:documentation>
+	</xs:annotation>
+	<!-- Top-level Elemente der Datenarten -->
+	<xs:element name="AbrufcodeAntrag" type="AbrufcodeAntragRequestCType"/>
+	<xs:element name="AbrufcodeStorno" type="AbrufcodeStornoRequestCType"/>
+	<xs:element name="Kontoinformation" type="KontoinformationCType"/>
+	<!-- Simple Datentypen -->
+	<xs:simpleType name="VersionSType">
+		<xs:annotation>
+			<xs:documentation>Die Version der Schnittstelle</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	<!-- Komplexe Datentypen -->
+	<xs:complexType name="AbrufcodeAntragRequestCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de"><![CDATA[
+Request-Datentyp für die Datenart 'AbrufcodeAntrag', mit dem ein Datenabruf einen Abrufcode beantragen kann. Der Abrufcode dient der zusätzlichen Authentisierung beim Datenabruf.
+<p>
+Der AbrufcodeAntrag selbst enthält i.A. keine benutzerbezogenen Informationen. Die Benutzerzuordnung erfolgt über die (erfolgreiche) Authentifizierung.  
+<p>
+Unterstützte Vorgänge: send-Auth, send-Sig<br>
+Anzahl unterstützter Nutzdatenblöcke: 1<br>
+Unterstützte Testmerker:<br>
+- 0800000001: WIESEL veranlasst Mail-Versand statt Brief-Versand, außerdem wird der Abrufcode unmittelbar in der Response zurückgeliefert<br>
+            ]]></xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="EMail" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation xml:lang="de">
+                        E-Mail-Adresse: Bei Verwendung des Testmerkers
+                        0800000001 wird der Abrufcode an die angegebene
+                        E-Mail-Adresse verschickt, anstelle des
+                        Brief-Versands einzuleiten
+                    </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="version" type="VersionSType" default="1">
+			<xs:annotation>
+				<xs:appinfo>
+					<jxb:property>
+						<jxb:javadoc>Die Schnittstellen-Version.</jxb:javadoc>
+					</jxb:property>
+				</xs:appinfo>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="AbrufcodeStornoRequestCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de"><![CDATA[
+Request-Datentyp für die Datenart 'AbrufcodeStorno', mit dem ein Datenabruf einen Abrufcode sperren kann. Der Abrufcode ist danach nicht mehr zur Authentisierung verwendbar.
+<p>
+Der AbrufcodeStorno selbst enthält i.A. keine benutzerbezogenen Informationen. Die Benutzerzuordnung erfolgt über die (erfolgreiche) Authentifizierung.  
+<p>
+Unterstützte Vorgänge: send-Auth, send-Sig<br>
+Anzahl unterstützter Nutzdatenblöcke: 1<br>
+Unterstützte Testmerker: keine
+            ]]></xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="version" type="VersionSType" default="1">
+			<xs:annotation>
+				<xs:appinfo>
+					<jxb:property>
+						<jxb:javadoc>Die Schnittstellen-Version.</jxb:javadoc>
+					</jxb:property>
+				</xs:appinfo>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="AbrufcodeAntragResponseCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de"><![CDATA[
+Response-Datentyp der Datenart 'AbrufcodeAntrag'. Die Response-Daten werden lediglich bei Verwendung des Testmerkers
+0800000001 ergänzt und enthalten dann den Abrufcode.
+            ]]></xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="AbrufcodeAntragRequestCType">
+				<xs:sequence>
+					<xs:element name="abrufcode" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:appinfo>
+								<jxb:property>
+									<jxb:javadoc>
+Wird nur bei Verwendung des Testmerkers 0800000001 gesetzt. Der Abrufcode wird sonst mittels Datenart 'MitteilungAbrufCode' aus dem Verfahren "ElsterBrief"
+an den F80-Druck in den Länder verschickt, um dort einen Abrufcode-Brief zu drucken und per Post zu versenden.
+                            </jxb:javadoc>
+								</jxb:property>
+							</xs:appinfo>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="AbrufcodeStornoResponseCType">
+		<xs:annotation>
+			<xs:documentation xml:lang="de"><![CDATA[
+Response-Datentyp der Datenart 'AbrufcodeStorno'. Die Response-Daten sind identisch zum Request.
+            ]]></xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="AbrufcodeStornoRequestCType"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+
+    <xs:complexType name="KontoinformationCType">
+        <xs:annotation>
+            <xs:documentation xml:lang="de"><![CDATA[
+Datentyp für die Datenart 'Kontoinformation'. Mit dieser Datenart kann ein Benutzer diverse Informationen zu dem ElsterOnline-Portalkonto ermitteln, mit dem die Authentisierung des Kontoinformation-Requests erfolgt ist.]]></xs:documentation>
+        </xs:annotation>
+
+        <xs:sequence>
+          <xs:element name="KontoID"
+        	      type="xs:positiveInteger" maxOccurs="1" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+        	  xml:lang="de">
+        	Die Konto-ID des Kontos.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="Echtkonto"
+                  type="xs:boolean" maxOccurs="1" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+              xml:lang="de">
+            Flag zur Unterscheidung zwischen Echtkonto und Testkonto.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="Registrierdatum"
+                 type="xs:date" maxOccurs="1" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+              xml:lang="de">
+            Das Datum, zu dem die Registrierung des Kontos abgeschlossen wurde.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="Identifikationsmerkmal"
+        	      type="IdentifikationsmerkmalCType" maxOccurs="1"
+        	      minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+        	  xml:lang="de">
+                  Typ und Wert des Identifikationsmerkmals (z.B. Identifikationsnummer, Steuernummer Organisation, ...)
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="AuthInfo" type="AuthInfoCType"
+        	      maxOccurs="1" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+        	  xml:lang="de">
+		Informationen darüber, wie sich der Benutzer authentisieren kann.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="version" type="VersionSType" >
+          <xs:annotation>
+            <xs:appinfo>
+              <jxb:property>
+                <jxb:javadoc>
+                  Die Schnittstellenversion.
+                </jxb:javadoc>
+              </jxb:property>
+            </xs:appinfo>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:complexType>
+
+    
+
+    
+
+    
+      <!-- ++++++++++++++++++++++++++++++++++++++++++++++++++
+           Name and Adress Simple Types
+	   +++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+    <xs:simpleType name="DatumDESType">
+        <xs:annotation>
+            <xs:documentation xml:lang="de">Datum mit dem im deutschsprachigen Raum üblichen Format 'dd.mm.yyyy'.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{2}\.\d{2}\.\d{4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+      <xs:complexType name="AbrufcodeInfoCType">
+        <xs:sequence>
+          <xs:element name="Abrufcode" type="AbrufcodeCType" maxOccurs="unbounded" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation
+        	  xml:lang="de">
+		Die Liste der Abrufcodes des Benutzers
+              </xs:documentation>
+            </xs:annotation>
+	  </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+
+    
+      <xs:complexType name="AbrufcodeCType">
+        <xs:sequence>
+          <xs:element name="Antragsdatum" type="xs:dateTime">
+            <xs:annotation>
+              <xs:documentation
+        	  xml:lang="de">Das Datum, an dem der Abrufcode beantragt wurde.</xs:documentation>
+            </xs:annotation>
+	  </xs:element>
+          <xs:element name="Status" type="AbrufcodeStatusSType">
+            <xs:annotation>
+              <xs:documentation xml:lang="de">Der Status des Abrufcodes</xs:documentation>
+            </xs:annotation>
+	  </xs:element>
+          <xs:element name="Sperrdatum" type="xs:dateTime" maxOccurs="1" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation xml:lang="de">Das Datum, an dem der Abrufcode gesperrt wurde.</xs:documentation>
+            </xs:annotation>
+	  </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+
+    
+      <xs:simpleType name="AbrufcodeStatusSType">
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="GUELTIG"></xs:enumeration>
+          <xs:enumeration value="GESPERRT"></xs:enumeration>
+          <xs:enumeration value="STORNIERT"></xs:enumeration>
+        </xs:restriction>
+      </xs:simpleType>
+
+    
+      <xs:complexType name="IdentifikationsmerkmalCType">
+        <xs:sequence>
+          <xs:element name="Typ" type="xs:string">
+              <xs:annotation>
+                  <xs:documentation
+                          xml:lang="de">Der Typ des Identifikationsmerkmals (z.B. Identifikationsnummer, Steuernummer Organisation, Steuernummer Person, ...)</xs:documentation>
+              </xs:annotation>
+          </xs:element>
+          <xs:element name="Wert" type="xs:string">
+              <xs:annotation>
+                  <xs:documentation
+                          xml:lang="de">Der Wert des Identifikationsmerkmals (z.B. die numerische Identifikationsnummer)</xs:documentation>
+              </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+
+      <xs:complexType name="AuthInfoCType">
+	<xs:sequence>
+    	  <xs:element name="AbrufcodeInfo" type="AbrufcodeInfoCType">
+            <xs:annotation>
+              <xs:documentation xml:lang="de">Informationen über die Abrufcodes des Kontos.</xs:documentation>
+            </xs:annotation>
+    	  </xs:element>
+	</xs:sequence>
+      </xs:complexType>
+</xs:schema>
+    

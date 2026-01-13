@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>SpezRechtListe</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <TransferTicket>et1236wtfxz9zz4j2drhh28emhnr05fn</TransferTicket>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ElsterBRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+        <RC>
+            <Rueckgabe>
+                <Code>0</Code>
+                <Text>OK</Text>
+            </Rueckgabe>
+            <Stack>
+                <Code>0</Code>
+                <Text/>
+            </Stack>
+        </RC>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <RC>
+                    <Rueckgabe>
+                        <Code>0</Code>
+                        <Text>OK</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>0</Code>
+                        <Text/>
+                    </Stack>
+                </RC>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <SpezRechtListe version="7">
+                    <Antrag xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="DatenabruferAntragCType">
+                        <AntragsID>br12701v299sh650fgwcn0c31z2k0xrb</AntragsID>
+                        <AntragsDatum>2013-05-07T21:25:21.543</AntragsDatum>
+                        <GueltigBis>9999-12-31</GueltigBis>
+                        <AntragsStatus>offen</AntragsStatus>
+                        <GenehmigenBis>2013-08-05</GenehmigenBis>
+                        <Recht>AbrufEBelege</Recht>
+                        <Veranlagungszeitraum>
+                            <Unbeschraenkt>false</Unbeschraenkt>
+                            <Veranlagungsjahre>
+                                <Jahr>2014</Jahr>
+                            </Veranlagungsjahre>
+                        </Veranlagungszeitraum>
+                        <DateninhaberOrdnungsbegriff>Huber - 1</DateninhaberOrdnungsbegriff>
+                        <DateninhaberIdNr>04452397687</DateninhaberIdNr>
+                    </Antrag>
+                    <Antrag xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="DatenabruferAntragCType">
+                        <AntragsID>br1271mrfht6w750vcjwkhfd4qvgv7hf</AntragsID>
+                        <AntragsDatum>2013-05-07T21:25:21.746</AntragsDatum>
+                        <GueltigBis>2023-05-07</GueltigBis>
+                        <AntragsStatus>offen</AntragsStatus>
+                        <GenehmigenBis>2013-08-05</GenehmigenBis>
+                        <Recht>AbrufEBelege</Recht>
+                        <Veranlagungszeitraum>
+                            <Unbeschraenkt>false</Unbeschraenkt>
+                            <Zeitspanne>
+                                <Von>2013</Von>
+                                <Bis>2222</Bis>
+                            </Zeitspanne>
+                        </Veranlagungszeitraum>
+                        <DateninhaberOrdnungsbegriff>Ordnungsbegriff .. Müller</DateninhaberOrdnungsbegriff>
+                        <DateninhaberIdNr>04452317681</DateninhaberIdNr>
+                    </Antrag>
+                    <Antrag xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="DatenabruferAntragCType">
+                        <AntragsID>br1272xf3i59m2323ft9qtk7iqzxzke4</AntragsID>
+                        <AntragsDatum>2013-05-07T21:25:21.949</AntragsDatum>
+                        <GueltigBis>2020-05-07</GueltigBis>
+                        <AntragsStatus>offen</AntragsStatus>
+                        <GenehmigenBis>2013-08-05</GenehmigenBis>
+                        <Recht>AbrufEBelege</Recht>
+                        <Veranlagungszeitraum>
+                            <Unbeschraenkt>true</Unbeschraenkt>
+                        </Veranlagungszeitraum>
+                        <DateninhaberOrdnungsbegriff>Schulze</DateninhaberOrdnungsbegriff>
+                        <DateninhaberIdNr>09952417688</DateninhaberIdNr>
+                    </Antrag>
+                </SpezRechtListe>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

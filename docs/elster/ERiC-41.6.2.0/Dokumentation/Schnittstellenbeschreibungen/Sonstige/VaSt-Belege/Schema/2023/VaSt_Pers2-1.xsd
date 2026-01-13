@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 1.8 -->
+<!-- VaSt_Pers2 - 1 - 5.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://www.elster.de/2002/XMLSchema" targetNamespace="http://www.elster.de/2002/XMLSchema">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <xs:simpleType name="ContentSType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100000"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="FieldCType">
+        <xs:simpleContent>
+            <xs:extension base="ContentSType"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:simpleType name="ContentSTypeNoMaxLen">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="FieldCTypeNoMaxLen">
+        <xs:simpleContent>
+            <xs:extension base="ContentSTypeNoMaxLen"/>
+        </xs:simpleContent>
+    </xs:complexType>
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:element name="VaSt_Pers2">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="IdNr" type="FieldCType"/>
+                <xs:element name="Religion" type="FieldCType"/>
+            </xs:choice>
+            <xs:attribute name="version" fixed="1" use="required"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

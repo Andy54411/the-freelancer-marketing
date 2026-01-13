@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+        <!-- datenart_ohne_Untersachbereich: 
+        Naehere Informationen zur Datenart und Schnittstelle sind unter dem entsprechenden 
+        Kapitel der o.g. Datenarten im Entwicklerhandbuch zu finden. -->
+		<DatenArt>KSt</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Beispiel-Software-Hersteller</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel />
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+                <NutzdatenTicket>xadfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">2653</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+    <Jahressteuererklaerung version="2">
+					<Vorsatz unterfallart="30" ordNrArt="S" vorgang="01">
+                        <StNr>2653081508158</StNr>
+                        <Zeitraum>2018</Zeitraum>
+                        <Erstelldatum>20170502</Erstelldatum>
+                        <Erstellzeit>080000</Erstellzeit>
+                        <AbsName>Max Mustermann</AbsName>
+                        <AbsStr>Musterstr. 1</AbsStr>
+                        <AbsPlz>08150</AbsPlz>
+						<AbsOrt>Musterstadt</AbsOrt>
+                        <Copyright>Beispiel-Steuer-Software</Copyright>
+						<Rueckuebermittlung bescheid="nein" />
+					</Vorsatz>
+        <Feld index="1" lfdNr="1" nr="8000016" wert="X"/>
+		<Feld nr="8000013" index="1" lfdNr="1" wert="X" />
+		<Feld nr="8000014" index="1" lfdNr="1" wert="X" />
+        <Feld index="1" lfdNr="1" nr="8000101" wert="GmbH"/>
+        <Feld index="1" lfdNr="1" nr="8000302" wert="93047"/>
+        <Feld index="1" lfdNr="1" nr="8000303" wert="123465"/>
+        <Feld index="1" lfdNr="1" nr="8000304" wert="abc straße"/>
+        <Feld index="1" lfdNr="1" nr="8000305" wert="1"/>
+        <Feld index="1" lfdNr="1" nr="8000308" wert="Regensburg"/>
+        <Feld index="1" lfdNr="1" nr="8000401" wert="93047"/>
+        <Feld index="1" lfdNr="1" nr="8000402" wert="Regensburg"/>
+        <Feld index="1" lfdNr="1" nr="8000501" wert="Regensburg"/>
+        <Feld index="1" lfdNr="1" nr="8000601" wert="Regensburg"/>
+        <Feld index="1" lfdNr="1" nr="8001007" wert="2"/>
+        <Feld index="1" lfdNr="1" nr="8001105" wert="520"/>
+        <Feld index="1" lfdNr="1" nr="8005401" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8006901" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8007301" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8007401" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8007501" wert="0"/>
+        <Feld index="1" lfdNr="1" nr="8019910" wert="ABC"/>
+        <Feld index="1" lfdNr="1" nr="8019911" wert="DEFG"/>
+        <Feld index="1" lfdNr="1" nr="8019912" wert="JIJK"/>
+        <Feld index="1" lfdNr="1" nr="8019913" wert="93047 Regensburg"/>
+        <Feld index="1" lfdNr="1" nr="8019914" wert="123"/>
+        <Feld index="1" lfdNr="1" nr="8019915" wert="123"/>
+        <Feld index="1" lfdNr="1" nr="8019916" wert="123"/>
+        <Feld index="1" lfdNr="1" nr="8019918" wert="13"/>
+        <Feld index="1" lfdNr="1" nr="8024101" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8200101" wert="01.01.2018"/>
+        <Feld index="1" lfdNr="1" nr="8200102" wert="31.12.2018"/>
+        <Feld index="1" lfdNr="1" nr="8240102" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8241304" wert="0"/>
+        <Feld index="1" lfdNr="1" nr="8241305" wert="0"/>
+        <Feld index="1" lfdNr="1" nr="8245601" wert="10"/>
+        <Feld index="1" lfdNr="1" nr="8245602" wert="0"/>
+    </Jahressteuererklaerung>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

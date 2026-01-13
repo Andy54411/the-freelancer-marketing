@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterErklaerung</Verfahren>
+		<DatenArt>Gewinnermittlung13aEStG</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Softwareentwickler ERiC</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>		
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">9198</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERICTest</ProduktName>
+					<ProduktVersion>2009.1/0</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<E76 xmlns="http://finkonsens.de/elster/elstererklaerung/gewinnermittlung13aestg/e76/v2023" version="2023">
+				    <Anl_13a>
+				    	<Allg_Betr>
+				    	    <E2940201>Mustermann</E2940201>
+				    	    <E2940302>Marianne</E2940302>
+				    	    <E2940403>Mustergasse 7</E2940403>
+				    	    <E2940502>89999</E2940502>
+				    	    <E2940503>Musterort</E2940503>
+				    	    <E2940602>9198011310010</E2940602>
+				    	    <E2940601>1</E2940601>
+				    	    <E2940501>130</E2940501>
+				    	    <E2940401>01.01.</E2940401>
+				    	    <E2940402>01.01.2023</E2940402>
+				    	</Allg_Betr>
+				    	<Gew_Erm>
+							<Landw_Ntz>
+								<Gbetr_sbew_Fl>
+									<E2940701>0</E2940701>
+									<E2941101>0</E2941101>
+									<E2941301>0</E2941301>
+								</Gbetr_sbew_Fl>
+								<Zuschl_Tier>
+									<E2941401>0,00</E2941401>
+									<E2942101>0</E2942101>
+								</Zuschl_Tier>
+							</Landw_Ntz>
+							<Erm_Gew_DSS>
+								<E2947601>0</E2947601>
+								<E2948201>0</E2948201>
+								<E2948402>0</E2948402>
+							</Erm_Gew_DSS>
+				    	</Gew_Erm>
+						<Steuerberater>
+							<Anfertigung>
+								<E2940351>Musterberater</E2940351>
+								<E2940451>Bernd</E2940451>
+								<E2940551>Beraterallee 101</E2940551>
+								<E2940651>99999 Beratershausen</E2940651>
+								<E2940751>9876543210</E2940751>
+							</Anfertigung>
+						</Steuerberater>
+						
+					</Anl_13a>
+					<Vorsatz>
+						<Unterfallart>76</Unterfallart>
+						<Vorgang>01</Vorgang>
+						<StNr>9198011310010</StNr>
+						<Zeitraum>2023</Zeitraum>
+						<AbsName>abc</AbsName>
+						<AbsStr>abc</AbsStr>
+						<AbsOrt>abc</AbsOrt>
+						<Copyright>ERiC</Copyright>
+						<OrdNrArt>S</OrdNrArt>
+						<Rueckuebermittlung>
+							<Bescheid>2</Bescheid>
+						</Rueckuebermittlung>
+					</Vorsatz>
+				</E76>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterExtern</Verfahren>
+        <DatenArt>IBANMeldung</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Projekt</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="L">BF</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+            
+                <verf:IBANRoot xmlns:verf="http://www.itzbund.de/iban/01.00" xmlns:k="http://www.itzbund.de/iban/std/01.00" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <verf:Liste_139b_10 UUID="456e03f7-4926-45ca-b7b2-afff041c16cc" OrdBegriff="Beispielmeldedatei">
+                        <verf:Dienstleister xsi:type="verf:Melder_139b_10_NichtNatuerlich_Type">
+                            <verf:Zulassungsnummer>12345678995</verf:Zulassungsnummer>
+                            <verf:Adresse xsi:type="k:InlandsAdresse">
+                                <k:Str>Straße der Dienstleister</k:Str>
+                                <k:HausNr>102</k:HausNr>
+                                <k:HausNrZu>b</k:HausNrZu>
+                                <k:Ort>Berlin</k:Ort>
+                                <k:Plz>10587</k:Plz>
+                            </verf:Adresse>
+                            <verf:Email>erster.Sachbearbeiter@DienstleisterFuerBanken.de</verf:Email>
+                            <verf:Telefonnummer>02304/4455-1122</verf:Telefonnummer>
+                            <verf:Name>Dienstleister für Banken G.m.b.H und co KG</verf:Name>
+                        </verf:Dienstleister>
+                        <verf:Melder xsi:type="verf:Melder_139b_10_NichtNatuerlich_Type">
+                            <verf:Zulassungsnummer>98765432114</verf:Zulassungsnummer>
+                            <verf:Adresse xsi:type="k:AuslandsAdresse">
+                                <k:Str> Bankenallee</k:Str>
+                                <k:HausNr>56</k:HausNr>
+                                <k:Ort> Zürich</k:Ort>
+                                <k:Plz>8047</k:Plz>
+                                <k:StaatId>CH</k:StaatId>
+                            </verf:Adresse>
+                            <verf:Email>Kundenkontrolle@abcdefg.com</verf:Email>
+                            <verf:Telefonnummer>00800 - 700700700</verf:Telefonnummer>
+                            <verf:Name>Kreditinstitut ABCDEFG</verf:Name>
+                        </verf:Melder>
+                        <!--IBAN-Meldung-->
+                        <verf:Meldung_139b_10 xsi:type="verf:Meldung_139b_10_Type" MeldUUID="bc941a52-6deb-49b5-8933-28d34e93311a" KdOrdBegriff="ABC-DEF-123-465" Erstellungszeitpunkt="2019-04-23T09:30:47Z">
+                            <verf:IdNr>54546868957</verf:IdNr>
+                            <verf:GebDt>1970-04-03</verf:GebDt>
+                            <verf:Nachname>Müller</verf:Nachname>
+                            <verf:Vorname>Gabi</verf:Vorname>
+                            <verf:Kontoangabe xmlns="http://www.itzbund.de/iban/01.00">
+                                <k:IBAN>DE45789658965711225587</k:IBAN>
+                            </verf:Kontoangabe>
+                        </verf:Meldung_139b_10>
+                        <!--Stornierungsmeldung fuer eine vorangegangene Meldung, die aufgrund eines technischen Fehlers an das BZSt uebertragen wurde-->
+                        <verf:Meldung_139b_10 xsi:type="verf:Meldung_139b_10_StornoType" MeldUUID="4b857146-a766-44bd-9155-b8bc6778c1bd" KdOrdBegriff="BCD-EFG-234-567" Erstellungszeitpunkt="2019-04-21T09:30:47Z" RefUUID="de965875-6800-4172-bc3e-7f2770b335c6"/>
+                    </verf:Liste_139b_10>
+                </verf:IBANRoot>
+
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

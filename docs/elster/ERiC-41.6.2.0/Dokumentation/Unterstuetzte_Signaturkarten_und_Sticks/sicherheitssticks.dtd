@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Description: DTD fuer Zusatzinformationen fuer Sicherheitssticks
+	File name: sicherheitssticks.dtd
+	File version: 62.0.0.0
+	Stand: 15.01.2025
+
+	Bemerkung: Die benutzende XML-Datei ist: 
+	sicherheitssticks.xml
+-->
+
+<!ELEMENT sicherheitssticks (stick+)>
+<!ELEMENT stick (#PCDATA)>
+<!ATTLIST stick
+	tokensubtype CDATA #REQUIRED
+	name CDATA #IMPLIED
+	pindlgtxt CDATA #REQUIRED
+	url CDATA #REQUIRED
+	win32dll CDATA #REQUIRED
+	win64dll CDATA #REQUIRED
+	linux32dll CDATA #IMPLIED
+	linux64dll CDATA #IMPLIED
+	mac32dllppc CDATA #IMPLIED
+	mac32dllintl CDATA #IMPLIED
+	mac64dllintl CDATA #IMPLIED
+	description CDATA #IMPLIED
+>

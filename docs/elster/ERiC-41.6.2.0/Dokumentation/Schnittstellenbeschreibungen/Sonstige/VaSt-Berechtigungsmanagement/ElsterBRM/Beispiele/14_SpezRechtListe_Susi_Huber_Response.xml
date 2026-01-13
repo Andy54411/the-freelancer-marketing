@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterBRM</Verfahren>
+        <DatenArt>SpezRechtListe</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <TransferTicket>et1234nqvydy7s231dz9sotey20sjdi8</TransferTicket>
+        <Testmerker>370000001</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ElsterBRM</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel />
+        </Datei>
+        <RC>
+            <Rueckgabe>
+                <Code>0</Code>
+                <Text>OK</Text>
+            </Rueckgabe>
+            <Stack>
+                <Code>0</Code>
+                <Text />
+            </Stack>
+        </RC>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <RC>
+                    <Rueckgabe>
+                        <Code>0</Code>
+                        <Text>OK</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>0</Code>
+                        <Text />
+                    </Stack>
+                </RC>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <SpezRechtListe version="7">
+                    <Vollmachtsdaten>
+                        <VollmachtsID>0100G10569836572000043150</VollmachtsID>
+                        <Datum>2017-03-29</Datum>
+                        <Status>aktiv</Status>
+                        <VollmachtnehmerID>
+                            <Herausgeber>0100</Herausgeber>
+                            <HauptID>105698365</HauptID>
+                            <SubID>000000000</SubID>
+                        </VollmachtnehmerID>
+                        <Vollmachtnehmer>
+                            <Name>Steuerberater Mustermann &amp; Partner</Name>
+                            <Name2> im Inland</Name2>
+                            <Anschrift>
+                                <Str>Musterstrasse 1</Str>
+                                <Ort>Musterort</Ort>
+                                <PLZ>12345</PLZ>
+                            </Anschrift>
+                        </Vollmachtnehmer>
+                        <Vollmachtgeber>
+                            <Name>Susi Huber</Name>
+                            <DateninhaberIdNr>04452397687</DateninhaberIdNr>
+                        </Vollmachtgeber>
+                        <AusschlussVerwIdNr>false</AusschlussVerwIdNr>
+                        <Steuernummern/>
+                        <Ausschluesse/>
+                        <Untervollmachten>true</Untervollmachten>
+                        <Veranlagungszeitraum>
+                            <Unbeschraenkt>true</Unbeschraenkt>
+                        </Veranlagungszeitraum>
+                    </Vollmachtsdaten>
+                    <Antrag
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="DateninhaberAntragCType">
+                        <AntragsID>br12701v299sh650fgwcn0c31z2k0xrb</AntragsID>
+                        <AntragsDatum>2019-05-07T21:25:21.543</AntragsDatum>
+                        <GueltigBis>9999-12-31</GueltigBis>
+                        <AntragsStatus>offen</AntragsStatus>
+                        <Recht>AbrufEBelege</Recht>
+                        <Veranlagungszeitraum>
+                            <Unbeschraenkt>false</Unbeschraenkt>
+                            <Veranlagungsjahre>
+                                <Jahr>2014</Jahr>
+                            </Veranlagungsjahre>
+                        </Veranlagungszeitraum>
+                        <DatenabruferName>Meier und Moser Kanzlei</DatenabruferName>
+                    </Antrag>
+                </SpezRechtListe>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>EinspruchNachtrag</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Beispiel Einspruch</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel />
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">9198</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <EinspruchNachtrag xmlns="http://finkonsens.de/elster/elsternachricht/einspruchnachtrag/v1" version="1">
+                    <Einspruch>
+                        <ArtNachtrag>102</ArtNachtrag>
+                        <Ordnungsbegriff>
+                            <Steuernummer>9198081508152</Steuernummer>
+                        </Ordnungsbegriff>
+                        <Einspruchsfuehrer>
+                            <Name>sit</Name>
+                            <Adresse>
+                                <StrAdrInl>
+                                    <Strasse>earum</Strasse>
+                                    <Hausnummer>1</Hausnummer>
+                                    <Postleitzahl>04031</Postleitzahl>
+                                    <Ort>Nulla</Ort>
+                                </StrAdrInl>
+                            </Adresse>
+                            <Kontakt>
+                                <Telefon>380479621</Telefon>
+                            </Kontakt>
+                        </Einspruchsfuehrer>
+                        <Verwaltungsakt>
+                            <VaId>38</VaId>
+                            <Verwaltungsakt_Datum>01.01.2000</Verwaltungsakt_Datum>
+                            <AdV>k</AdV>
+                        </Verwaltungsakt>
+                        <Begruendungen>
+                            <Begruendung>
+                                <Schlagwort>facere</Schlagwort>
+                                <Text>voluptas</Text>
+                            </Begruendung>
+                        </Begruendungen>
+                    </Einspruch>
+                </EinspruchNachtrag>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

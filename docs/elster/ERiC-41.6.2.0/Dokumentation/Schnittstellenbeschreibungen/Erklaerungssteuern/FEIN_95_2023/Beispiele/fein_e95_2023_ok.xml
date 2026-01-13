@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterErklaerung</Verfahren>
+        <DatenArt>FEIN</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Softwaretester ERiC</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>NO_BASE64</Kompression>
+            <TransportSchluessel />
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">4080</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <E95 xmlns="http://finkonsens.de/elster/elstererklaerung/fein/e95/v2023" version="2023">
+                    <ESt1D>
+                        <Allg>
+                            <Unternehmen>
+                                <E9650005>Mustername</E9650005>
+                                <Str_Adr>
+                                    <E9650015>Musterstraße</E9650015>
+                                    <E9650016>1</E9650016>
+                                    <E9650007>01234</E9650007>
+                                    <E9650008>Musterstadt</E9650008>
+                                </Str_Adr>
+                            </Unternehmen>
+                            <Unternehmer>
+                                <Weit_Ang>
+                                    <E9546070>58402369978</E9546070>
+                                </Weit_Ang>
+                            </Unternehmer>
+                        </Allg>
+                        <Zust_Besch>
+                            <E9650014>X</E9650014>
+                        </Zust_Besch>
+                    </ESt1D>
+                    <FG>
+                        <L_u_F>
+                            <Lfd_Eink>
+                                <E9513100>0,00</E9513100>
+                            </Lfd_Eink>
+                        </L_u_F>
+                    </FG>
+                    <Vorsatz>
+                        <Unterfallart>95</Unterfallart>
+                        <Vorgang>01</Vorgang>
+                        <StNr>4080071897509</StNr>
+                        <Zeitraum>2023</Zeitraum>
+                        <AbsName>Mustermann</AbsName>
+                        <AbsStr>Musterstraße</AbsStr>
+                        <AbsOrt>Musterstadt</AbsOrt>
+                        <Copyright>Mein ELSTER</Copyright>
+                        <OrdNrArt>S</OrdNrArt>
+                        <Rueckuebermittlung>
+                            <Bescheid>2</Bescheid>
+                        </Rueckuebermittlung>
+                    </Vorsatz>
+                </E95>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

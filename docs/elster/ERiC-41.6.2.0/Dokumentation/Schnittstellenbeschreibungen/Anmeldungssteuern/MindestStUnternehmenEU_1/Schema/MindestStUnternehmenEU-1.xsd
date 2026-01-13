@@ -1,0 +1,998 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- MindestStUnternehmenEU - 1 - 4.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elsteranmeldung/mindeststunternehmeneu/v1" targetNamespace="http://finkonsens.de/elster/elsteranmeldung/mindeststunternehmeneu/v1" xmlns:exml="http://finkonsens.de/elster/elsteranmeldung/mindeststunternehmeneu/v1">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:nonNegativeInteger">
+            <xs:pattern value="[1-9].*|0">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, Einträge der Form '0' oder erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumTTpMMpJJJJBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(0[1-9]|[1-2][0-9]|3[0-1])\.(10|11|12|01|02|03|04|05|06|07|08|09)\.([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_AnlageGE_MB_MBStaat_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="AU">
+                <xs:annotation>
+                    <xs:documentation>Australien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BS">
+                <xs:annotation>
+                    <xs:documentation>Bahamas</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BE">
+                <xs:annotation>
+                    <xs:documentation>Belgien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BM">
+                <xs:annotation>
+                    <xs:documentation>Bermuda</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="BG">
+                <xs:annotation>
+                    <xs:documentation>Bulgarien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DK">
+                <xs:annotation>
+                    <xs:documentation>Dänemark</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="EE">
+                <xs:annotation>
+                    <xs:documentation>Estland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FI">
+                <xs:annotation>
+                    <xs:documentation>Finnland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="FR">
+                <xs:annotation>
+                    <xs:documentation>Frankreich</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GI">
+                <xs:annotation>
+                    <xs:documentation>Gibraltar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GR">
+                <xs:annotation>
+                    <xs:documentation>Griechenland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GG">
+                <xs:annotation>
+                    <xs:documentation>Guernsey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HK">
+                <xs:annotation>
+                    <xs:documentation>Hong Kong</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ID">
+                <xs:annotation>
+                    <xs:documentation>Indonesien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IE">
+                <xs:annotation>
+                    <xs:documentation>Irland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IM">
+                <xs:annotation>
+                    <xs:documentation>Isle of Man</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="IT">
+                <xs:annotation>
+                    <xs:documentation>Italien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JP">
+                <xs:annotation>
+                    <xs:documentation>Japan</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="JE">
+                <xs:annotation>
+                    <xs:documentation>Jersey</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KY">
+                <xs:annotation>
+                    <xs:documentation>Kaimaninseln</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CA">
+                <xs:annotation>
+                    <xs:documentation>Kanada</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="QA">
+                <xs:annotation>
+                    <xs:documentation>Katar</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CO">
+                <xs:annotation>
+                    <xs:documentation>Kolumbien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="KR">
+                <xs:annotation>
+                    <xs:documentation>Korea (Republik)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HR">
+                <xs:annotation>
+                    <xs:documentation>Kroatien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LV">
+                <xs:annotation>
+                    <xs:documentation>Lettland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LI">
+                <xs:annotation>
+                    <xs:documentation>Liechtenstein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LT">
+                <xs:annotation>
+                    <xs:documentation>Litauen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="LU">
+                <xs:annotation>
+                    <xs:documentation>Luxemburg</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MY">
+                <xs:annotation>
+                    <xs:documentation>Malaysia</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MT">
+                <xs:annotation>
+                    <xs:documentation>Malta</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="MU">
+                <xs:annotation>
+                    <xs:documentation>Mauritius</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NZ">
+                <xs:annotation>
+                    <xs:documentation>Neuseeland</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NL">
+                <xs:annotation>
+                    <xs:documentation>Niederlande</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NG">
+                <xs:annotation>
+                    <xs:documentation>Nigeria</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NO">
+                <xs:annotation>
+                    <xs:documentation>Norwegen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AT">
+                <xs:annotation>
+                    <xs:documentation>Österreich</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PL">
+                <xs:annotation>
+                    <xs:documentation>Polen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PT">
+                <xs:annotation>
+                    <xs:documentation>Portugal</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RO">
+                <xs:annotation>
+                    <xs:documentation>Rumänien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SE">
+                <xs:annotation>
+                    <xs:documentation>Schweden</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CH">
+                <xs:annotation>
+                    <xs:documentation>Schweiz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SG">
+                <xs:annotation>
+                    <xs:documentation>Singapur</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SK">
+                <xs:annotation>
+                    <xs:documentation>Slovakei</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="SI">
+                <xs:annotation>
+                    <xs:documentation>Slowenien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ES">
+                <xs:annotation>
+                    <xs:documentation>Spanien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="ZA">
+                <xs:annotation>
+                    <xs:documentation>Südafrika</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TH">
+                <xs:annotation>
+                    <xs:documentation>Thailand</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CZ">
+                <xs:annotation>
+                    <xs:documentation>Tschechien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="HU">
+                <xs:annotation>
+                    <xs:documentation>Ungarn</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="AE">
+                <xs:annotation>
+                    <xs:documentation>Vereinigte Arabische Emirate</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="GB">
+                <xs:annotation>
+                    <xs:documentation>Vereinigtes Königreich</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="VN">
+                <xs:annotation>
+                    <xs:documentation>Vietnam</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_MinSt1_Allgemeines_ArtGruT_SType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0">
+                <xs:annotation>
+                    <xs:documentation>Keiner Mindeststeuergruppe zugehörig, da nur eine im Inland belegene Geschäftseinheit nach § 1 Absatz 1 Satz 1 MinStG vorliegt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Im Inland belegene oberste Muttergesellschaft aller (weltweiten) Geschäftseinheiten nach § 3 Absatz 3 Satz 1 MinStG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Im Inland belegene gemeinsame Muttergesellschaft aller im Inland belegenen Geschäftseinheiten nach § 3 Absatz 3 Satz 2 MinStG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="3">
+                <xs:annotation>
+                    <xs:documentation>Im Inland belegene Geschäftseinheit, die nach § 3 Absatz 3 Satz 3 MinStG zum Gruppenträger bestimmt worden ist</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="4">
+                <xs:annotation>
+                    <xs:documentation>Wirtschaftlich bedeutendste Geschäftseinheit im Inland nach § 3 Absatz 3 Satz 4 MinStG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Enum_Rechtsformschluessel_5_BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="31">
+                <xs:annotation>
+                    <xs:documentation>Aktiengesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="25">
+                <xs:annotation>
+                    <xs:documentation>Aktiengesellschaft u. Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="26">
+                <xs:annotation>
+                    <xs:documentation>Aktiengesellschaft u. Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="49">
+                <xs:annotation>
+                    <xs:documentation>Andere Erwerbs- oder Wirtschaftsgenossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="14">
+                <xs:annotation>
+                    <xs:documentation>Angehörige(r) der freien Berufe</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="20">
+                <xs:annotation>
+                    <xs:documentation>Atypische stille Gesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="91">
+                <xs:annotation>
+                    <xs:documentation>Ausländische Körperschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="92">
+                <xs:annotation>
+                    <xs:documentation>Ausländische Personengesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="34">
+                <xs:annotation>
+                    <xs:documentation>Bergrechtliche Gewerkschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="36">
+                <xs:annotation>
+                    <xs:documentation>Europäische Aktiengesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="28">
+                <xs:annotation>
+                    <xs:documentation>Europäische wirtschaftliche Interessenvereinigung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="81">
+                <xs:annotation>
+                    <xs:documentation>Gebietskörperschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="27">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft des bürgerlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="35">
+                <xs:annotation>
+                    <xs:documentation>Gesellschaft mit beschränkter Haftung</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="23">
+                <xs:annotation>
+                    <xs:documentation>GmbH u. Co. KG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="24">
+                <xs:annotation>
+                    <xs:documentation>GmbH u. Co. OHG</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="11">
+                <xs:annotation>
+                    <xs:documentation>Hausgewerbetreibende oder gleichgestellte Person nach dem Heimarbeitergesetz</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="33">
+                <xs:annotation>
+                    <xs:documentation>Kolonialgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="22">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="32">
+                <xs:annotation>
+                    <xs:documentation>Kommanditgesellschaft auf Aktien</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="41">
+                <xs:annotation>
+                    <xs:documentation>Kreditgenossenschaft, die Kredite ausschließlich an ihre Mitglieder gewährt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="13">
+                <xs:annotation>
+                    <xs:documentation>Land- oder Forstwirt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="43">
+                <xs:annotation>
+                    <xs:documentation>Landwirtschaftl. Nutzungs- oder Verwaltungsgenossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="61">
+                <xs:annotation>
+                    <xs:documentation>Nichtrechtsfähiger Verein, Anstalt, Stiftung oder anderes Zweckvermögen</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="21">
+                <xs:annotation>
+                    <xs:documentation>Offene Handelsgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="72">
+                <xs:annotation>
+                    <xs:documentation>Öffentliche oder unter Staatsaufsicht stehende Sparkasse</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="82">
+                <xs:annotation>
+                    <xs:documentation>Öffentl.-rechtl. Religionsgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="74">
+                <xs:annotation>
+                    <xs:documentation>Öffentl.-rechtl. Versorgungs-, Verkehrs- oder Hafenbetrieb</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="16">
+                <xs:annotation>
+                    <xs:documentation>Person mit Beteiligungen an gewerbl. Personengesellschaften</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="44">
+                <xs:annotation>
+                    <xs:documentation>Realgemeinde</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="45">
+                <xs:annotation>
+                    <xs:documentation>SCE Europäische Genossenschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="99">
+                <xs:annotation>
+                    <xs:documentation>Sonstige ausländische Rechtsform</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="59">
+                <xs:annotation>
+                    <xs:documentation>Sonstige juristische Person des privaten Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="83">
+                <xs:annotation>
+                    <xs:documentation>Sonstige juristische Personen des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="39">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Kapitalgesellschaft</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="73">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Kreditanstalt des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="19">
+                <xs:annotation>
+                    <xs:documentation>Sonstige natürliche Person</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="29">
+                <xs:annotation>
+                    <xs:documentation>Sonstige Personengesellschaft (z.B. Grundstücksgemeinschaft o.Ä.)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="79">
+                <xs:annotation>
+                    <xs:documentation>Sonstiger Betrieb gewerblicher Art von jur. Personen des öffentlichen Rechts</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="12">
+                <xs:annotation>
+                    <xs:documentation>Sonstige(r) Einzelgewerbetreibende(r) (außer Hausgewerbetreibende oder gleichgestellte Person nach dem Heimarbeitergesetz)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="15">
+                <xs:annotation>
+                    <xs:documentation>Sonstige selbstständig tätige Person</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="71">
+                <xs:annotation>
+                    <xs:documentation>Staatsbank</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="37">
+                <xs:annotation>
+                    <xs:documentation>Unternehmergesellschaft (haftungsbeschränkt)</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="51">
+                <xs:annotation>
+                    <xs:documentation>Versicherungsverein auf Gegenseitigkeit</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="42">
+                <xs:annotation>
+                    <xs:documentation>Zentralkasse, die Kredite ausschließlich an ihre Mitglieder gewährt und sich auf genossenschaftl. Aufgaben beschränkt</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType">
+        <xs:restriction base="GanzzahlNichtNegOhneFuehrNullBaseSType">
+            <xs:totalDigits value="12"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Ja1BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaNein12BaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1">
+                <xs:annotation>
+                    <xs:documentation>Ja</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="2">
+                <xs:annotation>
+                    <xs:documentation>Nein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaXBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="X"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="SteuernummerBaseSType">
+        <xs:annotation>
+            <xs:documentation>Steuernummer</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL13_MaxL13_Musterm905865445_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="13"/>
+            <xs:maxLength value="13"/>
+            <xs:pattern value="([0-9]{4})0[0-9]{8}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL17_MaxL17_Muster1389002412_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="17"/>
+            <xs:maxLength value="17"/>
+            <xs:pattern value="(AT|BE|BG|CY|CZ|DE|DK|EE|ES|FI|FR|GB|GR|HR|HU|IE|IT|LT|LU|LV|MT|NL|PL|PT|RO|SE|SI|SK)A(((2000|((19|20)(0[48]|[2468][048]|[13579][26])))0229)|(((19|20)[0-9]{2})02(0[1-9]|1[0-9]|2[0-8]))|(((19|20)[0-9]{2})(0[13578]|10|12)(0[1-9]|[12][0-9]|3[01]))|(((19|20)[0-9]{2})(0[469]|11)(0[1-9]|[12][0-9]|30)))([A-Z]|[0-9]){6}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL17_MaxL17_Muster1677848521_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="17"/>
+            <xs:maxLength value="17"/>
+            <xs:pattern value="(AT|BE|BG|CY|CZ|DE|DK|EE|ES|FI|FR|GB|GR|HR|HU|IE|IT|LT|LU|LV|MT|NL|PL|PT|RO|SE|SI|SK)D(((2000|((19|20)(0[48]|[2468][048]|[13579][26])))0229)|(((19|20)[0-9]{2})02(0[1-9]|1[0-9]|2[0-8]))|(((19|20)[0-9]{2})(0[13578]|10|12)(0[1-9]|[12][0-9]|3[01]))|(((19|20)[0-9]{2})(0[469]|11)(0[1-9]|[12][0-9]|30)))([A-Z]|[0-9]){6}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL17_MaxL17_Muster19518124_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="17"/>
+            <xs:maxLength value="17"/>
+            <xs:pattern value="DE[0-9]{9}-(0000[1-9]|000[1-9][0-9]|00[1-9][0-9]{2}|0[1-9][0-9]{3}|[1-9][0-9]{4})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL55_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="55"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL60_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL89_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="89"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="MindestStUnternehmenEU" type="MindestStUnternehmenEU_CType"/>
+    <xs:complexType name="MindestStUnternehmenEU_CType">
+        <xs:sequence>
+            <xs:element name="MinSt1" type="MinSt1_m1848710713_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="AnlageGE" type="AnlageGE_m1848710713_CType" minOccurs="0" maxOccurs="2"/>
+            <xs:element name="STG" type="STG_m1848710713_CType" minOccurs="0" maxOccurs="9999"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="1" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="MinSt1_m1848710713_CType">
+        <xs:sequence>
+            <xs:element name="KJ" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Kalenderjahr, für das diese Mindeststeuererklärung übermittelt wird</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuernummer" type="SteuernummerBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="WID" type="String_MinL17_MaxL17_Muster19518124_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wirtschafts-Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Berichtigt" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Berichtigte Steuererklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="MehrereMinStBerichte" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Für diese Mindeststeuererklärung ist mehr als ein Mindeststeuer-Bericht maßgebend</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Allgemeines" type="Allgemeines_879830731_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Anmeldung" type="Anmeldung_879830731_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ErgaenzendeAngaben" type="ErgaenzendeAngaben_879830731_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Schlusserklaerung" type="Schlusserklaerung_879830731_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EOP" type="EOP_879830731_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Allgemeines_879830731_CType">
+        <xs:sequence>
+            <xs:element name="NameStpfl" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung des Steuerschuldners (in der Regel Gruppenträger)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rechtsform" type="Enum_Rechtsformschluessel_5_BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsform</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BS" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebsstätte</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ArtGruT" type="Enum_MinSt1_Allgemeines_ArtGruT_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art des Steuerschuldners</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anmeldung_879830731_CType">
+        <xs:sequence>
+            <xs:element name="MinSt" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Für das der Erklärung zugrunde liegende Kalenderjahr wird eine Mindeststeuer in folgender Höhe angemeldet:</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummePEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Primärergänzungssteuerbeträge nach §§ 8 folgende MinStG aller Geschäftseinheiten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeSEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Sekundärergänzungssteuerbeträge nach §§ 11 folgende MinStG aller Geschäftseinheiten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeNEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der nationalen Ergänzungssteuerbeträge nach §§ 90 folgende MinStG aller Geschäftseinheiten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SummeBetragP57Abs1" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Beträge der Neuberechnung nach § 57 Absatz 1 MinStG aller Geschäftseinheiten</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ErgaenzendeAngaben_879830731_CType">
+        <xs:sequence>
+            <xs:element name="Angaben" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Über die Angaben in der Steuererklärung hinaus sind weitere oder abweichende Angaben oder Sachverhalte zu berücksichtigen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="FreieAngaben" type="String_MinL1_MaxL999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ergänzende Angaben zur Steuererklärung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Schlusserklaerung_879830731_CType">
+        <xs:sequence>
+            <xs:element name="Steuerberater" type="Steuerberater_m2059558472_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuerberater_m2059558472_CType">
+        <xs:sequence>
+            <xs:element name="Beratung" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Die Steuererklärung wurde unter Mitwirkung einer selbstständig und eigenverantwortlich tätigen und zur Hilfeleistung in Steuersachen nach §§ 3 und 4 StBerG befugten Person oder Vereinigung angefertigt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="TelNr" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Telefonische Rückfragen unter Telefonnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Mitwirkung" type="Mitwirkung_m257458391_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Mitwirkung_m257458391_CType">
+        <xs:sequence>
+            <xs:element name="Name" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Name</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Vorname" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vorname</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Adresse" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Straße, Hausnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="PLZ" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Postleitzahl, Ort</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Staat" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>gegebenenfalls ausländischer Staat</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ZusatzAngaben" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>zusätzliche Angaben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Mandantennummer" type="String_MinL1_MaxL60_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Mandantennummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Bearbeiterkennzeichen" type="String_MinL1_MaxL55_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bearbeiterkennzeichen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EOP_879830731_CType">
+        <xs:sequence>
+            <xs:element name="Transferaufgabe" type="String_MinL1_MaxL89_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Transferaufgabe</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="AnlageGE_m1848710713_CType">
+        <xs:sequence>
+            <xs:element name="GJMutterges" type="GJMutterges_m697177749_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="MB" type="MB_m697177749_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Berechnung" type="Berechnung_m697177749_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="GJMutterges_m697177749_CType">
+        <xs:sequence>
+            <xs:element name="BeginnGJ" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn des Geschäftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EndeGJ" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ende des Geschäftsjahres</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MB_m697177749_CType">
+        <xs:sequence>
+            <xs:element name="MBDatum" type="DatumTTpMMpJJJJBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Datum der Abgabe des Mindeststeuer-Berichts, der für diese Anlage maßgebend ist</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BZSt" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Der in Zeile $MBDatum.Vordruckzeile$ bezeichnete Mindeststeuer-Bericht wurde dem Bundeszentralamt für Steuern übermittelt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="MBStaat" type="Enum_AnlageGE_MB_MBStaat_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Der in Zeile $MBDatum.Vordruckzeile$ bezeichnete Mindeststeuer-Bericht wurde der zuständigen Behörde des folgenden Staates übermittelt</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="MinStGleichMB" type="JaNein12BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Die Mindeststeuer entspricht den Angaben in dem in Zeile $MBDatum.Vordruckzeile$ bezeichneten Mindeststeuer-Bericht</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="MBKein" type="JaXBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ein Mindeststeuer-Bericht wurde bisher nicht abgegeben</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Berechnung_m697177749_CType">
+        <xs:sequence>
+            <xs:element name="GE" type="GE_1143173188_CType" minOccurs="0" maxOccurs="9999"/>
+            <xs:element name="SummeAnlage" type="SummeAnlage_1143173188_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="GE_1143173188_CType">
+        <xs:sequence>
+            <xs:element name="Name" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung der Geschäftseinheit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Steuernummer" type="String_MinL13_MaxL13_Musterm905865445_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Steuernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="GEWID" type="String_MinL17_MaxL17_Muster19518124_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Wirtschafts-Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Rechtsform" type="Enum_Rechtsformschluessel_5_BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rechtsform</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BS" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betriebsstätte</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="PEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Primärergänzungssteuerbeträge nach §§ 8 folgende MinStG dieser Geschäftseinheit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Sekundärergänzungssteuerbetrag nach §§ 11 folgende MinStG dieser Geschäftseinheit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NEST" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Betrag der nationalen Ergänzungssteuer nach §§ 90 folgende MinStG dieser Geschäftseinheit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="NeuberechnungP57Abs1" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Neuberechnung nach § 57 Absatz 1 MinStG dieser Geschäftseinheit</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Neu" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Die Geschäftseinheit ist im laufenden Geschäftsjahr neu hinzugekommen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="SummeAnlage_1143173188_CType">
+        <xs:sequence>
+            <xs:element name="SummeGJ" type="GanzzahlNichtNegOhneFuehrNull_MaxVK12_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Summe der Ergänzungssteuerbeträge und Beträge der Neuberechnung nach § 57 Absatz 1 MinStG aller Geschäftseinheiten für die der in Zeile $MBDatum.Vordruckzeile$ bezeichnete Mindeststeuer-Bericht maßgebend ist</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="STG_m1848710713_CType">
+        <xs:sequence>
+            <xs:element name="Steuergestaltung" type="Steuergestaltung_m1846154205_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Steuergestaltung_m1846154205_CType">
+        <xs:sequence>
+            <xs:element name="RegNr" type="String_MinL17_MaxL17_Muster1389002412_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Registriernummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="OffNr" type="String_MinL17_MaxL17_Muster1677848521_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Offenlegungsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="RegNr_vorhanden" type="Ja1BaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Es liegen noch keine Registriernummer und Offenlegungsnummer vor.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BezeichnungSTG" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung der Steuergestaltungen, soweit noch keine Registrier- und Offenlegungsnummer vorliegen</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

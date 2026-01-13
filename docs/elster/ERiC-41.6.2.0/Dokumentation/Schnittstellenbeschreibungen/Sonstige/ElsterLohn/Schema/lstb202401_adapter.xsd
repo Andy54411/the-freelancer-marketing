@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Adapterschema für die elektronische Lohnsteuerbescheinigung 2024 (Version 202401).
+	=============
+	Änderungshistorie
+	15.05.2023: Erstellung
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://finkonsens.de/rms/elo/lstb/v202401" targetNamespace="http://finkonsens.de/rms/elo/lstb/v202401" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- RootElement = Lohnsteuerbescheinigung 2024_________________________________________________-->
+	<xs:include schemaLocation="./lstb202401.xsd"/>
+	<xs:element name="Lohnsteuerbescheinigung" type="elsterlohn:lstb_LohnsteuerbescheinigungCType"/>
+</xs:schema>

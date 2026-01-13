@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterNachricht</Verfahren>
+        <DatenArt>BZSt2</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>Test ERiC-Entwicklung</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="F">9181</Empfaenger>
+                <Hersteller>
+                    <ProduktName>ERIC, BayLfSt</ProduktName>
+                    <ProduktVersion>31.x</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ERiC-Entwicklung</DatenLieferant>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <BZSt2 xmlns="http://finkonsens.de/elster/elsternachricht/bzst2/v23" version="23">
+                    <BZSt2>
+                        <Finanzamt>9181</Finanzamt>
+                        <Jahr>2020</Jahr>
+                        <IdNr>11231456793</IdNr>
+                        <AllgemeineAngaben>
+                            <ArtPerson>Person</ArtPerson>
+                            <Name>Musterfrau</Name>
+                            <Vorname>Maximiliane</Vorname>
+                            <Titel>Prof. Dr.</Titel>
+                            <Rechtsform>KGaA</Rechtsform>
+                            <Geburtsdatum>12.09.1982</Geburtsdatum>
+                            <ArtAdresse>Wohnsitz</ArtAdresse>
+                            <Adresse>
+                                <StrAdr>
+                                    <Strasse>Die Beste Straße</Strasse>
+                                    <Hausnummer>23</Hausnummer>
+                                    <Adresszusatz>Vordergebäude</Adresszusatz>
+                                    <Plz>80123</Plz>
+                                    <Ort>Muenchen</Ort>
+                                </StrAdr>
+                            </Adresse>
+                        </AllgemeineAngaben>
+                        <Mitteilungen>
+                            <KeinErwerbGruendungBeteiligung>1</KeinErwerbGruendungBeteiligung>
+                        </Mitteilungen>
+                    </BZSt2>
+                </BZSt2>
+                <Anhaenge xmlns="http://finkonsens.de/elster/anhaenge/simple/v3" version="3">
+                    <Rueckmeldung>
+                        <RueckmeldungGewuenscht>true</RueckmeldungGewuenscht>
+                    </Rueckmeldung>
+                    <Anhang>
+                        <Dateibezeichnung>Beispiel Anhang TPE01</Dateibezeichnung>
+                        <Dateityp>application/pdf</Dateityp>
+                        <Dateiinhalt>T1RfCUaYOBIxqkQHpbENaHYZVecWGONJXjr9skQ4JoNiY78h/QnoWkLDDMSbZWR6x2QR5aFG5tLA
+nKNPxRftdrycP0L/cT2Ti0nO6lTn4bSdEtD+e1P266Tv9GiFD563MexXszcbUA0gVbvitCXdcA7C
+ufanKEz1LmVd1xJUUaw7VspbZCYXAliB4HGUC1a3F5E3CUGPxwAJIzICLmHH1Xro5/qc8NYGTpHQ
+hEGK1SAZlcY29X08VeCuIppRLC8eLjpTv8TJZHM=</Dateiinhalt>
+                    </Anhang>
+                </Anhaenge>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

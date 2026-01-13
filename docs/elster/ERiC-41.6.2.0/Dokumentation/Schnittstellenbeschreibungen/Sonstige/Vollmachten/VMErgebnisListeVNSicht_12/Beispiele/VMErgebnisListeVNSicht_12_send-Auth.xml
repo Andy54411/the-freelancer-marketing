@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterVollmachtDB</Verfahren>
+		<DatenArt>VMErgebnisListeVNSicht</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>370000001</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Mein ELSTER, BayLfSt</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>ep00402tm6b17d6yjyka9n9f1fbus65e</NutzdatenTicket>
+				<Empfaenger id="L">CS</Empfaenger>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<VMErgebnisListeVNSicht xmlns="http://finkonsens.de/elster/elstervollmachtdb/vmergebnislistevnsicht/v12" version="12">
+					<VMErgebnisListeVNSicht>
+						<Suchkriterien>
+							<VollmachtID>0202G00000002970000011111</VollmachtID>
+						</Suchkriterien>
+					</VMErgebnisListeVNSicht>
+				</VMErgebnisListeVNSicht>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

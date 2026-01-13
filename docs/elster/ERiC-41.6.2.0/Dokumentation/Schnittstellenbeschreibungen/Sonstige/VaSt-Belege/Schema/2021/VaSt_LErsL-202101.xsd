@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schema automatisch generiert von ElsterRules 52.1.0 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- VaSt_LErsL - 202101 - 1.0 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/elstervast/vastlersl/v202101" targetNamespace="http://finkonsens.de/elster/elstervast/vastlersl/v202101" xmlns:exml="http://finkonsens.de/elster/elstervast/vastlersl/v202101">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="DezimalzahlOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:decimal">
+            <xs:pattern value="-?[1-9][0-9]*(\.[0-9]+)?">
+                <xs:annotation>
+                    <xs:documentation>Zahlen außerhalb des offenen Intervalls (-1, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="-?0\.[0-9]*[1-9][0-9]*">
+                <xs:annotation>
+                    <xs:documentation>Zahlen aus den offenen Intervallen (-1, 0) und (0, 1)</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+            <xs:pattern value="0(\.0+)?">
+                <xs:annotation>
+                    <xs:documentation>Nullwerte</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DatumJJJJMMTTBekanntBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([0-9][0-9][0-9][1-9]|[0-9][0-9][1-9][0-9]|[0-9][1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])(10|11|12|01|02|03|04|05|06|07|08|09)(0[1-9]|[1-2][0-9]|3[0-1])">
+                <xs:annotation>
+                    <xs:documentation>Art der Teilbekanntheit: BEKANNT</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType">
+        <xs:restriction base="DezimalzahlOhneFuehrNullBaseSType">
+            <xs:pattern value="-?\d{1,12}(\.\d{2,2})"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="IDNrBaseSType">
+        <xs:annotation>
+            <xs:documentation>IDNr</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL19_MaxL19_Muster712713037_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="19"/>
+            <xs:maxLength value="19"/>
+            <xs:pattern value="((0[1-9])|([12]\d)|(3[01]))\.((0[1-9])|(1[0-2]))\.2\d{3} (([01]\d)|(2[0-4])):[0-5]\d:([0-5]\d)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="VaSt_LErsL" type="VaSt_LErsL_CType"/>
+    <xs:complexType name="VaSt_LErsL_CType">
+        <xs:sequence>
+            <xs:element name="Zuflussjahr" type="DatumJJJJBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Jahr der Zahlung/Erstattung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Eingangsdatum" type="String_MinL19_MaxL19_Muster712713037_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Übermittlungszeitpunkt der Bescheinigung an die Finanzverwaltung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="LeistungsEmpfaenger" type="LeistungsEmpfaenger_m1956975938_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Leistung" type="Leistung_m1956975938_CType" minOccurs="0" maxOccurs="11"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="202101" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="LeistungsEmpfaenger_m1956975938_CType">
+        <xs:sequence>
+            <xs:element name="IdNr" type="IDNrBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Identifikationsnummer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Leistung_m1956975938_CType">
+        <xs:sequence>
+            <xs:element name="Betrag" type="DezimalzahlOhneFuehrNull_MaxVK12_MinNK2_MaxNK2_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Leistungsbetrag</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Art" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Art der Leistung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="LeistungsPflichtiger" type="LeistungsPflichtiger_147305219_CType" minOccurs="0" maxOccurs="200"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="LeistungsPflichtiger_147305219_CType">
+        <xs:sequence>
+            <xs:element name="Name" type="String_MinL1_MaxL99999_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Leistungserbringer</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Zeitraum" type="Zeitraum_m1481411950_CType" minOccurs="0" maxOccurs="183"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Zeitraum_m1481411950_CType">
+        <xs:sequence>
+            <xs:element name="Beginn" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Beginn</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Ende" type="DatumJJJJMMTTBekanntBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ende</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ANHAENGE VERSION 4 | generisches Schema -->
+<!-- Schema generiert von ElsterRules 48.0.0-build.2023-08-24T15-38-41UTC.02148 -->
+<!-- Schema entsprechend eXML-Spezifikation Version 2.0 -->
+<!-- Anhaenge-simple - 4 - 0.1 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://finkonsens.de/elster/anhaenge/simple/v4" targetNamespace="http://finkonsens.de/elster/anhaenge/simple/v4" xmlns:exml="http://finkonsens.de/elster/anhaenge/simple/v4">
+    <!-- XML-Typdefinitionen fuer eXML -->
+    <!-- Definition der datenartspezifischen eXML-Struktur -->
+    <xs:simpleType name="EMailBaseSType">
+        <xs:annotation>
+            <xs:documentation>EMail</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([^@]+)(@)([^@]+)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlPosOhneFuehrNullBaseSType">
+        <xs:restriction base="xs:positiveInteger">
+            <xs:pattern value="[1-9].*">
+                <xs:annotation>
+                    <xs:documentation>Kein Vorzeichen, erste Ziffer ungleich '0'</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="StringBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[&#x20;-&#x7e;&#xa1;-&#xa3;&#xa5;-&#xa5;&#xa7;-&#xa7;&#xaa;-&#xac;&#xae;-&#xb3;&#xb5;-&#xb5;&#xb9;-&#xbb;&#xbf;-&#xff;&#x152;-&#x153;&#x160;-&#x161;&#x178;-&#x178;&#x17d;-&#x17e;&#x20ac;-&#x20ac;]+">
+                <xs:annotation>
+                    <xs:documentation>Zeichensatz Standard_E_V2, Zeilenumbrüche und Leerangaben unterbinden</xs:documentation>
+                </xs:annotation>
+            </xs:pattern>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="DateiinhaltBaseSType">
+        <xs:restriction base="xs:base64Binary">
+            <xs:annotation>
+                <xs:documentation>Inhalt muss Base64-enkodiert sein</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="EMail_MinLm1_MaxL128_SType">
+        <xs:restriction base="EMailBaseSType">
+            <xs:minLength value="0"/>
+            <xs:maxLength value="128"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GanzzahlPosOhneFuehrNullSType">
+        <xs:restriction base="GanzzahlPosOhneFuehrNullBaseSType"/>
+    </xs:simpleType>
+    <xs:simpleType name="JaNeinTrueFalseBaseSType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="true">
+                <xs:annotation>
+                    <xs:documentation>Ja</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="false">
+                <xs:annotation>
+                    <xs:documentation>Nein</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL100_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL15000_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="15000"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL200_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="200"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL36_Muster300528655_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="36"/>
+            <xs:pattern value="[a-zA-Z0-9\._-]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL50_Musterm251303653_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="50"/>
+            <xs:pattern value="[ -~¡-£¥-¥§-§ª-¬®-³µ-µ¹-»¿-ÿŒ-œŠ-šŸ-ŸŽ-ž€-€]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL50_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="50"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL1_MaxL99999_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="99999"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="String_MinL5_MaxL255_Musterm99735958_SType">
+        <xs:restriction base="StringBaseSType">
+            <xs:minLength value="5"/>
+            <xs:maxLength value="255"/>
+            <xs:pattern value="[^\*\?\\/:&quot;&lt;&gt;|]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="Anhaenge" type="Anhaenge_CType">
+        <xs:unique name="Anhaenge_CType1Indexfeld">
+            <xs:selector xpath="exml:Anhang"/>
+            <xs:field xpath="exml:Dateibezeichnung"/>
+        </xs:unique>
+    </xs:element>
+    <xs:complexType name="Anhaenge_CType">
+        <xs:sequence>
+            <xs:element name="Rueckmeldung" type="Rueckmeldung_m770156948_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Anhang" type="Anhang_m770156948_CType" minOccurs="0" maxOccurs="100"/>
+        </xs:sequence>
+        <xs:attribute name="version" fixed="4" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="Rueckmeldung_m770156948_CType">
+        <xs:sequence>
+            <xs:element name="RueckmeldungGewuenscht" type="JaNeinTrueFalseBaseSType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Rückmeldung zu Anhängen wird gewünscht</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="EmailRueckmeldung" type="EMail_MinLm1_MaxL128_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>E-Mail-Adresse (an diese E-Mail-Adresse wird eine Benachrichtigung zugesandt, wenn die automatisierte Überprüfung auf den Servern der Finanzverwaltung schadhafte oder irreguläre Anhänge feststellt und ein entsprechendes Verarbeitungsprotokoll zur Abholung bereitstellt)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="SchluesselRueckmeldung" type="DateiinhaltBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Öffentlicher Schlüssel für die Rückmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="OrdnungsbegriffRueckmeldung" type="String_MinL1_MaxL200_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ordnungsbegriff für die Rückmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="OrdnungsbegriffDruckRueckmeldung" type="String_MinL1_MaxL200_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Ordnungsbegriff für die Rückmeldung</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Anhang_m770156948_CType">
+        <xs:sequence>
+            <xs:element name="DateinameMitErweiterung" type="String_MinL5_MaxL255_Musterm99735958_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Vollständiger Dateiname des Anhangs. Dieses Element muss die Endung/Erweiterung der Datei enthalten.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Dateibezeichnung" type="String_MinL1_MaxL50_Musterm251303653_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Bezeichnung der Datei / des Inhalts</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Dateityp" type="String_MinL1_MaxL99999_SType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Dateityp</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="DateiReferenzId" type="String_MinL1_MaxL36_Muster300528655_SType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>ReferenzId (UUID) der außerhalb des XMLs übermittelten Datei. Es gilt: (DateiReferenzId AND DateiReferenzGroesseInByte) XOR Dateiinhalt. Werden DateiReferenzId und DateiReferenzGroesseInByte angegeben, darf kein Dateiinhalt existieren (und umgekehrt).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="DateiReferenzGroesseInByte" type="GanzzahlPosOhneFuehrNullSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Größe in Byte der außerhalb des XMLs übermittelten Datei. Es gilt: (DateiReferenzId AND DateiReferenzGroesseInByte) XOR Dateiinhalt. Werden DateiReferenzId und DateiReferenzGroesseInByte angegeben, darf kein Dateiinhalt existieren (und umgekehrt).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Dateiinhalt" type="DateiinhaltBaseSType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Datensatz des Anhangs (Base64-codiert; Zeilenumbrüche erlaubt; zum Beispiel &apos;TkFDSERJR0FM&apos;)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Virengeprueft" type="JaNeinTrueFalseBaseSType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <!-- Nutzung nur durch Finanzverwaltung -->
+                <xs:annotation>
+                    <xs:documentation>Virengeprüft</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Normalisiert" type="JaNeinTrueFalseBaseSType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <!-- Nutzung nur durch Finanzverwaltung -->
+                <xs:annotation>
+                    <xs:documentation>Normalisiert</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Loeschgrund" type="String_MinL1_MaxL15000_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <!-- Nutzung nur durch Finanzverwaltung -->
+                <xs:annotation>
+                    <xs:documentation>Löschgrund</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="BearbeiterInfo" type="String_MinL1_MaxL15000_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <!-- Nutzung nur durch Finanzverwaltung -->
+            </xs:element>
+            <xs:element name="Hinweise" type="Hinweise_36292527_CType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="MetadatenAnhang" type="MetadatenAnhang_36292527_CType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Hinweise_36292527_CType">
+        <xs:sequence>
+            <xs:element name="Hinweis" type="Hinweis_1929461741_CType" minOccurs="0" maxOccurs="100"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Hinweis_1929461741_CType">
+        <xs:sequence>
+            <xs:element name="Hinweistext" type="String_MinL1_MaxL15000_SType" minOccurs="1" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <!-- Nutzung nur durch Finanzverwaltung -->
+                <xs:annotation>
+                    <xs:documentation>Hinweistext</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetadatenAnhang_36292527_CType">
+        <xs:sequence>
+            <xs:element name="MetadatumAnhang" type="MetadatumAnhang_98623303_CType" minOccurs="0" maxOccurs="20"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MetadatumAnhang_98623303_CType">
+        <xs:sequence>
+            <xs:element name="SchluesselAnhang" type="String_MinL1_MaxL50_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Eindeutiger Schlüssel des Schlüssel-Wert-Paares</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="WertAnhang" type="String_MinL1_MaxL100_SType" minOccurs="0" maxOccurs="1">
+                <!-- Dieses Element ist für die Anwendung ERiC nicht zulässig. -->
+                <xs:annotation>
+                    <xs:documentation>Wert des Schlüssel-Wert-Paares</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

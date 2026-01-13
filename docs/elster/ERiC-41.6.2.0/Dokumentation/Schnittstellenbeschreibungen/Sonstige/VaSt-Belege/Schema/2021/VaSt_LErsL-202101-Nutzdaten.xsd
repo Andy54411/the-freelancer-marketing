@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vaSt_LErsL="http://finkonsens.de/elster/elstervast/vastlersl/v202101" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elstervast/vastlersl/v202101" schemaLocation="VaSt_LErsL-202101.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="vaSt_LErsL:VaSt_LErsL"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

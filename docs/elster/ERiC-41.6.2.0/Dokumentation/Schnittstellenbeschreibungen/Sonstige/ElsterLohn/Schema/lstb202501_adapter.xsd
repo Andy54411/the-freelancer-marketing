@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML-Adapterschema für die elektronische Lohnsteuerbescheinigung 2025 (Version 202501).
+	=============
+	Änderungshistorie
+	17.05.2024: Erstellung
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:elsterlohn="http://finkonsens.de/rms/elo/lstb/v202501" targetNamespace="http://finkonsens.de/rms/elo/lstb/v202501" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- RootElement = Lohnsteuerbescheinigung 2025_________________________________________________-->
+	<xs:include schemaLocation="./lstb202501.xsd"/>
+	<xs:element name="Lohnsteuerbescheinigung" type="elsterlohn:lstb_LohnsteuerbescheinigungCType"/>
+</xs:schema>

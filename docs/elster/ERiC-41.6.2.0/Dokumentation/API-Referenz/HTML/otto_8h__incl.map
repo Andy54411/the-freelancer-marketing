@@ -1,0 +1,9 @@
+<map id="otto.h" name="otto.h">
+<area shape="rect" id="Node000001" title="Deklaration der Otto&#45;Funktionen." alt="" coords="174,5,228,32"/>
+<area shape="rect" id="Node000002" href="$otto__statuscode_8h.html" title="Auflistung der Otto&#45;Statuscodes." alt="" coords="5,80,131,107"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="179,35,106,75,103,70,177,30"/>
+<area shape="rect" id="Node000003" href="$otto__types_8h.html" title="Definition von Datenstrukturen und Datentypen." alt="" coords="155,80,248,107"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="204,33,204,64,199,64,199,33"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="272,80,336,107"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="221,30,275,68,272,73,218,35"/>
+</map>

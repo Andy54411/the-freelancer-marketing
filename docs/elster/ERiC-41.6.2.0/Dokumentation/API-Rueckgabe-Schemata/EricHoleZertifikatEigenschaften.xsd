@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:eric="http://www.elster.de/EricXML/2.0/EricHoleZertifikatEigenschaften"
+        targetNamespace="http://www.elster.de/EricXML/2.0/EricHoleZertifikatEigenschaften"
+        elementFormDefault="qualified">
+    
+    <annotation>
+        <documentation xml:lang="de">
+            XML-Daten mit diesem Schema werden von der ERiC-Funktion EricHoleZertifikatEigenschaften im Rückgabepuffer zurückgegeben.
+        </documentation>
+    </annotation>
+    
+    <element name="EricHoleZertifikatEigenschaften">
+        <annotation>
+            <documentation xml:lang="de">
+                Wurzelelement für Rückgabedaten. Enthält die Zertifikatinformationen.
+            </documentation>
+        </annotation>
+
+        <complexType>
+          <all>
+            <element name="Signaturzertifikateigenschaften" type="eric:ZertifikateigenschaftenTyp" minOccurs="0">
+              <annotation>
+                <documentation xml:lang="de">
+                  Enthält Eigenschaften des zum Signieren verwendeten Zertifikats. Bei clienterzeugten Zertifkaten
+                  gibt es dieses nicht.
+                </documentation>
+              </annotation>            
+            </element>
+            <element name="Verschluesselungszertifikateigenschaften" type="eric:ZertifikateigenschaftenTyp">
+              <annotation>
+                <documentation xml:lang="de">
+                  Enthält Eigenschaften des zum Verschlüsseln verwendeten Zertifikats.
+                </documentation>
+              </annotation>
+            </element>
+          </all>
+        </complexType>
+    </element>
+
+  <complexType name="ZertifikateigenschaftenTyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Eigenschaften eines Zertifikats
+      </documentation>
+    </annotation>
+    
+    <all minOccurs="1">
+      <element name="AusgestelltAm" type="eric:GeneralizedTimeTyp">
+        <annotation>
+          <documentation xml:lang="de">
+            Zeitpunkt, ab welchem das Zertifikat gültig ist.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="GueltigBis" type="eric:GeneralizedTimeTyp">
+        <annotation>
+          <documentation xml:lang="de">
+            Zeitpunkt, ab welchem das Zertifikat nicht mehr gültig ist.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="Signaturalgorithmus" type="string">
+        <annotation>
+          <documentation xml:lang="de">
+            Signierungsalgorithmusname und Object Identifier (Bezüglich
+            Informationen zu OIDs siehe zum Beispiel http://www.oid-info.com/).
+            Zum Beispiel "sha256WithRSAEncryption(1.2.840.113549.1.1.11)"
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="PublicKeyMD5" type="eric:MD5Hex">
+        <annotation>
+          <documentation xml:lang="de">
+            MD5-Hash über den öffentlichen Schlüssel.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="PublicKeySHA1" type="eric:SHA1Hex">
+        <annotation>
+          <documentation xml:lang="de">
+            SHA1-Hash über den öffentlichen Schlüssel.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="PublicKeyBitLength" type="unsignedInt" >
+        <annotation>
+          <documentation xml:lang="de">
+            Schlüssellänge des öffentlichen Schlüssels. Zum Beispiel
+            2048 Bits.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="Issuer" type="eric:IssuerTyp" >
+        <annotation>
+          <documentation xml:lang="de">
+            Informationen über den Aussteller des Zertifikats.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="Subjekt" type="eric:SubjektTyp" >
+        <annotation>
+          <documentation xml:lang="de">
+            Informationen über das Subjekt des Zertifikats.
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="Identifikationsmerkmaltyp"
+               type="eric:Identifikationsmerkmaltyp"
+               minOccurs="1"/>
+
+      <element name="Registrierertyp"
+               type="eric:Registrierertyp"
+               minOccurs="0" >
+        
+      </element>
+
+      <element name="Verifikationsart"
+               type="eric:VerifikationsartTyp"
+               minOccurs="0">
+        
+      </element>
+
+      <element name="TokenTyp"
+               type="eric:TokenTyp">
+        
+      </element>
+
+
+      <element type="boolean" name="Testzertifikat"
+               minOccurs="0">
+        
+      </element>
+    </all>
+  </complexType>
+
+  <simpleType name="GeneralizedTimeTyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Zeit im ASN.1 "generalizedTime" Zeitformat:
+        YYYYMMDDHH[MM[SS[(.|,)SSSS]]][(Z|(+|-)HH(MM))] (zum Beispiel "20090317163811Z")
+      </documentation>
+    </annotation>
+
+    <restriction base="string">
+      <pattern value="[0-9]{10}([0-9]{2}([0-9]{2}([.,][0-9]*)?)?)?(Z|([+-][0-9]{2}([0-9]{2})?)?)" />
+    </restriction>
+  </simpleType>
+
+  <simpleType name="MD5Hex">
+    <restriction base="string">
+      <length value="32" />
+      <pattern value="[0-9a-fA-F]*" />
+    </restriction>
+  </simpleType>
+
+  <simpleType name="SHA1Hex">
+    <restriction base="string">
+      <length value="40" />
+      <pattern value="[0-9a-fA-F]*" />
+    </restriction>
+  </simpleType>
+
+  <complexType name="IssuerTyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Informationen über den Zertifikataussteller als Name-Wert Paare.
+      </documentation>
+    </annotation>
+    
+    <sequence>
+      <element name="Info" minOccurs="0" maxOccurs="unbounded">
+        <complexType>
+          <all>
+            <element name="Name" type="string" />
+            <element name="Wert" type="string" />
+          </all>
+        </complexType>
+      </element>
+    </sequence>
+  </complexType>
+
+  <complexType name="SubjektTyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Informationen über das Zertifikatsubjekt als Name-Wert Paare.
+      </documentation>
+    </annotation>
+    
+    <sequence>
+      <element name="Info" minOccurs="0" maxOccurs="unbounded">
+        <complexType>
+          <all>
+            <element name="Name" type="string" />
+            <element name="Wert" type="string" />
+          </all>
+        </complexType>
+      </element>
+    </sequence>
+  </complexType>
+
+  <simpleType name="Identifikationsmerkmaltyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Identifikationsmerkal welches beim Erzeugen des Zertifikates angegeben wurde.
+        Bei Portalzertifikaten meistens Steuernummer oder Identifikationsnummer.
+      </documentation>
+    </annotation>
+    
+    <restriction base="string">
+      <enumeration value="Unbekannt" />
+      <enumeration value="Steuernummer" />
+      <enumeration value="Identifikationsnummer" />
+      <enumeration value="BZStNummer" />
+      <enumeration value="Bearbeiternummer" />
+      <enumeration value="Clienterzeugt" />
+      <enumeration value="E-Mail" />
+    </restriction>
+  </simpleType>
+
+  <simpleType name="Registrierertyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Information über den Typ der Person/Organisation für welchen das Zertifikat ausgestellt wurde.
+        Meistens "Person" oder "Organisation".
+      </documentation>
+    </annotation>
+    
+    <restriction base="string">
+      <enumeration value="Unbekannt" />
+      <enumeration value="Person" />
+      <enumeration value="Organisation" />
+      <enumeration value="Rechteverwalter" />
+      <enumeration value="BZStInland" />
+      <enumeration value="BZStAusland" />
+      <enumeration value="BZStKevizz" />
+    </restriction>
+  </simpleType>
+
+  <simpleType name="VerifikationsartTyp">
+    <annotation>
+      <documentation xml:lang="de">
+        Information darüber, wie die Person/Organisation bei der Zertifikatausstellung
+        verifiziert wurde.
+      </documentation>
+    </annotation>
+    
+    <restriction base="string">
+      <enumeration value="Unbekannt" />
+      <enumeration value="Postweg" />
+      <enumeration value="NeuerPersonalausweis" />
+      <enumeration value="E-Mail" />
+    </restriction>
+  </simpleType>
+
+  <simpleType name="TokenTyp" >
+    <annotation>
+      <documentation xml:lang="de">
+        Information über die Art des Tokens über welches das Zertifikat
+        zur Verfügung gestellt wird.
+      </documentation>
+    </annotation>
+    
+    <restriction base="string" >
+      <enumeration value="Unbekannt" />
+      <enumeration value="Software" />
+      <enumeration value="Stick" />
+      <enumeration value="Karte" />
+      <enumeration value="Ausweis (nPA/eAT)" />
+    </restriction>
+  </simpleType>
+
+</schema>

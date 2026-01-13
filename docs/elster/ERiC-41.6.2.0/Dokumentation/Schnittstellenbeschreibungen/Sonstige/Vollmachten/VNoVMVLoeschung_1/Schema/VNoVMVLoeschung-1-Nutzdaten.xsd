@@ -1,0 +1,8 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vNoVMVLoeschung="http://finkonsens.de/elster/elsterbrmorg/vnovmvloeschung/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:import namespace="http://finkonsens.de/elster/elsterbrmorg/vnovmvloeschung/v1" schemaLocation="VNoVMVLoeschung-1.xsd"/>
+    <xs:complexType name="NutzdatenCType">
+        <xs:sequence>
+            <xs:element ref="vNoVMVLoeschung:VNoVMVLoeschung"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

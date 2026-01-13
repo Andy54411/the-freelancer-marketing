@@ -1,0 +1,653 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="KapEStA" type="KapEStAType"/>
+	<xs:simpleType name="PersonBezeichnungType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="50"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PersonNameType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="72"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PersonVornameType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="72"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PersonNamensvorsatzType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="25"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PersonNamenszusatzType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PersonTitelType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="30"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftStrType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="72"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftHNrType">
+		<xs:restriction base="xs:positiveInteger">
+			<xs:maxInclusive value="99999"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftHNrZusatzType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftZusatzType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="46"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftOrtType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="72"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftDeutschePLZType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="5"/>
+			<xs:minLength value="5"/>
+			<xs:pattern value="[0-9]{5}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftAuslandsPLZType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="12"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftLaenderkuerzelType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="2"/>
+			<xs:minLength value="2"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="AnschriftPostfachType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="6"/>
+			<xs:pattern value="[0-9]+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KontaktTelefonType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="20"/>
+			<xs:pattern value="[0-9+-/]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="KontaktEMailType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="128"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="Betrag15stellig">
+		<xs:annotation>
+			<xs:documentation>Als Trennzeichen zwischen Euro und Cent ist im Datensatz ein Punkt zu setzen!</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="15"/>
+			<xs:fractionDigits value="2"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="GanzerBetrag12stellig">
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="12"/>
+			<xs:fractionDigits value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="BundesSteuernummerType">
+		<xs:annotation>
+			<xs:documentation>Bundessteuernummer (Bundesfinanzamtnummer + 0 + Bezirk + UnterschNr. + Prüfziffer)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:minLength value="13"/>
+			<xs:maxLength value="13"/>
+			<xs:pattern value="[0-9]{4}0[0-9]{8}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="WIDType">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="11"/>
+			<xs:maxLength value="11"/>
+			<xs:pattern value="[A-Z]{2}[0-9]{9}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="KapEStAType">
+		<xs:annotation>
+			<xs:documentation>
+				Änderungen:
+					Das Pattern des Elements ArPlNr wurde erweitert.
+					Die Felder der Kirchensteuer wurden erweitert und neu benannt.
+					Es gibt neue Felder für Korrekturbeträge für Veranlagungszeiträume vor 2015.
+					Es gibt neue Summenfelder KorSum und GSum.
+					Es gibt neue Felder für den Gewinnverteilungsbeschluss.
+					Der Merker für die Beschlussvorlage wurde entfernt.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Schuldner">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Name" type="PersonNameType"/>
+						<xs:element name="Str" type="AnschriftStrType" minOccurs="0"/>
+						<xs:element name="Hausnummer" type="AnschriftHNrType" minOccurs="0"/>
+						<xs:element name="HNrZusatz" type="AnschriftHNrZusatzType" minOccurs="0"/>
+						<xs:element name="Anschriftenzusatz" type="AnschriftZusatzType" minOccurs="0"/>
+						<xs:choice>
+							<xs:sequence>
+								<xs:element name="Ort" type="AnschriftOrtType"/>
+								<xs:choice>
+									<xs:element name="PLZ" type="AnschriftDeutschePLZType"/>
+									<xs:sequence>
+										<xs:element name="AuslandsPLZ" type="AnschriftAuslandsPLZType"/>
+										<xs:element name="Land" type="AnschriftLaenderkuerzelType"/>
+									</xs:sequence>
+								</xs:choice>
+								<xs:sequence minOccurs="0">
+									<xs:element name="PostfachOrt" type="AnschriftOrtType"/>
+									<xs:choice>
+										<xs:sequence>
+											<xs:element name="Postfach" type="AnschriftPostfachType"/>
+											<xs:element name="PostfachPLZ" type="AnschriftDeutschePLZType"/>
+										</xs:sequence>
+										<xs:element name="GKPLZ" type="AnschriftDeutschePLZType"/>
+									</xs:choice>
+								</xs:sequence>
+							</xs:sequence>
+							<xs:sequence>
+								<xs:element name="PostfachOrt" type="AnschriftOrtType"/>
+								<xs:choice>
+									<xs:sequence>
+										<xs:element name="Postfach" type="AnschriftPostfachType"/>
+										<xs:element name="PostfachPLZ" type="AnschriftDeutschePLZType"/>
+									</xs:sequence>
+									<xs:element name="GKPLZ" type="AnschriftDeutschePLZType"/>
+								</xs:choice>
+							</xs:sequence>
+						</xs:choice>
+						<xs:element name="Telefon" type="KontaktTelefonType" minOccurs="0"/>
+						<xs:element name="Email" type="KontaktEMailType" minOccurs="0"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="Berater" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Bezeichnung" type="PersonBezeichnungType" minOccurs="0"/>
+						<xs:element name="Name" type="PersonNameType"/>
+						<xs:element name="Vorname" type="PersonVornameType" minOccurs="0"/>
+						<xs:element name="Namensvorsatz" type="PersonNamensvorsatzType" minOccurs="0"/>
+						<xs:element name="Namenszusatz" type="PersonNamenszusatzType" minOccurs="0"/>
+						<xs:element name="Titel" type="PersonTitelType" minOccurs="0"/>
+						<xs:element name="Str" type="AnschriftStrType" minOccurs="0"/>
+						<xs:element name="Hausnummer" type="AnschriftHNrType" minOccurs="0"/>
+						<xs:element name="HNrZusatz" type="AnschriftHNrZusatzType" minOccurs="0"/>
+						<xs:element name="Anschriftenzusatz" type="AnschriftZusatzType" minOccurs="0"/>
+						<xs:choice>
+							<xs:sequence>
+								<xs:element name="Ort" type="AnschriftOrtType"/>
+								<xs:choice>
+									<xs:element name="PLZ" type="AnschriftDeutschePLZType"/>
+									<xs:sequence>
+										<xs:element name="AuslandsPLZ" type="AnschriftAuslandsPLZType"/>
+										<xs:element name="Land" type="AnschriftLaenderkuerzelType"/>
+									</xs:sequence>
+								</xs:choice>
+								<xs:sequence minOccurs="0">
+									<xs:element name="PostfachOrt" type="AnschriftOrtType"/>
+									<xs:choice>
+										<xs:sequence>
+											<xs:element name="Postfach" type="AnschriftPostfachType"/>
+											<xs:element name="PostfachPLZ" type="AnschriftDeutschePLZType"/>
+										</xs:sequence>
+										<xs:element name="GKPLZ" type="AnschriftDeutschePLZType"/>
+									</xs:choice>
+								</xs:sequence>
+							</xs:sequence>
+							<xs:sequence>
+								<xs:element name="PostfachOrt" type="AnschriftOrtType"/>
+								<xs:choice>
+									<xs:sequence>
+										<xs:element name="Postfach" type="AnschriftPostfachType"/>
+										<xs:element name="PostfachPLZ" type="AnschriftDeutschePLZType"/>
+									</xs:sequence>
+									<xs:element name="GKPLZ" type="AnschriftDeutschePLZType"/>
+								</xs:choice>
+							</xs:sequence>
+						</xs:choice>
+						<xs:element name="Telefon" type="KontaktTelefonType" minOccurs="0"/>
+						<xs:element name="Email" type="KontaktEMailType" minOccurs="0"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:choice>
+				<xs:element name="BuStNr" type="BundesSteuernummerType"/>
+				<xs:element name="WID" type="WIDType">
+					<xs:annotation>
+						<xs:documentation>Element WID darf erst nach der Einführung der WID gefüllt werden!</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:choice>
+			<xs:element name="AnmZtr">
+				<xs:annotation>
+					<xs:documentation>Bei tagesgenauer Anmeldung ist das Format JJJJMMTT, bei Monatsanmeldung ist das Format JJJJMM00.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="8"/>
+						<xs:maxLength value="8"/>
+						<xs:pattern value="[0-9]{8}"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="GewVertBeschl" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Wenn ein Gewinnverteilungsbeschluss vorliegt, ist von einer Tagesanmeldung auszugehen!</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GewVertBeschlDat" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Das Datum ist im Format JJJJMMTT anzugeben.</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="8"/>
+									<xs:maxLength value="8"/>
+									<xs:pattern value="[0-9]{8}"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="GewVertBeschlBet" type="GanzerBetrag12stellig"/>
+						<xs:element name="GewVertBeschlTag" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Das Datum ist im Format JJJJMMTT anzugeben.</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="8"/>
+									<xs:maxLength value="8"/>
+									<xs:pattern value="[0-9]{8}"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="BArt">
+				<xs:annotation>
+					<xs:documentation>Bei einer erstmaligen elektronischen Anmeldung ist der Wert 0 einzutragen. Bei einer berichtigten elektronischen Anmeldung ist der Wert 1 einzutragen!</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:nonNegativeInteger">
+						<xs:maxInclusive value="4"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ArPlNr" default="0" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Wenn das Element ArPlNr gesetzt wird, ist in diesem Feld der Wert 0 einzutragen!</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1"/>
+						<xs:maxLength value="12"/>
+						<xs:pattern value="0|[0-9A-Za-z]{1,12}"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="EDat" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Wird nur vom Finanzamt gefüllt!</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="14"/>
+						<xs:maxLength value="14"/>
+						<xs:pattern value="[0-9]{14}"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="StNrVorh" type="BundesSteuernummerType" minOccurs="0"/>
+			<xs:element name="KapEZSt" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapEZStSt" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapEZStSz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapEDiv" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapEDivSt" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapEDivSz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESch25" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapESch25St" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESch25Sz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESchErst44b6S1bis3St" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESchErst44b6S1bis3Sz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESch15" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapESch15St" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapESch15Sz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="KapWertSchSt" type="GanzerBetrag12stellig" minOccurs="0"/>
+			<xs:element name="KapWertSchSz" type="Betrag15stellig" minOccurs="0"/>
+			<xs:element name="Kirchensteuerdaten" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="K010100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010800" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K010900" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011000" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011700" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K011900" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K012000" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K012300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K012400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025700" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025800" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K025900" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026000" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026700" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026800" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K026900" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027000" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027700" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K027800" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K033200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044000" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044100" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044700" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044800" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K044900" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K058200" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K058300" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K058400" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K058500" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="K058600" type="Betrag15stellig" minOccurs="0"/>
+						<xs:element name="KSum" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Summe der Felder K*</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="KorrekturKirchensteuerdatenVor2015" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Kirchensteuer zur Kapitalertragsteuer für Korrekturzwecke für Zeiträume vor 2015!</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="KorKiEv" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Korrekturbetrag Evangelische Kirchensteuer</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="KorKiRK" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Korrekturbetrag Römisch-Katholische Kirchensteuer</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="KorKuJKOKH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Korrekturbetrag Jüdische Kultussteuer der Jüdischen Kultusgemeinden Koblenz und Bad Kreuznach</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="KorSum" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Summe der Felder Kor*</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GSum" type="Betrag15stellig" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Gesamtsumme der Felder KSum und KorSum.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="KapEStWeiterleitung" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Weiterleitung der Dividenden-Kapitalertragsteuer (KapEDiv) auf die Bundesländer.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="DivZBW" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Baden-Württemberg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZBY" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Bayern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZBE" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Berlin</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZBB" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Brandenburg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZHB" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Bremen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZHH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Hamburg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZHE" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Hessen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZMV" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Mecklenburg-Vorpommern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZND" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Niedersachsen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZNW" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Nordrhein-Westfalen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZRP" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Rheinland-Pfalz</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZSL" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Saarland</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZSN" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Sachsen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZST" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Sachsen-Anhalt</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZSH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Schleswig-Holstein</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZTH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Thüringen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="DivZSum" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Summe der Felder DivZ*</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="Zerlegungsdaten" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Verteilung der Kapitalertragsteuer (KapEZSt) auf die Bundesländer.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="ZBW" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Baden-Württemberg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZBY" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Bayern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZBE" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Berlin</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZBB" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Brandenburg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZHB" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Bremen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZHH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Hamburg</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZHE" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Hessen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZMV" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Mecklenburg-Vorpommern</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZND" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Niedersachsen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZNW" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Nordrhein-Westfalen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZRP" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Rheinland-Pfalz</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZSL" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Saarland</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZSN" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Sachsen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZST" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Sachsen-Anhalt</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZSH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Schleswig-Holstein</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZTH" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Thüringen</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZoZ" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Im Element ZoZ ist nur die Kapitalertragsteuer einzutragen, bei der eine Zuordnung nach dem Wohnsitz oder Sitz des Gläubigers der Kapitalerträge nicht erfolgen konnte!</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ZSum" type="Betrag15stellig" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Summe der Felder Z*</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="version" use="required" fixed="5">
+			<xs:annotation>
+				<xs:documentation>Version 5 - Für den Anmeldungszeitraum 2015.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:nonNegativeInteger">
+					<xs:minInclusive value="1"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

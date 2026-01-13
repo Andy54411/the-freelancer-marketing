@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:eric="http://www.elster.de/EricXML/1.0/EricHoleFinanzamtLandNummern"
+		targetNamespace="http://www.elster.de/EricXML/1.0/EricHoleFinanzamtLandNummern"
+		elementFormDefault="qualified">
+	
+	<annotation>
+		<documentation xml:lang="de">
+			XML-Daten mit diesem Schema werden von der ERiC-Funktion EricHoleFinanzamtLandNummern im Rückgabepuffer zurückgegeben.
+		</documentation>
+	</annotation>
+	
+	<element name="EricHoleFinanzamtLandNummern">
+		<annotation>
+			<documentation xml:lang="de">
+				Wurzelelement für Rückgabedaten. Enthält eine Auflistung der Finanzamtländer bestehend aus
+				deren Nummer und Name.
+			</documentation>
+		</annotation>
+	
+		<complexType>
+			<choice>
+				<element name="FinanzamtLand" type="eric:FinanzamtLandTyp" maxOccurs="unbounded" />
+			</choice>
+		</complexType>
+	</element>
+	
+	<complexType name="FinanzamtLandTyp">
+		<annotation>
+			<documentation xml:lang="de">
+				Eines der zurückgegebenen Länder. Es wird die Ländernummer, die das Land identifiziert
+				und der Name des Landes, sowie eventuell das zuständige Finanzamt zurückgegeben.
+			</documentation>
+		</annotation>
+	
+		<sequence>
+			<element name="FinanzamtLandNummer" type="eric:FinanzamtLandNummerTyp" />
+			<element name="Name" type="string" />
+		</sequence>
+	</complexType>
+	
+	<simpleType name="FinanzamtLandNummerTyp">
+		<restriction base="string">
+			<pattern value="\d{2}"/>
+		</restriction>
+	</simpleType>
+</schema>

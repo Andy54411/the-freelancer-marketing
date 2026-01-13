@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:eric="http://www.elster.de/EricXML/1.1/EricBearbeiteVorgang"
+        targetNamespace="http://www.elster.de/EricXML/1.1/EricBearbeiteVorgang"
+        elementFormDefault="qualified">
+
+    <annotation>
+        <documentation xml:lang="de">
+            XML-Daten mit diesem Schema werden von der ERiC-Funktion EricBearbeiteVorgang im Rückgabepuffer zurückgegeben.
+        </documentation>
+    </annotation>
+    <element name="EricBearbeiteVorgang">
+        <annotation>
+            <documentation xml:lang="de">
+                Wurzelelement für Rückgabedaten.
+
+                Ein Aufruf von EricBearbeiteVorgang kann zu vier verschiedenen Resultaten führen:
+                 - Erfolg. Im Erfolgsfall liefert EricBearbeiteVorgang den Returncode ERIC_OK zurück.
+                   Die XML-Daten besitzen ein Element mit Typ ErfolgTyp.
+                 - Hinweis. EricBearbeiteVorgang gibt ERIC_GLOBAL_HINWEISE zurück.
+                   Es wurden Hinweise zu den übergebenen Daten gemeldet.
+                   Die XML-Daten besitzen ein- oder mehrere Elemente mit Typ HinweisTyp.
+                   Die Bedeutung der gemeldeten Hinweise sind der Dokumentation der Plausibilitätsprüfungen zu entnehmen.
+                 - FehlerRegelpruefung. EricBearbeiteVorgang gibt ERIC_GLOBAL_PRUEF_FEHLER zurück.
+                   Die übergebenen Daten enthalten Plausibilitätsfehler.
+                   Die XML-Daten besitzen ein- oder mehrere Elemente mit Typ FehlerRegelpruefungTyp.
+                   Die Bedeutung der gemeldeten Fehler sind der Dokumentation der Plausibilitätsprüfungen zu entnehmen.
+                 - Fehler. EricBearbeiteVorgang gibt weder ERIC_OK, ERIC_GLOBAL_HINWEISE noch ERIC_GLOBAL_PRUEF_FEHLER zurück.
+                   Bei der Verarbeitung der Daten trat ein Fehler auf.
+                   Um nähere Informationen über den zurückgegebenen Fehlercode zu erhalten kann die API-Funktion
+                   EricHoleFehlertext aufgerufen werden.
+            </documentation>
+        </annotation>
+        <complexType>
+            <choice>
+                <choice>
+                    <sequence>
+                        <element name="Erfolg" type="eric:ErfolgTyp" minOccurs="1" maxOccurs="1"/>
+                        <element name="Transfers" type="eric:TransfersTyp" minOccurs="0" maxOccurs="1"/>
+                    </sequence>
+                    <element name="Transfers" type="eric:TransfersTyp" minOccurs="1" maxOccurs="1"/>
+                </choice>
+                <choice maxOccurs="unbounded">
+                    <element name="FehlerRegelpruefung" type="eric:FehlerRegelpruefungTyp"/>
+                    <element name="Hinweis" type="eric:HinweisTyp"/>
+                </choice>
+            </choice>
+        </complexType>
+    </element>
+    <!-- ##### Globale Definitionen ##### -->
+    <simpleType name="BaseStringSType">
+        <annotation>
+            <documentation xml:lang="de">Die Zeichenkette muss aus Buchstaben, Satzzeichen, Leerzeichen sowie Dezimalzeichen bestehen.
+                                         Zusätlich gelten die Einschränkungen des Typs BaseStringNoLeadingOrTrailingSeparators.</documentation>
+            <documentation xml:lang="de">Siehe http://www.w3.org/TR/2001/REC-xmlschema-2-20010502/#regexs</documentation>
+        </annotation>
+        <restriction base="eric:BaseStringNoLeadingOrTrailingSeparators">
+            <pattern value="[\p{L}|\p{P}|\p{Zs}|\p{Nd}]*"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="BaseStringNoLeadingOrTrailingSeparators">
+        <annotation>
+            <documentation xml:lang="de">Das letzte Zeichen darf nicht ein Satzzeichen sein. Zusätzlich gelten die Einschränkungen des Typs BaseStringNoLeadingSeparators.</documentation>
+            <documentation xml:lang="de">Siehe http://www.w3.org/TR/2001/REC-xmlschema-2-20010502/#regexs</documentation>
+        </annotation>
+        <restriction base="eric:BaseStringNoLeadingSeparators">
+            <pattern value=".*[\P{Z}]"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="BaseStringNoLeadingSeparators">
+        <annotation>
+            <documentation xml:lang="de">Das erste Zeichen darf nicht ein Satzzeichen sein. Zusätzlich gelten die Einschränkungen des Typs BaseStringUltraLightSType.</documentation>
+            <documentation xml:lang="de">Siehe http://www.w3.org/TR/2001/REC-xmlschema-2-20010502/#regexs</documentation>
+        </annotation>
+        <restriction base="eric:BaseStringUltraLightSType">
+            <pattern value="[\P{Z}].*"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="BaseStringUltraLightSType">
+        <annotation>
+            <documentation xml:lang="de">Die Zeichenkette darf keine Zeilentrennzeichen, Tabulatoren oder Zeichen der Kategorie C
+                                        (Kontrollzeichen, Formatierungszeichen, private oder unbelegte Zeichen) enthalten.</documentation>
+            <documentation xml:lang="de">Siehe http://www.w3.org/TR/2001/REC-xmlschema-2-20010502/#regexs</documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="([^\n\r\t\p{C}\p{Zl}])*"/>
+        </restriction>
+    </simpleType>
+    <!-- ##### EricBearbeiteVorgang - Erfolgsfall ##### -->
+    <complexType name="ErfolgTyp">
+        <annotation>
+            <documentation xml:lang="de">Struktur die im Erfolgsfall zurückgegeben wird bestehend aus Telenummer und Ordnungsbegriff.</documentation>
+        </annotation>
+        <sequence>
+            <element name="Telenummer" minOccurs="0" maxOccurs="unbounded">
+                <complexType>
+                    <simpleContent>
+                        <extension base="eric:TelenummerTyp">
+                            <attribute name="nutzdatenticket">
+                                <annotation>
+                                    <documentation>Nur bei Sammellieferungen zur Datenart Gewinnermittlung13aEStG vorhanden</documentation>
+                                </annotation>
+                            </attribute>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+            <element name="Ordnungsbegriff" minOccurs="0" maxOccurs="unbounded">
+                <complexType>
+                    <simpleContent>
+                        <extension base="string">
+                            <attribute name="nutzdatenticket">
+                                <annotation>
+                                    <documentation>Nur bei Sammellieferungen zur Datenart Gewinnermittlung13aEStG vorhanden</documentation>
+                                </annotation>
+                            </attribute>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+        </sequence>
+    </complexType>
+    <simpleType name="TelenummerTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Die Telenummer ist dreistellig, bestehend aus alphabetischen Großbuchstaben und Nummern.
+                Die Telenummer wird von ERiC generiert. Siehe auch Entwicklerhandbuch Kapitel "Telenummer".
+            </documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="(([A-Z-[O]]|[1-9]){3})"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="Ordnungsbegriff">
+        <annotation>
+            <documentation xml:lang="de">
+                Im Erklärungssteuerfall steht hier bei Neuaufnahmen der Ordnungsbegriff.
+                Siehe auch Entwicklerhandbuch Kapitel "Neuaufnahmen".
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <!-- ##### EricBearbeiteVorgang - FehlerRegelpruefung ##### -->
+    <complexType name="FehlerRegelpruefungTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Struktur, die im Falle von Plausibilitätsfehlern zurückgeliefert wird.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="Nutzdatenticket" type="eric:NutzdatenticketTyp" minOccurs="1"/>
+            <element name="Feldidentifikator" type="eric:FeldidentifikatorTyp" minOccurs="0"/>
+            <element name="Mehrfachzeilenindex" type="eric:MehrfachzeilenindexTyp" minOccurs="0"/>
+            <element name="LfdNrVordruck" type="eric:LfdNrVordruckTyp" minOccurs="0"/>
+            <element name="VordruckZeilennummer" type="eric:VordruckZeilennummerTyp" minOccurs="0">
+                <annotation>
+                    <documentation>Gibt die im Vordruck genannte Zeilennummer des Fehlerfeldes an.</documentation>
+                </annotation>
+            </element>
+            <element name="SemantischerIndex" minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>Gibt den Wert eines Indexfeldes an, das den Kontext der Fehlermeldung identifiziert. Zum Beispiel bedeutet <![CDATA[<SematischerIndex name="Person">PersonA</SemantischerIndex>]]>: Der Fehler betrifft die Angaben zur "PersonA", d. h. zu "Steuerpflichtige Person / Ehemann / Person A".</documentation>
+                </annotation>
+                <complexType>
+                    <simpleContent>
+                        <extension base="eric:SemantischerIndexTyp">
+                            <attribute name="name" type="string" use="required">
+                                <annotation>
+                                    <documentation>Gibt den Namen des Indexfeldes an, z. B. "Person", "Beteiligter" oder "Betrieb".</documentation>
+                                </annotation>
+                            </attribute>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+            <element name="Untersachbereich" type="eric:UntersachbereichTyp" minOccurs="0"/>
+            <element name="PrivateKennnummer" type="eric:PrivateKennnummerTyp" minOccurs="0"/>
+            <element name="RegelName" type="eric:RegelNameTyp" minOccurs="0"/>
+            <element name="FachlicheFehlerId" type="eric:FachlicheIdTyp" minOccurs="0"/>
+            <element name="Text" type="eric:TextTyp" minOccurs="0"/>
+        </sequence>
+    </complexType>
+    <complexType name="HinweisTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Struktur, die im Falle von Hinweisen zurückgeliefert wird.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="Nutzdatenticket" type="eric:NutzdatenticketTyp" minOccurs="1"/>
+            <element name="Feldidentifikator" type="eric:FeldidentifikatorTyp" minOccurs="0"/>
+            <element name="Mehrfachzeilenindex" type="eric:MehrfachzeilenindexTyp" minOccurs="0"/>
+            <element name="LfdNrVordruck" type="eric:LfdNrVordruckTyp" minOccurs="0"/>
+            <element name="VordruckZeilennummer" type="eric:VordruckZeilennummerTyp" minOccurs="0">
+                <annotation>
+                    <documentation>Gibt die im Vordruck genannte Zeilennummer des Fehlerfeldes an.</documentation>
+                </annotation>
+            </element>
+            <element name="SemantischerIndex" minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>Gibt den Wert eines Indexfeldes an, das den Kontext der Hinweismeldung identifiziert. Zum Beispiel bedeutet <![CDATA[<SematischerIndex name="Person">PersonA</SemantischerIndex>]]>: Der Hinweis betrifft die Angaben zur "PersonA", d. h. zu "Steuerpflichtige Person / Ehemann / Person A".</documentation>
+                </annotation>
+                <complexType>
+                    <simpleContent>
+                        <extension base="eric:SemantischerIndexTyp">
+                            <attribute name="name" type="string" use="required">
+                                <annotation>
+                                    <documentation>Gibt den Namen des Indexfeldes an, z. B. "Person", "Beteiligter" oder "Betrieb".</documentation>
+                                </annotation>
+                            </attribute>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+            <element name="Untersachbereich" type="eric:UntersachbereichTyp" minOccurs="0"/>
+            <element name="PrivateKennnummer" type="eric:PrivateKennnummerTyp" minOccurs="0"/>
+            <element name="RegelName" type="eric:RegelNameTyp" minOccurs="0"/>
+            <element name="FachlicheHinweisId" type="eric:FachlicheIdTyp" minOccurs="0"/>
+            <element name="Text" type="eric:TextTyp" minOccurs="0"/>
+        </sequence>
+    </complexType>
+    <simpleType name="NutzdatenticketTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Beinhaltet das Nutzdatenticket im übergebenen Nutzdaten-Header. Das Nutzdatenticket
+                dient zur Identifikation der Nutzdatenteile.
+            </documentation>
+        </annotation>
+        <restriction base="eric:BaseStringSType">
+            <maxLength value="32"/>
+            <minLength value="1"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="FeldidentifikatorTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Die Feldkennung, dem der Fehler bzw. Hinweis zugeordnet ist.
+
+                Für Datenartversionen, deren Felder nur durch ihren
+                vollständigen Kontextpfad und die Wiederholung eindeutig
+                bestimmt werden können, wird als Feldkennung der vollständige
+                Kontextpfad mit zugehörigen Indizes ähnlich einem XPath
+                angegeben. Diese Datenartversionen erkennt man daran, dass
+                ihrer Jahresdokumentation detaillierte Informationen zu den
+                Kontexten und ihrer Wiederholbarkeit in separaten Blättern mit
+                dem Namen "Kontexte" enthalten.
+
+                Für Datenartenversionen, deren Felder auch durch den Feldnamen
+                zusammen mit der laufenden Nummer des Vordrucks und dem 
+                Mehrfachzeilen-Index eindeutig bestimmt werden können, wird als
+                Feldkennung nur der Feldname angegeben. Diese
+                Datenartenversionen enthalten in ihrer Jahresdokumentation
+                keinerlei Blätter mit dem Namen "Kontexte".
+                
+                Falls ein Wiederholungsindex aus fachlicher Sicht nicht 
+                bestimmt werden kann, wird im Feldidentifikator ersatzweise 
+                der Wert "0" als Wiederholungsindex angegeben.
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="LfdNrVordruckTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Laufende Nummer des Vordrucks.
+
+                Maximal 5-stellig numerisch, ohne führende Nullen.
+
+                Falls die laufende Nummer des Vordrucks aus fachlicher Sicht 
+                nicht bestimmt werden kann, wird ersatzweise der Wert "0" angegeben.
+            </documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="\d{1,5}"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="VordruckZeilennummerTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Zeilennummer und Sonderdruck des Feldes.
+                Maximal 15-stellig numerisch, ohne führende Nullen und ein optionales Zeichen
+            </documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="\d{1,15}[a-z]{0,1}"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="SemantischerIndexTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Wert des Indexfeldes wie im XML-Datensatz angegeben
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="UntersachbereichTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Der Untersachbereich (USB) beinhaltet z. B. die Beteiligten- oder Betriebsnummer.
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="PrivateKennnummerTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Bei Erklärungssteuern wird die von Benutzer übergebene private Kennnummer zurückgegeben.
+                Diese wird über das "alias"-Attribut der Felder an ERiC übergeben.
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="MehrfachzeilenindexTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Gibt den Index der Wiederholung bei einem
+                auf dem Formular mehrfach angebbaren Feld an.
+
+                Maximal 4-stellig numerisch, ohne führende Nullen.
+            </documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="\d{1,4}"/>
+        </restriction>
+    </simpleType>
+    <simpleType name="RegelNameTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Der Name der meldenden Regel.
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="FachlicheIdTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Die Id des gemeldeten Fehlers (= Fehlercode) bzw. Hinweises (= Hinweiscode).
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <simpleType name="TextTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Ein den Fehler bzw. Hinweis beschreibender Text.
+            </documentation>
+        </annotation>
+        <restriction base="string"/>
+    </simpleType>
+    <!-- ##### EricBearbeiteVorgang - Datenlieferungen ##### -->
+    <complexType name="TransfersTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Enthält Informationen zu allen Datenlieferungen einschließlich von Lieferungen, die vom Server nicht bestätigt wurden. Näheres siehe im ERiC-Entwicklerhandbuch im Abschnitt zum TransferTicket.
+            </documentation>
+        </annotation>
+        <sequence>
+        <element name = "Transfer" type = "eric:TransferTyp" maxOccurs="unbounded"/>
+        </sequence>
+    </complexType>
+    <complexType name="TransferTyp">
+        <annotation>
+            <documentation xml:lang="de">
+                Enthält Informationen zu einer Datenlieferung.
+            </documentation>
+        </annotation>
+        <sequence>
+        <element name = "TransferTicket" type = "eric:TransferTicketType" maxOccurs="1"/>
+        </sequence>
+    </complexType>
+    <simpleType name="TransferTicketType">
+        <annotation>
+            <documentation xml:lang="de">
+                Das TransferTicket enthält eine 32-stellige alphanumerische ID zur serverseitigen Protokollierung einer Datenlieferung.
+            </documentation>
+        </annotation>
+        <restriction base="string">
+            <pattern value="eh[0-9]{3}[0-9a-km-z]{27}"/>
+        </restriction>
+    </simpleType>
+</schema>

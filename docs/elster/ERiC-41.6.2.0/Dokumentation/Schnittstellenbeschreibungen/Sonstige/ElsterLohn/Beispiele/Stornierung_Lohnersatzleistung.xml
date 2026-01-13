@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  Dies ist eine beispielhafte Stornierung einer Lohnersatzleistung. Mehr zu
+  Stornierungen kann der Datenschnittstelle für Lohnersatzleistungen entnommen
+  werden.
+  
+  Stand: 19.08.2010
+ -->
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<!--  Als Verfahren ist immer 'ElsterLohn' anzugeben  -->
+		<Verfahren>ElsterLohn</Verfahren>
+		<!--  Die DatenArt ist immer 'Lohnersatzleistung'  -->
+		<DatenArt>Lohnersatzleistung</DatenArt>
+		<!--  Der Vorgang bestimmt, wie die Datenlieferung zu verarbeiten ist.
+		     Werte.	 -->
+		<Vorgang>send-Auth-Part</Vorgang>
+		<!--  Das Transferticket wird vom Server, NICHT durch den Datenlieferanten
+		     vergeben.  -->
+		<Testmerker>220002000</Testmerker>
+		<SigUser>
+			</SigUser>
+		<!--  entsprechend den Vorgaben aus dem ElsterBasis-Verfahren  -->
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>Testdatenlieferant; Roßstr 131;-133 ; ; 40476; Düsseldorf; Deutschland; 0211-4572-0 ; test@testdatenlieferant.de</DatenLieferant>
+		<Datei>
+			<!--  Art und Version sind in einem Feld "Verschluesselung" zu liefern,
+				   z.Zt. einzig zulässige Verschlüsselung  -->
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<!--  Art und Version sind in einem Feld "Kompression" zu liefern
+				   z.Zt. einzig zulässiges Kompressionsverfahren  -->
+			<Kompression>GZIP</Kompression>
+		</Datei>
+		<!--  Client-Programm welches zur Datenübermittlung verwendet wurde  -->
+		<VersionClient>COALA Version 3.9.0 - 06.08.2009</VersionClient>
+	</TransferHeader>
+	<!--  Der Datenteil, muss vor der Übermittlung noch Verschlüsselt und
+       Komprimiert werden.  -->
+	<DatenTeil>
+		<!--  Ein Nutzdatenblock  -->
+		<Nutzdatenblock>
+			<!--  Header des Nutzdatenblocks  -->
+			<NutzdatenHeader version="11">
+				<!--  Das Nutzdatenticket dient der späteren Zuordnung von Fehlern und
+             muss eindeutig innerhalb der Lieferung sein.  -->
+				<NutzdatenTicket>1a</NutzdatenTicket>
+				<!--  Das Kürzel des Bundeslandes an das der Nutzdatenblock übermittelt
+             werden soll  -->
+				<Empfaenger id="L">NW</Empfaenger>
+				<!--  Informationen über den Hersteller  -->
+				<Hersteller>
+					<ProduktName>MyLohnersatzleistung-Testtool</ProduktName>
+					<ProduktVersion>1.0</ProduktVersion>
+				</Hersteller>
+				<!--  Der Datenlieferant dieses Nutzdatenblocks  -->
+				<DatenLieferant>Sozialleistungsträger XYZ ; Musterstr. 17 ; ; 40476; Düsseldorf; Deutschland; 0211-111-0 ; daten@sozialleistungstraeger.de</DatenLieferant>
+			</NutzdatenHeader>
+			<!--  Die eigentlichen Nutzdaten  -->
+			<Nutzdaten>
+				<Stornierung xmlns="http://www.elsterfachmethodik.de/Lohnersatz000001/XMLSchema">
+					<Zuflussjahr>2010</Zuflussjahr>
+					<KundennummerFV art="StNr">5123012345678</KundennummerFV>
+					<Kundennummer>654321</Kundennummer>
+					<Ordnungsmerkmal>11-12-13</Ordnungsmerkmal>
+					<ETIN>DCKDDNLE55E02W</ETIN>
+				</Stornierung>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

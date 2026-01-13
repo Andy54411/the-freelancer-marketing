@@ -1,0 +1,16 @@
+<map id="ericapi.h" name="ericapi.h">
+<area shape="rect" id="Node000001" title="Deklaration der ERiC API&#45;Funktionen für die Singlethreading&#45;API." alt="" coords="104,5,174,32"/>
+<area shape="rect" id="Node000002" href="$platform_8h.html" title="Konstanten für verschiedene Betriebssysteme." alt="" coords="99,155,179,181"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,28,55,46,31,61,13,81,9,93,9,103,15,113,24,122,52,138,85,151,83,156,50,143,21,127,11,116,4,105,3,92,9,79,28,57,52,41,102,23"/>
+<area shape="rect" id="Node000004" href="$ericapi_export_8h.html" title="Attribute für dynamische Bibliotheken." alt="" coords="24,80,132,107"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="130,34,100,70,96,66,126,31"/>
+<area shape="rect" id="Node000005" href="$eric__types_8h.html" title="Definition von Datenstrukturen und Datentypen." alt="" coords="156,80,248,107"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="152,31,183,66,179,70,148,34"/>
+<area shape="rect" id="Node000006" href="$ericdef_8h.html" title="Konstanten und Definitionen für Übergabeparameter." alt="" coords="271,80,343,107"/>
+<area shape="poly" id="edge7_Node000001_Node000006" title=" " alt="" coords="169,30,265,71,263,76,167,35"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="107,229,171,256"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="142,182,142,214,136,214,136,182"/>
+<area shape="poly" id="edge4_Node000004_Node000002" title=" " alt="" coords="90,105,121,141,117,145,86,109"/>
+<area shape="poly" id="edge6_Node000005_Node000002" title=" " alt="" coords="193,109,162,145,158,141,189,105"/>
+<area shape="poly" id="edge8_Node000006_Node000002" title=" " alt="" coords="279,110,183,151,181,146,277,105"/>
+</map>

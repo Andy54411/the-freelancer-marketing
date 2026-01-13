@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterDatenabholung</Verfahren>
+        <DatenArt>ElsterVaStDaten</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <TransferTicket>5n605wog9b4j7u622gxu7ziwr0xh248a</TransferTicket>
+        <Testmerker>700000004</Testmerker>
+        <Empfaenger id="L">
+            <Ziel>CS</Ziel>
+        </Empfaenger>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ElsterBasisQS</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+        <RC>
+            <Rueckgabe>
+                <Code>0</Code>
+                <Text>Ihr Request wurde bearbeitet</Text>
+            </Rueckgabe>
+            <Stack>
+                <Code>0</Code>
+                <Text>Ihr Request wurde bearbeitet</Text>
+            </Stack>
+        </RC>
+        <VersionClient>Client 2024</VersionClient>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>1</NutzdatenTicket>
+                <Empfaenger id="L">CS</Empfaenger>
+                <Hersteller>
+                    <ProduktName>Test-Programm</ProduktName>
+                    <ProduktVersion>V 1.0</ProduktVersion>
+                </Hersteller>
+                <DatenLieferant>ElsterBasisQS</DatenLieferant>
+                <RC>
+                    <Rueckgabe>
+                        <Code>0</Code>
+                        <Text>Datenabholung erfolgreich durchgefuehrt</Text>
+                    </Rueckgabe>
+                    <Stack>
+                        <Code>0</Code>
+                        <Text>Datenabholung erfolgreich durchgefuehrt</Text>
+                    </Stack>
+                </RC>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <Datenabholung xmlns="http://finkonsens.de/elster/elsterdatenabholung/v3" version="31">
+                    <Abholung id="vb3036bnv4cpx523cohjzjf3bkzkpw5f" idnr="00153674828" veranlagungsjahr="2021">
+                        <Datenpaket>MIAGCSqGSIb3DQEHA6CAMIACAQAxggGYMIIBlAIBADBNMEUxCzAJBgNVBAYTAkRF
+                            MQ8wDQYDVQQKEwZFbHN0ZXIxCzAJBgNVBAsTAkNBMRgwFgYDVQQDEw9FbHN0ZXJT
+                            b2Z0T3JnQ0ECBDudwLkwPAYJKoZIhvcNAQEHMC+gDzANBglghkgBZQMEAgEFAKEc
+                            MBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEFAASCAQAkyzQUJ0/hZlC9ja5XQYQw
+                            jAKxOuALMwyjUxC7by7vM4Eyad5Un1KnlbYhuohOTFtDGP73BdP2UinFBMfJOuCm
+                            vjXoTqft7eCId2jdogQMIdwMtUkjX6ugXWlXivQ8nqT6lUmzyUDF6yRnSUVXMaaU
+                            OlJcQUXEYZBDyPWJQqh6JHOIgND2gpPNzR4/q4qNBB8oShrvl0Yh53R1JRwWto4A
+                            NXzI4XqDWUvffFxZ8C6OR7pumkGuKhH1jIkgHbOf3eQKZ7WmgROrgZUcCvay7wIi
+                            nf6Qdp0qi6le5am+tf/VtSLrbo/FF3r04V/hxx0UfXiKatKI7CsXeqUp7xA/42P2
+                            MIAGCSqGSIb3DQEHATAUBggqhkiG9w0DBwQInhn097wg3UyggASCAeBcwB2zUaU8
+                            SHjRmjyHMPPqS5nsLDg8OKQl1qibedVC9MNefp1k4KL/7xxGwmjplCSzAhPcYKNU
+                            6axh33M75FOmyKM0yedGExkkIl+RZ3GDpXMaBz87thWf6ZHn9B7fPS++y9NSV25w
+                            yMQzTV4YaAU2s0jr0r0PibcnGEHLEkNCvINDVo63XT+B2gJHUQaLATyhVLAMkPB3
+                            m1RPmPxXefrrMVBDVPTID3j3lxlcuiHtvGNk4lAZJo0c+alrzVVTBWLfN+bphMgm
+                            /otwt/282AbKG+e0ruTXIDpCe2cH1FCinmfYpFs0Lzh99nRC3F8MJmVflBfpuVfx
+                            RN+q01ow/Tiv/GIwhXtHUfxuyB7zQgZlxmYJe6q53vMYvk4lKfk21Fc4FvdDDrba
+                            xPjOeKUh7NxDapcIJ+LwNRLnPG5FEg7yawZmB9E0yGhlchXE2Tnyxh+Hgn4i+ILr
+                            hcm0dpISbwChmUdimYXC2u1WzcnsnPdCw+A/Yq1NV9Hl/neoLUtWllrHWr/EExht
+                            f+O7mP59QOw4jmgWFg84FJCMIK8xJkz5k+FGXZUqQ9FQVAgJcqG9FOaqEf54Por3
+                            xVZs5FSoVMidx0CzTO6qMrmkCO/biS27/gLY5v/gvRYEVzjsLIhia+sAAAAAAAAA
+                            AAAA
+                        </Datenpaket>
+                    </Abholung>
+                </Datenabholung>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>

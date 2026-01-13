@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+	<TransferHeader version="11">
+		<Verfahren>ElsterAnmeldung</Verfahren>
+		<DatenArt>MindestStUnternehmenEU</DatenArt>
+		<Vorgang>send-Auth</Vorgang>
+		<Testmerker>700000004</Testmerker>
+		<HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+		<DatenLieferant>ERiC Projekt</DatenLieferant>
+		<Datei>
+			<Verschluesselung>CMSEncryptedData</Verschluesselung>
+			<Kompression>GZIP</Kompression>
+			<TransportSchluessel/>
+		</Datei>
+	</TransferHeader>
+	<DatenTeil>
+		<Nutzdatenblock>
+			<NutzdatenHeader version="11">
+				<NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+				<Empfaenger id="F">9181</Empfaenger>
+				<Hersteller>
+					<ProduktName>ERICTest</ProduktName>
+					<ProduktVersion>2009.1/0</ProduktVersion>
+				</Hersteller>
+				<DatenLieferant>Softwaretester ERiC</DatenLieferant>
+			</NutzdatenHeader>
+			<Nutzdaten>
+				<MindestStUnternehmenEU xmlns="http://finkonsens.de/elster/elsteranmeldung/mindeststunternehmeneu/v1" version="1">
+					<MinSt1>
+						<KJ>2023</KJ>
+						<Steuernummer>9181081508155</Steuernummer>
+						<Allgemeines>
+							<NameStpfl>Max Mustermann</NameStpfl>
+							<Rechtsform>31</Rechtsform>
+							<ArtGruT>0</ArtGruT>
+						</Allgemeines>
+						<Anmeldung>
+							<MinSt>0</MinSt>
+							<SummePEST>0</SummePEST>
+							<SummeSEST>0</SummeSEST>
+							<SummeNEST>0</SummeNEST>
+							<SummeBetragP57Abs1>0</SummeBetragP57Abs1>
+						</Anmeldung>
+					</MinSt1>
+					<AnlageGE>
+						<GJMutterges>
+							<BeginnGJ>31.12.2023</BeginnGJ>
+							<EndeGJ>31.12.2023</EndeGJ>
+						</GJMutterges>
+						<MB>
+							<MBKein>X</MBKein>
+						</MB>
+						<Berechnung>
+							<GE>
+								<Name>Mustereinheit</Name>
+								<Steuernummer>9198081508152</Steuernummer>
+								<Rechtsform>31</Rechtsform>
+								<PEST>0</PEST>
+								<SEST>0</SEST>
+								<NEST>0</NEST>
+								<NeuberechnungP57Abs1>0</NeuberechnungP57Abs1>
+							</GE>
+							<SummeAnlage>
+								<SummeGJ>0</SummeGJ>
+							</SummeAnlage>
+						</Berechnung>
+					</AnlageGE>
+				</MindestStUnternehmenEU>
+			</Nutzdaten>
+		</Nutzdatenblock>
+	</DatenTeil>
+</Elster>

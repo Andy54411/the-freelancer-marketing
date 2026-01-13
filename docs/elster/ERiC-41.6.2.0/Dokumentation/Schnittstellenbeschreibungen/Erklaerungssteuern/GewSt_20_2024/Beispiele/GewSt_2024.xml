@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Elster xmlns="http://www.elster.de/elsterxml/schema/v11">
+    <TransferHeader version="11">
+        <Verfahren>ElsterErklaerung</Verfahren>
+        <DatenArt>GewSt</DatenArt>
+        <Vorgang>send-Auth</Vorgang>
+        <Testmerker>700000004</Testmerker>
+        <HerstellerID>74931<!-- Bitte durch die eigene Hersteller-ID ersetzen --></HerstellerID>
+        <DatenLieferant>ERiC Beispiele</DatenLieferant>
+        <Datei>
+            <Verschluesselung>CMSEncryptedData</Verschluesselung>
+            <Kompression>GZIP</Kompression>
+            <TransportSchluessel/>
+        </Datei>
+    </TransferHeader>
+    <DatenTeil>
+        <Nutzdatenblock>
+            <NutzdatenHeader version="11">
+                <NutzdatenTicket>adfjasldkfuweor456asvs</NutzdatenTicket>
+                <Empfaenger id="F">2241</Empfaenger>
+            </NutzdatenHeader>
+            <Nutzdaten>
+                <E20 xmlns="http://finkonsens.de/elster/elstererklaerung/gewst/e20/v2024" version="2024">
+                    <GewSt1A>
+                        <Allgemein>
+                            <E4000101>Unternehmer Baier</E4000101>
+                            <E4000201>Minimalhändler</E4000201>
+                        </Allgemein>
+                        <Rechtsform>
+                            <E4001203>1</E4001203>
+                            <E4001201>1</E4001201>
+                        </Rechtsform>
+                        <Gewinn>
+                            <E4001703>60</E4001703>
+                        </Gewinn>
+                    </GewSt1A>
+                    <Vorsatz>
+                        <Unterfallart>20</Unterfallart>
+                        <Vorgang>01</Vorgang>
+                        <StNr>2241081508154</StNr>
+                        <Zeitraum>2024</Zeitraum>
+                        <AbsName>Testfallversand ERiC</AbsName>
+                        <AbsStr>Musterstraße 5</AbsStr>
+                        <AbsPlz>34567</AbsPlz>
+                        <AbsOrt>Teststadt</AbsOrt>
+                        <Copyright>Testpoint</Copyright>
+                        <OrdNrArt>S</OrdNrArt>
+                        <Rueckuebermittlung>
+                            <Bescheid>2</Bescheid>
+                        </Rueckuebermittlung>
+                    </Vorsatz>
+                </E20>
+            </Nutzdaten>
+        </Nutzdatenblock>
+    </DatenTeil>
+</Elster>
