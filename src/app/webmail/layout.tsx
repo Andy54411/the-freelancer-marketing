@@ -20,9 +20,13 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function getCookie(): { email: string; password: string } | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    return null;
+  }
   
-  const cookies = document.cookie.split(';');
+  const allCookies = document.cookie;
+  const cookies = allCookies.split(';');
+  
   for (const cookie of cookies) {
     const trimmed = cookie.trim();
     const [name, ...valueParts] = trimmed.split('=');
@@ -73,6 +77,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     if (!isMounted) return;
     
     const credentials = getCookie();
+    
     if (credentials) {
       setSession({
         email: credentials.email,
@@ -83,7 +88,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
       setSession(null);
     }
     setIsLoading(false);
-  }, [isMounted]);
+  }, [isMounted]); // WICHTIG: NUR isMounted, NICHT pathname!
 
   // Public pages that don't require authentication
   const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success', '/webmail/register'];

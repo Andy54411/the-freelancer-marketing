@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MailHeader } from '@/components/webmail/MailHeader';
 import { PhotosSidebar, PhotoSection } from '@/components/webmail/photos/PhotosSidebar';
 import { PhotosApiService, Photo, PhotoStorageInfo } from '@/services/photos/PhotosApiService';
+import { UpdatesSection } from '@/components/webmail/photos/UpdatesSection';
 import { useWebmailSession } from '../layout';
 import {
   Upload,
-  Search,
-  Settings,
-  HelpCircle,
   Grid3X3,
   LayoutGrid,
   ChevronLeft,
@@ -21,8 +19,8 @@ import {
   Info,
   X,
   Check,
-  Clock,
 } from 'lucide-react';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 interface PhotoGroup {
   date: string;
@@ -33,17 +31,22 @@ interface PhotoGroup {
 
 interface Memory {
   id: string;
+  yearsAgo: number;
   title: string;
   subtitle: string;
-  coverPhoto: string;
+  coverPhotoId: string;
+  coverPhotoUrl: string;
   photoCount: number;
+  photos: Photo[];
 }
 
 export default function PhotosPage() {
   const { session } = useWebmailSession();
+  const { isDark } = useWebmailTheme();
   const userEmail = session?.email;
   const [activeSection, setActiveSection] = useState<PhotoSection>('fotos');
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [memories, setMemories] = useState<Memory[]>([]);
   const [storageInfo, setStorageInfo] = useState<PhotoStorageInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
@@ -52,6 +55,14 @@ export default function PhotosPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Trigger file input from header button
+  const triggerUpload = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const loadPhotos = useCallback(async () => {
     if (!userEmail) return;
@@ -61,16 +72,18 @@ export default function PhotosPage() {
     
     setLoading(true);
     try {
-      const [photosData, storage] = await Promise.all([
+      const [photosData, storage, memoriesData] = await Promise.all([
         activeSection === 'favoriten'
           ? PhotosApiService.getFavorites()
           : PhotosApiService.getPhotos(),
         PhotosApiService.getStorageInfo(),
+        PhotosApiService.getMemories(),
       ]);
       setPhotos(photosData.photos);
       setStorageInfo(storage);
-    } catch (error) {
-      // Error handling without console.log
+      setMemories(memoriesData.memories);
+    } catch {
+      // Error handling
     } finally {
       setLoading(false);
     }
@@ -130,23 +143,64 @@ export default function PhotosPage() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || !userEmail) return;
+    await uploadFiles(Array.from(files));
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    if (!userEmail || files.length === 0) return;
+
+    // Nur Bilddateien akzeptieren
+    const imageFiles = files.filter(file => 
+      file.type.startsWith('image/') || 
+      ['image/heic', 'image/heif'].includes(file.type.toLowerCase())
+    );
+
+    if (imageFiles.length === 0) return;
 
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      const fileArray = Array.from(files);
-      for (let i = 0; i < fileArray.length; i++) {
-        await PhotosApiService.uploadPhoto(fileArray[i]);
-        setUploadProgress(((i + 1) / fileArray.length) * 100);
+      for (let i = 0; i < imageFiles.length; i++) {
+        await PhotosApiService.uploadPhoto(imageFiles[i]);
+        setUploadProgress(((i + 1) / imageFiles.length) * 100);
       }
       await loadPhotos();
-    } catch (error) {
+    } catch {
       // Error handling
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Nur ausblenden wenn wir das Hauptelement verlassen
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    await uploadFiles(files);
   };
 
   const handlePhotoSelect = (photoId: string, event: React.MouseEvent) => {
@@ -179,31 +233,13 @@ export default function PhotosPage() {
       );
       setSelectedPhotos(new Set());
       await loadPhotos();
-    } catch (error) {
+    } catch {
       // Error handling
     }
   };
 
   const photoGroups = groupPhotosByDate(photos);
   const monthGroups = groupByMonth(photoGroups);
-
-  // Beispiel-Erinnerungen (würden von der API kommen)
-  const memories: Memory[] = [
-    {
-      id: '1',
-      title: 'Vor 6 Jahren',
-      subtitle: '10 Fotos',
-      coverPhoto: '/placeholder-memory.jpg',
-      photoCount: 10,
-    },
-    {
-      id: '2',
-      title: 'Vor 5 Jahren',
-      subtitle: '8 Fotos',
-      coverPhoto: '/placeholder-memory.jpg',
-      photoCount: 8,
-    },
-  ];
 
   const getSectionTitle = () => {
     switch (activeSection) {
@@ -229,12 +265,37 @@ export default function PhotosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div 
+      className={`min-h-screen flex flex-col relative ${isDark ? 'bg-[#202124]' : 'bg-white'}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag & Drop Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-teal-500/20 border-4 border-dashed border-teal-500 flex items-center justify-center pointer-events-none">
+          <div className={`text-center p-8 rounded-2xl ${isDark ? 'bg-[#202124]' : 'bg-white'} shadow-2xl`}>
+            <Upload className="w-16 h-16 text-teal-500 mx-auto mb-4" />
+            <p className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Fotos hier ablegen
+            </p>
+            <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Lasse die Dateien los, um sie hochzuladen
+            </p>
+          </div>
+        </div>
+      )}
+
       <MailHeader 
         userEmail={userEmail || ''} 
         appName="Fotos"
         appHomeUrl="/webmail/photos"
-        hideSearch
+        isPhotosStyle
+        searchPlaceholder="In Fotos suchen"
+        onPhotosSearch={setSearchQuery}
+        onUploadClick={triggerUpload}
+        onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -244,110 +305,89 @@ export default function PhotosPage() {
           onSectionChange={setActiveSection}
           storageUsed={storageInfo?.used || 0}
           storageLimit={storageInfo?.limit || 5 * 1024 * 1024 * 1024}
+          isCollapsed={sidebarCollapsed}
         />
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
-            {/* Suche */}
-            <div className="flex-1 max-w-2xl">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          {/* Updates Section */}
+          {activeSection === 'updates' ? (
+            <UpdatesSection userEmail={userEmail || ''} userPassword={session?.password || ''} />
+          ) : (
+            <>
+              {/* Toolbar */}
+              <div className={`flex items-center justify-end px-4 py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                {/* Hidden file input für Header-Upload-Button */}
                 <input
-                  type="text"
-                  placeholder="In Fotos suchen"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-2.5 bg-gray-100 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Aktionen */}
-            <div className="flex items-center gap-2 ml-4">
-              {/* Upload Button */}
-              <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium cursor-pointer hover:bg-blue-700 transition-colors">
-                <Upload className="w-4 h-4" />
-                Hochladen
-                <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-              </label>
 
-              {/* View Toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('comfortable')}
-                  className={`p-2 ${viewMode === 'comfortable' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                  title="Komfortable Ansicht"
-                >
-                  <LayoutGrid className="w-4 h-4 text-gray-600" />
-                </button>
-                <button
-                  onClick={() => setViewMode('compact')}
-                  className={`p-2 ${viewMode === 'compact' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                  title="Kompakte Ansicht"
-                >
-                  <Grid3X3 className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
-
-              <button className="p-2 hover:bg-gray-100 rounded-full" title="Hilfe">
-                <HelpCircle className="w-5 h-5 text-gray-600" />
+            {/* View Toggle */}
+            <div className={`flex items-center border rounded-lg overflow-hidden ml-3 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+              <button
+                onClick={() => setViewMode('comfortable')}
+                className={`p-2 ${viewMode === 'comfortable' ? (isDark ? 'bg-white/10' : 'bg-gray-100') : (isDark ? 'hover:bg-white/10' : 'hover:bg-gray-50')}`}
+                title="Komfortable Ansicht"
+              >
+                <LayoutGrid className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-full" title="Einstellungen">
-                <Settings className="w-5 h-5 text-gray-600" />
+              <button
+                onClick={() => setViewMode('compact')}
+                className={`p-2 ${viewMode === 'compact' ? (isDark ? 'bg-white/10' : 'bg-gray-100') : (isDark ? 'hover:bg-white/10' : 'hover:bg-gray-50')}`}
+                title="Kompakte Ansicht"
+              >
+                <Grid3X3 className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               </button>
             </div>
           </div>
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="px-6 py-2 bg-blue-50 border-b border-blue-100">
+            <div className={`px-6 py-2 border-b ${isDark ? 'bg-teal-900/30 border-teal-800' : 'bg-teal-50 border-teal-100'}`}>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-teal-900' : 'bg-teal-200'}`}>
                   <div
-                    className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                    className="h-full bg-teal-600 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <span className="text-sm text-blue-700">{Math.round(uploadProgress)}%</span>
+                <span className={`text-sm ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>{Math.round(uploadProgress)}%</span>
               </div>
             </div>
           )}
 
           {/* Selection Bar */}
           {selectedPhotos.size > 0 && (
-            <div className="flex items-center justify-between px-6 py-3 bg-blue-50 border-b border-blue-100">
+            <div className={`flex items-center justify-between px-6 py-3 border-b ${isDark ? 'bg-teal-900/30 border-teal-800' : 'bg-teal-50 border-teal-100'}`}>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedPhotos(new Set())}
-                  className="p-1 hover:bg-blue-100 rounded"
+                  className={`p-1 rounded ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`}
                 >
-                  <X className="w-5 h-5 text-blue-700" />
+                  <X className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
                 </button>
-                <span className="text-sm font-medium text-blue-700">
+                <span className={`text-sm font-medium ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>
                   {selectedPhotos.size} ausgewählt
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-blue-100 rounded-full" title="Teilen">
-                  <Share2 className="w-5 h-5 text-blue-700" />
+                <button className={`p-2 rounded-full ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`} title="Teilen">
+                  <Share2 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
                 </button>
-                <button className="p-2 hover:bg-blue-100 rounded-full" title="Herunterladen">
-                  <Download className="w-5 h-5 text-blue-700" />
+                <button className={`p-2 rounded-full ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`} title="Herunterladen">
+                  <Download className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
                 </button>
                 <button
                   onClick={handleDeleteSelected}
-                  className="p-2 hover:bg-blue-100 rounded-full"
+                  className={`p-2 rounded-full ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`}
                   title="Löschen"
                 >
-                  <Trash2 className="w-5 h-5 text-blue-700" />
+                  <Trash2 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
                 </button>
               </div>
             </div>
@@ -357,21 +397,21 @@ export default function PhotosPage() {
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
               </div>
             ) : photos.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="w-10 h-10 text-gray-400" />
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <Upload className={`w-10 h-10 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
                 </div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">
+                <h2 className={`text-xl font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Keine Fotos vorhanden
                 </h2>
-                <p className="text-gray-500 mb-4 max-w-md">
+                <p className={`mb-4 max-w-md ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Lade deine Fotos hoch, um sie hier zu sehen. Du kannst Fotos per Drag & Drop
                   oder über den Upload-Button hinzufügen.
                 </p>
-                <label className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full font-medium cursor-pointer hover:bg-blue-700 transition-colors">
+                <label className="flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-full font-medium cursor-pointer hover:bg-teal-700 transition-colors">
                   <Upload className="w-5 h-5" />
                   Fotos hochladen
                   <input
@@ -389,13 +429,13 @@ export default function PhotosPage() {
                 {activeSection === 'fotos' && memories.length > 0 && (
                   <section className="mb-8">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-medium text-gray-900">Erinnerungen</h2>
+                      <h2 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Erinnerungen</h2>
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 hover:bg-gray-100 rounded-full">
-                          <ChevronLeft className="w-5 h-5 text-gray-600" />
+                        <button className={`p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+                          <ChevronLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
                         </button>
-                        <button className="p-1.5 hover:bg-gray-100 rounded-full">
-                          <ChevronRight className="w-5 h-5 text-gray-600" />
+                        <button className={`p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+                          <ChevronRight className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
                         </button>
                       </div>
                     </div>
@@ -411,9 +451,11 @@ export default function PhotosPage() {
                               <p className="font-medium">{memory.title}</p>
                               <p className="text-sm opacity-90">{memory.subtitle}</p>
                             </div>
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <Clock className="w-8 h-8 text-gray-400" />
-                            </div>
+                            <img
+                              src={PhotosApiService.getPhotoViewUrl(memory.coverPhotoId)}
+                              alt={memory.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
                           </div>
                         </div>
                       ))}
@@ -424,14 +466,14 @@ export default function PhotosPage() {
                 {/* Fotos nach Monat gruppiert */}
                 {Object.entries(monthGroups).map(([monthName, groups]) => (
                   <section key={monthName} className="mb-8">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">{monthName}</h2>
+                    <h2 className={`text-lg font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{monthName}</h2>
 
                     {groups.map((group) => (
                       <div key={group.date} className="mb-6">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-sm text-gray-700">{group.displayDate}</span>
+                          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{group.displayDate}</span>
                           {group.location && (
-                            <span className="text-sm text-gray-500">{group.location}</span>
+                            <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{group.location}</span>
                           )}
                         </div>
 
@@ -461,7 +503,7 @@ export default function PhotosPage() {
                                 <div
                                   className={`absolute inset-0 transition-opacity ${
                                     isSelected
-                                      ? 'bg-blue-500/30'
+                                      ? 'bg-teal-500/30'
                                       : 'bg-black/0 group-hover:bg-black/10'
                                   }`}
                                 />
@@ -470,7 +512,7 @@ export default function PhotosPage() {
                                 <div
                                   className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-opacity ${
                                     isSelected
-                                      ? 'bg-blue-600 border-blue-600'
+                                      ? 'bg-teal-600 border-teal-600'
                                       : 'border-white bg-black/30 opacity-0 group-hover:opacity-100'
                                   }`}
                                   onClick={(e) => handlePhotoSelect(photo.id, e)}
@@ -506,6 +548,8 @@ export default function PhotosPage() {
               </>
             )}
           </div>
+            </>
+          )}
         </main>
       </div>
 

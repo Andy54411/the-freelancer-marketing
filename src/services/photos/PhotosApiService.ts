@@ -112,6 +112,33 @@ export class PhotosApiService {
     return result.storage;
   }
 
+  // ==================== ERINNERUNGEN ====================
+
+  static async getMemories(): Promise<{ 
+    memories: Array<{
+      id: string;
+      yearsAgo: number;
+      title: string;
+      subtitle: string;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photoCount: number;
+      photos: Photo[];
+    }> 
+  }> {
+    const result = await this.request<{ memories: Array<{
+      id: string;
+      yearsAgo: number;
+      title: string;
+      subtitle: string;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photoCount: number;
+      photos: Photo[];
+    }> }>('/memories');
+    return { memories: result.memories };
+  }
+
   // ==================== ALBUMS ====================
 
   static async getAlbums(): Promise<PhotoAlbum[]> {

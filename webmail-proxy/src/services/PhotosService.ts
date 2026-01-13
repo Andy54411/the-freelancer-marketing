@@ -650,6 +650,87 @@ class PhotosService {
       updatedAt: row.updated_at,
     };
   }
+
+  // ==================== ERINNERUNGEN ====================
+  
+  /**
+   * Findet Fotos von vor X Jahren (gleicher Tag/Monat)
+   * Gibt Erinnerungen zurück wenn Fotos aus vergangenen Jahren existieren
+   */
+  async getMemories(userId: string): Promise<{ 
+    memories: Array<{
+      id: string;
+      yearsAgo: number;
+      title: string;
+      subtitle: string;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photoCount: number;
+      photos: Photo[];
+    }> 
+  }> {
+    await this.getOrCreateUser(userId);
+    
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentDay = now.getDate();
+    
+    const memories: Array<{
+      id: string;
+      yearsAgo: number;
+      title: string;
+      subtitle: string;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photoCount: number;
+      photos: Photo[];
+    }> = [];
+    
+    // Suche Fotos von vor 1-10 Jahren am gleichen Tag (+/- 3 Tage für mehr Treffer)
+    for (let yearsAgo = 1; yearsAgo <= 10; yearsAgo++) {
+      const targetYear = now.getFullYear() - yearsAgo;
+      
+      // Berechne Zeitfenster: 3 Tage vor und nach dem aktuellen Datum
+      const startDate = new Date(targetYear, currentMonth - 1, currentDay - 3);
+      const endDate = new Date(targetYear, currentMonth - 1, currentDay + 3, 23, 59, 59);
+      
+      const startTimestamp = startDate.getTime();
+      const endTimestamp = endDate.getTime();
+      
+      // Suche Fotos in diesem Zeitraum (nach taken_at oder created_at)
+      const stmt = this.db.prepare(`
+        SELECT * FROM photos 
+        WHERE user_id = ? 
+        AND is_deleted = 0
+        AND (
+          (taken_at IS NOT NULL AND taken_at >= ? AND taken_at <= ?)
+          OR (taken_at IS NULL AND created_at >= ? AND created_at <= ?)
+        )
+        ORDER BY COALESCE(taken_at, created_at) DESC
+        LIMIT 20
+      `);
+      
+      const rows = stmt.all(userId, startTimestamp, endTimestamp, startTimestamp, endTimestamp);
+      
+      if (rows.length > 0) {
+        const photos = rows.map((row: Record<string, unknown>) => this.mapPhoto(row));
+        const coverPhoto = photos[0];
+        
+        memories.push({
+          id: `memory-${yearsAgo}`,
+          yearsAgo,
+          title: yearsAgo === 1 ? 'Vor 1 Jahr' : `Vor ${yearsAgo} Jahren`,
+          subtitle: photos.length === 1 ? '1 Foto' : `${photos.length} Fotos`,
+          coverPhotoId: coverPhoto.id,
+          coverPhotoUrl: `/api/photos/${coverPhoto.id}/view?userId=${encodeURIComponent(userId)}`,
+          photoCount: photos.length,
+          photos,
+        });
+      }
+    }
+    
+    return { memories };
+  }
 }
 
 // Singleton exportieren

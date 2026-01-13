@@ -64,8 +64,8 @@ app.use(securityHeaders);
 app.use(requestIdMiddleware);
 app.use(auditLogger);
 
-// Helmet mit strengen Einstellungen
-app.use(helmet({
+// Helmet-Instanz erstellen
+const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -91,7 +91,25 @@ app.use(helmet({
   permittedCrossDomainPolicies: { permittedPolicies: 'none' },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   xssFilter: true,
-}));
+});
+
+// Helmet bedingt anwenden - NICHT für Photo/Drive View/Download Routen
+// Diese Routen liefern Bilder/Dateien die von anderen Origins (taskilo.de) geladen werden
+app.use((req, res, next) => {
+  const isMediaRoute = req.path.match(/^\/api\/(photos|drive)\/[^/]+\/(view|download|thumbnail)$/);
+  
+  if (isMediaRoute) {
+    // Für Medien-Routen: Minimale Security-Header, aber Cross-Origin erlauben
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    return next();
+  }
+  
+  // Für alle anderen Routen: Volle Helmet-Security
+  helmetMiddleware(req, res, next);
+});
 
 // CORS
 app.use(cors({
@@ -135,6 +153,11 @@ app.use('/api/settings', settingsRouter);
 app.use('/api', (req, res, next) => {
   // Registration-, Profile-, Phone-Verification-, Newsletter-, Settings- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
   if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/settings') || req.path.startsWith('/mobileconfig')) {
+    return next();
+  }
+  
+  // Photos /view und /download sind öffentlich (werden vom Browser direkt aufgerufen)
+  if (req.path.match(/^\/photos\/[^/]+\/(view|download)$/)) {
     return next();
   }
   

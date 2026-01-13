@@ -27,9 +27,9 @@ const upload = multer({
   },
 });
 
-// User ID aus Request holen
+// User ID aus Request holen (Header, Body oder Query)
 const getUserId = (req: Request): string => {
-  const userId = req.headers['x-user-id'] as string || req.body?.userId;
+  const userId = req.headers['x-user-id'] as string || req.body?.userId || req.query?.userId as string;
   if (!userId) {
     throw new Error('User ID required');
   }
@@ -44,6 +44,19 @@ router.get('/storage', async (req: Request, res: Response) => {
     const userId = getUserId(req);
     const storage = await photosService.getStorageInfo(userId);
     res.json({ success: true, storage });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// ==================== ERINNERUNGEN ====================
+
+// GET /photos/memories - Erinnerungen (Fotos von vor X Jahren)
+router.get('/memories', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const result = await photosService.getMemories(userId);
+    res.json({ success: true, ...result });
   } catch (error) {
     res.status(400).json({ success: false, error: (error as Error).message });
   }

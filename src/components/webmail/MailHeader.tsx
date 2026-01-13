@@ -69,6 +69,12 @@ interface MailHeaderProps {
   isDashboard?: boolean;
   // Meet-Style: Minimalistischer Header wie Google Meet (kein Hamburger, keine Suche, nur Logo + Datum + Avatar)
   isMeetStyle?: boolean;
+  // Photos-Style: Google Fotos Layout (Logo links, breites Suchfeld Mitte, Icons rechts)
+  isPhotosStyle?: boolean;
+  // Callback für Suche in Photos
+  onPhotosSearch?: (query: string) => void;
+  // Callback für Upload-Button in Photos
+  onUploadClick?: () => void;
 }
 
 export function MailHeader({
@@ -91,6 +97,9 @@ export function MailHeader({
   companyId,
   isDashboard = false,
   isMeetStyle = false,
+  isPhotosStyle = false,
+  onPhotosSearch,
+  onUploadClick,
 }: MailHeaderProps) {
   mailHeaderLog('RENDER_START', {
     userEmail,
@@ -247,6 +256,132 @@ export function MailHeader({
     console.info('Create filter:', filters);
     setShowAdvancedSearch(false);
   };
+
+  // Photos-Style Header - wie Google Fotos (Logo links, breites Suchfeld, Icons rechts)
+  if (isPhotosStyle) {
+    return (
+      <header className={cn(
+        "h-16 flex items-center justify-between px-4 shrink-0",
+        isDark ? "bg-[#202124]" : "bg-white"
+      )}>
+        {/* Links: Hamburger + Logo */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Hamburger Menu */}
+          <button
+            onClick={onMenuToggle}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
+            )}
+            aria-label="Hauptmenü"
+          >
+            <Menu className={cn("w-6 h-6", isDark ? "text-gray-300" : "text-gray-700")} />
+          </button>
+          
+          <Link href={appHomeUrl || '/webmail/photos'} className="flex items-center">
+            <Image 
+              src={isDark ? "/images/taskilo-logo-white.png" : "/images/taskilo-logo-transparent.png"} 
+              alt="Taskilo" 
+              width={120} 
+              height={34} 
+              className="h-8 w-auto" 
+            />
+          </Link>
+        </div>
+        
+        {/* Mitte: Breites Suchfeld */}
+        <div className="flex-1 max-w-2xl mx-8">
+          <div className="relative">
+            <Search className={cn(
+              "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5",
+              isDark ? "text-gray-500" : "text-gray-400"
+            )} />
+            <input
+              type="text"
+              placeholder={searchPlaceholder || 'In Fotos suchen'}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                onPhotosSearch?.(e.target.value);
+              }}
+              className={cn(
+                "w-full pl-12 pr-4 py-3 rounded-lg text-base border-0 focus:outline-none focus:ring-2 focus:ring-teal-500",
+                isDark 
+                  ? "bg-[#303134] text-gray-200 placeholder-gray-500" 
+                  : "bg-gray-100 text-gray-900 placeholder-gray-500"
+              )}
+            />
+          </div>
+        </div>
+        
+        {/* Rechts: Icons */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Hochladen Button */}
+          <button
+            onClick={onUploadClick}
+            className={cn(
+              "p-2.5 rounded-full transition-colors",
+              isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
+            )}
+            title="Hochladen"
+          >
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+          </button>
+          
+          {/* Hilfe */}
+          <button className={cn(
+            "p-2.5 rounded-full transition-colors",
+            isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
+          )}>
+            <HelpCircle className="w-5 h-5" />
+          </button>
+          
+          {/* Einstellungen */}
+          <button 
+            onClick={onSettingsClick}
+            className={cn(
+              "p-2.5 rounded-full transition-colors",
+              isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
+            )}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          
+          {/* Apps Grid */}
+          <AppLauncher isDarkMode={isDark} companyId={companyId} />
+          
+          {/* Avatar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="ml-2 w-9 h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium">{userEmail}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleTheme}>
+                {isDark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                {isDark ? 'Light Mode' : 'Dark Mode'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Abmelden
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+    );
+  }
 
   // Meet-Style Header - minimalistisch wie Google Meet
   if (isMeetStyle) {

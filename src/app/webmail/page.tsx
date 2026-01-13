@@ -9,13 +9,10 @@ import { auth } from '@/firebase/clients';
 import { getWebmailCredentials } from '@/lib/webmail-session';
 
 // ============ HYDRATION DEBUG LOGGING ============
-const HYDRATION_DEBUG = true;
+const HYDRATION_DEBUG = false;
 
-function hydrationLog(location: string, data?: Record<string, unknown>) {
+function hydrationLog(_location: string, _data?: Record<string, unknown>) {
   if (!HYDRATION_DEBUG) return;
-  const isServer = typeof window === 'undefined';
-  const prefix = isServer ? '[SERVER]' : '[CLIENT]';
-  const timestamp = new Date().toISOString();
 }
 
 // Log beim Modul-Load (zeigt Server vs Client)
@@ -74,15 +71,24 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function setCookie(email: string, password: string, remember: boolean): void {
-  // Altes Cookie loeschen auf allen Domains
+  // Altes Cookie löschen auf allen Domains
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
   document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
   
   const encoded = encodeCredentials(email, password);
   const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
   
-  // Cookie auf .taskilo.de Domain setzen - gilt für alle Subdomains und Pfade
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; domain=.taskilo.de; SameSite=Lax; Secure`;
+  // Prüfe ob wir auf localhost sind
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (isLocalhost) {
+    // Localhost: Kein domain, kein Secure (HTTP)
+    const cookieStr = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax`;
+    document.cookie = cookieStr;
+  } else {
+    // Produktion: .taskilo.de Domain mit Secure (HTTPS)
+    document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; domain=.taskilo.de; SameSite=Lax; Secure`;
+  }
 }
 
 function getCookie(): { email: string; password: string } | null {
