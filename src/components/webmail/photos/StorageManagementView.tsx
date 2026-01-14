@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { PhotosApiService } from '@/services/photos/PhotosApiService';
+import { StorageUpgradeModal } from './StorageUpgradeModal';
 
 interface StorageManagementViewProps {
   userEmail: string;
@@ -91,6 +92,7 @@ export function StorageManagementView({ userEmail, onBack }: StorageManagementVi
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const formatBytes = useCallback((bytes: number): string => {
     if (bytes >= 1024 * 1024 * 1024) {
@@ -400,20 +402,16 @@ export function StorageManagementView({ userEmail, onBack }: StorageManagementVi
                     Mehr Speicherplatz für deine schönsten Erinnerungen erhalten
                   </p>
                   
-                  <div className="flex flex-wrap gap-2">
-                    {plans.filter(p => !p.isCurrent && p.price > 0).slice(0, 2).map(plan => (
-                      <button
-                        key={plan.id}
-                        className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                          isDark 
-                            ? 'border-teal-600 text-teal-400 hover:bg-teal-900/50' 
-                            : 'border-teal-500 text-teal-600 hover:bg-teal-50'
-                        }`}
-                      >
-                        {plan.formattedStorage} für {plan.price.toFixed(2)} € pro Monat kaufen
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className={`px-6 py-3 rounded-full text-sm font-medium transition-colors ${
+                      isDark 
+                        ? 'bg-teal-600 text-white hover:bg-teal-700' 
+                        : 'bg-teal-600 text-white hover:bg-teal-700'
+                    }`}
+                  >
+                    Speicherplatz upgraden
+                  </button>
                 </div>
               </div>
             </section>
@@ -551,6 +549,17 @@ export function StorageManagementView({ userEmail, onBack }: StorageManagementVi
           </>
         )}
       </div>
+
+      {/* Storage Upgrade Modal */}
+      <StorageUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        userEmail={userEmail}
+        currentPlan={analysis?.plan || 'basic_15gb'}
+        onUpgradeSuccess={(planId) => {
+          loadData();
+        }}
+      />
     </div>
   );
 }
