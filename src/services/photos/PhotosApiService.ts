@@ -38,6 +38,7 @@ export interface Photo {
   takenAt: number | null;
   latitude: number | null;
   longitude: number | null;
+  locationName: string | null;
   camera: string | null;
   // KI-Klassifizierung
   primaryCategory: string | null;
@@ -121,6 +122,138 @@ export class PhotosApiService {
     return result.storage;
   }
 
+  static async getStorageAnalysis(): Promise<{
+    totalUsed: number;
+    totalLimit: number;
+    photoCount: number;
+    plan: string;
+    categories: Array<{
+      key: string;
+      name: string;
+      size: number;
+      count: number;
+      icon: string;
+    }>;
+    largeFiles: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+      takenAt: number | null;
+    }>;
+    blurryPhotos: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+    }>;
+    screenshots: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+      takenAt: number | null;
+    }>;
+    estimatedYearsRemaining: number;
+    uploadRatePerMonth: number;
+    formattedUsed: string;
+    formattedLimit: string;
+    usedPercent: number;
+  }> {
+    return this.request('/storage/analysis');
+  }
+
+  static async getStoragePlans(): Promise<Array<{
+    id: string;
+    name: string;
+    storage: number;
+    formattedStorage: string;
+    price: number;
+    isCurrent: boolean;
+  }>> {
+    const result = await this.request<{ plans: Array<{
+      id: string;
+      name: string;
+      storage: number;
+      formattedStorage: string;
+      price: number;
+      isCurrent: boolean;
+    }> }>('/storage/plans');
+    return result.plans;
+  }
+
+  static async getCategoryStorageDetails(category: string): Promise<{
+    totalSize: number;
+    count: number;
+    photos: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+      takenAt: number | null;
+    }>;
+  }> {
+    return this.request(`/storage/category/${encodeURIComponent(category)}`);
+  }
+
+  static async deletePhotosForStorage(photoIds: string[]): Promise<{
+    deletedCount: number;
+    freedSpace: number;
+  }> {
+    return this.request('/storage/delete-photos', {
+      method: 'POST',
+      body: JSON.stringify({ photoIds }),
+    });
+  }
+
+  static async deleteCategoryPhotos(category: string): Promise<{
+    deletedCount: number;
+    freedSpace: number;
+  }> {
+    return this.request('/storage/delete-category', {
+      method: 'POST',
+      body: JSON.stringify({ category }),
+    });
+  }
+
+  static async emptyTrash(): Promise<{
+    deletedCount: number;
+    freedSpace: number;
+  }> {
+    return this.request('/storage/empty-trash', {
+      method: 'POST',
+    });
+  }
+
+  static async upgradePlan(plan: string): Promise<{
+    success: boolean;
+    newLimit: number;
+    formattedLimit: string;
+  }> {
+    return this.request('/storage/upgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+    });
+  }
+
+  // ==================== THUMBNAIL URLs ====================
+
+  /**
+   * Generiert eine authentifizierte Thumbnail/View-URL
+   * Nutzt Query-Parameter für User-ID da <img> keine Header unterstützt
+   * Der /view Endpunkt ist öffentlich (keine API-Key Prüfung)
+   */
+  static getThumbnailUrl(photoId: string): string {
+    return `${HETZNER_API_URL}/api/photos/${photoId}/view?userId=${encodeURIComponent(this.userId)}`;
+  }
+
+  /**
+   * Generiert eine authentifizierte Download-URL
+   */
+  static getPhotoUrl(photoId: string): string {
+    return `${HETZNER_API_URL}/api/photos/${photoId}/download?userId=${encodeURIComponent(this.userId)}`;
+  }
+
   // ==================== ERINNERUNGEN ====================
 
   static async getMemories(): Promise<{ 
@@ -146,6 +279,95 @@ export class PhotosApiService {
       photos: Photo[];
     }> }>('/memories');
     return { memories: result.memories };
+  }
+
+  // ==================== ORTE / LOCATIONS ====================
+
+  static async getPhotosByLocation(): Promise<{ 
+    locations: Array<{
+      locationName: string;
+      latitude: number;
+      longitude: number;
+      photoCount: number;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photos: Photo[];
+    }>;
+    photosWithoutLocation: number;
+  }> {
+    const result = await this.request<{ 
+      locations: Array<{
+        locationName: string;
+        latitude: number;
+        longitude: number;
+        photoCount: number;
+        coverPhotoId: string;
+        coverPhotoUrl: string;
+        photos: Photo[];
+      }>;
+      photosWithoutLocation: number;
+    }>('/locations');
+    return { 
+      locations: result.locations, 
+      photosWithoutLocation: result.photosWithoutLocation 
+    };
+  }
+
+  static async triggerGeocoding(): Promise<{ 
+    geocoded: number; 
+    remaining: number;
+    message: string;
+  }> {
+    const result = await this.request<{ 
+      geocoded: number; 
+      remaining: number;
+      message: string;
+    }>('/locations/geocode');
+    return {
+      geocoded: result.geocoded,
+      remaining: result.remaining,
+      message: result.message,
+    };
+  }
+
+  // ==================== KORREKTUR / FEEDBACK ====================
+
+  /**
+   * Manuelle Korrektur eines Fotos (Kategorie, Ort)
+   */
+  static async correctPhoto(
+    photoId: string,
+    corrections: {
+      category?: string;
+      categoryDisplay?: string;
+      locationName?: string;
+      latitude?: number;
+      longitude?: number;
+    }
+  ): Promise<Photo> {
+    const result = await this.request<{ photo: Photo }>(`/${photoId}/correct`, {
+      method: 'PATCH',
+      body: JSON.stringify(corrections),
+    });
+    return result.photo;
+  }
+
+  /**
+   * Batch-Korrektur mehrerer Fotos
+   */
+  static async batchCorrectPhotos(
+    photoIds: string[],
+    corrections: {
+      category?: string;
+      categoryDisplay?: string;
+      locationName?: string;
+    }
+  ): Promise<{ updated: number; failed: number }> {
+    const result = await this.request<{ updated: number; failed: number }>('/batch-correct', {
+      method: 'POST',
+      body: JSON.stringify({ photoIds, ...corrections }),
+    });
+    return result;
   }
 
   // ==================== ALBUMS ====================
@@ -204,12 +426,14 @@ export class PhotosApiService {
     limit?: number;
     offset?: number;
     favoritesOnly?: boolean;
+    category?: string; // KI-Kategorie Filter
   } = {}): Promise<{ photos: Photo[]; total: number }> {
     const params = new URLSearchParams();
     if (options.albumId) params.append('albumId', options.albumId);
     if (options.limit) params.append('limit', options.limit.toString());
     if (options.offset) params.append('offset', options.offset.toString());
     if (options.favoritesOnly) params.append('favorites', 'true');
+    if (options.category) params.append('category', options.category);
 
     const result = await this.request<{ photos: Photo[]; total: number }>(
       `/?${params.toString()}`
@@ -372,6 +596,7 @@ export class PhotosApiService {
   /**
    * Holt dynamische Kategorien für den Benutzer
    * Kategorien entstehen aus den tatsächlich vorhandenen Fotos (wie Google Photos)
+   * @deprecated Nutze getDbCategories() stattdessen - liest direkt aus der Datenbank
    */
   static async getDynamicCategories(minCount: number = 1, limit: number = 50): Promise<DynamicCategory[]> {
     const TASKILO_KI_URL = process.env.NEXT_PUBLIC_TASKILO_KI_URL || 'https://mail.taskilo.de';
@@ -386,6 +611,15 @@ export class PhotosApiService {
     }
 
     return data.categories || [];
+  }
+
+  /**
+   * Holt Kategorien direkt aus der Datenbank (inkl. manuell zugewiesener Kategorien)
+   * Diese Methode ist bevorzugt, da sie alle tatsächlich gespeicherten Kategorien liefert
+   */
+  static async getDbCategories(): Promise<DynamicCategory[]> {
+    const result = await this.request<{ categories: DynamicCategory[] }>('/db-categories');
+    return result.categories || [];
   }
 
   /**
@@ -454,6 +688,140 @@ export class PhotosApiService {
       }),
     });
   }
+
+  // ==================== KI FEEDBACK API ====================
+
+  /**
+   * Sendet Kategorie-Korrektur an die KI für Training
+   */
+  static async sendKiFeedback(params: {
+    photoId: string;
+    originalCategory?: string;
+    correctedCategory: string;
+    correctedLocation?: string;
+    gpsData?: { latitude: number; longitude: number };
+  }): Promise<{ success: boolean; message: string; kiPending?: boolean }> {
+    return this.request<{ success: boolean; message: string; kiPending?: boolean }>('/ki-feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        photoId: params.photoId,
+        originalCategory: params.originalCategory,
+        correctedCategory: params.correctedCategory,
+        correctedLocation: params.correctedLocation,
+        gpsData: params.gpsData,
+      }),
+    });
+  }
+
+  /**
+   * Sendet Batch-Korrekturen an die KI für Training
+   */
+  static async sendKiFeedbackBatch(corrections: Array<{
+    photoId: string;
+    originalCategory?: string;
+    correctedCategory: string;
+    correctedLocation?: string;
+    gpsData?: { latitude: number; longitude: number };
+  }>): Promise<{ success: boolean; message: string; kiPending?: boolean }> {
+    return this.request<{ success: boolean; message: string; kiPending?: boolean }>('/ki-feedback/batch', {
+      method: 'POST',
+      body: JSON.stringify({ corrections }),
+    });
+  }
+
+  /**
+   * Holt alle verfügbaren KI-Kategorien (von KI oder Fallback)
+   */
+  static async getKiCategories(): Promise<{
+    categories: Array<{ key: string; display: string; group: string }>;
+    source: 'ki' | 'local';
+  }> {
+    return this.request<{
+      categories: Array<{ key: string; display: string; group: string }>;
+      source: 'ki' | 'local';
+    }>('/ki-categories');
+  }
+
+  // ==================== BENUTZERDEFINIERTE KATEGORIEN ====================
+
+  /**
+   * Holt alle benutzerdefinierten Kategorien
+   */
+  static async getCustomCategories(): Promise<Array<{ id: string; key: string; display: string; group: string }>> {
+    const result = await this.request<{ categories: Array<{ id: string; key: string; display: string; group: string }> }>('/custom-categories');
+    return result.categories || [];
+  }
+
+  /**
+   * Erstellt eine neue benutzerdefinierte Kategorie
+   */
+  static async createCustomCategory(display: string, group: string = 'spezial'): Promise<{ id: string; key: string; display: string; group: string }> {
+    const result = await this.request<{ category: { id: string; key: string; display: string; group: string } }>('/custom-categories', {
+      method: 'POST',
+      body: JSON.stringify({ display, group }),
+    });
+    return result.category;
+  }
+
+  /**
+   * Löscht eine benutzerdefinierte Kategorie
+   */
+  static async deleteCustomCategory(categoryId: string): Promise<boolean> {
+    const result = await this.request<{ deleted: boolean }>(`/custom-categories/${categoryId}`, {
+      method: 'DELETE',
+    });
+    return result.deleted;
+  }
+
+  /**
+   * Startet Nachklassifizierung aller Fotos im Hintergrund
+   */
+  static async reclassifyAll(force = false): Promise<{ 
+    success: boolean; 
+    message: string; 
+    classifying: number; 
+    resolvingLocations: number; 
+  }> {
+    return this.request<{ success: boolean; message: string; classifying: number; resolvingLocations: number }>('/reclassify-all', {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    });
+  }
+
+  /**
+   * Re-extrahiert EXIF-Daten für alle Fotos
+   */
+  static async reextractExif(force = false): Promise<{
+    success: boolean;
+    message: string;
+    processed: number;
+    withGps: number;
+    withDate: number;
+  }> {
+    return this.request<{ success: boolean; message: string; processed: number; withGps: number; withDate: number }>('/reextract-exif', {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    });
+  }
+
+  /**
+   * Debug: Zeigt EXIF-Daten eines Fotos an
+   */
+  static async getPhotoExif(photoId: string): Promise<{
+    success: boolean;
+    filename: string;
+    parsedMetadata: {
+      width?: number;
+      height?: number;
+      takenAt?: number;
+      latitude?: number;
+      longitude?: number;
+      camera?: string;
+    };
+    rawExif: Record<string, unknown>;
+  }> {
+    return this.request<{ success: boolean; filename: string; parsedMetadata: Record<string, unknown>; rawExif: Record<string, unknown> }>(`/${photoId}/exif`);
+  }
 }
 
 // ==================== KI TYPES ====================
@@ -514,10 +882,10 @@ export interface PhotoMetadata {
 
 export interface DynamicCategory {
   key: string;
-  display_name: string;
+  display: string;  // Display-Name der Kategorie
   count: number;
   thumbnail_url?: string;
-  type: 'time' | 'location' | 'object' | 'scene';
+  type: 'time' | 'location' | 'object' | 'scene' | 'custom';
 }
 
 // ==================== STILLES LERNEN ====================

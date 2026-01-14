@@ -32,7 +32,9 @@ export type PhotoSection =
   | 'favoriten'
   | 'orte'
   | 'videos'
-  | 'kategorie'; // Dynamische KI-Kategorie
+  | 'kategorie' // Dynamische KI-Kategorie
+  | 'einstellungen' // Einstellungen
+  | 'speicherplatz'; // Speicherplatz verwalten
 
 // Dynamische Dokumentkategorie (von Taskilo KI erkannt)
 export interface DocumentCategoryData {
@@ -58,6 +60,8 @@ interface PhotosSidebarProps {
   // Aktive dynamische Kategorie
   activeDynamicCategory?: string;
   onDynamicCategoryChange?: (categoryKey: string | undefined) => void;
+  // Trigger für Kategorie-Refresh (bei Änderung neu laden)
+  refreshTrigger?: number;
 }
 
 const mainNavItems = [
@@ -115,6 +119,7 @@ export function PhotosSidebar({
   userEmail,
   activeDynamicCategory,
   onDynamicCategoryChange,
+  refreshTrigger,
 }: PhotosSidebarProps) {
   const { isDark } = useWebmailTheme();
   const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(activeSection === 'dokumente');
@@ -123,7 +128,8 @@ export function PhotosSidebar({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const storagePercentage = Math.min((storageUsed / storageLimit) * 100, 100);
 
-  // Dynamische Kategorien von der KI laden
+  // Kategorien aus der Datenbank laden (inkl. manuell zugewiesener)
+  // Wird bei Änderung von refreshTrigger (via WebSocket) neu geladen
   useEffect(() => {
     const loadCategories = async () => {
       if (!userEmail) return;
@@ -131,18 +137,24 @@ export function PhotosSidebar({
       setIsLoadingCategories(true);
       try {
         PhotosApiService.setUserId(userEmail);
-        const categories = await PhotosApiService.getDynamicCategories(1, 20);
+        // Nutze die DB-Kategorien statt KI-API (enthält manuell zugewiesene Kategorien)
+        const categories = await PhotosApiService.getDbCategories();
         setDynamicCategories(categories);
       } catch (error) {
-        // KI nicht verfügbar - zeige leere Kategorien
-        setDynamicCategories([]);
+        // Fallback zu KI-Kategorien wenn DB nicht verfügbar
+        try {
+          const kiCategories = await PhotosApiService.getDynamicCategories(1, 20);
+          setDynamicCategories(kiCategories);
+        } catch {
+          setDynamicCategories([]);
+        }
       } finally {
         setIsLoadingCategories(false);
       }
     };
 
     loadCategories();
-  }, [userEmail]);
+  }, [userEmail, refreshTrigger]);
 
   const formatStorage = (bytes: number) => {
     if (bytes >= 1024 * 1024 * 1024) {
@@ -193,13 +205,13 @@ export function PhotosSidebar({
           })}
         </div>
 
-        {/* Dynamische KI-Kategorien */}
+        {/* Dynamische Kategorien */}
         {!isCollapsed && dynamicCategories.length > 0 && (
           <>
             <div className="mt-6 mb-2 px-4 flex items-center justify-between">
               <h3 className={`text-xs font-medium uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                 <Sparkles className="w-3 h-3" />
-                KI-Kategorien
+                Kategorien
               </h3>
               <button
                 onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
@@ -241,7 +253,7 @@ export function PhotosSidebar({
                         <div className={`w-6 h-6 rounded-md ${isDark ? 'bg-white/10' : colorClass} flex items-center justify-center`}>
                           <Icon className={`w-3.5 h-3.5 ${isDark ? 'text-gray-300' : ''}`} />
                         </div>
-                        <span className="truncate flex-1 text-left">{category.display_name}</span>
+                        <span className="truncate flex-1 text-left">{category.display}</span>
                         <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                           {category.count}
                         </span>

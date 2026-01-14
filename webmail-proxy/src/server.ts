@@ -25,6 +25,7 @@ import newsletterRouter from './routes/newsletter';
 import settingsRouter from './routes/settings';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
+import { storageRouter } from './routes/storage';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -207,6 +208,7 @@ app.use('/api/meeting', meetingRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 app.use('/api/photos', photosRouter);
+app.use('/api/photos/storage', storageRouter);
 
 // API Routes - Payment (Revolut Escrow System)
 app.use('/api/payment', paymentRouter);
@@ -234,14 +236,25 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
 // 404 Handler - ABER WebSocket-Pfade ignorieren
 app.use((req, res, next) => {
   // WebSocket-Pfade werden vom WebSocket-Server behandelt
-  if (req.path.startsWith('/ws/')) {
+  // Prüfe auf /ws oder /ws/ Pfade
+  if (req.path === '/ws' || req.path.startsWith('/ws/')) {
     console.log('[DEBUG] WebSocket path detected, headers:', JSON.stringify({
       upgrade: req.headers.upgrade,
       connection: req.headers.connection,
       path: req.path,
     }));
-    // Nicht als 404 behandeln - WebSocket-Server übernimmt
-    return next();
+    // Bei WebSocket Upgrade: nicht als 404 behandeln
+    if (req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') {
+      console.log('[DEBUG] WebSocket upgrade request - letting upgrade handler take over');
+      return next();
+    }
+    // Normaler HTTP-Request auf /ws - warte auf Upgrade
+    console.log('[DEBUG] Non-upgrade request to /ws - returning 426 Upgrade Required');
+    res.status(426).json({ 
+      success: false, 
+      error: 'Upgrade Required - WebSocket connections only',
+    });
+    return;
   }
   res.status(404).json({ 
     success: false, 

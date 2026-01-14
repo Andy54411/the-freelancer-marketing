@@ -89,6 +89,7 @@ export interface Photo {
   takenAt: number | null;  // Aufnahmedatum
   latitude: number | null;
   longitude: number | null;
+  locationName: string | null; // Reverse Geocoded Ortsname
   camera: string | null;
   // KI-Klassifizierung
   primaryCategory: string | null;
@@ -118,6 +119,7 @@ export interface PhotoAiCategories {
   detectedObjects: Array<{ object: string; confidence: number }>;
   metadataCategories: string[];
   classifiedAt: number;
+  imageHash?: string; // Hash für KI-Feedback Tracking
 }
 
 export interface PhotoStorageInfo {
@@ -280,6 +282,67 @@ class PhotosService {
       `);
     } catch {
       // Migration bereits durchgeführt oder Fehler - ignorieren
+    }
+    
+    // Migration: location_name Spalte hinzufügen
+    this.migrateLocationName();
+    
+    // Migration: image_hash Spalte für KI-Feedback
+    this.migrateImageHash();
+  }
+  
+  private migrateLocationName(): void {
+    try {
+      const tableInfo = this.db.pragma('table_info(photos)');
+      const existingColumns = tableInfo.map((col: { name: string }) => col.name);
+      
+      if (!existingColumns.includes('location_name')) {
+        this.db.exec(`ALTER TABLE photos ADD COLUMN location_name TEXT`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_photos_location ON photos(location_name)`);
+      }
+    } catch {
+      // Migration bereits durchgeführt
+    }
+  }
+  
+  private migrateImageHash(): void {
+    try {
+      const tableInfo = this.db.pragma('table_info(photos)');
+      const existingColumns = tableInfo.map((col: { name: string }) => col.name);
+      
+      if (!existingColumns.includes('image_hash')) {
+        this.db.exec(`ALTER TABLE photos ADD COLUMN image_hash TEXT`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_photos_image_hash ON photos(image_hash)`);
+      }
+    } catch {
+      // Migration bereits durchgeführt
+    }
+    
+    // Migration: Custom Categories Tabelle erstellen
+    this.migrateCustomCategories();
+  }
+  
+  private migrateCustomCategories(): void {
+    try {
+      // Tabelle für benutzerdefinierte Kategorien
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS photo_custom_categories (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          key TEXT NOT NULL,
+          display TEXT NOT NULL,
+          group_name TEXT DEFAULT 'spezial',
+          created_at INTEGER NOT NULL,
+          UNIQUE(user_id, key),
+          FOREIGN KEY (user_id) REFERENCES photo_users(id)
+        )
+      `);
+      
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_custom_categories_user ON photo_custom_categories(user_id);
+      `);
+    } catch {
+      // Tabelle bereits vorhanden
     }
   }
 
@@ -476,11 +539,12 @@ class PhotosService {
       offset?: number; 
       favoritesOnly?: boolean;
       includeDeleted?: boolean;
+      category?: string; // KI-Kategorie Filter
     } = {}
   ): Promise<{ photos: Photo[]; total: number }> {
     await this.getOrCreateUser(userId);
     
-    const { limit = 50, offset = 0, favoritesOnly = false, includeDeleted = false } = options;
+    const { limit = 50, offset = 0, favoritesOnly = false, includeDeleted = false, category } = options;
     
     let whereClause = 'user_id = ?';
     const params: (string | number)[] = [userId];
@@ -496,6 +560,30 @@ class PhotosService {
     
     if (favoritesOnly) {
       whereClause += ' AND is_favorite = 1';
+    }
+    
+    // KI-Kategorie Filter
+    if (category) {
+      // Zeit-Kategorien: year_YYYY oder month_YYYY_MM
+      if (category.startsWith('year_')) {
+        const year = category.replace('year_', '');
+        whereClause += " AND strftime('%Y', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) = ?";
+        params.push(year);
+      } else if (category.startsWith('month_')) {
+        // Format: month_2026_01 -> Jahr 2026, Monat 01
+        const parts = category.replace('month_', '').split('_');
+        if (parts.length === 2) {
+          const [year, month] = parts;
+          whereClause += " AND strftime('%Y', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) = ?";
+          whereClause += " AND strftime('%m', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) = ?";
+          params.push(year);
+          params.push(month);
+        }
+      } else {
+        // Normale KI-Kategorie (primary_category)
+        whereClause += ' AND primary_category = ?';
+        params.push(category);
+      }
     }
     
     // Total Count
@@ -554,6 +642,7 @@ class PhotosService {
         detected_objects = ?,
         metadata_categories = ?,
         classified_at = ?,
+        image_hash = ?,
         updated_at = ?
       WHERE id = ? AND user_id = ?
     `).run(
@@ -564,12 +653,111 @@ class PhotosService {
       JSON.stringify(categories.detectedObjects),
       JSON.stringify(categories.metadataCategories),
       categories.classifiedAt,
+      categories.imageHash || null,
       now,
       photoId,
       userId
     );
     
     return this.getPhoto(userId, photoId);
+  }
+  
+  /**
+   * Holt den image_hash eines Fotos für KI-Feedback
+   */
+  async getImageHash(userId: string, photoId: string): Promise<string | null> {
+    const result = this.db.prepare(
+      'SELECT image_hash FROM photos WHERE id = ? AND user_id = ? AND is_deleted = 0'
+    ).get(photoId, userId);
+    return result?.image_hash || null;
+  }
+
+  /**
+   * Manuelle Korrektur der Kategorie/Metadaten durch User
+   * Speichert auch Feedback für KI-Training
+   */
+  async correctPhotoMetadata(
+    userId: string, 
+    photoId: string, 
+    corrections: {
+      category?: string;
+      categoryDisplay?: string;
+      locationName?: string;
+      latitude?: number;
+      longitude?: number;
+    }
+  ): Promise<Photo | null> {
+    const photo = await this.getPhoto(userId, photoId);
+    if (!photo) return null;
+    
+    const now = Date.now();
+    const updates: string[] = [];
+    const params: (string | number | null)[] = [];
+    
+    if (corrections.category !== undefined) {
+      updates.push('primary_category = ?');
+      params.push(corrections.category);
+      updates.push('primary_category_display = ?');
+      params.push(corrections.categoryDisplay || corrections.category);
+      updates.push('primary_confidence = ?');
+      params.push(1.0); // Manuelle Korrektur = 100% Confidence
+    }
+    
+    if (corrections.locationName !== undefined) {
+      updates.push('location_name = ?');
+      params.push(corrections.locationName);
+    }
+    
+    if (corrections.latitude !== undefined) {
+      updates.push('latitude = ?');
+      params.push(corrections.latitude);
+    }
+    
+    if (corrections.longitude !== undefined) {
+      updates.push('longitude = ?');
+      params.push(corrections.longitude);
+    }
+    
+    if (updates.length === 0) return photo;
+    
+    updates.push('updated_at = ?');
+    params.push(now);
+    params.push(photoId);
+    params.push(userId);
+    
+    this.db.prepare(`
+      UPDATE photos SET ${updates.join(', ')}
+      WHERE id = ? AND user_id = ?
+    `).run(...params);
+    
+    return this.getPhoto(userId, photoId);
+  }
+
+  /**
+   * Batch-Korrektur für mehrere Fotos
+   */
+  async batchCorrectMetadata(
+    userId: string,
+    photoIds: string[],
+    corrections: {
+      category?: string;
+      categoryDisplay?: string;
+      locationName?: string;
+    }
+  ): Promise<{ updated: number; failed: number }> {
+    let updated = 0;
+    let failed = 0;
+    
+    for (const photoId of photoIds) {
+      const result = await this.correctPhotoMetadata(userId, photoId, corrections);
+      if (result) {
+        updated++;
+      } else {
+        failed++;
+      }
+    }
+    
+    return { updated, failed };
   }
 
   async deletePhoto(userId: string, photoId: string): Promise<boolean> {
@@ -727,6 +915,7 @@ class PhotosService {
       takenAt: row.taken_at,
       latitude: row.latitude,
       longitude: row.longitude,
+      locationName: row.location_name,
       camera: row.camera,
       // KI-Klassifizierung
       primaryCategory: row.primary_category,
@@ -826,6 +1015,486 @@ class PhotosService {
     }
     
     return { memories };
+  }
+
+  // ==================== ORTE / LOCATIONS ====================
+
+  /**
+   * Holt alle Fotos mit GPS-Koordinaten ODER location_name, gruppiert nach Ort
+   */
+  async getPhotosByLocation(userId: string): Promise<{
+    locations: Array<{
+      locationName: string;
+      latitude: number;
+      longitude: number;
+      photoCount: number;
+      coverPhotoId: string;
+      coverPhotoUrl: string;
+      photos: Photo[];
+    }>;
+    photosWithoutLocation: number;
+  }> {
+    await this.getOrCreateUser(userId);
+
+    // Hole alle Fotos mit GPS-Daten ODER location_name
+    // Wichtig: Auch Fotos mit nur location_name (ohne GPS) sollen angezeigt werden!
+    const stmt = this.db.prepare(`
+      SELECT * FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0 
+      AND (
+        (latitude IS NOT NULL AND longitude IS NOT NULL)
+        OR (location_name IS NOT NULL AND location_name != '')
+      )
+      ORDER BY COALESCE(taken_at, created_at) DESC
+    `);
+    
+    const rows = stmt.all(userId);
+    const photos = rows.map((row: Record<string, unknown>) => this.mapPhoto(row));
+
+    // Zähle Fotos ohne Standort (weder GPS noch location_name)
+    const countStmt = this.db.prepare(`
+      SELECT COUNT(*) as count FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0 
+      AND (latitude IS NULL OR longitude IS NULL)
+      AND (location_name IS NULL OR location_name = '')
+    `);
+    const photosWithoutLocation = countStmt.get(userId)?.count || 0;
+
+    // Gruppiere nach location_name oder Koordinaten-Raster
+    const locationMap = new Map<string, {
+      locationName: string;
+      latitude: number;
+      longitude: number;
+      photos: Photo[];
+    }>();
+
+    for (const photo of photos) {
+      // Verwende location_name wenn vorhanden, sonst Koordinaten-Hash
+      const key = photo.locationName || 
+        (photo.latitude && photo.longitude 
+          ? `${photo.latitude.toFixed(2)},${photo.longitude.toFixed(2)}`
+          : 'unknown');
+      
+      if (key === 'unknown') continue; // Sollte nicht passieren wegen SQL-Filter
+      
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          locationName: photo.locationName || 'Unbekannter Ort',
+          latitude: photo.latitude || 0,
+          longitude: photo.longitude || 0,
+          photos: [],
+        });
+      }
+      locationMap.get(key)!.photos.push(photo);
+    }
+
+    // Konvertiere zu Array und sortiere nach Anzahl
+    const locations = Array.from(locationMap.values())
+      .map(loc => ({
+        locationName: loc.locationName,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        photoCount: loc.photos.length,
+        coverPhotoId: loc.photos[0].id,
+        coverPhotoUrl: `/api/photos/${loc.photos[0].id}/view?userId=${encodeURIComponent(userId)}`,
+        photos: loc.photos,
+      }))
+      .sort((a, b) => b.photoCount - a.photoCount);
+
+    return { locations, photosWithoutLocation };
+  }
+
+  /**
+   * Aktualisiert den Ortsnamen für ein Foto
+   */
+  async updateLocationName(userId: string, photoId: string, locationName: string): Promise<boolean> {
+    const photo = await this.getPhoto(userId, photoId);
+    if (!photo) {
+      return false;
+    }
+
+    const now = Date.now();
+    this.db.prepare(`
+      UPDATE photos 
+      SET location_name = ?, updated_at = ?
+      WHERE id = ? AND user_id = ?
+    `).run(locationName, now, photoId, userId);
+
+    return true;
+  }
+
+  /**
+   * Holt Fotos die GPS haben aber keinen location_name
+   * Für Batch-Geocoding
+   */
+  async getPhotosNeedingGeocoding(userId: string, limit: number = 50): Promise<Photo[]> {
+    const stmt = this.db.prepare(`
+      SELECT * FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0 
+      AND latitude IS NOT NULL 
+      AND longitude IS NOT NULL
+      AND location_name IS NULL
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    
+    const rows = stmt.all(userId, limit);
+    return rows.map((row: Record<string, unknown>) => this.mapPhoto(row));
+  }
+
+  /**
+   * Holt alle einzigartigen Kategorien aus der Datenbank
+   * Dies sind die ECHTEN Kategorien (inkl. manuell zugewiesener)
+   */
+  async getCategoriesFromDb(userId: string): Promise<Array<{
+    key: string;
+    display: string;
+    count: number;
+    type: 'scene' | 'object' | 'time' | 'custom';
+  }>> {
+    const stmt = this.db.prepare(`
+      SELECT 
+        primary_category as key,
+        primary_category_display as display,
+        COUNT(*) as count
+      FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0 
+      AND primary_category IS NOT NULL
+      AND primary_category != ''
+      GROUP BY primary_category
+      ORDER BY count DESC
+    `);
+    
+    const rows = stmt.all(userId) as Array<{ key: string; display: string; count: number }>;
+    
+    return rows.map(row => ({
+      key: row.key,
+      display: row.display || row.key,
+      count: row.count,
+      type: row.key.startsWith('custom_') ? 'custom' as const : 'scene' as const,
+    }));
+  }
+
+  /**
+   * Holt Zeit-basierte Kategorien (Jahre, Monate) aus der Datenbank
+   */
+  async getTimeCategories(userId: string): Promise<Array<{
+    key: string;
+    display: string;
+    count: number;
+    type: 'time';
+  }>> {
+    // Jahre
+    const yearStmt = this.db.prepare(`
+      SELECT 
+        strftime('%Y', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) as year,
+        COUNT(*) as count
+      FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0
+      GROUP BY year
+      ORDER BY year DESC
+    `);
+    
+    const years = yearStmt.all(userId) as Array<{ year: string; count: number }>;
+    
+    // Monate des aktuellen Jahres
+    const currentYear = new Date().getFullYear().toString();
+    const monthStmt = this.db.prepare(`
+      SELECT 
+        strftime('%m', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) as month,
+        COUNT(*) as count
+      FROM photos 
+      WHERE user_id = ? 
+      AND is_deleted = 0
+      AND strftime('%Y', datetime(COALESCE(taken_at, created_at) / 1000, 'unixepoch')) = ?
+      GROUP BY month
+      ORDER BY month DESC
+    `);
+    
+    const months = monthStmt.all(userId, currentYear) as Array<{ month: string; count: number }>;
+    
+    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 
+                        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    
+    const result: Array<{ key: string; display: string; count: number; type: 'time' }> = [];
+    
+    // Jahre hinzufügen
+    years.forEach(y => {
+      if (y.year) {
+        result.push({
+          key: `year_${y.year}`,
+          display: y.year,
+          count: y.count,
+          type: 'time',
+        });
+      }
+    });
+    
+    // Monate hinzufügen
+    months.forEach(m => {
+      if (m.month) {
+        const monthIndex = parseInt(m.month, 10) - 1;
+        result.push({
+          key: `month_${currentYear}_${m.month}`,
+          display: monthNames[monthIndex] || m.month,
+          count: m.count,
+          type: 'time',
+        });
+      }
+    });
+    
+    return result;
+  }
+
+  // ==================== SPEICHERANALYSE ====================
+
+  /**
+   * Detaillierte Speicheranalyse für die Speicherverwaltung
+   */
+  async getStorageAnalysis(userId: string): Promise<{
+    totalUsed: number;
+    totalLimit: number;
+    photoCount: number;
+    categories: Array<{
+      key: string;
+      name: string;
+      size: number;
+      count: number;
+      icon: string;
+    }>;
+    largeFiles: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+      takenAt: number | null;
+    }>;
+    blurryPhotos: Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+    }>;
+    unsupportedVideos: Array<{
+      id: string;
+      filename: string;
+      size: number;
+    }>;
+    estimatedYearsRemaining: number;
+    uploadRatePerMonth: number;
+  }> {
+    await this.getOrCreateUser(userId);
+    
+    // Basis-Speicherinfo
+    const userInfo = this.db.prepare('SELECT * FROM photo_users WHERE id = ?').get(userId) as {
+      storage_used: number;
+      storage_limit: number;
+      photo_count: number;
+      created_at: number;
+    };
+    
+    const totalUsed = userInfo?.storage_used || 0;
+    const totalLimit = userInfo?.storage_limit || PHOTO_STORAGE_LIMITS.free;
+    const photoCount = userInfo?.photo_count || 0;
+    
+    // Speicher nach Kategorien
+    const categoryStats = this.db.prepare(`
+      SELECT 
+        COALESCE(primary_category, 'other') as category,
+        COALESCE(primary_category_display, 'Sonstige') as display,
+        SUM(size) as total_size,
+        COUNT(*) as count
+      FROM photos 
+      WHERE user_id = ? AND is_deleted = 0
+      GROUP BY category
+      ORDER BY total_size DESC
+    `).all(userId) as Array<{
+      category: string;
+      display: string;
+      total_size: number;
+      count: number;
+    }>;
+    
+    const categoryIcons: Record<string, string> = {
+      screenshot: 'monitor',
+      food: 'utensils',
+      essen: 'utensils',
+      landscape: 'mountain',
+      people: 'users',
+      document: 'file-text',
+      animal: 'paw-print',
+      vehicle: 'car',
+      building: 'building',
+      other: 'image',
+    };
+    
+    const categories = categoryStats.map(cat => ({
+      key: cat.category,
+      name: cat.display,
+      size: cat.total_size,
+      count: cat.count,
+      icon: categoryIcons[cat.category] || 'image',
+    }));
+    
+    // Große Dateien (> 5MB)
+    const largeFiles = this.db.prepare(`
+      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath, taken_at as takenAt
+      FROM photos 
+      WHERE user_id = ? AND is_deleted = 0 AND size > 5242880
+      ORDER BY size DESC
+      LIMIT 50
+    `).all(userId) as Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+      takenAt: number | null;
+    }>;
+    
+    // Unscharfe Fotos (niedrige Confidence oder kleines Bild)
+    // Hier als Platzhalter - echte Blur-Detection wäre aufwändiger
+    const blurryPhotos = this.db.prepare(`
+      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath
+      FROM photos 
+      WHERE user_id = ? AND is_deleted = 0 
+      AND (width < 500 OR height < 500 OR primary_confidence < 0.3)
+      ORDER BY size DESC
+      LIMIT 20
+    `).all(userId) as Array<{
+      id: string;
+      filename: string;
+      size: number;
+      thumbnailPath: string | null;
+    }>;
+    
+    // Upload-Rate berechnen (durchschnittlich pro Monat)
+    const createdAt = userInfo?.created_at || Date.now();
+    const accountAgeMonths = Math.max(1, (Date.now() - createdAt) / (30 * 24 * 60 * 60 * 1000));
+    const uploadRatePerMonth = totalUsed / accountAgeMonths;
+    
+    // Geschätzte verbleibende Jahre
+    const remainingSpace = totalLimit - totalUsed;
+    const yearsRemaining = uploadRatePerMonth > 0 
+      ? (remainingSpace / uploadRatePerMonth) / 12 
+      : 99;
+    
+    return {
+      totalUsed,
+      totalLimit,
+      photoCount,
+      categories,
+      largeFiles,
+      blurryPhotos,
+      unsupportedVideos: [], // Videos werden aktuell nicht unterstützt
+      estimatedYearsRemaining: Math.min(Math.max(yearsRemaining, 0), 99),
+      uploadRatePerMonth,
+    };
+  }
+
+  /**
+   * Fotos nach Kategorie-Größe löschen (Speicherplatz freigeben)
+   */
+  async deletePhotosByCategory(userId: string, category: string): Promise<{ deletedCount: number; freedSpace: number }> {
+    const photos = this.db.prepare(`
+      SELECT id, size FROM photos 
+      WHERE user_id = ? AND primary_category = ? AND is_deleted = 0
+    `).all(userId, category) as Array<{ id: string; size: number }>;
+    
+    let freedSpace = 0;
+    let deletedCount = 0;
+    
+    for (const photo of photos) {
+      await this.deletePhoto(userId, photo.id);
+      freedSpace += photo.size;
+      deletedCount++;
+    }
+    
+    return { deletedCount, freedSpace };
+  }
+
+  /**
+   * Konvertiert Fotos in niedrigere Qualität (Speicherplatz sparen)
+   * Gibt zurück wie viel Speicher freigegeben wurde
+   */
+  async convertToCompressedQuality(userId: string): Promise<{ convertedCount: number; freedSpace: number }> {
+    // Diese Funktion würde die Originalbilder durch komprimierte Versionen ersetzen
+    // Für jetzt nur ein Platzhalter
+    return { convertedCount: 0, freedSpace: 0 };
+  }
+
+  // ==================== BENUTZERDEFINIERTE KATEGORIEN ====================
+
+  /**
+   * Holt alle benutzerdefinierten Kategorien für einen User
+   */
+  async getCustomCategories(userId: string): Promise<Array<{ id: string; key: string; display: string; group: string }>> {
+    const rows = this.db.prepare(`
+      SELECT id, key, display, group_name as 'group'
+      FROM photo_custom_categories
+      WHERE user_id = ?
+      ORDER BY display
+    `).all(userId) as Array<{ id: string; key: string; display: string; group: string }>;
+    
+    return rows;
+  }
+
+  /**
+   * Erstellt eine neue benutzerdefinierte Kategorie
+   */
+  async createCustomCategory(userId: string, display: string, group: string = 'spezial'): Promise<{ id: string; key: string; display: string; group: string }> {
+    // Sicherstellen, dass der User existiert (wegen FOREIGN KEY)
+    await this.getOrCreateUser(userId);
+    
+    // Key aus Display-Name generieren
+    const key = 'custom_' + display
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9_]/g, '');
+    
+    const id = uuidv4();
+    const now = Date.now();
+    
+    try {
+      this.db.prepare(`
+        INSERT INTO photo_custom_categories (id, user_id, key, display, group_name, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, userId, key, display, group, now);
+      
+      return { id, key, display, group };
+    } catch {
+      // Kategorie existiert bereits - zurückgeben
+      const existing = this.db.prepare(`
+        SELECT id, key, display, group_name as 'group'
+        FROM photo_custom_categories
+        WHERE user_id = ? AND key = ?
+      `).get(userId, key) as { id: string; key: string; display: string; group: string } | undefined;
+      
+      if (existing) {
+        return existing;
+      }
+      throw new Error('Kategorie konnte nicht erstellt werden');
+    }
+  }
+
+  /**
+   * Löscht eine benutzerdefinierte Kategorie
+   */
+  async deleteCustomCategory(userId: string, categoryId: string): Promise<boolean> {
+    const result = this.db.prepare(`
+      DELETE FROM photo_custom_categories
+      WHERE id = ? AND user_id = ?
+    `).run(categoryId, userId);
+    
+    return result.changes > 0;
   }
 }
 

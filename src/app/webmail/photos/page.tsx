@@ -5,21 +5,27 @@ import { MailHeader } from '@/components/webmail/MailHeader';
 import { PhotosSidebar, PhotoSection } from '@/components/webmail/photos/PhotosSidebar';
 import { PhotosApiService, Photo, PhotoStorageInfo, SilentLearning } from '@/services/photos/PhotosApiService';
 import { UpdatesSection } from '@/components/webmail/photos/UpdatesSection';
+import { LocationsView } from '@/components/webmail/photos/LocationsView';
+import { PhotoEditModal } from '@/components/webmail/photos/PhotoEditModal';
+import { PhotoViewer } from '@/components/webmail/photos/PhotoViewer';
+import { PhotosSettingsView } from '@/components/webmail/photos/PhotosSettingsView';
+import { StorageManagementView } from '@/components/webmail/photos/StorageManagementView';
 import { useWebmailSession } from '../layout';
+import { usePhotosWebSocket } from '@/hooks/usePhotosWebSocket';
 import {
   Upload,
   Grid3X3,
   LayoutGrid,
-  ChevronLeft,
-  ChevronRight,
   Star,
-  Download,
   Trash2,
-  Share2,
-  Info,
-  X,
   Check,
   Sparkles,
+  Edit3,
+  X,
+  Share2,
+  Download,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
@@ -61,7 +67,62 @@ export default function PhotosPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [classifyingCount, setClassifyingCount] = useState(0);
+  const [editModalPhotos, setEditModalPhotos] = useState<Photo[] | null>(null);
+  const [categoriesRefreshTrigger, setCategoriesRefreshTrigger] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // WebSocket für Realtime-Updates
+  usePhotosWebSocket({
+    userEmail: userEmail || '',
+    enabled: !!userEmail,
+    onPhotoClassified: useCallback((data) => {
+      // Foto in der Liste aktualisieren wenn KI klassifiziert hat
+      setPhotos(prev => prev.map(photo => 
+        photo.id === data.id 
+          ? {
+              ...photo,
+              primaryCategory: data.primaryCategory,
+              primaryCategoryDisplay: data.primaryCategoryDisplay,
+              primaryConfidence: data.primaryConfidence,
+            }
+          : photo
+      ));
+      // Kategorien-Sidebar auch aktualisieren (neue Kategorie könnte entstanden sein)
+      setCategoriesRefreshTrigger(prev => prev + 1);
+    }, []),
+    onPhotoUpdate: useCallback((photoId, updates) => {
+      // Foto-Daten aktualisieren
+      // Wenn wir in einer Kategorie-Ansicht sind und die Kategorie sich ändert, Foto entfernen
+      if (activeSection === 'kategorie' && activeDynamicCategory && updates.primaryCategory) {
+        setPhotos(prev => {
+          // Wenn neue Kategorie nicht zur aktuellen passt, Foto entfernen
+          if (updates.primaryCategory !== activeDynamicCategory) {
+            console.log('[Photos] Foto aus Kategorie-Ansicht entfernt:', photoId, activeDynamicCategory, '->', updates.primaryCategory);
+            return prev.filter(p => p.id !== photoId);
+          }
+          // Ansonsten nur aktualisieren
+          return prev.map(photo => 
+            photo.id === photoId 
+              ? { ...photo, ...updates }
+              : photo
+          );
+        });
+      } else {
+        // Normale Ansicht: Einfach aktualisieren
+        setPhotos(prev => prev.map(photo => 
+          photo.id === photoId 
+            ? { ...photo, ...updates }
+            : photo
+        ));
+      }
+      // Kategorien-Sidebar auch aktualisieren (Zähler könnten sich geändert haben)
+      setCategoriesRefreshTrigger(prev => prev + 1);
+    }, [activeSection, activeDynamicCategory]),
+    onCategoriesChanged: useCallback(() => {
+      // Sidebar zum Neu-Laden der Kategorien triggern
+      setCategoriesRefreshTrigger(prev => prev + 1);
+    }, []),
+  });
 
   // Trigger file input from header button
   const triggerUpload = useCallback(() => {
@@ -76,10 +137,17 @@ export default function PhotosPage() {
     
     setLoading(true);
     try {
+      // Bestimme Filter-Optionen basierend auf aktiver Sektion
+      const getPhotosOptions: { favoritesOnly?: boolean; category?: string } = {};
+      
+      if (activeSection === 'favoriten') {
+        getPhotosOptions.favoritesOnly = true;
+      } else if (activeSection === 'kategorie' && activeDynamicCategory) {
+        getPhotosOptions.category = activeDynamicCategory;
+      }
+      
       const [photosData, storage, memoriesData] = await Promise.all([
-        activeSection === 'favoriten'
-          ? PhotosApiService.getFavorites()
-          : PhotosApiService.getPhotos(),
+        PhotosApiService.getPhotos(getPhotosOptions),
         PhotosApiService.getStorageInfo(),
         PhotosApiService.getMemories(),
       ]);
@@ -91,7 +159,7 @@ export default function PhotosPage() {
     } finally {
       setLoading(false);
     }
-  }, [userEmail, activeSection]);
+  }, [userEmail, activeSection, activeDynamicCategory]);
 
   useEffect(() => {
     loadPhotos();
@@ -238,20 +306,24 @@ export default function PhotosPage() {
     setSelectedPhotos(newSelected);
   };
 
-  const handleToggleFavorite = async (photo: Photo, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleToggleFavorite = async (photo: Photo, event?: React.MouseEvent): Promise<Photo | undefined> => {
+    event?.stopPropagation();
     if (!userEmail) return;
     try {
-      await PhotosApiService.toggleFavorite(photo.id);
+      const updatedPhoto = await PhotosApiService.toggleFavorite(photo.id);
       
       // STILLES LERNEN: Favorit-Feedback senden
       if (!photo.isFavorite) {
         SilentLearning.recordFavorite(photo.id);
       }
       
-      await loadPhotos();
-    } catch (error) {
+      // Aktualisiere lokalen State
+      setPhotos(prev => prev.map(p => p.id === updatedPhoto.id ? updatedPhoto : p));
+      
+      return updatedPhoto;
+    } catch {
       // Error handling
+      return undefined;
     }
   };
 
@@ -310,6 +382,19 @@ export default function PhotosPage() {
     }
   };
 
+  const handleDeletePhoto = async (id: string): Promise<void> => {
+    if (!userEmail) return;
+    try {
+      // STILLES LERNEN: Löschung melden
+      SilentLearning.recordDelete(id);
+      
+      await PhotosApiService.deletePhoto(id);
+      await loadPhotos();
+    } catch {
+      // Error handling
+    }
+  };
+
   return (
     <div 
       className={`min-h-screen flex flex-col relative ${isDark ? 'bg-[#202124]' : 'bg-white'}`}
@@ -342,6 +427,7 @@ export default function PhotosPage() {
         onPhotosSearch={setSearchQuery}
         onUploadClick={triggerUpload}
         onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onSettingsClick={() => setActiveSection('einstellungen')}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -357,13 +443,26 @@ export default function PhotosPage() {
           userEmail={userEmail}
           activeDynamicCategory={activeDynamicCategory}
           onDynamicCategoryChange={setActiveDynamicCategory}
+          refreshTrigger={categoriesRefreshTrigger}
         />
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Updates Section */}
-          {activeSection === 'updates' ? (
+          {/* Sections */}
+          {activeSection === 'speicherplatz' ? (
+            <StorageManagementView 
+              userEmail={userEmail || ''} 
+              onBack={() => setActiveSection('einstellungen')}
+            />
+          ) : activeSection === 'einstellungen' ? (
+            <PhotosSettingsView 
+              userEmail={userEmail || ''} 
+              onStorageManagement={() => setActiveSection('speicherplatz')}
+            />
+          ) : activeSection === 'updates' ? (
             <UpdatesSection userEmail={userEmail || ''} userPassword={session?.password || ''} />
+          ) : activeSection === 'orte' ? (
+            <LocationsView userEmail={userEmail || ''} />
           ) : (
             <>
               {/* Toolbar */}
@@ -412,15 +511,7 @@ export default function PhotosPage() {
             </div>
           )}
 
-          {/* KI Klassifikation Indikator */}
-          {classifyingCount > 0 && !uploading && (
-            <div className={`px-6 py-2 border-b flex items-center gap-2 ${isDark ? 'bg-purple-900/30 border-purple-800' : 'bg-purple-50 border-purple-100'}`}>
-              <Sparkles className={`w-4 h-4 animate-pulse ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
-              <span className={`text-sm ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>
-                KI analysiert {classifyingCount} Foto{classifyingCount > 1 ? 's' : ''}...
-              </span>
-            </div>
-          )}
+          {/* Klassifikation läuft im Hintergrund - kein UI-Indikator nötig */}
 
           {/* Selection Bar */}
           {selectedPhotos.size > 0 && (
@@ -437,6 +528,16 @@ export default function PhotosPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    const selectedPhotosList = photos.filter(p => selectedPhotos.has(p.id));
+                    setEditModalPhotos(selectedPhotosList);
+                  }}
+                  className={`p-2 rounded-full ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`} 
+                  title="Bearbeiten (Kategorie/Ort)"
+                >
+                  <Edit3 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
+                </button>
                 <button className={`p-2 rounded-full ${isDark ? 'hover:bg-teal-800' : 'hover:bg-teal-100'}`} title="Teilen">
                   <Share2 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-700'}`} />
                 </button>
@@ -625,58 +726,60 @@ export default function PhotosPage() {
 
       {/* Photo Viewer Modal */}
       {selectedPhoto && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="p-2 hover:bg-white/10 rounded-full"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-white/10 rounded-full">
-                <Share2 className="w-5 h-5 text-white" />
-              </button>
-              <button
-                onClick={(e) => handleToggleFavorite(selectedPhoto, e as unknown as React.MouseEvent)}
-                className="p-2 hover:bg-white/10 rounded-full"
-              >
-                <Star
-                  className={`w-5 h-5 ${
-                    selectedPhoto.isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-white'
-                  }`}
-                />
-              </button>
-              <button className="p-2 hover:bg-white/10 rounded-full">
-                <Download className="w-5 h-5 text-white" />
-              </button>
-              <button className="p-2 hover:bg-white/10 rounded-full">
-                <Info className="w-5 h-5 text-white" />
-              </button>
-              <button className="p-2 hover:bg-white/10 rounded-full">
-                <Trash2 className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </div>
+        <PhotoViewer
+          photo={selectedPhoto}
+          photos={photos}
+          onClose={() => setSelectedPhoto(null)}
+          onEdit={(photo) => {
+            setEditModalPhotos([photo]);
+            setSelectedPhoto(null);
+          }}
+          onToggleFavorite={(photo) => handleToggleFavorite(photo)}
+          onDelete={(photo) => handleDeletePhoto(photo.id)}
+          onNavigate={setSelectedPhoto}
+        />
+      )}
 
-          {/* Image */}
-          <div className="flex-1 flex items-center justify-center p-4">
-            <img
-              src={PhotosApiService.getPhotoViewUrl(selectedPhoto.id)}
-              alt={selectedPhoto.filename}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-
-          {/* Navigation Arrows */}
-          <button className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full">
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-          <button className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full">
-            <ChevronRight className="w-6 h-6 text-white" />
-          </button>
-        </div>
+      {/* Photo Edit Modal */}
+      {editModalPhotos && editModalPhotos.length > 0 && (
+        <PhotoEditModal
+          photos={editModalPhotos}
+          onClose={() => {
+            setEditModalPhotos(null);
+            setSelectedPhotos(new Set());
+          }}
+          onSave={(updatedPhotos) => {
+            // Wenn wir in einer Kategorie-Ansicht sind, müssen Fotos mit geänderter Kategorie entfernt werden
+            if (activeSection === 'kategorie' && activeDynamicCategory) {
+              // Fotos aktualisieren und solche mit geänderter Kategorie aus der Ansicht entfernen
+              setPhotos(prev => {
+                const updatedPhotoIds = new Set(updatedPhotos.map(u => u.id));
+                return prev
+                  .map(p => {
+                    const updated = updatedPhotos.find(u => u.id === p.id);
+                    return updated || p;
+                  })
+                  // Entferne Fotos deren Kategorie sich geändert hat (nicht mehr zur aktuellen Kategorie gehören)
+                  .filter(p => {
+                    if (!updatedPhotoIds.has(p.id)) return true;
+                    const updated = updatedPhotos.find(u => u.id === p.id);
+                    // Behalte nur wenn Kategorie zur aktuellen passt
+                    return updated?.primaryCategory === activeDynamicCategory;
+                  });
+              });
+            } else {
+              // Normale Ansicht: Einfach Fotos aktualisieren
+              setPhotos(prev => prev.map(p => {
+                const updated = updatedPhotos.find(u => u.id === p.id);
+                return updated || p;
+              }));
+            }
+            // Kategorien-Sidebar aktualisieren (Zähler haben sich geändert)
+            setCategoriesRefreshTrigger(prev => prev + 1);
+            setEditModalPhotos(null);
+            setSelectedPhotos(new Set());
+          }}
+        />
       )}
     </div>
   );

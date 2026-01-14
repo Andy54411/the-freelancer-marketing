@@ -18,29 +18,88 @@ interface ApiResponse<T = unknown> {
   details?: string;
 }
 
+// Cache für Settings um Rate-Limiting zu vermeiden
+const settingsCache = new Map<string, { settings: UserSettings; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 Minute Cache
+const pendingRequests = new Map<string, Promise<UserSettings | null>>();
+
 /**
- * Einstellungen vom Hetzner-Server laden
+ * Einstellungen vom Hetzner-Server laden (mit Caching)
  */
 export async function getSettings(email: string): Promise<UserSettings | null> {
-  try {
-    const response = await fetch(`${HETZNER_API_URL}/api/settings/${encodeURIComponent(email)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data: ApiResponse<UserSettings> = await response.json();
-
-    if (!data.success || !data.settings) {
-      throw new Error(data.error || 'Fehler beim Laden der Einstellungen');
-    }
-
-    return data.settings;
-  } catch (error) {
-    console.error('[SettingsAPI] Fehler beim Laden:', error);
-    return null;
+  // Prüfe Cache zuerst
+  const cached = settingsCache.get(email);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.settings;
   }
+  
+  // Verhindere parallele Requests für dieselbe E-Mail
+  const pending = pendingRequests.get(email);
+  if (pending) {
+    return pending;
+  }
+  
+  const requestPromise = (async (): Promise<UserSettings | null> => {
+    try {
+      const response = await fetch(`${HETZNER_API_URL}/api/settings/${encodeURIComponent(email)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Rate-Limiting graceful behandeln
+      if (response.status === 429) {
+        console.warn('[SettingsAPI] Rate-Limit erreicht, verwende Cache falls vorhanden');
+        const oldCached = settingsCache.get(email);
+        if (oldCached) {
+          return oldCached.settings;
+        }
+        return null;
+      }
+
+      const data: ApiResponse<UserSettings> = await response.json();
+
+      if (!data.success || !data.settings) {
+        // Bei "Too many requests" Fehler nicht werfen
+        if (data.error?.includes('Too many requests') || data.error?.includes('rate')) {
+          console.warn('[SettingsAPI] Rate-Limit Fehler:', data.error);
+          const oldCached = settingsCache.get(email);
+          if (oldCached) {
+            return oldCached.settings;
+          }
+          return null;
+        }
+        console.warn('[SettingsAPI] Fehler:', data.error);
+        return null;
+      }
+
+      // In Cache speichern
+      settingsCache.set(email, { settings: data.settings, timestamp: Date.now() });
+
+      return data.settings;
+    } catch (error) {
+      console.error('[SettingsAPI] Fehler beim Laden:', error);
+      // Fallback auf Cache bei Netzwerkfehlern
+      const oldCached = settingsCache.get(email);
+      if (oldCached) {
+        return oldCached.settings;
+      }
+      return null;
+    } finally {
+      pendingRequests.delete(email);
+    }
+  })();
+  
+  pendingRequests.set(email, requestPromise);
+  return requestPromise;
+}
+
+/**
+ * Cache für eine E-Mail invalidieren
+ */
+export function invalidateSettingsCache(email: string): void {
+  settingsCache.delete(email);
 }
 
 /**
@@ -63,6 +122,11 @@ export async function saveSettings(
 
     if (!data.success) {
       return { success: false, error: data.error || 'Fehler beim Speichern' };
+    }
+
+    // Cache mit neuen Settings aktualisieren
+    if (data.settings) {
+      settingsCache.set(email, { settings: data.settings, timestamp: Date.now() });
     }
 
     return { success: true, settings: data.settings as UserSettings };
@@ -89,6 +153,9 @@ export async function resetSettings(email: string): Promise<{ success: boolean; 
     if (!data.success) {
       return { success: false, error: data.error || 'Fehler beim Zurücksetzen' };
     }
+
+    // Cache invalidieren nach Reset
+    invalidateSettingsCache(email);
 
     return { success: true };
   } catch (error) {

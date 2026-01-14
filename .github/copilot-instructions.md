@@ -52,16 +52,30 @@
 | **Domains** | taskilo.de, www.taskilo.de |
 | **Datenbank** | Firebase Firestore (Cloud) |
 
-### 2. HETZNER SERVER (mail.taskilo.de) - E-Mail Backend
+### 2. HETZNER SERVER (mail.taskilo.de) - E-Mail Backend + KI
 | Was | Details |
 |-----|---------|
-| **Dienste** | Webmail-Proxy, Mailcow (IMAP/SMTP), TURN Server, Redis |
+| **Dienste** | Webmail-Proxy, Mailcow (IMAP/SMTP), TURN Server, Redis, **Taskilo-KI** |
 | **Deployment** | MANUELL per SCP + Docker! KEIN Git! |
-| **Verzeichnis lokal** | `/Users/andystaudinger/Tasko/webmail-proxy/` |
-| **Verzeichnis Server** | `/opt/taskilo/webmail-proxy/` |
-| **Container** | `taskilo-webmail-proxy`, `taskilo-redis`, `taskilo-coturn` |
+| **Verzeichnis lokal** | `/Users/andystaudinger/Tasko/webmail-proxy/` + `/Users/andystaudinger/Tasko/taskilo-ki/` |
+| **Verzeichnis Server** | `/opt/taskilo/webmail-proxy/`, `/opt/taskilo/taskilo-ki/` |
+| **Container** | `taskilo-webmail-proxy`, `taskilo-redis`, `taskilo-coturn`, **`taskilo-ki`** |
 
-### 3. FIREBASE (Cloud) - Datenbank + Auth
+### 2.1 TASKILO-KI (mail.taskilo.de:8000) - EIGENE KI
+| Was | Details |
+|-----|---------|
+| **Dienste** | Foto-Klassifikation, Dokument-Klassifikation, Silent Learning |
+| **Speicher** | **NUR lokale Dateien auf Hetzner!** `/opt/taskilo/training-data/`, `/opt/taskilo/models/` |
+| **Container** | `taskilo-ki` (Python FastAPI) |
+| **Port** | 8000 (intern), erreichbar über webmail-proxy |
+
+**KRITISCH - KEIN FIRESTORE IN KI!**
+- Die KI nutzt **NIEMALS** Firebase/Firestore!
+- Alle KI-Daten (Trainingsdaten, Modelle, Feedback) werden **lokal auf Hetzner** gespeichert
+- Speicherformat: JSON-Dateien in `/opt/taskilo/training-data/`
+- Grund: Datenschutz, Performance, keine Cloud-Abhängigkeit für ML
+
+### 3. FIREBASE (Cloud) - Datenbank + Auth (NUR für Business-Daten!)
 | Was | Details |
 |-----|---------|
 | **Dienste** | Firestore, Authentication, Storage, Cloud Functions |
@@ -484,6 +498,7 @@ interface EmployeePermissions {
 - EMOJIS - Keine Emojis in Code, Kommentaren oder UI
 - DATEIEN LÖSCHEN - NIEMALS ohne explizite Benutzeranfrage
 - UMLAUT-FEHLER - Deutsche Umlaute IMMER korrekt (ä, ö, ü, ß)
+- **FIRESTORE IN KI** - NIEMALS Firebase/Firestore in `taskilo-ki/` verwenden! NUR lokale Dateien auf Hetzner!
 
 ---
 

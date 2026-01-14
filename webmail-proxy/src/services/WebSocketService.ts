@@ -22,12 +22,13 @@ interface WSMessage {
     email?: string;
     password?: string;
     mailbox?: string;
+    channel?: string;  // Alternative zu mailbox für Photos-WebSocket
     token?: string;
   };
 }
 
 interface WSNotification {
-  type: 'new_email' | 'email_read' | 'email_deleted' | 'mailbox_update' | 'error' | 'auth_success' | 'subscribed';
+  type: 'new_email' | 'email_read' | 'email_deleted' | 'mailbox_update' | 'error' | 'auth_success' | 'subscribed' | 'photo_update' | 'photo_classified' | 'categories_changed';
   payload: object;
   timestamp: string;
 }
@@ -92,11 +93,13 @@ class WebSocketService {
 
     console.log('[WS] Upgrade accepted');
     this.wss?.handleUpgrade(request, socket, head, (ws) => {
+      console.log('[WS] handleUpgrade callback - emitting connection event');
       this.wss?.emit('connection', ws, request);
     });
   }
 
   private handleConnection(ws: WebSocket, req: IncomingMessage): void {
+    console.log('[WS] handleConnection called');
     const clientId = crypto.randomUUID();
     const ip = req.socket.remoteAddress || 'unknown';
 
@@ -115,6 +118,7 @@ class WebSocketService {
     console.log(`[WS] New connection: ${clientId} from ${ip}`);
 
     ws.on('message', (data: RawData) => {
+      console.log(`[WS] Message received from ${clientId}:`, data.toString().substring(0, 200));
       this.handleMessage(clientId, data.toString());
     });
 
@@ -149,16 +153,27 @@ class WebSocketService {
 
     try {
       const message: WSMessage = JSON.parse(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawMessage = message as unknown as Record<string, unknown>;
 
       switch (message.type) {
         case 'auth':
-          await this.handleAuth(clientId, message.payload);
+          // Unterstütze sowohl { type: 'auth', payload: { email } } als auch { type: 'auth', email }
+          const authPayload = message.payload || { 
+            email: rawMessage.email as string | undefined,
+            password: rawMessage.password as string | undefined,
+            token: rawMessage.token as string | undefined,
+          };
+          await this.handleAuth(clientId, authPayload);
           break;
         case 'subscribe':
-          this.handleSubscribe(clientId, message.payload?.mailbox);
+          // Unterstütze sowohl { type: 'subscribe', payload: { channel } } als auch { type: 'subscribe', channel }
+          const subscribeChannel = message.payload?.mailbox || message.payload?.channel || rawMessage.channel as string | undefined || rawMessage.mailbox as string | undefined;
+          this.handleSubscribe(clientId, subscribeChannel);
           break;
         case 'unsubscribe':
-          this.handleUnsubscribe(clientId, message.payload?.mailbox);
+          const unsubscribeChannel = message.payload?.mailbox || message.payload?.channel || rawMessage.channel as string | undefined || rawMessage.mailbox as string | undefined;
+          this.handleUnsubscribe(clientId, unsubscribeChannel);
           break;
         case 'ping':
           client.lastPing = Date.now();
@@ -185,8 +200,12 @@ class WebSocketService {
     clientId: string, 
     payload?: { email?: string; password?: string; token?: string }
   ): Promise<void> {
+    console.log(`[WS] handleAuth called for ${clientId} with payload:`, JSON.stringify(payload));
     const client = this.clients.get(clientId);
-    if (!client || !payload) return;
+    if (!client || !payload) {
+      console.log(`[WS] handleAuth: client or payload missing - client: ${!!client}, payload: ${!!payload}`);
+      return;
+    }
 
     // Token-basierte Auth (für bereits eingeloggte User)
     if (payload.token) {
@@ -194,6 +213,26 @@ class WebSocketService {
       if (tokenData && tokenData.expiresAt > Date.now()) {
         client.email = tokenData.email;
         client.authenticated = true;
+        this.sendToClient(clientId, {
+          type: 'auth_success',
+          payload: { email: client.email },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+    }
+
+    // Einfache E-Mail-Auth für Photos (Frontend ist bereits eingeloggt)
+    // Erlaubt WebSocket-Verbindung nur mit E-Mail-Adresse für Realtime-Updates
+    if (payload.email && !payload.password) {
+      // Validiere E-Mail-Format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(payload.email)) {
+        client.email = payload.email;
+        client.authenticated = true;
+        
+        console.log(`[WS] Client ${clientId} authenticated via email-only as ${payload.email}`);
+        
         this.sendToClient(clientId, {
           type: 'auth_success',
           payload: { email: client.email },
@@ -311,6 +350,78 @@ class WebSocketService {
           timestamp: new Date().toISOString(),
         });
         this.stats.notificationsSent++;
+      }
+    }
+  }
+
+  // ==================== PHOTOS REALTIME UPDATES ====================
+
+  /**
+   * Benachrichtigt Client über Foto-Update (Kategorie geändert, neu klassifiziert)
+   */
+  notifyPhotoUpdate(email: string, photoId: string, updates: {
+    primaryCategory?: string;
+    primaryCategoryDisplay?: string;
+    primaryConfidence?: number;
+    locationName?: string;
+  }): void {
+    for (const [clientId, client] of this.clients.entries()) {
+      if (client.authenticated && client.email === email) {
+        this.sendToClient(clientId, {
+          type: 'photo_update',
+          payload: { photoId, updates },
+          timestamp: new Date().toISOString(),
+        });
+        this.stats.notificationsSent++;
+        console.log(`[WS] Photo update sent to ${email}: ${photoId} -> ${updates.primaryCategoryDisplay}`);
+      }
+    }
+  }
+
+  /**
+   * Benachrichtigt Client dass ein Foto klassifiziert wurde
+   */
+  notifyPhotoClassified(email: string, photo: {
+    id: string;
+    primaryCategory: string;
+    primaryCategoryDisplay: string;
+    primaryConfidence: number;
+  }): void {
+    let clientsFound = 0;
+    for (const [clientId, client] of this.clients.entries()) {
+      if (client.authenticated && client.email === email) {
+        clientsFound++;
+        this.sendToClient(clientId, {
+          type: 'photo_classified',
+          payload: { photo },
+          timestamp: new Date().toISOString(),
+        });
+        this.stats.notificationsSent++;
+        console.log(`[WS] Photo classified sent to ${clientId}: ${photo.id} -> ${photo.primaryCategoryDisplay}`);
+      }
+    }
+    if (clientsFound === 0) {
+      console.log(`[WS] No authenticated clients found for ${email} (total clients: ${this.clients.size})`);
+    }
+  }
+
+  /**
+   * Benachrichtigt Client dass sich Kategorien geändert haben (neue Kategorie erstellt, etc.)
+   */
+  notifyCategoriesChanged(email: string, action: 'created' | 'deleted' | 'updated', category?: {
+    key: string;
+    display: string;
+    group: string;
+  }): void {
+    for (const [clientId, client] of this.clients.entries()) {
+      if (client.authenticated && client.email === email) {
+        this.sendToClient(clientId, {
+          type: 'categories_changed',
+          payload: { action, category },
+          timestamp: new Date().toISOString(),
+        });
+        this.stats.notificationsSent++;
+        console.log(`[WS] Categories changed for ${email}: ${action}`);
       }
     }
   }

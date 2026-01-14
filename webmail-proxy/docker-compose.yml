@@ -34,6 +34,7 @@ services:
         max-file: "3"
     networks:
       - webmail-network
+      - taskilo-ki-network  # Verbindung zur Taskilo-KI für Foto-Klassifizierung
 
   redis:
     image: redis:7-alpine
@@ -88,3 +89,6 @@ volumes:
 networks:
   webmail-network:
     driver: bridge
+  taskilo-ki-network:
+    external: true
+    name: taskilo-ki_taskilo-network
