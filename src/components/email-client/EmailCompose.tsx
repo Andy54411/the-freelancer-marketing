@@ -2418,41 +2418,78 @@ export function EmailCompose({
         )}
       </div>
 
-      {/* Drive Picker Modal */}
-      <DrivePickerModal
-        isOpen={showDrivePicker}
-        onClose={() => setShowDrivePicker(false)}
-        onSelect={async (driveFiles) => {
-          // Lade die Dateien vom Drive herunter und füge sie als Attachments hinzu
-          const credentials = getWebmailCookie();
-          if (!credentials) {
-            toast.error('Nicht angemeldet');
-            return;
-          }
-          
-          for (const driveFile of driveFiles) {
-            try {
-              const response = await fetch(`/api/webmail/drive/files/${driveFile.id}`, {
-                headers: { 'x-user-id': credentials.email },
-              });
-              
-              if (response.ok) {
-                const blob = await response.blob();
-                const file = new File([blob], driveFile.name, { type: driveFile.mimeType || 'application/octet-stream' });
-                setAttachments(prev => [...prev, file]);
-                toast.success(`${driveFile.name} hinzugefügt`);
-              } else {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Download fehlgeschlagen');
-              }
-            } catch {
-              toast.error(`Fehler beim Laden von ${driveFile.name}`);
+      {/* Drive Picker Modal - Taskilo Drive (nur wenn Webmail verbunden) */}
+      {emailProvider === 'webmail' && (
+        <DrivePickerModal
+          isOpen={showDrivePicker}
+          onClose={() => setShowDrivePicker(false)}
+          onSelect={async (driveFiles) => {
+            // Lade die Dateien vom Drive herunter und füge sie als Attachments hinzu
+            const credentials = getWebmailCookie();
+            if (!credentials) {
+              toast.error('Nicht angemeldet');
+              return;
             }
-          }
-        }}
-        userId={getWebmailCookie()?.email}
-        multiple={true}
-      />
+            
+            for (const driveFile of driveFiles) {
+              try {
+                const response = await fetch(`/api/webmail/drive/files/${driveFile.id}`, {
+                  headers: { 'x-user-id': credentials.email },
+                });
+                
+                if (response.ok) {
+                  const blob = await response.blob();
+                  const file = new File([blob], driveFile.name, { type: driveFile.mimeType || 'application/octet-stream' });
+                  setAttachments(prev => [...prev, file]);
+                  toast.success(`${driveFile.name} hinzugefügt`);
+                } else {
+                  const errorData = await response.json().catch(() => ({}));
+                  throw new Error(errorData.error || 'Download fehlgeschlagen');
+                }
+              } catch {
+                toast.error(`Fehler beim Laden von ${driveFile.name}`);
+              }
+            }
+          }}
+          userId={getWebmailCookie()?.email}
+          multiple={true}
+        />
+      )}
+
+      {/* Google Drive Picker - Nur wenn Gmail verbunden */}
+      {emailProvider === 'gmail' && companyId && (
+        <GoogleDrivePicker
+          isOpen={showGoogleDrivePicker}
+          onClose={() => setShowGoogleDrivePicker(false)}
+          onSelect={(files: GoogleDriveFile[]) => {
+            // Füge Google Drive Dateien als Attachments hinzu
+            files.forEach(file => {
+              // File-Objekt wird direkt von GoogleDrivePicker zurückgegeben
+              setAttachments(prev => [...prev, file as unknown as File]);
+              toast.success(`${file.name} hinzugefügt`);
+            });
+            setShowGoogleDrivePicker(false);
+          }}
+          companyId={companyId}
+        />
+      )}
+
+      {/* Google Photos Picker - Nur wenn Gmail verbunden */}
+      {emailProvider === 'gmail' && companyId && (
+        <GooglePhotosPicker
+          isOpen={showGooglePhotosPicker}
+          onClose={() => setShowGooglePhotosPicker(false)}
+          onSelect={(files: GoogleDriveFile[]) => {
+            // Füge Google Photos als Attachments hinzu
+            files.forEach(file => {
+              setAttachments(prev => [...prev, file as unknown as File]);
+              toast.success(`Foto ${file.name} hinzugefügt`);
+            });
+            setShowGooglePhotosPicker(false);
+          }}
+          companyId={companyId}
+        />
+      )}
     </div>
   );
 }

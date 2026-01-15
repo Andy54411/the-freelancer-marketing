@@ -93,6 +93,7 @@ export interface GoogleDriveFile {
   size?: string;
   iconUrl?: string;
   thumbnailUrl?: string;
+  thumbnailLink?: string; // Google Drive API gibt thumbnailLink zurück
   webViewLink?: string;
   webContentLink?: string;
   parents?: string[];
