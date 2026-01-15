@@ -1,8 +1,0 @@
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:bauleistungStAbErstattung="http://finkonsens.de/elster/elsteranmeldung/bauleistungstaberstattung/v1" elementFormDefault="qualified" attributeFormDefault="unqualified">
-    <xs:import namespace="http://finkonsens.de/elster/elsteranmeldung/bauleistungstaberstattung/v1" schemaLocation="BauleistungStAbErstattung-1.xsd"/>
-    <xs:complexType name="NutzdatenCType">
-        <xs:sequence>
-            <xs:element ref="bauleistungStAbErstattung:BauleistungStAbErstattung"/>
-        </xs:sequence>
-    </xs:complexType>
-</xs:schema>
