@@ -417,6 +417,9 @@ export function GoogleDrivePicker({
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Google Drive</DialogTitle>
+          </DialogHeader>
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f] mb-4" />
             <p className="text-gray-600">Google Drive wird geladen...</p>
