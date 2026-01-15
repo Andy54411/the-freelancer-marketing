@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DrivePickerModal } from '@/components/webmail/drive/DrivePickerModal';
+import { PhotosPickerModal } from '@/components/webmail/photos/PhotosPickerModal';
 import { GoogleDrivePicker, GooglePhotosPicker, type GoogleDriveFile } from './GoogleDrivePicker';
 
 import {
@@ -300,6 +301,7 @@ export function EmailCompose({
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
   const [showGooglePhotosPicker, setShowGooglePhotosPicker] = useState(false);
+  const [showTaskiloPhotosPicker, setShowTaskiloPhotosPicker] = useState(false);
   
   // Signatur State
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
@@ -2267,16 +2269,14 @@ export function EmailCompose({
               >
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.29 7.5h6.57L5.43 11 8.86 5.25 7.71 3.5zm1.14 2l6.57 11.5H8.86l-3.43 6h6.57l6.86-12L12 3.5H7.71l1.14 2z"/></svg>
               </button>
-              {/* Foto Button - Nur für Gmail */}
-              {emailProvider === 'gmail' && (
-                <button 
-                  onClick={() => setShowGooglePhotosPicker(true)}
-                  className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
-                  title="Google Fotos"
-                >
-                  <ImageIcon className="h-[18px] w-[18px]" />
-                </button>
-              )}
+              {/* Foto Button - Provider-abhängig */}
+              <button 
+                onClick={() => emailProvider === 'gmail' ? setShowGooglePhotosPicker(true) : setShowTaskiloPhotosPicker(true)}
+                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
+                title={emailProvider === 'gmail' ? 'Google Fotos' : 'Taskilo Fotos'}
+              >
+                <ImageIcon className="h-[18px] w-[18px]" />
+              </button>
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Vertraulich">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               </button>
@@ -2488,6 +2488,31 @@ export function EmailCompose({
             setShowGooglePhotosPicker(false);
           }}
           companyId={companyId}
+        />
+      )}
+
+      {/* Taskilo Photos Picker - Nur wenn Webmail verbunden */}
+      {emailProvider === 'webmail' && userId && (
+        <PhotosPickerModal
+          isOpen={showTaskiloPhotosPicker}
+          onClose={() => setShowTaskiloPhotosPicker(false)}
+          onSelect={(photos) => {
+            // Füge Taskilo Photos als Attachments hinzu
+            photos.forEach(photo => {
+              // Erstelle ein pseudo-File-Objekt für die Anzeige
+              const pseudoFile = {
+                id: photo.id,
+                name: photo.originalFilename || photo.filename,
+                size: photo.size,
+                type: photo.mimeType,
+                thumbnailLink: photo.thumbnailPath,
+              } as unknown as File;
+              setAttachments(prev => [...prev, pseudoFile]);
+              toast.success(`Foto ${photo.filename} hinzugefügt`);
+            });
+            setShowTaskiloPhotosPicker(false);
+          }}
+          userId={userId}
         />
       )}
     </div>

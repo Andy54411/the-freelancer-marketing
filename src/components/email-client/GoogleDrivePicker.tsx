@@ -137,21 +137,20 @@ function SimpleDriveBrowser({
     setError(null);
 
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/drive/v3/files?` +
-        `q='${folderId}'+in+parents+and+trashed=false` +
-        `&fields=files(id,name,mimeType,size,iconLink,thumbnailLink,webViewLink,webContentLink)` +
-        `&orderBy=folder,name` +
-        `&pageSize=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      // Google Drive API Query - korrekte Syntax für folder parent
+      const query = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+      const fields = encodeURIComponent('files(id,name,mimeType,size,iconLink,thumbnailLink,webViewLink,webContentLink)');
+      const apiUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&orderBy=folder,name&pageSize=100`;
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       if (!response.ok) {
-        throw new Error('Fehler beim Laden der Dateien');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API Fehler: ${response.status}`);
       }
 
       const data = await response.json();
@@ -325,6 +324,7 @@ export function GoogleDrivePicker({
   const [pickerLoaded, setPickerLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(accessToken || null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   // Lade Access Token von der Company wenn nicht übergeben
   useEffect(() => {
@@ -336,14 +336,17 @@ export function GoogleDrivePicker({
       }
 
       try {
+        setTokenError(null);
         const response = await fetch(`/api/company/${companyId}/gmail-auth-status`);
         const data = await response.json();
         
         if (data.hasTokens && data.accessToken) {
           setToken(data.accessToken);
+        } else {
+          setTokenError(data.error || 'Kein Access Token verfügbar. Bitte Gmail erneut verbinden.');
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Access Tokens:', err);
+        setTokenError('Fehler beim Laden des Access Tokens');
       } finally {
         setLoading(false);
       }
@@ -354,63 +357,15 @@ export function GoogleDrivePicker({
     }
   }, [isOpen, companyId, accessToken]);
 
-  // Lade Google Picker API
+  // Lade Google Picker API - DEAKTIVIERT, nutze SimpleDriveBrowser direkt
+  // Der native Google Picker funktioniert nicht zuverlässig in allen Browsern
   useEffect(() => {
-    if (!isOpen || !token) return;
-
-    const loadGooglePicker = () => {
-      // Check if already loaded
-      if (window.google?.picker) {
-        setPickerLoaded(true);
-        return;
-      }
-
-      // Load Google API Script
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        window.gapi.load('picker', () => {
-          setPickerLoaded(true);
-        });
-      };
-      document.body.appendChild(script);
-    };
-
-    loadGooglePicker();
+    // Picker deaktiviert - immer SimpleDriveBrowser verwenden
+    setPickerLoaded(false);
   }, [isOpen, token]);
 
-  // Öffne Google Picker wenn geladen
-  useEffect(() => {
-    if (!pickerLoaded || !token || !isOpen) return;
-
-    try {
-      const view = new (window.google.picker.PickerBuilder as unknown as new () => GooglePickerBuilder)();
-      
-      const picker = view
-        .setOAuthToken(token)
-        .setCallback((data: GooglePickerResponse) => {
-          if (data.action === 'picked' && data.docs) {
-            onSelect(data.docs);
-            onClose();
-          } else if (data.action === 'cancel') {
-            onClose();
-          }
-        })
-        .setTitle(title)
-        .setLocale('de');
-
-      if (multiSelect) {
-        picker.enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED);
-      }
-
-      picker.build().setVisible(true);
-    } catch {
-      // Fallback zum einfachen Browser
-      setPickerLoaded(false);
-    }
-  }, [pickerLoaded, token, isOpen, onSelect, onClose, multiSelect, title]);
+  // Google Picker deaktiviert - SimpleDriveBrowser wird stattdessen verwendet
+  // useEffect für Picker entfernt da nicht mehr benötigt
 
   // Zeige Loading oder Fallback Browser
   if (loading) {
@@ -431,6 +386,28 @@ export function GoogleDrivePicker({
 
   // Fallback wenn kein Token oder Picker nicht geladen
   if (!token || !pickerLoaded) {
+    // Zeige Fehler wenn Token-Laden fehlgeschlagen ist
+    if (tokenError) {
+      return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <HardDrive className="h-5 w-5 text-red-500" />
+                Google Drive - Fehler
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-red-600 mb-4">{tokenError}</p>
+              <Button variant="outline" onClick={onClose}>
+                Schließen
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+    
     return (
       <SimpleDriveBrowser
         isOpen={isOpen}
@@ -503,7 +480,7 @@ export function GooglePhotosPicker({
     }
   }, [isOpen, companyId, accessToken]);
 
-  // Lade Fotos von Google Drive (Bilder)
+  // Lade Fotos von Google Photos Library API
   useEffect(() => {
     const loadPhotos = async () => {
       if (!token || !isOpen) return;
@@ -512,30 +489,58 @@ export function GooglePhotosPicker({
       setError(null);
 
       try {
-        // Lade Bilder aus Google Drive
+        // Google Photos Library API - POST Request für mediaItems:search
         const response = await fetch(
-          `https://www.googleapis.com/drive/v3/files?` +
-          `q=mimeType contains 'image/' and trashed=false` +
-          `&fields=files(id,name,mimeType,size,thumbnailLink,webContentLink)` +
-          `&orderBy=modifiedTime desc` +
-          `&pageSize=50`,
+          `https://photoslibrary.googleapis.com/v1/mediaItems:search`,
           {
+            method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              pageSize: 50,
+              filters: {
+                mediaTypeFilter: {
+                  mediaTypes: ['PHOTO']
+                }
+              }
+            }),
           }
         );
 
         if (!response.ok) {
-          // Prüfe auf Berechtigungsfehler
-          if (response.status === 403 || response.status === 401) {
-            throw new Error('Keine Berechtigung für Google Drive. Bitte verbinde dein Gmail-Konto erneut unter Einstellungen → E-Mail Integration.');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error?.message || '';
+          
+          // Scope-Fehler = Verbindung wurde vor Photos-Freigabe erstellt
+          if (errorMessage.includes('insufficient authentication scopes')) {
+            throw new Error(
+              'Deine Gmail-Verbindung wurde erstellt, bevor Google Fotos freigeschaltet war. ' +
+              'Bitte trenne die Verbindung unter Einstellungen → E-Mail Integration und verbinde Gmail erneut.'
+            );
           }
-          throw new Error('Fehler beim Laden der Fotos');
+          
+          throw new Error(
+            errorData.error?.message || `Fehler beim Laden der Fotos (${response.status})`
+          );
         }
 
         const data = await response.json();
-        setPhotos(data.files || []);
+        
+        // Konvertiere Google Photos Format zu unserem Format
+        const mediaItems = data.mediaItems || [];
+        const convertedPhotos: GoogleDriveFile[] = mediaItems
+          .filter((item: { mimeType?: string }) => item.mimeType?.startsWith('image/'))
+          .map((item: { id: string; filename?: string; mimeType?: string; baseUrl?: string; mediaMetadata?: { width?: string; height?: string } }) => ({
+            id: item.id,
+            name: item.filename || 'Foto',
+            mimeType: item.mimeType || 'image/jpeg',
+            thumbnailLink: item.baseUrl ? `${item.baseUrl}=w200-h200` : undefined,
+            webContentLink: item.baseUrl ? `${item.baseUrl}=d` : undefined,
+          }));
+        
+        setPhotos(convertedPhotos);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
       } finally {
@@ -588,12 +593,12 @@ export function GooglePhotosPicker({
             <div className="flex flex-col items-center justify-center h-full text-red-500">
               <p>{error}</p>
               <p className="text-sm text-gray-500 mt-2">
-                Stellen Sie sicher, dass Google Drive Zugriff gewährt wurde.
+                Stellen Sie sicher, dass Google Fotos Zugriff gewährt wurde.
               </p>
             </div>
           ) : photos.length === 0 ? (
             <div className="flex items-center justify-center h-full text-gray-500">
-              Keine Bilder gefunden
+              Keine Fotos gefunden
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-2">

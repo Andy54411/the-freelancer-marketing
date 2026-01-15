@@ -529,7 +529,6 @@ function hasFullAccess(permissions: EmployeePermissions): boolean {
 function getEmployeeNavigation(permissions: EmployeePermissions, allNavItems: NavigationItem[]): NavigationItem[] {
   // Bei vollem Zugang: Komplette Navigation wie Inhaber
   if (hasFullAccess(permissions)) {
-    console.log('[CompanySidebar] Full access detected - using complete navigation');
     return allNavItems;
   }
   const filteredItems: NavigationItem[] = [];
@@ -1201,19 +1200,15 @@ export default function CompanySidebar({
 
                       // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü (mit userId)
                       if (item.value === 'email') {
-                        console.log('🔍 E-Mail Icon geklickt, prüfe Email-Status für User:', effectiveUserId);
                         try {
                           // Prüfe zuerst Webmail-Status
                           const webmailUrl = `/api/company/${uid}/webmail-connect`;
-                          console.log('📡 Webmail API-Aufruf:', webmailUrl);
                           
                           const webmailResponse = await fetch(webmailUrl);
                           if (webmailResponse.ok) {
                             const webmailData = await webmailResponse.json();
-                            console.log('📋 Webmail status response:', webmailData);
                             
                             if (webmailData.connected) {
-                              console.log('✅ Webmail verbunden, navigiere zum Posteingang');
                               onNavigate('email-inbox', 'emails');
                               onToggleExpanded(item.value);
                               return;
@@ -1222,26 +1217,15 @@ export default function CompanySidebar({
                           
                           // Fallback: Prüfe Gmail-Status
                           const apiUrl = `/api/company/${uid}/gmail-auth-status?userId=${effectiveUserId}`;
-                          console.log('📡 Gmail API-Aufruf:', apiUrl);
 
                           const response = await fetch(apiUrl);
-                          console.log('📨 Response Status:', response.status, response.statusText);
 
                           if (!response.ok) {
-                            console.error(
-                              '❌ API-Response nicht OK:',
-                              response.status,
-                              response.statusText
-                            );
                             onNavigate('email-integration', 'email-integration');
                             return;
                           }
 
                           const data = await response.json();
-                          console.log(
-                            '📋 Gmail auth status response:',
-                            JSON.stringify(data, null, 2)
-                          );
 
                           // Prüfe auf gültige Verbindung
                           const hasValidConnection =
@@ -1250,33 +1234,15 @@ export default function CompanySidebar({
                             !data.tokenExpired &&
                             data.status !== 'authentication_required';
 
-                          console.log('🔐 Verbindungs-Check:', {
-                            hasConfig: data.hasConfig,
-                            hasTokens: data.hasTokens,
-                            tokenExpired: data.tokenExpired,
-                            status: data.status,
-                            hasValidConnection,
-                          });
-
                           if (!hasValidConnection) {
-                            console.log(
-                              '❌ Keine gültige Verbindung, weiterleitung zur Integration'
-                            );
                             onNavigate('email-integration', 'email-integration');
                             return;
                           } else {
-                            console.log('✅ Gültige Gmail Verbindung, navigiere zum Posteingang');
                             onNavigate('email-inbox', 'emails');
                             onToggleExpanded(item.value);
                             return;
                           }
-                        } catch (error) {
-                          console.error('💥 Email connection check failed:', error);
-                          console.error('💥 Error details:', {
-                            name: (error as Error).name,
-                            message: (error as Error).message,
-                            stack: (error as Error).stack,
-                          });
+                        } catch {
                           // Bei Fehler zur Integration weiterleiten
                           onNavigate('email-integration', 'email-integration');
                           return;
@@ -1421,14 +1387,6 @@ export default function CompanySidebar({
                           <div key={subItem.value}>
                             <button
                               onClick={() => {
-                                console.log('🔍 SubItem Click:', {
-                                  label: subItem.label,
-                                  value: subItem.value,
-                                  href: subItem.href,
-                                  fullURL: subItem.href
-                                    ? `/dashboard/company/${uid}/${subItem.href}`
-                                    : 'NO_HREF',
-                                });
                                 if (subItem.href) {
                                   onNavigate(subItem.value, subItem.href);
                                 } else {
