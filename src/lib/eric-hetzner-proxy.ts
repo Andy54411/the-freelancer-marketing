@@ -115,11 +115,9 @@ export interface CertificateStatus {
 // CONFIGURATION
 // ============================================================================
 
-// In Production: webmail-proxy läuft auf mail.taskilo.de hinter nginx unter /webmail-api
-// Lokal: direkter Zugriff auf Port 3100
-const HETZNER_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://mail.taskilo.de/webmail-api'
-  : 'http://localhost:3100';
+// IMMER auf Hetzner zeigen - auch lokal, da der ERiC-Service nur auf Hetzner läuft
+// Der webmail-proxy auf Hetzner ist der einzige Ort mit der ERiC-Bibliothek
+const HETZNER_BASE_URL = 'https://mail.taskilo.de/webmail-api';
 
 const API_KEY = process.env.WEBMAIL_API_KEY || '2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076';
 

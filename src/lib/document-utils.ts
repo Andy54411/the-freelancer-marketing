@@ -15,7 +15,7 @@ import {
   type DocumentTranslations,
 } from '@/hooks/pdf/useDocumentTranslation';
 
-export type DocumentType = 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
+export type DocumentType = 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation' | 'delivery-note' | 'deliveryNote' | 'order-confirmation' | 'orderConfirmation';
 
 export interface DocumentTypeConfig {
   title: string;
@@ -85,6 +85,42 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
     showPaymentTerms: false,
     showDueDate: true,
   },
+  'delivery-note': {
+    titleKey: 'deliveryNote',
+    numberLabelKey: 'deliveryNoteNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'deliveryDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: false,
+  },
+  deliveryNote: {
+    titleKey: 'deliveryNote',
+    numberLabelKey: 'deliveryNoteNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'deliveryDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: false,
+  },
+  'order-confirmation': {
+    titleKey: 'orderConfirmation',
+    numberLabelKey: 'orderConfirmationNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'deliveryDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
+  orderConfirmation: {
+    titleKey: 'orderConfirmation',
+    numberLabelKey: 'orderConfirmationNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'deliveryDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
 };
 
 // Alte Konfiguration für Kompatibilität (wird nach und nach ersetzt)
@@ -134,6 +170,42 @@ export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, Omit<DocumentTypeConfig
     showPaymentTerms: false,
     showDueDate: true,
   },
+  'delivery-note': {
+    title: 'Lieferschein',
+    numberLabel: 'Lieferschein-Nr.',
+    dateLabel: 'Lieferdatum',
+    dueDateLabel: 'Lieferdatum',
+    recipientLabel: 'Empfänger',
+    showPaymentTerms: false,
+    showDueDate: false,
+  },
+  deliveryNote: {
+    title: 'Lieferschein',
+    numberLabel: 'Lieferschein-Nr.',
+    dateLabel: 'Lieferdatum',
+    dueDateLabel: 'Lieferdatum',
+    recipientLabel: 'Empfänger',
+    showPaymentTerms: false,
+    showDueDate: false,
+  },
+  'order-confirmation': {
+    title: 'Auftragsbestätigung',
+    numberLabel: 'AB-Nr.',
+    dateLabel: 'Bestelldatum',
+    dueDateLabel: 'Voraussichtliche Lieferung',
+    recipientLabel: 'Auftraggeber',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
+  orderConfirmation: {
+    title: 'Auftragsbestätigung',
+    numberLabel: 'AB-Nr.',
+    dateLabel: 'Bestelldatum',
+    dueDateLabel: 'Voraussichtliche Lieferung',
+    recipientLabel: 'Auftraggeber',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
 };
 
 export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
@@ -142,6 +214,10 @@ export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
   reminder: '#ef4444', // Red
   'credit-note': '#22c55e', // Green
   cancellation: '#f59e0b', // Orange
+  'delivery-note': '#14ad9f', // Teal (Taskilo Primary)
+  deliveryNote: '#14ad9f', // Teal (Taskilo Primary)
+  'order-confirmation': '#0ea5e9', // Sky Blue
+  orderConfirmation: '#0ea5e9', // Sky Blue
 };
 
 /**
@@ -172,6 +248,14 @@ export function detectDocumentType(data: any): DocumentType {
     return 'cancellation';
   }
 
+  if (label.includes('lieferschein') || label.includes('delivery')) {
+    return 'delivery-note';
+  }
+
+  if (label.includes('auftragsbestätigung') || label.includes('order confirmation') || label.includes('ab-')) {
+    return 'order-confirmation';
+  }
+
   // Prüfe Nummern-Präfixe
   const invoiceNumber = (data.invoiceNumber || '').toLowerCase();
 
@@ -189,6 +273,14 @@ export function detectDocumentType(data: any): DocumentType {
 
   if (invoiceNumber.startsWith('sto') || invoiceNumber.startsWith('st-') || invoiceNumber.startsWith('can')) {
     return 'cancellation';
+  }
+
+  if (invoiceNumber.startsWith('ls') || invoiceNumber.startsWith('ls-') || invoiceNumber.startsWith('del')) {
+    return 'delivery-note';
+  }
+
+  if (invoiceNumber.startsWith('ab') || invoiceNumber.startsWith('ab-') || invoiceNumber.startsWith('ord')) {
+    return 'order-confirmation';
   }
 
   // Standard: Rechnung

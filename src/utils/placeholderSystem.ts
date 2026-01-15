@@ -278,6 +278,13 @@ export function replacePlaceholders(
   result = result.replace(/\[%RECHNUNGSDATUM%\]/g, documentDateFormatted);
   result = result.replace(/\[%ANGEBOTSDATUM%\]/g, documentDateFormatted);
 
+  // Dokumentnummern für Lieferscheine und Auftragsbestätigungen
+  const deliveryNoteNumber = (data as any).deliveryNoteNumber || docNumber;
+  const orderConfirmationNumber = (data as any).orderConfirmationNumber || docNumber;
+  result = result.replace(/\[%LIEFERSCHEINNUMMER%\]/g, deliveryNoteNumber);
+  result = result.replace(/\[%AB_NUMMER%\]/g, orderConfirmationNumber);
+  result = result.replace(/\[%AUFTRAGSBESTAETIGUNGSNUMMER%\]/g, orderConfirmationNumber);
+
   // Leistungsdatum
   if (data.serviceDate) {
     result = result.replace(/\[%LEISTUNGSDATUM%\]/g, data.serviceDate);
@@ -383,10 +390,36 @@ export function replacePlaceholders(
   }
 
   // Zahlungsziel berechnen (paymentTerms Tage ab Rechnungsdatum oder heute)
+  // ODER wenn dueDate/validUntil bereits vorhanden ist, dieses verwenden
   const calculatePaymentDue = () => {
+    // Wenn bereits ein formatiertes Fälligkeitsdatum vorhanden ist, verwende dieses
+    if (formattedDueDate) {
+      return formattedDueDate;
+    }
+    
     const baseDate = data.documentDate ? new Date(data.documentDate) : new Date();
-    const days = parseInt(String(data.paymentTerms || '14'), 10);
-    if (isNaN(days)) return new Date().toLocaleDateString('de-DE');
+    
+    // Extrahiere die Anzahl der Tage aus dem paymentTerms-Text
+    // z.B. "Zahlbar binnen 14 Tagen ohne Abzug" → 14
+    let days = 14; // Default
+    if (data.paymentTerms) {
+      const paymentTermsStr = String(data.paymentTerms);
+      // Versuche eine Zahl zu extrahieren
+      const match = paymentTermsStr.match(/(\d+)\s*Tage/i);
+      if (match) {
+        days = parseInt(match[1], 10);
+      } else {
+        // Fallback: versuche direkt als Zahl zu parsen
+        const parsed = parseInt(paymentTermsStr, 10);
+        if (!isNaN(parsed)) {
+          days = parsed;
+        }
+      }
+    }
+    
+    if (isNaN(days) || days <= 0) {
+      days = 14; // Fallback auf 14 Tage
+    }
 
     const dueDate = new Date(baseDate);
     dueDate.setDate(dueDate.getDate() + days);
@@ -572,6 +605,16 @@ export function replacePlaceholders(
       reminderIntro: 'wir stellen fest, dass die nachstehende Rechnung noch nicht beglichen wurde:',
       reminderClosing:
         'Wir bitten um umgehende Begleichung des offenen Betrages. Sollten Sie bereits gezahlt haben, betrachten Sie diese Mahnung als gegenstandslos.',
+      // Lieferscheine (Delivery Notes)
+      deliveryNoteIntro:
+        'hiermit übersenden wir Ihnen den Lieferschein für die folgenden Artikel:',
+      deliveryNoteClosing:
+        'Bitte prüfen Sie die gelieferte Ware auf Vollständigkeit und Unversehrtheit. Reklamationen melden Sie uns bitte innerhalb von 14 Tagen.',
+      // Auftragsbestätigungen (Order Confirmations)
+      orderConfirmationIntro:
+        'vielen Dank für Ihren Auftrag! Hiermit bestätigen wir die Bestellung der folgenden Leistungen:',
+      orderConfirmationClosing:
+        'Die voraussichtliche Lieferung erfolgt am [%LIEFERDATUM%]. Bei Fragen stehen wir Ihnen gerne zur Verfügung.',
       // Allgemeine Grußformeln
       bestRegards: 'Mit freundlichen Grüßen',
     },
@@ -590,6 +633,16 @@ export function replacePlaceholders(
       reminderIntro: 'we note that the following invoice has not yet been settled:',
       reminderClosing:
         'We ask for prompt settlement of the outstanding amount. If you have already paid, please disregard this reminder.',
+      // Lieferscheine (Delivery Notes)
+      deliveryNoteIntro:
+        'please find enclosed the delivery note for the following items:',
+      deliveryNoteClosing:
+        'Please check the delivered goods for completeness and damage. Please report any complaints within 14 days.',
+      // Auftragsbestätigungen (Order Confirmations)
+      orderConfirmationIntro:
+        'thank you for your order! We hereby confirm the order for the following services:',
+      orderConfirmationClosing:
+        'The expected delivery date is [%LIEFERDATUM%]. Please do not hesitate to contact us if you have any questions.',
       // Allgemeine Grußformeln
       bestRegards: 'Best regards',
     },
@@ -608,6 +661,16 @@ export function replacePlaceholders(
       reminderIntro: "nous constatons que la facture suivante n'a pas encore été réglée:",
       reminderClosing:
         'Nous vous demandons de régler rapidement le montant en souffrance. Si vous avez déjà payé, veuillez considérer ce rappel comme sans objet.',
+      // Lieferscheine (Delivery Notes)
+      deliveryNoteIntro:
+        'veuillez trouver ci-joint le bon de livraison pour les articles suivants:',
+      deliveryNoteClosing:
+        'Veuillez vérifier la marchandise livrée pour sa complétude et son intégrité. Veuillez nous signaler toute réclamation dans un délai de 14 jours.',
+      // Auftragsbestätigungen (Order Confirmations)
+      orderConfirmationIntro:
+        'merci pour votre commande! Nous confirmons par la présente la commande pour les services suivants:',
+      orderConfirmationClosing:
+        'La livraison prévue aura lieu le [%LIEFERDATUM%]. Nous restons à votre disposition pour toute question.',
       // Allgemeine Grußformeln
       bestRegards: 'Meilleures salutations',
     },
@@ -622,6 +685,10 @@ export function replacePlaceholders(
   result = result.replace(/\[%INVOICE_CLOSING_TEXT%\]/g, langTexts.invoiceClosing);
   result = result.replace(/\[%REMINDER_INTRO_TEXT%\]/g, langTexts.reminderIntro);
   result = result.replace(/\[%REMINDER_CLOSING_TEXT%\]/g, langTexts.reminderClosing);
+  result = result.replace(/\[%DELIVERY_NOTE_INTRO_TEXT%\]/g, langTexts.deliveryNoteIntro);
+  result = result.replace(/\[%DELIVERY_NOTE_CLOSING_TEXT%\]/g, langTexts.deliveryNoteClosing);
+  result = result.replace(/\[%ORDER_CONFIRMATION_INTRO_TEXT%\]/g, langTexts.orderConfirmationIntro);
+  result = result.replace(/\[%ORDER_CONFIRMATION_CLOSING_TEXT%\]/g, langTexts.orderConfirmationClosing);
   result = result.replace(/\[%BESTREGARDS%\]/g, langTexts.bestRegards);
 
   // *** ZWEITE ERSETZUNGSRUNDE FÜR PLATZHALTER IN STANDARDTEXTEN ***
@@ -634,10 +701,33 @@ export function replacePlaceholders(
   result = result.replace(/\[%FAELLIGKEITSDATUM%\]/g, formattedDueDate);
 
   // Zahlungsziel nochmal ersetzen (falls durch Standardtexte eingefügt)
+  // Verwende die gleiche verbesserte Logik wie calculatePaymentDue
   const calculatePaymentDue2 = () => {
+    // Wenn bereits ein formatiertes Fälligkeitsdatum vorhanden ist, verwende dieses
+    if (formattedDueDate) {
+      return formattedDueDate;
+    }
+    
     const baseDate = data.documentDate ? new Date(data.documentDate) : new Date();
-    const days = parseInt(String(data.paymentTerms || '14'), 10);
-    if (isNaN(days)) return new Date().toLocaleDateString('de-DE');
+    
+    // Extrahiere die Anzahl der Tage aus dem paymentTerms-Text
+    let days = 14;
+    if (data.paymentTerms) {
+      const paymentTermsStr = String(data.paymentTerms);
+      const match = paymentTermsStr.match(/(\d+)\s*Tage/i);
+      if (match) {
+        days = parseInt(match[1], 10);
+      } else {
+        const parsed = parseInt(paymentTermsStr, 10);
+        if (!isNaN(parsed)) {
+          days = parsed;
+        }
+      }
+    }
+    
+    if (isNaN(days) || days <= 0) {
+      days = 14;
+    }
 
     const dueDate = new Date(baseDate);
     dueDate.setDate(dueDate.getDate() + days);

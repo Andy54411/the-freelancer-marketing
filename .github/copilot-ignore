@@ -1,0 +1,12 @@
+# Große Dokumentationsdateien ignorieren
+docs/drive.md
+docs/profil.md
+docs/an.md
+docs/finapi/
+
+# Node modules
+node_modules/
+firebase_functions/node_modules/
+
+# Build outputs
+.next/

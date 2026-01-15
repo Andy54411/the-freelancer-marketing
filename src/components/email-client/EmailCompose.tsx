@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DrivePickerModal } from '@/components/webmail/drive/DrivePickerModal';
+import { GoogleDrivePicker, GooglePhotosPicker, type GoogleDriveFile } from './GoogleDrivePicker';
 
 import {
   DropdownMenu,
@@ -93,6 +94,7 @@ interface EmailComposeProps {
   initialTo?: string;
   className?: string;
   companyId?: string;
+  emailProvider?: 'webmail' | 'gmail' | null;
   // Multiple compose window support
   _windowId?: string;
   windowIndex?: number;
@@ -240,6 +242,7 @@ export function EmailCompose({
   initialTo,
   className,
   companyId,
+  emailProvider,
   _windowId,
   windowIndex = 0,
   isMinimizedExternal,
@@ -295,6 +298,8 @@ export function EmailCompose({
   
   // Drive Picker State
   const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
+  const [showGooglePhotosPicker, setShowGooglePhotosPicker] = useState(false);
   
   // Signatur State
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
@@ -2254,16 +2259,24 @@ export function EmailCompose({
                   </div>
                 </div>
               )}
+              {/* Drive Button - Provider-abhängig */}
               <button 
-                onClick={() => setShowDrivePicker(true)}
+                onClick={() => emailProvider === 'gmail' ? setShowGoogleDrivePicker(true) : setShowDrivePicker(true)}
                 className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
-                title="Dateien aus Drive"
+                title={emailProvider === 'gmail' ? 'Google Drive' : 'Taskilo Drive'}
               >
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.29 7.5h6.57L5.43 11 8.86 5.25 7.71 3.5zm1.14 2l6.57 11.5H8.86l-3.43 6h6.57l6.86-12L12 3.5H7.71l1.14 2z"/></svg>
               </button>
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Foto einfügen">
-                <ImageIcon className="h-[18px] w-[18px]" />
-              </button>
+              {/* Foto Button - Nur für Gmail */}
+              {emailProvider === 'gmail' && (
+                <button 
+                  onClick={() => setShowGooglePhotosPicker(true)}
+                  className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
+                  title="Google Fotos"
+                >
+                  <ImageIcon className="h-[18px] w-[18px]" />
+                </button>
+              )}
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Vertraulich">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               </button>

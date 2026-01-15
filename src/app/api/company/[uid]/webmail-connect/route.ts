@@ -314,9 +314,11 @@ export async function DELETE(
       );
     }
 
-    // Lösche die Webmail-Konfiguration
+    // Lösche die Webmail-Konfiguration UND die Onboarding-Daten
     await db.collection('companies').doc(companyId).update({
       webmailConfig: null,
+      taskiloEmailConnected: false,
+      'step5.taskiloEmailConnected': false,
       'emailIntegration.provider': null,
       'emailIntegration.email': null,
       'emailIntegration.updatedAt': new Date().toISOString(),

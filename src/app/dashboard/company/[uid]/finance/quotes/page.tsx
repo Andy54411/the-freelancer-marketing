@@ -1,20 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { QuoteListView } from '@/components/finance/QuoteListView';
-import { QuoteService, Quote } from '@/services/quoteService';
+import { DocumentListView, DocumentItem } from '@/components/finance/DocumentListView';
+import { QuoteService } from '@/services/quoteService';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function QuotesPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotes, setQuotes] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -30,12 +31,33 @@ export default function QuotesPage() {
     try {
       setLoading(true);
       const companyQuotes = await QuoteService.getQuotes(uid);
-      setQuotes(companyQuotes);
+      // Convert to DocumentItem format
+      const docs: DocumentItem[] = companyQuotes.map(q => ({
+        id: q.id,
+        number: q.number,
+        customerName: q.customerName,
+        customerEmail: q.customerEmail,
+        date: q.date,
+        validUntil: q.validUntil,
+        status: q.status || 'draft',
+        total: q.total,
+        amount: q.subtotal,
+        items: q.items,
+      }));
+      setQuotes(docs);
     } catch {
       setError('Fehler beim Laden der Angebote');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConvertToInvoice = (doc: DocumentItem) => {
+    router.push(`/dashboard/company/${uid}/finance/invoices/create?quoteId=${doc.id}`);
+  };
+
+  const handleDuplicate = (doc: DocumentItem) => {
+    router.push(`/dashboard/company/${uid}/finance/quotes/create?duplicateId=${doc.id}`);
   };
 
   // Autorisierung prüfen
@@ -58,18 +80,12 @@ export default function QuotesPage() {
       <div className="space-y-6">
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Angebote</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Angebot importieren
+          <Link href={`/dashboard/company/${uid}/finance/quotes/create`}>
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Angebot erstellen
             </Button>
-            <Link href={`/dashboard/company/${uid}/finance/quotes/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Angebot erstellen
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </header>
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
@@ -86,18 +102,12 @@ export default function QuotesPage() {
       <div className="space-y-6">
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Angebote</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Angebot importieren
+          <Link href={`/dashboard/company/${uid}/finance/quotes/create`}>
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Angebot erstellen
             </Button>
-            <Link href={`/dashboard/company/${uid}/finance/quotes/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Angebot erstellen
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </header>
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
@@ -113,15 +123,29 @@ export default function QuotesPage() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <QuoteListView 
-        quotes={quotes}
-        onRefresh={loadQuotes}
+    <div className="space-y-6">
+      <header className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Angebote</h1>
+        <Link href={`/dashboard/company/${uid}/finance/quotes/create`}>
+          <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Angebot erstellen
+          </Button>
+        </Link>
+      </header>
+
+      <DocumentListView
+        documents={quotes}
+        documentType="quote"
         companyId={uid}
+        basePath={`/dashboard/company/${uid}/finance/quotes`}
+        onRefresh={loadQuotes}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
+        onConvertToInvoice={handleConvertToInvoice}
+        onDuplicate={handleDuplicate}
       />
     </div>
   );

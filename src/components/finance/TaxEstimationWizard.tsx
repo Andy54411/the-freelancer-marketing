@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { X, Search, AlertTriangle, TrendingUp, Calculator, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp, collection, getDocs, query, where } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { validateSteuernummer } from 'validate-steuernummer';
 
@@ -219,6 +220,10 @@ export function TaxEstimationWizard({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [taxProfile, setTaxProfile] = useState<TaxProfile>({});
+  
+  // Realtime Steuerberechnung
+  const [jahresgewinn, setJahresgewinn] = useState(0);
+  const [geschaetzteSteuer, setGeschaetzteSteuer] = useState(0);
 
   const [geburtsdatum, setGeburtsdatum] = useState('');
   const [familienstand, setFamilienstand] = useState<FamilyStatus>('ledig');
@@ -240,6 +245,93 @@ export function TaxEstimationWizard({
   const [bundeslandSearch, setBundeslandSearch] = useState('');
   const [einkommensteuernummer, setEinkommensteuernummer] = useState('');
   const [steuernummerError, setSteuernummerError] = useState('');
+
+  // Einkommensteuer nach deutschem Tarif 2026 berechnen
+  const berechneEinkommensteuer = useCallback((zvE: number): number => {
+    if (zvE <= 0) return 0;
+    
+    let steuer = 0;
+    if (zvE <= 5401) {
+      const y = zvE / 10000;
+      steuer = (1088.67 * y + 1400) * y;
+    } else if (zvE <= 55156) {
+      const y = (zvE - 5401) / 10000;
+      steuer = (206.43 * y + 2397) * y + 938.24;
+    } else if (zvE <= 266221) {
+      steuer = 0.42 * zvE - 9972.98;
+    } else {
+      steuer = 0.45 * zvE - 17962.64;
+    }
+    
+    return Math.max(0, Math.round(steuer * 100) / 100);
+  }, []);
+
+  // Realtime Steuerberechnung basierend auf aktuellen Eingaben
+  const berechneGeschaetzteSteuer = useCallback(() => {
+    const currentYear = new Date().getFullYear();
+    
+    // 1. Einkommen aus Selbständigkeit (Jahresgewinn aus Firestore)
+    const gewinnSelbstaendig = jahresgewinn;
+    
+    // 2. Zusätzliches Einkommen aus Angestelltenverhältnis
+    const einkommenAngestellt = warAngestellt ? parseGermanNumber(einkommenAngestelltInput) : 0;
+    
+    // 3. Gesamteinkommen
+    const gesamtEinkommen = gewinnSelbstaendig + einkommenAngestellt;
+    
+    // 4. Sonderausgaben (Vorsorgeaufwendungen)
+    const krankenversicherung = hatKrankenversicherung ? parseGermanNumber(krankenversicherungBetragInput) : 0;
+    const privateKV = hatPrivateKV ? parseGermanNumber(privateKVBetragInput) : 0;
+    const pflegeversicherung = hatPflegeversicherung ? parseGermanNumber(pflegeversicherungBetragInput) : 0;
+    const krankengeld = hatKrankengeld ? parseGermanNumber(krankengeldBetragInput) : 0;
+    const vorsorgeaufwendungen = krankenversicherung + privateKV + pflegeversicherung + krankengeld;
+    
+    // 5. Grundfreibetrag
+    const grundfreibetrag = currentYear >= 2026 ? 12500 : 12096;
+    const istVerheiratet = familienstand === 'verheiratet' || familienstand === 'lebenspartnerschaft';
+    const effektiverGrundfreibetrag = istVerheiratet ? grundfreibetrag * 2 : grundfreibetrag;
+    
+    // 6. Zu versteuerndes Einkommen
+    const zuVersteuerndesEinkommen = Math.max(0, gesamtEinkommen - vorsorgeaufwendungen - effektiverGrundfreibetrag);
+    
+    // 7. Einkommensteuer
+    let einkommensteuer = 0;
+    if (zuVersteuerndesEinkommen > 0) {
+      if (istVerheiratet) {
+        einkommensteuer = berechneEinkommensteuer(zuVersteuerndesEinkommen / 2) * 2;
+      } else {
+        einkommensteuer = berechneEinkommensteuer(zuVersteuerndesEinkommen);
+      }
+    }
+    
+    // 8. Solidaritätszuschlag
+    const soliFreigrenze = istVerheiratet ? 35086 : 17543;
+    let solidaritaetszuschlag = 0;
+    if (einkommensteuer > soliFreigrenze) {
+      solidaritaetszuschlag = einkommensteuer * 0.055;
+    }
+    
+    // 9. Kirchensteuer
+    let kirchensteuer = 0;
+    if (religionsgemeinschaft !== 'Nicht Kirchensteuerpflichtig') {
+      const kirchensteuersatz = ['Bayern', 'Baden-Württemberg'].includes(bundesland) ? 0.08 : 0.09;
+      kirchensteuer = einkommensteuer * kirchensteuersatz;
+    }
+    
+    return Math.round((einkommensteuer + solidaritaetszuschlag + kirchensteuer) * 100) / 100;
+  }, [
+    jahresgewinn, warAngestellt, einkommenAngestelltInput, hatKrankenversicherung,
+    krankenversicherungBetragInput, hatPrivateKV, privateKVBetragInput,
+    hatPflegeversicherung, pflegeversicherungBetragInput, hatKrankengeld,
+    krankengeldBetragInput, familienstand, religionsgemeinschaft, bundesland,
+    berechneEinkommensteuer
+  ]);
+
+  // Steuer bei jeder Änderung neu berechnen
+  useEffect(() => {
+    const neueSchaetzung = berechneGeschaetzteSteuer();
+    setGeschaetzteSteuer(neueSchaetzung);
+  }, [berechneGeschaetzteSteuer]);
 
   const filteredReligionen = useMemo(() => {
     if (!religionSearch.trim()) return RELIGIONSGEMEINSCHAFTEN;
@@ -291,13 +383,98 @@ export function TaxEstimationWizard({
           setBundesland(data.taxProfile?.bundesland || '');
           setEinkommensteuernummer(data.taxProfile?.einkommensteuernummer || '');
 
-          if (profile.geburtsdatum) {
+          // Lade gespeicherten Step
+          if (data.taxProfile?.currentStep && data.taxProfile.currentStep > 1) {
+            setStep(data.taxProfile.currentStep);
+          } else if (profile.geburtsdatum) {
             setStep(2);
           } else {
             setStep(1);
           }
         }
-      } catch (error) {
+
+        // Lade Jahresgewinn aus Rechnungen und Ausgaben für Realtime-Berechnung
+        const currentYear = new Date().getFullYear();
+        const yearStart = new Date(currentYear, 0, 1);
+        const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+
+        // Einnahmen laden
+        const invoicesRef = collection(db, 'companies', companyId, 'invoices');
+        const invoicesSnap = await getDocs(invoicesRef);
+        let totalIncome = 0;
+        invoicesSnap.forEach(docSnap => {
+          const docData = docSnap.data();
+          let invoiceDate: Date | null = null;
+          if (docData.invoiceDate?.toDate) {
+            invoiceDate = docData.invoiceDate.toDate();
+          } else if (docData.issueDate) {
+            invoiceDate = new Date(docData.issueDate);
+          } else if (docData.date) {
+            invoiceDate = new Date(docData.date);
+          } else if (docData.createdAt?.toDate) {
+            invoiceDate = docData.createdAt.toDate();
+          }
+          if (invoiceDate && invoiceDate >= yearStart && invoiceDate <= yearEnd) {
+            // Status-Filter: finalized, sent, paid, overdue (nicht draft, cancelled, storno)
+            if (['finalized', 'paid', 'sent', 'overdue'].includes(docData.status)) {
+              // Beträge sind in Euro gespeichert (nicht Cents!)
+              totalIncome += docData.subtotal || docData.amount || docData.netAmount || 0;
+            }
+          }
+        });
+
+        // Ausgaben laden
+        const expensesRef = collection(db, 'companies', companyId, 'expenses');
+        const expensesSnap = await getDocs(expensesRef);
+        let totalExpenses = 0;
+        expensesSnap.forEach(docSnap => {
+          const docData = docSnap.data();
+          let expenseDate: Date | null = null;
+          if (docData.expenseDate?.toDate) {
+            expenseDate = docData.expenseDate.toDate();
+          } else if (docData.date) {
+            expenseDate = new Date(docData.date);
+          } else if (docData.createdAt?.toDate) {
+            expenseDate = docData.createdAt.toDate();
+          }
+          if (expenseDate && expenseDate >= yearStart && expenseDate <= yearEnd) {
+            // Normale Ausgaben haben kein Statusfeld (nur wiederkehrende haben 'active'/'paused'/'cancelled')
+            // Wir zählen alle Ausgaben, außer stornierte/gelöschte
+            const status = docData.status;
+            if (!status || status === 'active' || ['PAID', 'APPROVED', 'paid', 'approved'].includes(status)) {
+              // Beträge sind in Euro gespeichert (nicht Cents!)
+              totalExpenses += docData.netAmount || docData.amount || 0;
+            }
+          }
+        });
+
+        // Extrapolierter Jahresgewinn berechnen
+        const extrapolierterGewinn = totalIncome - totalExpenses;
+        const currentMonth = new Date().getMonth();
+        const monthsElapsed = Math.max(1, currentMonth + 1);
+        const hochgerechneterGewinn = (extrapolierterGewinn / monthsElapsed) * 12;
+
+        // Lade profitEstimation-Einstellungen und wähle entsprechende Methode
+        const companyDoc2 = await getDoc(doc(db, 'companies', companyId));
+        const profitEstimation = companyDoc2.exists() ? companyDoc2.data().profitEstimation || {} : {};
+        
+        let jahresgewinnWert: number;
+        switch (profitEstimation.method) {
+          case 'standard':
+            jahresgewinnWert = profitEstimation.standardAmount || 10000;
+            break;
+          case 'manual':
+            jahresgewinnWert = profitEstimation.manualAmount || 0;
+            break;
+          case 'extrapolation':
+          default:
+            jahresgewinnWert = hochgerechneterGewinn;
+            break;
+        }
+        
+        setJahresgewinn(jahresgewinnWert);
+
+      } catch {
         toast.error('Fehler beim Laden des Profils');
       } finally {
         setLoading(false);
@@ -307,10 +484,9 @@ export function TaxEstimationWizard({
     loadProfile();
   }, [isOpen, companyId]);
 
-  const handleSave = async () => {
+  // Speichert die aktuellen Daten in Firestore (wird bei jedem Schrittwechsel aufgerufen)
+  const saveProgress = async (showToast: boolean = false) => {
     try {
-      setSaving(true);
-
       const updatedProfile = {
         taxProfile: {
           geburtsdatum,
@@ -331,27 +507,42 @@ export function TaxEstimationWizard({
           krankengeldBetrag: hatKrankengeld ? parseGermanNumber(krankengeldBetragInput) : 0,
           bundesland,
           einkommensteuernummer,
+          currentStep: step,
           updatedAt: Timestamp.now(),
         },
       };
 
       await updateDoc(doc(db, 'companies', companyId), updatedProfile);
       
-      toast.success('Steuerprofil gespeichert');
+      if (showToast) {
+        toast.success('Steuerprofil gespeichert');
+      }
+    } catch {
+      // Fehler still ignorieren bei Auto-Save
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await saveProgress(true);
       onComplete?.();
       onClose();
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Speichern');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1 && !geburtsdatum) {
       toast.error('Bitte gib dein Geburtsdatum ein');
       return;
     }
+    
+    // Bei jedem Schrittwechsel die Daten speichern
+    await saveProgress(false);
     
     if (step < 17) {
       setStep(step + 1);
@@ -360,7 +551,16 @@ export function TaxEstimationWizard({
     }
   };
 
-  const handlePrevious = () => {
+  // Hilfsfunktion für Ja/Nein Buttons die direkt zum nächsten Schritt springen
+  const handleYesNoNavigation = async (nextStep: number) => {
+    await saveProgress(false);
+    setStep(nextStep);
+  };
+
+  const handlePrevious = async () => {
+    // Beim Zurückgehen auch speichern
+    await saveProgress(false);
+    
     if (step > 1) {
       if (step === 2 && taxProfile.geburtsdatum) {
         onClose();
@@ -374,11 +574,45 @@ export function TaxEstimationWizard({
 
   if (!isOpen) return null;
 
+  // Formatierung für die Steueranzeige
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
+        {/* Realtime Steuer-Anzeige Header */}
+        {step > 1 && (
+          <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white px-6 py-4 rounded-t-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Calculator className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/80">Geschätzte Einkommensteuer {new Date().getFullYear()}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(geschaetzteSteuer)}</p>
+                </div>
+              </div>
+              {geschaetzteSteuer > 0 && (
+                <div className="text-right">
+                  <p className="text-xs text-white/70">Quartal</p>
+                  <p className="text-lg font-semibold">{formatCurrency(geschaetzteSteuer / 4)}</p>
+                </div>
+              )}
+            </div>
+            {jahresgewinn > 0 && (
+              <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-2 text-sm text-white/80">
+                <TrendingUp className="w-4 h-4" />
+                <span>Basierend auf {formatCurrency(jahresgewinn)} Gewinn aus Selbständigkeit</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -537,14 +771,14 @@ export function TaxEstimationWizard({
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setWarAngestellt(true); setStep(5); }}
+                      onClick={() => { setWarAngestellt(true); handleYesNoNavigation(5); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setWarAngestellt(false); setStep(6); }}
+                      onClick={() => { setWarAngestellt(false); handleYesNoNavigation(6); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein
@@ -618,14 +852,14 @@ export function TaxEstimationWizard({
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setHatKrankenversicherung(true); setStep(7); }}
+                      onClick={() => { setHatKrankenversicherung(true); handleYesNoNavigation(7); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setHatKrankenversicherung(false); setStep(8); }}
+                      onClick={() => { setHatKrankenversicherung(false); handleYesNoNavigation(8); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein
@@ -696,14 +930,14 @@ export function TaxEstimationWizard({
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setHatPrivateKV(true); setStep(9); }}
+                      onClick={() => { setHatPrivateKV(true); handleYesNoNavigation(9); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setHatPrivateKV(false); setStep(10); }}
+                      onClick={() => { setHatPrivateKV(false); handleYesNoNavigation(10); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein
@@ -767,21 +1001,36 @@ export function TaxEstimationWizard({
               {/* Step 10: Optionale KV Frage */}
               {step === 10 && (
                 <>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                    Hast du in {new Date().getFullYear()} Beiträge für eine private Krankenversicherung für optionale Leistungen und Zusatzversicherungen gezahlt?
-                  </h2>
+                  <div className="flex items-start gap-2 mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Hast du in {new Date().getFullYear()} Beiträge für eine private Krankenversicherung für optionale Leistungen und Zusatzversicherungen gezahlt?
+                    </h2>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 mt-1 text-gray-400 hover:text-[#14ad9f] transition-colors">
+                          <HelpCircle className="w-5 h-5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white p-3 text-sm">
+                        <p><strong>Steuerlicher Hinweis:</strong> Beiträge für Wahlleistungen (Einzelzimmer, Chefarzt) und Zusatzversicherungen (Zahn, Brille) sind nicht als Sonderausgaben absetzbar, da der Höchstbetrag (1.900€/2.800€) meist durch die PKV-Basisbeiträge ausgeschöpft wird. Diese werden nur zur Dokumentation erfasst.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Z.B. Einzelzimmer, Chefarztbehandlung, Zahnzusatz, Brillenversicherung, etc.
+                  </p>
                   
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setHatOptionaleKV(true); setStep(11); }}
+                      onClick={() => { setHatOptionaleKV(true); handleYesNoNavigation(11); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setHatOptionaleKV(false); setStep(12); }}
+                      onClick={() => { setHatOptionaleKV(false); handleYesNoNavigation(12); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein
@@ -801,11 +1050,26 @@ export function TaxEstimationWizard({
               {/* Step 11: Optionale KV Betrag (nur wenn hatOptionaleKV = true) */}
               {step === 11 && (
                 <>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                    Wie viel hast du für die private Krankenversicherung für Beiträge zu Wahlleistungen und Zusatzversicherungen in {new Date().getFullYear()} gezahlt?
-                  </h2>
+                  <div className="flex items-start gap-2 mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Wie viel hast du für die private Krankenversicherung für Beiträge zu Wahlleistungen und Zusatzversicherungen in {new Date().getFullYear()} gezahlt?
+                    </h2>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 mt-1 text-gray-400 hover:text-[#14ad9f] transition-colors">
+                          <HelpCircle className="w-5 h-5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white p-3 text-sm">
+                        <p>Dieser Betrag dient nur der Dokumentation. Wahlleistungen und Zusatzversicherungen sind steuerlich nicht absetzbar, da der Höchstbetrag für sonstige Vorsorgeaufwendungen (§10 Abs. 4 EStG) meist bereits durch PKV-Basisbeiträge ausgeschöpft ist.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Nur für deine Dokumentation – fließt nicht in die Steuerberechnung ein.
+                  </p>
                   
-                  <div className="relative mb-6">
+                  <div className="relative mb-4">
                     <input
                       type="text"
                       inputMode="decimal"
@@ -852,14 +1116,14 @@ export function TaxEstimationWizard({
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setHatPflegeversicherung(true); setStep(13); }}
+                      onClick={() => { setHatPflegeversicherung(true); handleYesNoNavigation(13); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setHatPflegeversicherung(false); setStep(14); }}
+                      onClick={() => { setHatPflegeversicherung(false); handleYesNoNavigation(14); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein
@@ -930,14 +1194,14 @@ export function TaxEstimationWizard({
                   <div className="flex gap-3 mb-6">
                     <button
                       type="button"
-                      onClick={() => { setHatKrankengeld(true); setStep(15); }}
+                      onClick={() => { setHatKrankengeld(true); handleYesNoNavigation(15); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Ja
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setHatKrankengeld(false); setStep(16); }}
+                      onClick={() => { setHatKrankengeld(false); handleYesNoNavigation(16); }}
                       className="flex-1 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                     >
                       Nein

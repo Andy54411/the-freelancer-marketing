@@ -10,6 +10,7 @@ export interface DocumentTranslations {
   deliveryNote: string;
   order: string;
   cancellation: string;
+  orderConfirmation: string;
 
   // Labels
   recipient: string;
@@ -18,9 +19,11 @@ export interface DocumentTranslations {
   quoteNumber: string;
   orderNumber: string;
   deliveryNoteNumber: string;
+  orderConfirmationNumber: string;
   date: string;
   dueDate: string;
   validUntil: string;
+  deliveryDate: string;
 
   // Table headers
   position: string;
@@ -92,6 +95,7 @@ const translations: Record<string, DocumentTranslations> = {
     deliveryNote: 'Lieferschein',
     order: 'Auftrag',
     cancellation: 'Stornorechnung',
+    orderConfirmation: 'Auftragsbestätigung',
 
     // Labels
     recipient: 'Empfänger',
@@ -100,9 +104,11 @@ const translations: Record<string, DocumentTranslations> = {
     quoteNumber: 'Angebotsnummer',
     orderNumber: 'Auftragsnummer',
     deliveryNoteNumber: 'Lieferscheinnummer',
+    orderConfirmationNumber: 'AB-Nr.',
     date: 'Datum',
     dueDate: 'Fälligkeitsdatum',
     validUntil: 'Gültig bis',
+    deliveryDate: 'Lieferdatum',
 
     // Table headers
     position: 'Pos.',
@@ -175,6 +181,7 @@ const translations: Record<string, DocumentTranslations> = {
     deliveryNote: 'Delivery Note',
     order: 'Order',
     cancellation: 'Cancellation Invoice',
+    orderConfirmation: 'Order Confirmation',
 
     // Labels
     recipient: 'Recipient',
@@ -183,9 +190,11 @@ const translations: Record<string, DocumentTranslations> = {
     quoteNumber: 'Quote Number',
     orderNumber: 'Order Number',
     deliveryNoteNumber: 'Delivery Note Number',
+    orderConfirmationNumber: 'Order Confirmation No.',
     date: 'Date',
     dueDate: 'Due Date',
     validUntil: 'Valid Until',
+    deliveryDate: 'Delivery Date',
 
     // Table headers
     position: 'Pos.',
@@ -258,15 +267,18 @@ const translations: Record<string, DocumentTranslations> = {
     deliveryNote: 'Bon de livraison',
     order: 'Commande',
     cancellation: 'Facture d\'annulation',
+    orderConfirmation: 'Confirmation de commande',
     recipient: 'Destinataire',
     documentDetails: 'Détails du document',
     invoiceNumber: 'Numéro de facture',
     quoteNumber: 'Numéro de devis',
     orderNumber: 'Numéro de commande',
     deliveryNoteNumber: 'Numéro de bon de livraison',
+    orderConfirmationNumber: 'N° confirmation de commande',
     date: 'Date',
     dueDate: "Date d'échéance",
     validUntil: "Valide jusqu'au",
+    deliveryDate: 'Date de livraison',
     position: 'Pos.',
     description: 'Description',
     quantity: 'Quantité',

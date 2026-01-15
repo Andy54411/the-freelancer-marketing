@@ -14,12 +14,14 @@ import {
   HelpCircle,
   CreditCard,
   CheckCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, getDocs, query, where, Timestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { TaxEstimationWizard } from '@/components/finance/TaxEstimationWizard';
+import { FixedAssetService } from '@/services/fixedAssetService';
 
 interface TaxPrepayment {
   id: string;
@@ -32,6 +34,34 @@ interface TaxPrepayment {
   estimatedRefund: number;
   status: 'pending' | 'paid' | 'overdue';
   paidAt?: Date;
+}
+
+interface TaxCalculationDetails {
+  // Schätzmethode
+  estimationMethod: 'standard' | 'extrapolation' | 'manual';
+  // Einnahmen & Ausgaben
+  totalIncome: number;
+  totalExpenses: number;
+  yearlyDepreciation: number;
+  afaBisQuartal: number;
+  gewinnBisQuartal: number;
+  extrapolierterJahresgewinn: number;
+  hochgerechneterJahresgewinn: number;
+  // Zusätzliche Einkünfte
+  einkommenAngestellt: number;
+  gesamtEinkommen: number;
+  // Abzüge
+  krankenversicherung: number;
+  privateKV: number;
+  pflegeversicherung: number;
+  vorsorgeaufwendungen: number;
+  grundfreibetrag: number;
+  // Ergebnis
+  zuVersteuerndesEinkommen: number;
+  einkommensteuer: number;
+  solidaritaetszuschlag: number;
+  kirchensteuer: number;
+  gesamteSteuer: number;
 }
 
 const formatCurrency = (value: number) => {
@@ -51,6 +81,45 @@ const getQuarterName = (quarter: number): string => {
   return names[quarter] || `Q${quarter}`;
 };
 
+/**
+ * Berechnet die Einkommensteuer nach deutschem Tarif 2024/2025
+ * Tarifzonen: Grundtarif (nicht Splittingtarif)
+ */
+function berechneEinkommensteuer(zvE: number): number {
+  // Tarifzonen 2024 (vereinfacht)
+  // Zone 1: 0 - 11.604€ = 0%
+  // Zone 2: 11.605€ - 17.005€ = 14% - 24% (progressiv)
+  // Zone 3: 17.006€ - 66.760€ = 24% - 42% (progressiv)
+  // Zone 4: 66.761€ - 277.825€ = 42%
+  // Zone 5: ab 277.826€ = 45%
+  
+  if (zvE <= 0) return 0;
+  
+  // Zone 1: Grundfreibetrag (bereits abgezogen in Berechnung oben)
+  // Hier berechnen wir ab zvE = zu versteuerndes Einkommen nach Abzug Grundfreibetrag
+  
+  // Vereinfachte progressive Berechnung
+  let steuer = 0;
+  
+  if (zvE <= 5401) {
+    // Zone 2 (14% - 24%)
+    const y = zvE / 10000;
+    steuer = (1088.67 * y + 1400) * y;
+  } else if (zvE <= 55156) {
+    // Zone 3 (24% - 42%)
+    const y = (zvE - 5401) / 10000;
+    steuer = (206.43 * y + 2397) * y + 938.24;
+  } else if (zvE <= 266221) {
+    // Zone 4 (42%)
+    steuer = 0.42 * zvE - 9972.98;
+  } else {
+    // Zone 5 (45%)
+    steuer = 0.45 * zvE - 17962.64;
+  }
+  
+  return Math.max(0, Math.round(steuer * 100) / 100);
+}
+
 export default function EstPrepaymentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -64,6 +133,8 @@ export default function EstPrepaymentDetailPage() {
   const [showAmountEditor, setShowAmountEditor] = useState(false);
   const [editedAmount, setEditedAmount] = useState('0');
   const [showEstimationWizard, setShowEstimationWizard] = useState(false);
+  const [calculationDetails, setCalculationDetails] = useState<TaxCalculationDetails | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Parse prepaymentId (Format: est-2026-q2)
   const parsePrepaymentId = useCallback(() => {
@@ -115,51 +186,182 @@ export default function EstPrepaymentDetailPage() {
         paidAt = data.paidAt?.toDate?.() || undefined;
       }
 
+      // Lade TaxProfile-Daten aus dem Wizard
+      const companyDoc = await getDoc(doc(db, 'companies', uid));
+      const companyData = companyDoc.exists() ? companyDoc.data() : {};
+      const taxProfile = companyData.taxProfile || {};
+      const profitEstimation = companyData.profitEstimation || { method: 'extrapolation' };
+
       // Berechne geschätzte Einkommensteuer basierend auf bisherigen Einnahmen/Ausgaben
       const yearStart = new Date(year, 0, 1);
       const quarterEnd = new Date(year, quarter * 3, 0); // Ende des Quartals
 
       // Lade Einnahmen bis zum Quartal
+      // Hinweis: Rechnungen haben verschiedene Datumsfelder (date, createdAt, invoiceDate)
+      // Daher laden wir alle und filtern clientseitig
       const invoicesRef = collection(db, 'companies', uid, 'invoices');
-      const invoicesQuery = query(
-        invoicesRef,
-        where('invoiceDate', '>=', Timestamp.fromDate(yearStart)),
-        where('invoiceDate', '<=', Timestamp.fromDate(quarterEnd))
-      );
-      const invoicesSnap = await getDocs(invoicesQuery);
+      const invoicesSnap = await getDocs(invoicesRef);
       let totalIncome = 0;
       invoicesSnap.forEach(docSnap => {
         const data = docSnap.data();
-        if (['paid', 'sent', 'overdue'].includes(data.status)) {
-          totalIncome += (data.netAmount || data.subtotal || 0) / 100;
+        
+        // Datum aus verschiedenen möglichen Feldern extrahieren
+        let invoiceDate: Date | null = null;
+        if (data.date) {
+          invoiceDate = data.date instanceof Date ? data.date : 
+                        data.date?.toDate?.() ? data.date.toDate() : 
+                        typeof data.date === 'string' ? new Date(data.date) : null;
+        } else if (data.createdAt) {
+          invoiceDate = data.createdAt?.toDate?.() ? data.createdAt.toDate() : 
+                        data.createdAt instanceof Date ? data.createdAt : null;
+        } else if (data.invoiceDate) {
+          invoiceDate = typeof data.invoiceDate === 'string' ? new Date(data.invoiceDate) : 
+                        data.invoiceDate?.toDate?.() ? data.invoiceDate.toDate() : null;
+        }
+        
+        // Prüfe ob im relevanten Zeitraum
+        if (invoiceDate && invoiceDate >= yearStart && invoiceDate <= quarterEnd) {
+          // Status-Filter: finalized, sent, paid, overdue (nicht draft, cancelled, storno)
+          if (['finalized', 'paid', 'sent', 'overdue'].includes(data.status)) {
+            // Beträge sind in Euro gespeichert (nicht Cents!)
+            totalIncome += data.subtotal || data.amount || data.netAmount || 0;
+          }
         }
       });
 
       // Lade Ausgaben bis zum Quartal
+      // Hinweis: Ausgaben haben 'date' als String (YYYY-MM-DD Format)
+      // Normale Ausgaben haben kein Statusfeld - sie werden immer gezählt
       const expensesRef = collection(db, 'companies', uid, 'expenses');
-      const expensesQuery = query(
-        expensesRef,
-        where('expenseDate', '>=', Timestamp.fromDate(yearStart)),
-        where('expenseDate', '<=', Timestamp.fromDate(quarterEnd))
-      );
-      const expensesSnap = await getDocs(expensesQuery);
+      const expensesSnap = await getDocs(expensesRef);
       let totalExpenses = 0;
       expensesSnap.forEach(docSnap => {
         const data = docSnap.data();
-        if (['PAID', 'APPROVED', 'paid', 'approved'].includes(data.status)) {
-          totalExpenses += (data.netAmount || data.amount || 0) / 100;
+        
+        // Datum aus verschiedenen möglichen Feldern extrahieren
+        let expenseDate: Date | null = null;
+        if (data.date) {
+          expenseDate = data.date instanceof Date ? data.date : 
+                        data.date?.toDate?.() ? data.date.toDate() : 
+                        typeof data.date === 'string' ? new Date(data.date) : null;
+        } else if (data.createdAt) {
+          expenseDate = data.createdAt?.toDate?.() ? data.createdAt.toDate() : 
+                        data.createdAt instanceof Date ? data.createdAt : null;
+        } else if (data.expenseDate) {
+          expenseDate = typeof data.expenseDate === 'string' ? new Date(data.expenseDate) : 
+                        data.expenseDate?.toDate?.() ? data.expenseDate.toDate() : null;
+        }
+        
+        // Prüfe ob im relevanten Zeitraum
+        if (expenseDate && expenseDate >= yearStart && expenseDate <= quarterEnd) {
+          // Normale Ausgaben haben kein Statusfeld (nur wiederkehrende haben 'active'/'paused'/'cancelled')
+          // Wir zählen alle Ausgaben, außer stornierte/gelöschte
+          const status = data.status;
+          if (!status || status === 'active' || ['PAID', 'APPROVED', 'paid', 'approved'].includes(status)) {
+            // Beträge sind in Euro gespeichert (nicht Cents!)
+            totalExpenses += data.netAmount || data.amount || 0;
+          }
         }
       });
 
-      // Hochrechnung auf das ganze Jahr
-      const gewinnBisQuartal = totalIncome - totalExpenses;
-      const hochgerechneterJahresgewinn = (gewinnBisQuartal / quarter) * 4;
+      // Lade Abschreibungen (AfA) für das Jahr
+      let yearlyDepreciation = 0;
+      try {
+        const assetSummary = await FixedAssetService.getAssetSummary(uid, year);
+        yearlyDepreciation = assetSummary.yearlyDepreciation / 100; // Cent zu Euro
+      } catch {
+        // Falls keine Anlagen vorhanden oder Service fehlt
+        yearlyDepreciation = 0;
+      }
+      // Anteilige AfA bis zum Quartal
+      const afaBisQuartal = (yearlyDepreciation / 4) * quarter;
 
-      // Geschätzte ESt (vereinfacht: ~25% auf Gewinn über Grundfreibetrag)
-      const grundfreibetrag = 11604; // 2024
-      const zuVersteuern = Math.max(0, hochgerechneterJahresgewinn - grundfreibetrag);
-      const geschaetzteJahresEst = zuVersteuern * 0.25;
-      const estimatedQuarterAmount = geschaetzteJahresEst / 4;
+      // Hochrechnung auf das ganze Jahr (inkl. AfA)
+      const gewinnBisQuartal = totalIncome - totalExpenses - afaBisQuartal;
+      const extrapolierterJahresgewinn = quarter > 0 ? (gewinnBisQuartal / quarter) * 4 : 0;
+
+      // === GEWINNSCHÄTZUNG BASIEREND AUF BENUTZEREINSTELLUNG ===
+      // Unterstützt 3 Methoden: standard, extrapolation, manual
+      let hochgerechneterJahresgewinn: number;
+      switch (profitEstimation.method) {
+        case 'standard':
+          // Fester Standardbetrag (z.B. 10.000€ für neue Selbständige)
+          hochgerechneterJahresgewinn = profitEstimation.standardAmount || 10000;
+          break;
+        case 'manual':
+          // Manuell eingegebener Betrag
+          hochgerechneterJahresgewinn = profitEstimation.manualAmount || 0;
+          break;
+        case 'extrapolation':
+        default:
+          // Hochrechnung basierend auf bisherigen Einnahmen/Ausgaben
+          hochgerechneterJahresgewinn = extrapolierterJahresgewinn;
+          break;
+      }
+
+      // === VERBESSERTE EINKOMMENSTEUER-BERECHNUNG ===
+      // Berücksichtigt TaxProfile-Daten aus dem Wizard
+      
+      // 1. Zusätzliches Einkommen aus Angestelltenverhältnis
+      const einkommenAngestellt = taxProfile.warAngestellt ? (taxProfile.einkommenAngestellt || 0) : 0;
+      
+      // 2. Gesamteinkommen
+      const gesamtEinkommen = hochgerechneterJahresgewinn + einkommenAngestellt;
+      
+      // 3. Sonderausgaben (Vorsorgeaufwendungen)
+      const krankenversicherung = taxProfile.hatKrankenversicherung ? (taxProfile.krankenversicherungBetrag || 0) : 0;
+      const privateKV = taxProfile.hatPrivateKV ? (taxProfile.privateKVBetrag || 0) : 0;
+      const pflegeversicherung = taxProfile.hatPflegeversicherung ? (taxProfile.pflegeversicherungBetrag || 0) : 0;
+      const krankengeld = taxProfile.hatKrankengeld ? (taxProfile.krankengeldBetrag || 0) : 0;
+      
+      // Vorsorgeaufwendungen sind als Sonderausgaben abzugsfähig
+      const vorsorgeaufwendungen = krankenversicherung + privateKV + pflegeversicherung + krankengeld;
+      
+      // 4. Zu versteuerndes Einkommen
+      const grundfreibetrag2024 = 11604;
+      const grundfreibetrag2025 = 12096;
+      const grundfreibetrag2026 = 12500; // geschätzt
+      const grundfreibetrag = year >= 2026 ? grundfreibetrag2026 : (year === 2025 ? grundfreibetrag2025 : grundfreibetrag2024);
+      
+      // Bei Verheirateten: Splittingtarif (doppelter Grundfreibetrag)
+      const istVerheiratet = taxProfile.familienstand === 'verheiratet' || taxProfile.familienstand === 'lebenspartnerschaft';
+      const effektiverGrundfreibetrag = istVerheiratet ? grundfreibetrag * 2 : grundfreibetrag;
+      
+      const zuVersteuerndesEinkommen = Math.max(0, gesamtEinkommen - vorsorgeaufwendungen - effektiverGrundfreibetrag);
+      
+      // 5. Einkommensteuer nach deutschem Tarif 2024/2025
+      // Vereinfachte Berechnung der Zonen
+      let einkommensteuer = 0;
+      if (zuVersteuerndesEinkommen > 0) {
+        if (istVerheiratet) {
+          // Splittingtarif: Einkommen halbieren, Steuer berechnen, verdoppeln
+          const halbEinkommen = zuVersteuerndesEinkommen / 2;
+          einkommensteuer = berechneEinkommensteuer(halbEinkommen) * 2;
+        } else {
+          einkommensteuer = berechneEinkommensteuer(zuVersteuerndesEinkommen);
+        }
+      }
+      
+      // 6. Solidaritätszuschlag (nur bei höheren Einkommen)
+      const soliFreigrenze = istVerheiratet ? 35086 : 17543;
+      let solidaritaetszuschlag = 0;
+      if (einkommensteuer > soliFreigrenze) {
+        solidaritaetszuschlag = einkommensteuer * 0.055;
+      }
+      
+      // 7. Kirchensteuer (wenn kirchensteuerpflichtig)
+      let kirchensteuer = 0;
+      if (taxProfile.kirchensteuerpflichtig && taxProfile.religionsgemeinschaft !== 'Nicht Kirchensteuerpflichtig') {
+        // Bayern und Baden-Württemberg: 8%, Rest: 9%
+        const kirchensteuersatz = ['Bayern', 'Baden-Württemberg'].includes(taxProfile.bundesland || '') ? 0.08 : 0.09;
+        kirchensteuer = einkommensteuer * kirchensteuersatz;
+      }
+      
+      // 8. Gesamte Steuerlast
+      const gesamteSteuer = einkommensteuer + solidaritaetszuschlag + kirchensteuer;
+      
+      // Quartalsanteil
+      const estimatedQuarterAmount = gesamteSteuer / 4;
 
       // Berechne Erstattung/Nachzahlung
       const estimatedRefund = paidInPreviousQuarters + finanzamtAmount - (estimatedQuarterAmount * quarter);
@@ -182,6 +384,30 @@ export default function EstPrepaymentDetailPage() {
         paidAt,
       });
       setEditedAmount(finanzamtAmount.toString());
+      
+      // Speichere Berechnungsdetails für Transparenz
+      setCalculationDetails({
+        estimationMethod: profitEstimation.method || 'extrapolation',
+        totalIncome,
+        totalExpenses,
+        yearlyDepreciation,
+        afaBisQuartal,
+        gewinnBisQuartal,
+        extrapolierterJahresgewinn,
+        hochgerechneterJahresgewinn,
+        einkommenAngestellt,
+        gesamtEinkommen,
+        krankenversicherung,
+        privateKV,
+        pflegeversicherung,
+        vorsorgeaufwendungen,
+        grundfreibetrag: effektiverGrundfreibetrag,
+        zuVersteuerndesEinkommen,
+        einkommensteuer,
+        solidaritaetszuschlag,
+        kirchensteuer,
+        gesamteSteuer,
+      });
 
     } catch (error) {
       console.error('Fehler beim Laden:', error);
@@ -320,17 +546,190 @@ export default function EstPrepaymentDetailPage() {
       <div className="mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Selbständige Tätigkeit</h2>
         
+        {/* Hinweis zur Berechnungsgrundlage */}
+        <div className="mb-4 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-600">
+            Die Schätzung basiert auf deinen <span className="font-medium text-gray-800">Rechnungen</span>, <span className="font-medium text-gray-800">Ausgaben</span> und <span className="font-medium text-gray-800">Abschreibungen (AfA)</span> bis zum aktuellen Quartal, hochgerechnet auf das gesamte Jahr.
+          </p>
+        </div>
+        
+        {/* Aufklappbare Berechnungsdetails */}
+        {calculationDetails && (
+          <div className="mb-4 border border-gray-200 rounded-xl bg-white overflow-hidden">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">Berechnungsdetails anzeigen</span>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showDetails ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showDetails && (
+              <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 space-y-4">
+                {/* Einnahmen & Ausgaben */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Bis Q{prepayment.quarter} {prepayment.year}</h4>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Einnahmen (Rechnungen)</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.totalIncome)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">- Ausgaben</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.totalExpenses)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">- Abschreibungen (AfA)</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.afaBisQuartal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
+                      <span className="font-medium text-gray-700">= Gewinn bis Q{prepayment.quarter}</span>
+                      <span className="font-semibold text-gray-900">{formatCurrency(calculationDetails.gewinnBisQuartal)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Hochrechnung */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Jahresgewinn-Schätzung</h4>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      calculationDetails.estimationMethod === 'standard' ? 'bg-blue-100 text-blue-700' :
+                      calculationDetails.estimationMethod === 'manual' ? 'bg-purple-100 text-purple-700' :
+                      'bg-teal-100 text-teal-700'
+                    }`}>
+                      {calculationDetails.estimationMethod === 'standard' ? 'Standardprofil' :
+                       calculationDetails.estimationMethod === 'manual' ? 'Manuelle Schätzung' :
+                       'Extrapolation'}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {calculationDetails.estimationMethod === 'extrapolation' ? (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Hochgerechneter Jahresgewinn</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.hochgerechneterJahresgewinn)}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between text-sm text-gray-400">
+                          <span>(Extrapolation würde ergeben)</span>
+                          <span>{formatCurrency(calculationDetails.extrapolierterJahresgewinn)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">
+                            {calculationDetails.estimationMethod === 'standard' ? 'Standardprofil' : 'Manuelle Schätzung'}
+                          </span>
+                          <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.hochgerechneterJahresgewinn)}</span>
+                        </div>
+                      </>
+                    )}
+                    {calculationDetails.einkommenAngestellt > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">+ Einkommen aus Anstellung</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.einkommenAngestellt)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
+                      <span className="font-medium text-gray-700">= Gesamteinkommen</span>
+                      <span className="font-semibold text-gray-900">{formatCurrency(calculationDetails.gesamtEinkommen)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Abzüge */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Abzüge</h4>
+                  <div className="space-y-1.5">
+                    {calculationDetails.krankenversicherung > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Krankenversicherung (gesetzl.)</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.krankenversicherung)}</span>
+                      </div>
+                    )}
+                    {calculationDetails.privateKV > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Private Krankenversicherung</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.privateKV)}</span>
+                      </div>
+                    )}
+                    {calculationDetails.pflegeversicherung > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Pflegeversicherung</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.pflegeversicherung)}</span>
+                      </div>
+                    )}
+                    {calculationDetails.vorsorgeaufwendungen > 0 && (
+                      <div className="flex justify-between text-sm pt-1">
+                        <span className="text-gray-600">= Vorsorgeaufwendungen gesamt</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.vorsorgeaufwendungen)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Grundfreibetrag</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.grundfreibetrag)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Steuerberechnung */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Steuerberechnung</h4>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Zu versteuerndes Einkommen</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.zuVersteuerndesEinkommen)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Einkommensteuer</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.einkommensteuer)}</span>
+                    </div>
+                    {calculationDetails.solidaritaetszuschlag > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">+ Solidaritätszuschlag</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.solidaritaetszuschlag)}</span>
+                      </div>
+                    )}
+                    {calculationDetails.kirchensteuer > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">+ Kirchensteuer</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.kirchensteuer)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                      <span className="font-semibold text-gray-900">Gesamte Jahressteuer</span>
+                      <span className="font-bold text-[#14ad9f]">{formatCurrency(calculationDetails.gesamteSteuer)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-1">
+                      <span className="text-gray-600">Quartalsanteil (÷ 4)</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(calculationDetails.gesamteSteuer / 4)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
           {/* Geschätzte Einkommensteuer */}
           <div className="flex items-center justify-between px-5 py-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-gray-700">Geschätzte Einkommensteuer</span>
-              <button 
-                onClick={() => setShowEstimationWizard(true)}
-                className="text-[#14ad9f] hover:text-[#0d8a7f] text-sm font-medium"
-              >
-                Schätzung verbessern
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowEstimationWizard(true)}
+                  className="text-[#14ad9f] hover:text-[#0d8a7f] text-sm font-medium"
+                >
+                  Profil anpassen
+                </button>
+                <span className="text-gray-300">|</span>
+                <Link 
+                  href={`/dashboard/company/${uid}/finance/settings`}
+                  className="text-[#14ad9f] hover:text-[#0d8a7f] text-sm font-medium"
+                >
+                  Schätzmethode ändern
+                </Link>
+              </div>
             </div>
             <span className="text-gray-900 font-medium">{formatCurrency(prepayment.estimatedAmount)}</span>
           </div>

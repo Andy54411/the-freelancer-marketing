@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-// PDF Template System für Quotes
+// PDF Template System für Lieferscheine
 import PDFTemplate from '@/components/finance/PDFTemplates';
 import { DocumentType } from '@/lib/document-utils';
 import {
@@ -73,13 +73,13 @@ import {
   DocumentData,
   QuerySnapshot } from
 'firebase/firestore';
-import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { DeliveryNoteService, DeliveryNote as DeliveryNoteType, DeliveryNoteItem } from '@/services/deliveryNoteService';
 import {
   DEFAULT_INVOICE_TEMPLATE,
   AVAILABLE_TEMPLATES,
   InvoiceTemplate } from
 '@/components/finance/InvoiceTemplates';
-// Quote-spezifische Imports
+// Lieferschein-spezifische Imports
 import { InventoryService } from '@/services/inventoryService';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import { UserPreferencesService } from '@/lib/userPreferences';
@@ -114,7 +114,7 @@ import {
   DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
 
-// Use InvoiceTemplate type from @/components/finance/InvoiceTemplates (dynamic templates work for both invoices and quotes)
+// Use InvoiceTemplate type from @/components/finance/InvoiceTemplates (dynamic templates work for invoices, quotes and delivery notes)
 import InvoiceHeaderTextSection from '@/components/finance/InvoiceHeaderTextSection';
 import { SimpleTaxRuleSelector } from '@/components/finance/SimpleTaxRuleSelector';
 import { TaxRuleSelector } from '@/components/finance/TaxRuleSelector';
@@ -266,7 +266,7 @@ interface Customer {
   customerType?: string; // person, organisation
 }
 
-export default function CreateQuotePage() {
+export default function CreateDeliveryNotePage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -290,7 +290,7 @@ export default function CreateQuotePage() {
         companyId={uid}
         onServiceAdded={(service) => {
           setItems((prev) => [...prev, service]);
-          toast.success('Dienstleistung wurde zum Angebot hinzugefügt');
+          toast.success('Dienstleistung wurde zum Lieferschein hinzugefügt');
         }} />
 
 
@@ -529,7 +529,7 @@ export default function CreateQuotePage() {
       const ref = collection(db, 'companies', uid, 'inlineQuoteServices');
       const result = await addDoc(ref, serviceData);
 
-      // 2. Direkt zum Angebot hinzufügen
+      // 2. Direkt zum Lieferschein hinzufügen
       const newItem = {
         id: crypto.randomUUID(),
         description: serviceData.name,
@@ -546,7 +546,7 @@ export default function CreateQuotePage() {
       // 3. UI zurücksetzen
       setQuickServiceName('');
       setQuickServicePrice('');
-      toast.success('Dienstleistung gespeichert und zum Angebot hinzugefügt');
+      toast.success('Dienstleistung gespeichert und zum Lieferschein hinzugefügt');
     } catch (e) {
       console.error('Fehler beim Quick-Add Service:', e);
       toast.error('Fehler beim Speichern der Dienstleistung');
@@ -685,7 +685,7 @@ export default function CreateQuotePage() {
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailAttachmentB64, setEmailAttachmentB64] = useState<string | null>(null);
-  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Angebot.docx');
+  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Lieferschein.docx');
   const [emailAttachmentReady, setEmailAttachmentReady] = useState<boolean>(false);
   const [emailAttachmentError, setEmailAttachmentError] = useState<string | null>(null);
 
@@ -904,8 +904,8 @@ export default function CreateQuotePage() {
   const [skontoPercentage, setSkontoPercentage] = useState<number | undefined>(undefined);
   const [skontoText, setSkontoText] = useState<string>('');
 
-  // Form state für Angebote
-  interface CreateQuoteFormData {
+  // Form state für Lieferscheine
+  interface CreateDeliveryNoteFormData {
     customerName: string;
     customerFirstName: string;
     customerLastName: string;
@@ -915,7 +915,7 @@ export default function CreateQuotePage() {
     title: string;
     customerOrderNumber: string;
     validUntil: string;
-    quoteDate: string;
+    deliveryNoteDate: string;
     deliveryDate: string;
     servicePeriod: string;
     headTextHtml: string;
@@ -925,7 +925,7 @@ export default function CreateQuotePage() {
     [key: string]: any;
   }
 
-  const [formData, setFormData] = useState<CreateQuoteFormData>({
+  const [formData, setFormData] = useState<CreateDeliveryNoteFormData>({
     customerName: '',
     customerFirstName: '',
     customerLastName: '',
@@ -935,11 +935,11 @@ export default function CreateQuotePage() {
     title: '',
     customerOrderNumber: '',
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 Tage ab heute
-    quoteDate: new Date().toISOString().split('T')[0],
+    deliveryNoteDate: new Date().toISOString().split('T')[0],
     deliveryDate: new Date().toISOString().split('T')[0],
     servicePeriod: '', // Lieferzeitraum/Leistungszeitraum
-    headTextHtml: '[%VOLLEANREDE%],\n\n[%QUOTE_INTRO_TEXT%]',
-    footerText: '[%QUOTE_CLOSING_TEXT%]<br>[%BESTREGARDS%]<br>[%KONTAKTPERSON%]',
+    headTextHtml: '[%VOLLEANREDE%],\n\n[%DELIVERY_NOTE_INTRO_TEXT%]',
+    footerText: '[%DELIVERY_NOTE_CLOSING_TEXT%]<br>[%BESTREGARDS%]<br>[%KONTAKTPERSON%]',
     notes: '',
     currency: 'EUR',
     internalContactPerson: '',
@@ -1068,42 +1068,42 @@ export default function CreateQuotePage() {
     loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
-  // Angebot-Nummerierung laden - FIXED to use NumberSequenceService
+  // Lieferschein-Nummerierung laden - FIXED to use NumberSequenceService
   const [numberingLoaded, setNumberingLoaded] = useState(false);
 
   useEffect(() => {
     if (!uid || numberingLoaded) return;
 
-    const loadQuoteNumbering = async () => {
+    const loadDeliveryNoteNumbering = async () => {
       try {
 
 
-        // Verwende das NumberSequenceService für korrekte Angebotsnummerierung
+        // Verwende das NumberSequenceService für korrekte Lieferschein-Nummerierung
         const sequences = await NumberSequenceService.getNumberSequences(uid);
-        const quoteSequence = sequences.find((seq) => seq.type === 'Angebot');
+        const deliveryNoteSequence = sequences.find((seq) => seq.type === 'Lieferschein');
 
-        if (quoteSequence) {
-          // Verwende das existierende NumberSequence für Angebote
+        if (deliveryNoteSequence) {
+          // Verwende das existierende NumberSequence für Lieferscheine
           const previewNumber = NumberSequenceService.formatNumber(
-            quoteSequence.nextNumber,
-            quoteSequence.format
+            deliveryNoteSequence.nextNumber,
+            deliveryNoteSequence.format
           );
 
 
 
-          setNumberingFormat(quoteSequence.format);
-          setNextNumber(quoteSequence.nextNumber);
+          setNumberingFormat(deliveryNoteSequence.format);
+          setNextNumber(deliveryNoteSequence.nextNumber);
 
           setFormData((prev) => ({
             ...prev,
             title: previewNumber
           }));
         } else {
-          // Fallback: Erstelle neues Angebot-NumberSequence
+          // Fallback: Erstelle neues Lieferschein-NumberSequence
 
 
-          const fallbackNumber = 'AN-1001';
-          setNumberingFormat('AN-{number}');
+          const fallbackNumber = 'LS-1001';
+          setNumberingFormat('LS-{number}');
           setNextNumber(1001);
 
           setFormData((prev) => ({
@@ -1114,10 +1114,10 @@ export default function CreateQuotePage() {
 
         setNumberingLoaded(true);
       } catch (error) {
-        console.error('Fehler beim Laden der Angebot-Nummerierung:', error);
+        console.error('Fehler beim Laden der Lieferschein-Nummerierung:', error);
 
         // Fallback bei Fehler
-        const fallbackNumber = `AN-${Date.now().toString().slice(-4)}`;
+        const fallbackNumber = `LS-${Date.now().toString().slice(-4)}`;
         setFormData((prev) => ({
           ...prev,
           title: fallbackNumber
@@ -1127,7 +1127,7 @@ export default function CreateQuotePage() {
       }
     };
 
-    loadQuoteNumbering();
+    loadDeliveryNoteNumbering();
   }, [uid]);
 
   // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
@@ -1151,12 +1151,12 @@ export default function CreateQuotePage() {
       return;
     }
     
-    const currentQuoteDate = formData.quoteDate;
-    if (!currentQuoteDate || paymentDays <= 0) return;
+    const currentDeliveryNoteDate = formData.deliveryNoteDate;
+    if (!currentDeliveryNoteDate || paymentDays <= 0) return;
     
-    const quoteDate = new Date(currentQuoteDate);
-    const dueDate = new Date(quoteDate);
-    dueDate.setDate(quoteDate.getDate() + paymentDays);
+    const deliveryNoteDate = new Date(currentDeliveryNoteDate);
+    const dueDate = new Date(deliveryNoteDate);
+    dueDate.setDate(deliveryNoteDate.getDate() + paymentDays);
     const dueDateString = dueDate.toISOString().split('T')[0];
     
     // Aktualisiere validUntil UND paymentTerms synchron
@@ -1167,18 +1167,18 @@ export default function CreateQuotePage() {
         paymentTerms: `Gültig für ${paymentDays} Tage`,
       }));
     }
-  }, [paymentDays, formData.quoteDate]);
+  }, [paymentDays, formData.deliveryNoteDate]);
 
   // Initiale Berechnung nur beim ersten Laden
   useEffect(() => {
-    const currentQuoteDate = formData.quoteDate;
-    if (!currentQuoteDate) return;
+    const currentDeliveryNoteDate = formData.deliveryNoteDate;
+    if (!currentDeliveryNoteDate) return;
     
     if (!formData.validUntil) {
-      // Wenn kein Fälligkeitsdatum gesetzt ist, verwende Standard 30 Tage für Angebote
-      const quoteDate = new Date(currentQuoteDate);
-      const validUntilDate = new Date(quoteDate);
-      validUntilDate.setDate(quoteDate.getDate() + 30);
+      // Wenn kein Fälligkeitsdatum gesetzt ist, verwende Standard 30 Tage für Lieferscheine
+      const deliveryNoteDate = new Date(currentDeliveryNoteDate);
+      const validUntilDate = new Date(deliveryNoteDate);
+      validUntilDate.setDate(deliveryNoteDate.getDate() + 30);
 
       const validUntilString = validUntilDate.toISOString().split('T')[0];
       setFormData((prev) => ({
@@ -1193,12 +1193,12 @@ export default function CreateQuotePage() {
 
   // Handler für manuelle Änderung des Gültigkeitsdatums → berechne paymentDays zurück
   const handleValidUntilChange = useCallback((newValidUntil: string) => {
-    const currentQuoteDate = formData.quoteDate;
-    if (!currentQuoteDate || !newValidUntil) return;
+    const currentDeliveryNoteDate = formData.deliveryNoteDate;
+    if (!currentDeliveryNoteDate || !newValidUntil) return;
     
-    const quoteDate = new Date(currentQuoteDate);
+    const deliveryNoteDate = new Date(currentDeliveryNoteDate);
     const dueDate = new Date(newValidUntil);
-    const diffTime = dueDate.getTime() - quoteDate.getTime();
+    const diffTime = dueDate.getTime() - deliveryNoteDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     // Markiere als manuelle Änderung um Sync-Loop zu verhindern
@@ -1220,7 +1220,7 @@ export default function CreateQuotePage() {
         paymentTerms: 'Sofort gültig',
       }));
     }
-  }, [formData.quoteDate]);
+  }, [formData.deliveryNoteDate]);
 
   // Template Auswahl & User Preferences laden
   useEffect(() => {
@@ -1374,7 +1374,7 @@ export default function CreateQuotePage() {
       companyId={uid}
       onServiceAdded={(service) => {
         setItems((prev) => [...prev, service]);
-        toast.success('Dienstleistung wurde zum Angebot hinzugefügt');
+        toast.success('Dienstleistung wurde zum Lieferschein hinzugefügt');
       }} />
 
     </div>;
@@ -1662,13 +1662,13 @@ export default function CreateQuotePage() {
     };
 
     const data: PreviewTemplateData = {
-      documentType: 'quote' as const,
-      quoteNumber: formData.title || `AN-${nextNumber}`,
-      documentNumber: formData.title || `AN-${nextNumber}`,
-      invoiceNumber: formData.title || `AN-${nextNumber}`, // Fallback für Template-Kompatibilität
-      date: formData.quoteDate ? formatDateDE(formData.quoteDate) : formatDateDE(new Date()),
-      quoteDate: formData.quoteDate ? formatDateDE(formData.quoteDate) : formatDateDE(new Date()),
-      invoiceDate: formData.quoteDate ? formatDateDE(formData.quoteDate) : formatDateDE(new Date()), // Fallback für Template-Kompatibilität
+      documentType: 'deliveryNote' as const,
+      quoteNumber: formData.title || `LS-${nextNumber}`,
+      documentNumber: formData.title || `LS-${nextNumber}`,
+      invoiceNumber: formData.title || `LS-${nextNumber}`, // Fallback für Template-Kompatibilität
+      date: formData.deliveryNoteDate ? formatDateDE(formData.deliveryNoteDate) : formatDateDE(new Date()),
+      quoteDate: formData.deliveryNoteDate ? formatDateDE(formData.deliveryNoteDate) : formatDateDE(new Date()),
+      invoiceDate: formData.deliveryNoteDate ? formatDateDE(formData.deliveryNoteDate) : formatDateDE(new Date()), // Fallback für Template-Kompatibilität
       dueDate: formData.validUntil ? formatDateDE(formData.validUntil) : undefined,
       validUntil: formData.validUntil ? formatDateDE(formData.validUntil) : undefined,
       deliveryDate: formData.deliveryDate ? formatDateDE(formData.deliveryDate) : undefined,
@@ -1955,12 +1955,12 @@ export default function CreateQuotePage() {
     if (!emailCardOpen) return;
     const data = buildPreviewData();
     if (!emailSubject) {
-      setEmailSubject(`Angebot ${data.companyName}${data.title ? ' – ' + data.title : ''}`);
+      setEmailSubject(`Lieferschein ${data.companyName}${data.title ? ' – ' + data.title : ''}`);
     }
     if (!emailBody) {
       setEmailBody(
         `Hallo ${data.customerName || ''},\n\n` +
-        `anbei erhalten Sie unser Angebot${data.title ? ' zu: ' + data.title : ''}.` +
+        `anbei erhalten Sie Ihren Lieferschein${data.title ? ' zu: ' + data.title : ''}.` +
         `\n\nGesamtbetrag: ${formatCurrency(data.total)}\nGültig bis: ${data.validUntil}` +
         `\n\nBei Fragen melden Sie sich gerne.` +
         `\n\nBeste Grüße\n${data.companyName}`
@@ -2157,9 +2157,9 @@ export default function CreateQuotePage() {
       },
       customerOrderNumber: formData.customerOrderNumber || '',
 
-      // Angebotsbeschreibung
-      title: formData.title || `Angebot ${nextNumber}`,
-      description: formData.title || `Angebot ${nextNumber}`,
+      // Lieferscheinbeschreibung
+      title: formData.title || `Lieferschein ${nextNumber}`,
+      description: formData.title || `Lieferschein ${nextNumber}`,
 
       // Finanzielle Daten
       subtotal: subtotal, // Nettobetrag
@@ -2242,21 +2242,21 @@ export default function CreateQuotePage() {
         id: '', // This will be set by Firestore when saving
         companyId: uid,
         quoteNumber: formData.title || `AN-${nextNumber}`,
-        number: formData.title || `AN-${nextNumber}`,
+        number: formData.title || `LS-${nextNumber}`,
         sequentialNumber: nextNumber,
         status: asDraft ? 'draft' : 'finalized',
 
         // Dates - ALLE Datumswerte aus dem Formular
-        date: formData.quoteDate ?
-        new Date(formData.quoteDate).toISOString().split('T')[0] :
+        date: formData.deliveryNoteDate ?
+        new Date(formData.deliveryNoteDate).toISOString().split('T')[0] :
         new Date().toISOString().split('T')[0],
-        issueDate: formData.quoteDate ?
-        new Date(formData.quoteDate).toISOString().split('T')[0] :
+        issueDate: formData.deliveryNoteDate ?
+        new Date(formData.deliveryNoteDate).toISOString().split('T')[0] :
         new Date().toISOString().split('T')[0],
         validUntilDate: formData.validUntil ?
         new Date(formData.validUntil).toISOString().split('T')[0] :
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        quoteDate: formData.quoteDate || '',
+        deliveryNoteDate: formData.deliveryNoteDate || '',
         validUntil: formData.validUntil || '',
         deliveryDate: formData.deliveryDate || '',
 
@@ -2447,18 +2447,18 @@ export default function CreateQuotePage() {
         // Continue anyway - inventory reservation is not critical for invoice creation
       }
 
-      // ✅ Quote number sequence is now automatically managed by NumberSequenceService via QuoteService
+      // ✅ Delivery note number sequence is now automatically managed by NumberSequenceService via DeliveryNoteService
       // ❌ REMOVED: setNextNumber manipulation - causes race conditions!
       // NumberSequenceService handles all numbering automatically
 
-      toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt');
+      toast.success(asDraft ? 'Lieferschein als Entwurf gespeichert' : 'Lieferschein erstellt');
 
       // Open send document modal instead of navigating
       setCreatedDocument(quoteData);
       setShowSendDocumentModal(true);
     } catch (e) {
       console.error('❌ CRITICAL ERROR in handleSubmit:', e);
-      toast.error('Angebot konnte nicht gespeichert werden');
+      toast.error('Lieferschein konnte nicht gespeichert werden');
     } finally {
       setLoading(false);
     }
@@ -2508,7 +2508,7 @@ export default function CreateQuotePage() {
           {/* Left side - Title */}
           <div className="flex items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Neues Angebot</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Neuer Lieferschein</h2>
             </div>
           </div>
 
@@ -2551,7 +2551,7 @@ export default function CreateQuotePage() {
 
                 <Send className="w-4 h-4 mr-2" />
                 }
-                Angebot erstellen
+                Lieferschein erstellen
               </Button>
 
               {/* More Options Dropdown */}
@@ -3025,24 +3025,24 @@ export default function CreateQuotePage() {
               </div>
             </div>
 
-            {/* Angebotsinformationen Sektion - Rechts */}
+            {/* Lieferscheininformationen Sektion - Rechts */}
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Angebotsinformationen</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Lieferscheininformationen</h3>
 
-                {/* 2x2 Grid für Angebotsfelder */}
+                {/* 2x2 Grid für Lieferscheinfelder */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  {/* Angebotsdatum */}
+                  {/* Lieferscheindatum */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-1">
-                      <Label className="text-sm font-medium text-gray-700">Angebotsdatum</Label>
+                      <Label className="text-sm font-medium text-gray-700">Lieferscheindatum</Label>
                       <span className="text-red-500">*</span>
                     </div>
                     <Input
                       type="date"
-                      value={formData.quoteDate || new Date().toISOString().split('T')[0]}
+                      value={formData.deliveryNoteDate || new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, quoteDate: e.target.value }));
+                        setFormData((prev) => ({ ...prev, deliveryNoteDate: e.target.value }));
                       }}
                       required />
 
@@ -3151,10 +3151,10 @@ export default function CreateQuotePage() {
                     }
                   </div>
 
-                  {/* Angebotsnummer */}
+                  {/* Lieferscheinnummer */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-1">
-                      <Label className="text-sm font-medium text-gray-700">Angebotsnummer</Label>
+                      <Label className="text-sm font-medium text-gray-700">Lieferscheinnummer</Label>
                       <span className="text-red-500">*</span>
                     </div>
                     <div className="relative">
@@ -4089,7 +4089,7 @@ export default function CreateQuotePage() {
           <Textarea
             value={formData.notes}
             onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-            placeholder="Interne Notizen (werden nicht im Angebot angezeigt)..."
+            placeholder="Interne Notizen (werden nicht im Lieferschein angezeigt)..."
             rows={3} />
 
         </CardContent>
@@ -4531,11 +4531,11 @@ export default function CreateQuotePage() {
               toast.success('Druckvorbereitung abgeschlossen');
             }
 
-            // Navigate to quotes list after successful send (dynamic routing fix)
-            router.push(`/dashboard/company/${uid}/finance/quotes`);
+            // Navigate to delivery notes list after successful send (dynamic routing fix)
+            router.push(`/dashboard/company/${uid}/finance/delivery-notes`);
           } catch (error) {
             console.error('Error sending document:', error);
-            toast.error('Fehler beim Versenden der Rechnung');
+            toast.error('Fehler beim Versenden des Lieferscheins');
           }
         }} />
 
@@ -4546,7 +4546,7 @@ export default function CreateQuotePage() {
         isOpen={showLivePreview}
         onClose={() => setShowLivePreview(false)}
         document={buildInvoiceDataForPreview()}
-        documentType="quote"
+        documentType="deliveryNote"
           companyId={uid}
           mode="preview"
           onSaveAsDraft={() => {

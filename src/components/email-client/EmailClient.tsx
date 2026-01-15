@@ -119,6 +119,8 @@ export function EmailClient({
   });
   const [authError, setAuthError] = useState<string | null>(null);
   const [requiresReauth, setRequiresReauth] = useState(false);
+  // E-Mail-Provider: 'webmail' | 'gmail' | null
+  const [emailProvider, setEmailProvider] = useState<'webmail' | 'gmail' | null>(null);
 
   // Vereinfachte Email State ohne Hook
   const [cachedEmails, setCachedEmails] = useState<EmailMessage[]>([]);
@@ -341,23 +343,19 @@ export function EmailClient({
 
       try {
         // ZUERST: Prüfe Webmail-Verbindung
-        console.log('📧 EmailClient: Prüfe Webmail-Verbindung...');
         const webmailResponse = await fetch(`/api/company/${companyId}/webmail-connect`);
         const webmailData = await webmailResponse.json();
 
         if (webmailData.connected) {
-          console.log('📧 EmailClient: Webmail verbunden, kein Gmail-Check nötig');
+          setEmailProvider('webmail');
           return; // Webmail ist verbunden, alles OK
         }
 
         // FALLBACK: Prüfe Gmail-Verbindung
-        console.log('📧 EmailClient: Webmail nicht verbunden, prüfe Gmail...');
         const response = await fetch(
           `/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`
         );
         const data = await response.json();
-
-        console.log('📧 EmailClient Gmail-Status für User', effectiveUserId, ':', data);
 
         // Prüfe auf gültige Verbindung (gleiche Logik wie in CompanySidebar)
         const hasValidConnection =
@@ -366,18 +364,15 @@ export function EmailClient({
           !data.tokenExpired &&
           data.status !== 'authentication_required';
 
-        console.log('📧 EmailClient Verbindung gültig:', hasValidConnection);
-
         if (!hasValidConnection) {
-          console.log('📧 EmailClient: Weder Webmail noch Gmail verbunden - Weiterleitung zur Integration');
+          setEmailProvider(null);
           window.location.href = `/dashboard/company/${companyId}/email-integration`;
         } else {
-          console.log('📧 EmailClient: Gmail Verbindung OK');
+          setEmailProvider('gmail');
         }
       } catch (error) {
         console.error('Email connection check failed:', error);
         // Bei Fehler NICHT automatisch zur Integration-Seite - könnte ein temporärer Fehler sein
-        console.warn('📧 EmailClient: Verbindungscheck fehlgeschlagen, versuche trotzdem fortzufahren');
       }
     };
 
@@ -1211,6 +1206,7 @@ export function EmailClient({
         onSend={handleSendEmail}
         onSaveDraft={handleSaveDraft}
         companyId={companyId}
+        emailProvider={emailProvider}
         replyTo={
           composeMode === 'reply' || composeMode === 'replyAll'
             ? replyToEmail || undefined

@@ -15,6 +15,9 @@ import TransactionMatchingTab from '@/components/accounting/TransactionMatchingT
 import CostCentersTab, { CostCenter } from '@/components/accounting/CostCentersTab';
 import { GoBDSystem } from '@/components/finance/gobd';
 import FinanceSettingsTab from '@/components/accounting/FinanceSettingsTab';
+import { ReminderSettings } from '@/components/finance/ReminderSettings';
+import { ElsterCertificateSettings } from '@/components/finance/ElsterCertificateSettings';
+import { ProfitEstimationSettings } from '@/components/finance/ProfitEstimationSettings';
 
 // Import Services
 import { NumberSequenceService, NumberSequence } from '@/services/numberSequenceService';
@@ -266,12 +269,12 @@ export default function AccountingPage() {
               Transaktionszuordnung
             </button>
 
-            {/* 3-Punkte Dropdown - FUNKTIONIERT GARANTIERT! */}
+            {/* 3-Punkte Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-1 ${
-                  ['cost-centers', 'gobd', 'finance-settings'].includes(activeTab)
+                  ['cost-centers', 'gobd', 'finance-settings', 'profit-estimation', 'elster', 'reminders'].includes(activeTab)
                     ? 'border-[#14ad9f] text-[#14ad9f]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
@@ -280,7 +283,7 @@ export default function AccountingPage() {
               </button>
 
               {dropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                   <div className="py-1">
                     <button
                       onClick={() => {
@@ -289,7 +292,7 @@ export default function AccountingPage() {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Kostenstelle
+                      Kostenstellen
                     </button>
                     <button
                       onClick={() => {
@@ -308,6 +311,34 @@ export default function AccountingPage() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Finanzeinstellungen
+                    </button>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setActiveTab('profit-estimation');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Gewinnschätzung
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('elster');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      ELSTER-Zertifikat
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('reminders');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Mahnungseinstellungen
                     </button>
                   </div>
                 </div>
@@ -356,6 +387,9 @@ export default function AccountingPage() {
           )}
           {activeTab === 'gobd' && <GoBDSystem companyId={uid} />}
           {activeTab === 'finance-settings' && <FinanceSettingsTab companyUid={uid} />}
+          {activeTab === 'profit-estimation' && <ProfitEstimationSettings uid={uid} />}
+          {activeTab === 'elster' && <ElsterCertificateSettings uid={uid} />}
+          {activeTab === 'reminders' && <ReminderSettings uid={uid} />}
         </div>
       </div>
     </div>

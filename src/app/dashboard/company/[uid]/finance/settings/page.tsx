@@ -1,23 +1,24 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
-import { ReminderSettings } from '@/components/finance/ReminderSettings';
-import { ElsterCertificateSettings } from '@/components/finance/ElsterCertificateSettings';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function FinanceSettingsPage() {
   const params = useParams();
   const uid = params?.uid as string;
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect zu Buchhaltungseinstellungen
+    router.replace(`/dashboard/company/${uid}/finance/accounting`);
+  }, [uid, router]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Finanzeinstellungen</h1>
+    <div className="container mx-auto p-6">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-100 rounded w-1/4 mb-4"></div>
+        <div className="h-4 bg-gray-100 rounded w-1/2"></div>
       </div>
-
-      <ElsterCertificateSettings uid={uid} />
-      
-      <ReminderSettings uid={uid} />
     </div>
   );
 }

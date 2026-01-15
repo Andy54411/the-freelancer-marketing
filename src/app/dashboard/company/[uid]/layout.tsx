@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -44,6 +44,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
+  // Header-Ref für dynamische Höhenmessung
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(124); // Fallback-Höhe
 
   // Sidebar Collapsed State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -73,6 +77,35 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Webmail-Verbindungsstatus
   const [isWebmailConnected, setIsWebmailConnected] = useState(false);
   const [webmailEmail, setWebmailEmail] = useState<string | null>(null);
+
+  // Dynamische Header-Höhe messen
+  useEffect(() => {
+    const measureHeader = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.getBoundingClientRect().height;
+        if (height > 0) {
+          setHeaderHeight(height);
+        }
+      }
+    };
+
+    // Initial messen
+    measureHeader();
+
+    // Bei Resize neu messen
+    window.addEventListener('resize', measureHeader);
+    
+    // ResizeObserver für präzisere Messung
+    const resizeObserver = new ResizeObserver(measureHeader);
+    if (headerRef.current) {
+      resizeObserver.observe(headerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measureHeader);
+      resizeObserver.disconnect();
+    };
+  }, [isWebmailConnected]);
 
   // Prüfe ob Webmail verbunden ist
   useEffect(() => {
@@ -448,14 +481,16 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     pathname?.includes('/emails') ||
     pathname?.includes('/whatsapp');
 
-  // Berechne Header-Höhe (MailHeader + Navigation = ca. 112px, UserHeader = 64px)
-  const headerHeight = isWebmailConnected ? 'h-28' : 'h-16';
-  const headerHeightPx = isWebmailConnected ? '112px' : '64px';
+  // Dynamische Header-Höhe in Pixeln für CSS
+  const headerHeightPx = `${headerHeight}px`;
 
   return (
     <SidebarVisibilityProvider>
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 print:hidden">
+      <header 
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 print:hidden"
+      >
         {isWebmailConnected && webmailEmail ? (
           <>
             <MailHeader

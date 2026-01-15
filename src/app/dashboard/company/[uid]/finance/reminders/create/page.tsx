@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -359,11 +359,16 @@ export default function CreateReminderPage() {
     customerPhone: '',
     customerVatId: '',
     customerNumber: '',
-    invoiceDate: '',
-    deliveryDate: '',
+    invoiceDate: new Date().toISOString().split('T')[0],
+    deliveryDate: new Date().toISOString().split('T')[0],
     servicePeriod: '',
     customerOrderNumber: '',
-    validUntil: '',
+    validUntil: (() => {
+      // Berechne Fälligkeitsdatum (heute + 14 Tage)
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+      return dueDate.toISOString().split('T')[0];
+    })(),
   });
 
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -541,7 +546,61 @@ export default function CreateReminderPage() {
       reminderFee: reminderConfig.fee,
       validUntil: newDueDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
     }));
+    
+    // Setze auch paymentDays auf den Wert aus der Mahnstufe
+    setPaymentDays(daysToAdd);
   }, [formData.reminderLevel, reminderSettings]);
+
+  // Ref um manuelle Datumsänderungen zu tracken (verhindert Sync-Loops)
+  const isManualDateChangeRef = useRef(false);
+
+  // Synchronisation: paymentDays → validUntil (wenn paymentDays manuell geändert wird)
+  useEffect(() => {
+    // Überspringe wenn manuelle Datumsänderung erkannt wurde
+    if (isManualDateChangeRef.current) {
+      isManualDateChangeRef.current = false;
+      return;
+    }
+    
+    // Nur wenn paymentDays manuell geändert wurde (nicht von reminderLevel)
+    const today = new Date();
+    if (paymentDays > 0) {
+      const newDueDate = new Date(today);
+      newDueDate.setDate(today.getDate() + paymentDays);
+      const dueDateString = newDueDate.toISOString().split('T')[0];
+      
+      setFormData((prev) => ({
+        ...prev,
+        validUntil: dueDateString,
+      }));
+    }
+  }, [paymentDays]);
+
+  // Handler für manuelle Änderung des Fälligkeitsdatums → berechne paymentDays zurück
+  const handleValidUntilChange = useCallback((newValidUntil: string) => {
+    if (!newValidUntil) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(newValidUntil);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Markiere als manuelle Änderung um Sync-Loop zu verhindern
+    isManualDateChangeRef.current = true;
+    
+    // Aktualisiere beide Werte synchron
+    if (diffDays >= 0) {
+      setPaymentDays(diffDays);
+    } else {
+      setPaymentDays(0);
+    }
+    setFormData((prev) => ({
+      ...prev,
+      validUntil: newValidUntil,
+    }));
+  }, []);
 
   useEffect(() => {
     // Auto-generate title when invoice or reminder level changes - WITH PROPER ERROR HANDLING
@@ -2047,9 +2106,7 @@ export default function CreateReminderPage() {
                         <Input
                           type="date"
                           value={formData.validUntil}
-                          onChange={e =>
-                            setFormData(prev => ({ ...prev, validUntil: e.target.value }))
-                          }
+                          onChange={e => handleValidUntilChange(e.target.value)}
                           className="flex-1"
                         />
 

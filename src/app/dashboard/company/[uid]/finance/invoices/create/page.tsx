@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { useAuth } from '@/contexts/AuthContext';
@@ -833,8 +833,13 @@ export default function CreateQuotePage() {
     customerAddress: '',
     title: '',
     customerOrderNumber: '',
-    validUntil: '',
-    invoiceDate: '',
+    validUntil: (() => {
+      // Berechne Fälligkeitsdatum (heute + 14 Tage)
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+      return dueDate.toISOString().split('T')[0];
+    })(),
+    invoiceDate: new Date().toISOString().split('T')[0],
     deliveryDate: new Date().toISOString().split('T')[0],
     servicePeriod: '', // Lieferzeitraum/Leistungszeitraum
     headTextHtml: '[%VOLLEANREDE%],\n\n[%INVOICE_INTRO_TEXT%]',
@@ -844,7 +849,7 @@ export default function CreateQuotePage() {
     currency: 'EUR',
     internalContactPerson: '',
     deliveryTerms: '',
-    paymentTerms: '',
+    paymentTerms: 'Zahlbar binnen 14 Tagen ohne Abzug',
     taxRule: TaxRuleType.DE_TAXABLE,
     // Skonto-Felder
     skontoEnabled: false,
@@ -1117,45 +1122,85 @@ export default function CreateQuotePage() {
     }
   }, [formData.taxRule, settings?.defaultTaxRate]);
 
-  // Zahlungsbedingungen Synchronisation: Tage → Datum (einfache Richtung)
-  useEffect(() => {
-    // Wenn sich die Tage ändern, berechne das neue Fälligkeitsdatum
-    // Verwende das Rechnungsdatum oder das heutige Datum als Fallback
-    const currentInvoiceDate = formData.invoiceDate || new Date().toISOString().split('T')[0];
-    if (currentInvoiceDate && paymentDays > 0) {
-      const invoiceDate = new Date(currentInvoiceDate);
-      const dueDate = new Date(invoiceDate);
-      dueDate.setDate(invoiceDate.getDate() + paymentDays);
+  // Ref um manuelle Datumsänderungen zu tracken (verhindert Sync-Loops)
+  const isManualDateChangeRef = useRef(false);
 
-      const dueDateString = dueDate.toISOString().split('T')[0];
-      setFormData((prev) => ({ ...prev, validUntil: dueDateString }));
+  // Zahlungsbedingungen Synchronisation: Tage → Datum + paymentTerms aktualisieren
+  useEffect(() => {
+    // Überspringe wenn manuelle Datumsänderung erkannt wurde
+    if (isManualDateChangeRef.current) {
+      isManualDateChangeRef.current = false;
+      return;
     }
+    
+    const currentInvoiceDate = formData.invoiceDate;
+    if (!currentInvoiceDate || paymentDays <= 0) return;
+    
+    const invoiceDate = new Date(currentInvoiceDate);
+    const dueDate = new Date(invoiceDate);
+    dueDate.setDate(invoiceDate.getDate() + paymentDays);
+    const dueDateString = dueDate.toISOString().split('T')[0];
+    
+    // Aktualisiere validUntil UND paymentTerms synchron
+    setFormData((prev) => ({
+      ...prev,
+      validUntil: dueDateString,
+      paymentTerms: `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`,
+    }));
   }, [paymentDays, formData.invoiceDate]);
 
-  // Initiale Berechnung der Tage aus dem Standard-Datum
+  // Initiale Berechnung: Setze paymentDays aus validUntil beim Laden
   useEffect(() => {
-    const currentInvoiceDate = formData.invoiceDate || new Date().toISOString().split('T')[0];
-    if (currentInvoiceDate && !formData.validUntil) {
+    const currentInvoiceDate = formData.invoiceDate;
+    if (!currentInvoiceDate) return;
+    
+    if (!formData.validUntil) {
       // Wenn kein Fälligkeitsdatum gesetzt ist, verwende Standard 14 Tage
       const invoiceDate = new Date(currentInvoiceDate);
       const dueDate = new Date(invoiceDate);
       dueDate.setDate(invoiceDate.getDate() + 14);
-
       const dueDateString = dueDate.toISOString().split('T')[0];
-      setFormData((prev) => ({ ...prev, validUntil: dueDateString }));
-    } else if (currentInvoiceDate && formData.validUntil) {
-      // Wenn beide Daten vorhanden sind, berechne die Tage aus dem Datum
-      const invoiceDate = new Date(currentInvoiceDate);
-      const dueDate = new Date(formData.validUntil);
-      const diffTime = dueDate.getTime() - invoiceDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 0 && diffDays !== paymentDays) {
-        setPaymentDays(diffDays);
-      }
+      
+      setFormData((prev) => ({
+        ...prev,
+        validUntil: dueDateString,
+        paymentTerms: 'Zahlbar binnen 14 Tagen ohne Abzug',
+      }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.invoiceDate, formData.validUntil]);
+  }, []);
+
+  // Handler für manuelle Änderung des Fälligkeitsdatums → berechne paymentDays zurück
+  const handleValidUntilChange = useCallback((newValidUntil: string) => {
+    const currentInvoiceDate = formData.invoiceDate;
+    if (!currentInvoiceDate || !newValidUntil) return;
+    
+    const invoiceDate = new Date(currentInvoiceDate);
+    const dueDate = new Date(newValidUntil);
+    const diffTime = dueDate.getTime() - invoiceDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Markiere als manuelle Änderung um Sync-Loop zu verhindern
+    isManualDateChangeRef.current = true;
+    
+    // Aktualisiere alle drei Werte synchron
+    if (diffDays > 0) {
+      setPaymentDays(diffDays);
+      setFormData((prev) => ({
+        ...prev,
+        validUntil: newValidUntil,
+        paymentTerms: `Zahlbar binnen ${diffDays} Tagen ohne Abzug`,
+      }));
+    } else {
+      // Negatives Datum: nur validUntil setzen, paymentDays auf 0
+      setPaymentDays(0);
+      setFormData((prev) => ({
+        ...prev,
+        validUntil: newValidUntil,
+        paymentTerms: 'Zahlbar sofort ohne Abzug',
+      }));
+    }
+  }, [formData.invoiceDate]);
 
   // Template Auswahl & User Preferences laden
   useEffect(() => {
@@ -1584,7 +1629,7 @@ export default function CreateQuotePage() {
     const noteLines: string[] = [];
     // Kopf-Text und Referenz werden separat im Template angezeigt
     if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
-    const basePaymentTerms = formData.paymentTerms?.trim() || 'Zahlbar binnen 7 Tagen ohne Abzug';
+    const basePaymentTerms = formData.paymentTerms?.trim() || `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
     if (basePaymentTerms) noteLines.push(`Zahlungsbedingungen: ${basePaymentTerms}`);
     // Zahlungsbedingungen final zusammenbauen (Skonto separat anhängen, falls aktiv)
     // Skonto-Satz: Wenn Skonto aktiv ist, zuerst benutzerdefinierten Text nutzen; sonst Tage/%-Fallback
@@ -3666,7 +3711,7 @@ export default function CreateQuotePage() {
                     </div>
                     <Input
                         type="date"
-                        value={formData.invoiceDate || new Date().toISOString().split('T')[0]}
+                        value={formData.invoiceDate}
                         onChange={(e) => {
                           setFormData((prev) => ({ ...prev, invoiceDate: e.target.value }));
                         }}
@@ -3848,7 +3893,7 @@ export default function CreateQuotePage() {
                     <Input
                         type="date"
                         value={formData.validUntil}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, validUntil: e.target.value }))}
+                        onChange={(e) => handleValidUntilChange(e.target.value)}
                         className="flex-1" />
 
 

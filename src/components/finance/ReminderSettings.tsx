@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
-import { Loader2, Bell, Clock, AlertTriangle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface ReminderSettingsProps {
   uid: string;
@@ -27,7 +24,6 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Always set reminderFees from settings or defaults
     setReminderFees(
       settings?.reminderFees || {
         level1: { fee: 5.0, days: 7, title: '1. Mahnung' },
@@ -42,17 +38,13 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
     field: 'fee' | 'days' | 'title',
     value: string | number
   ) => {
-    setReminderFees(prev => {
-      const newFees = {
-        ...prev,
-        [level]: {
-          ...prev[level],
-          [field]: value,
-        },
-      };
-
-      return newFees;
-    });
+    setReminderFees(prev => ({
+      ...prev,
+      [level]: {
+        ...prev[level],
+        [field]: value,
+      },
+    }));
   };
 
   const handleSave = async () => {
@@ -63,10 +55,9 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
       await updateDoc(doc(db, 'companies', uid), {
         reminderFees: reminderFees,
       });
-      toast.success('Mahngebühren erfolgreich gespeichert');
-    } catch (error) {
-      console.error('Error saving reminder fees:', error);
-      toast.error('Fehler beim Speichern der Mahngebühren');
+      toast.success('Mahngebühren gespeichert');
+    } catch {
+      toast.error('Fehler beim Speichern');
     } finally {
       setSaving(false);
     }
@@ -74,175 +65,122 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-5 bg-gray-100 rounded w-1/4"></div>
+          <div className="h-16 bg-gray-100 rounded"></div>
+        </div>
       </div>
     );
   }
 
+  const levels = [
+    { key: 'level1' as const, label: '1. Mahnung' },
+    { key: 'level2' as const, label: '2. Mahnung' },
+    { key: 'level3' as const, label: '3. Mahnung' },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#14ad9f]/10 mb-4">
-          <Bell className="h-8 w-8 text-[#14ad9f]" />
+    <div className="bg-white rounded-xl border border-gray-200">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Mahnwesen</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Gebühren und Fristen für automatische Mahnungen
+            </p>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-gray-400 hover:text-gray-500 transition-colors">
+                <HelpCircle className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="text-sm">
+                Definiere Gebühren und Zahlungsfristen für jede Mahnstufe. 
+                Die Tage geben an, nach wie vielen Tagen nach Fälligkeit die Mahnung versendet wird.
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900">Mahnwesen Einstellungen</h3>
-        <p className="text-gray-600 mt-2">Konfigurieren Sie Ihr automatisches Mahnwesen</p>
       </div>
 
-      <Card className="border-l-4 border-l-[#14ad9f] hover:shadow-md transition-shadow">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Clock className="h-5 w-5 text-[#14ad9f]" />
-            Mahngebühren
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-6">
-            {/* 1. Mahnung */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-[#14ad9f]/5 to-transparent">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#14ad9f]/10">
-                  <span className="text-sm font-semibold text-[#14ad9f]">1</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">1. Mahnung</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Gebühr (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={reminderFees.level1.fee.toString()}
-                    onChange={e => {
-                      updateReminderFee('level1', 'fee', parseFloat(e.target.value) || 0);
-                    }}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
+      {/* Tabelle */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Stufe
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Bezeichnung
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tage nach Fälligkeit
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Gebühr
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {levels.map((level, index) => (
+              <tr key={level.key} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-6 py-4">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+                    {index + 1}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <input
+                    type="text"
+                    value={reminderFees[level.key].title}
+                    onChange={e => updateReminderFee(level.key, 'title', e.target.value)}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
-                  <Input
-                    type="number"
-                    defaultValue={reminderFees.level1.days.toString()}
-                    onChange={e =>
-                      updateReminderFee('level1', 'days', parseInt(e.target.value) || 0)
-                    }
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Titel</Label>
-                  <Input
-                    defaultValue={reminderFees.level1.title}
-                    onChange={e => updateReminderFee('level1', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-              </div>
-            </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="relative w-24">
+                    <input
+                      type="number"
+                      value={reminderFees[level.key].days}
+                      onChange={e => updateReminderFee(level.key, 'days', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-1.5 pr-10 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">Tage</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="relative w-24">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={reminderFees[level.key].fee}
+                      onChange={e => updateReminderFee(level.key, 'fee', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-1.5 pr-6 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">€</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-            {/* 2. Mahnung */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-yellow-50 to-transparent">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100">
-                  <span className="text-sm font-semibold text-yellow-700">2</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">2. Mahnung</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Gebühr (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={reminderFees.level2.fee.toString()}
-                    onChange={e =>
-                      updateReminderFee('level2', 'fee', parseFloat(e.target.value) || 0)
-                    }
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
-                  <Input
-                    type="number"
-                    defaultValue={reminderFees.level2.days.toString()}
-                    onChange={e =>
-                      updateReminderFee('level2', 'days', parseInt(e.target.value) || 0)
-                    }
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Titel</Label>
-                  <Input
-                    defaultValue={reminderFees.level2.title}
-                    onChange={e => updateReminderFee('level2', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Mahnung */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-red-50 to-transparent">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  3. Mahnung / Inkasso-Androhung
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Gebühr (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={reminderFees.level3.fee.toString()}
-                    onChange={e =>
-                      updateReminderFee('level3', 'fee', parseFloat(e.target.value) || 0)
-                    }
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
-                  <Input
-                    type="number"
-                    defaultValue={reminderFees.level3.days.toString()}
-                    onChange={e =>
-                      updateReminderFee('level3', 'days', parseInt(e.target.value) || 0)
-                    }
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Titel</Label>
-                  <Input
-                    defaultValue={reminderFees.level3.title}
-                    onChange={e => updateReminderFee('level3', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-6 border-t border-gray-200">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-6 py-2"
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Einstellungen speichern
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Footer */}
+      <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 bg-[#14ad9f] text-white text-sm font-medium rounded-lg hover:bg-[#0d8a7f] transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Speichern...' : 'Speichern'}
+        </button>
+      </div>
     </div>
   );
 }

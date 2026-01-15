@@ -30,7 +30,13 @@ export function formatDate(dateString: string | undefined | null): string {
   if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     const [year, month, day] = dateString.split('-');
     date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  } else {
+  } 
+  // Wenn String im Format DD.MM.YYYY (deutsches Datumsformat), dann korrekt parsen
+  else if (typeof dateString === 'string' && dateString.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+    const [day, month, year] = dateString.split('.');
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  else {
     date = new Date(dateString);
   }
 

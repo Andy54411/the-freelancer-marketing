@@ -157,9 +157,9 @@ const AppHeaderNavigation: React.FC = () => {
   };
 
   return (
-    <nav className="bg-white relative">
+    <nav className="bg-white relative z-40">
       {/* Desktop Navigation - Modernes Design mit besserer Visualisierung */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block relative">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center py-3">
             {/* Beliebte Kategorien mit Mega-Menü */}
@@ -309,7 +309,8 @@ const AppHeaderNavigation: React.FC = () => {
         {/* Zentrales Mega-Menü - immer in der Mitte */}
         {hoveredCategory && (
           <div
-            className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 z-50 w-[900px] max-w-6xl"
+            className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 z-100 w-[900px] max-w-6xl"
+            style={{ pointerEvents: 'auto' }}
             onMouseEnter={() => handleCategoryEnter(hoveredCategory)}
             onMouseLeave={handleCategoryLeave}
           >

@@ -147,6 +147,26 @@ export const PLACEHOLDER_CATEGORIES = {
         example: '190,00 €',
         dataPath: 'formatCurrency(data.taxAmount)',
       },
+      '[%LIEFERSCHEINNUMMER%]': {
+        description: 'Lieferscheinnummer',
+        example: 'LS-2024-001',
+        dataPath: 'data.deliveryNoteNumber',
+      },
+      '[%AB_NUMMER%]': {
+        description: 'Auftragsbestätigungsnummer',
+        example: 'AB-2024-001',
+        dataPath: 'data.orderConfirmationNumber',
+      },
+      '[%LIEFERDATUM%]': {
+        description: 'Lieferdatum',
+        example: '20.01.2026',
+        dataPath: 'formatDate(data.deliveryDate)',
+      },
+      '[%BESTELLNUMMER%]': {
+        description: 'Bestellnummer des Kunden',
+        example: 'BEST-12345',
+        dataPath: 'data.customerOrderNumber',
+      },
     },
   },
   company: {
@@ -273,6 +293,46 @@ export const DEFAULT_TEXT_TEMPLATES: Omit<
     objectType: 'REMINDER',
     textType: 'FOOT',
     text: 'Sofern Sie zwischenzeitlich die Zahlung veranlasst haben, bitten wir Sie, dieses Schreiben als gegenstandslos zu betrachten.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]',
+    isDefault: true,
+    isPrivate: false,
+  },
+
+  // Lieferscheine
+  {
+    name: 'Lieferschein Kopf-Text',
+    category: 'DOCUMENT',
+    objectType: 'DELIVERY_NOTE',
+    textType: 'HEAD',
+    text: 'Sehr geehrte Damen und Herren,\n\nhiermit übersenden wir Ihnen den Lieferschein für die folgenden Artikel:',
+    isDefault: true,
+    isPrivate: false,
+  },
+  {
+    name: 'Lieferschein Fuß-Text',
+    category: 'DOCUMENT',
+    objectType: 'DELIVERY_NOTE',
+    textType: 'FOOT',
+    text: 'Bitte prüfen Sie die gelieferte Ware auf Vollständigkeit und Unversehrtheit. Reklamationen melden Sie uns bitte innerhalb von 14 Tagen.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]',
+    isDefault: true,
+    isPrivate: false,
+  },
+
+  // Auftragsbestätigungen
+  {
+    name: 'Auftragsbestätigung Kopf-Text',
+    category: 'DOCUMENT',
+    objectType: 'ORDER_CONFIRMATION',
+    textType: 'HEAD',
+    text: 'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag! Hiermit bestätigen wir die Bestellung der folgenden Leistungen:',
+    isDefault: true,
+    isPrivate: false,
+  },
+  {
+    name: 'Auftragsbestätigung Fuß-Text',
+    category: 'DOCUMENT',
+    objectType: 'ORDER_CONFIRMATION',
+    textType: 'FOOT',
+    text: 'Die voraussichtliche Lieferung erfolgt am [%LIEFERDATUM%]. Bei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]',
     isDefault: true,
     isPrivate: false,
   },

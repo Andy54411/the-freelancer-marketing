@@ -279,10 +279,13 @@ const calculateQuarterData = (
 
   // Verarbeite Rechnungen nach TaxRuleType
   quarterInvoices.forEach(inv => {
-    if (!['paid', 'sent', 'overdue', 'finalized'].includes(inv.status)) return;
+    // Erweiterte Status-Prüfung (verschiedene Schreibweisen)
+    const status = (inv.status || '').toLowerCase();
+    if (!['paid', 'sent', 'overdue', 'finalized', 'open', 'approved'].includes(status)) return;
     
-    const netAmount = (inv.netAmount || inv.subtotal || inv.amount || 0) / 100;
-    const taxAmount = (inv.taxAmount || inv.tax || 0) / 100;
+    // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
+    const netAmount = inv.netAmount || inv.subtotal || inv.amount || 0;
+    const taxAmount = inv.taxAmount || inv.tax || 0;
     const taxRule = inv.taxRuleType || inv.taxRule || 'DE_TAXABLE';
     const vatRate = inv.vatRate || inv.taxRate || 19;
 
@@ -336,8 +339,11 @@ const calculateQuarterData = (
   // Verarbeite Ausgaben → Vorsteuer (Kz66)
   let kz66 = 0;
   quarterExpenses.forEach(exp => {
-    if (!['PAID', 'APPROVED', 'paid', 'approved'].includes(exp.status)) return;
-    const vatAmount = (exp.vatAmount || exp.taxAmount || 0) / 100;
+    // Erweiterte Status-Prüfung (inkl. Ausgaben ohne Status)
+    const status = (exp.status || 'paid').toLowerCase();
+    if (!['paid', 'approved', 'open', 'pending'].includes(status)) return;
+    // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
+    const vatAmount = exp.vatAmount || exp.taxAmount || 0;
     kz66 += vatAmount;
   });
 
@@ -461,7 +467,7 @@ export default function TaxesPage() {
       const invoices: any[] = [];
       let totalIncome = 0;
       invoicesSnap.forEach(docSnap => {
-        const data = { id: docSnap.id, ...docSnap.data() };
+        const data: any = { id: docSnap.id, ...docSnap.data() };
         
         // Datum ermitteln (verschiedene Formate unterstützen)
         let invoiceDate: Date | null = null;
@@ -480,8 +486,10 @@ export default function TaxesPage() {
           // Normalisiertes Datum speichern für spätere Quartals-Berechnung
           data._parsedDate = invoiceDate;
           invoices.push(data);
-          if (['paid', 'sent', 'overdue', 'finalized'].includes(data.status)) {
-            totalIncome += (data.netAmount || data.subtotal || 0) / 100;
+          const status = (data.status || '').toLowerCase();
+          if (['paid', 'sent', 'overdue', 'finalized', 'open', 'approved'].includes(status)) {
+            // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
+            totalIncome += data.netAmount || data.subtotal || 0;
           }
         }
       });
@@ -494,7 +502,7 @@ export default function TaxesPage() {
       let totalExpenses = 0;
       let totalVorsteuer = 0;
       expensesSnap.forEach(docSnap => {
-        const data = { id: docSnap.id, ...docSnap.data() };
+        const data: any = { id: docSnap.id, ...docSnap.data() };
         
         // Datum ermitteln (verschiedene Formate unterstützen)
         let expenseDate: Date | null = null;
@@ -514,9 +522,11 @@ export default function TaxesPage() {
         if (expenseDate && expenseDate >= yearStart && expenseDate <= yearEnd) {
           data._parsedDate = expenseDate;
           expenses.push(data);
-          if (['PAID', 'APPROVED', 'paid', 'approved'].includes(data.status)) {
-            totalExpenses += (data.netAmount || data.amount || 0) / 100;
-            totalVorsteuer += (data.vatAmount || data.taxAmount || 0) / 100;
+          const status = (data.status || 'paid').toLowerCase();
+          if (['paid', 'approved', 'open', 'pending'].includes(status)) {
+            // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
+            totalExpenses += data.netAmount || data.amount || 0;
+            totalVorsteuer += data.vatAmount || data.taxAmount || 0;
           }
         }
       });
@@ -861,7 +871,7 @@ export default function TaxesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             {ustvaObligations.map((obl) => {
               const qData = obl.quarterData;
               const isPastQuarter = obl.quarter && obl.quarter < currentQuarter && obl.year === currentYear;
@@ -870,7 +880,7 @@ export default function TaxesPage() {
               return (
                 <Card 
                   key={obl.id} 
-                  className={`relative hover:shadow-lg transition-all duration-300 ${
+                  className={`relative hover:shadow-lg transition-all duration-300 shrink-0 w-[380px] snap-start ${
                     obl.status === 'overdue' 
                       ? 'border-red-300 bg-red-50/50' 
                       : obl.status === 'submitted'
@@ -1023,11 +1033,11 @@ export default function TaxesPage() {
             <Euro className="w-5 h-5 text-[#14ad9f]" />
             Einkommensteuer-Vorauszahlungen {selectedYear}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             {estObligations.map((obl) => (
               <Card 
                 key={obl.id} 
-                className={`relative hover:shadow-lg transition-shadow ${
+                className={`relative hover:shadow-lg transition-shadow shrink-0 w-60 snap-start ${
                   obl.status === 'overdue' ? 'border-red-200' : 'border-gray-200'
                 }`}
               >
@@ -1066,9 +1076,9 @@ export default function TaxesPage() {
           Jahresabschluss {selectedYear}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           {yearEndObligations.map((obl) => (
-            <Card key={obl.id} className="relative hover:shadow-lg transition-shadow">
+            <Card key={obl.id} className="relative hover:shadow-lg transition-shadow shrink-0 w-[280px] snap-start">
               <CardContent className="p-5">
                 <div className="absolute top-4 right-4">
                   <button className="text-gray-400 hover:text-gray-600">
@@ -1118,7 +1128,7 @@ export default function TaxesPage() {
 
           {/* Kleinunternehmer Grenze Karte */}
           {taxSettings?.kleinunternehmer && (
-            <Card className="relative hover:shadow-lg transition-shadow border-[#14ad9f]/30">
+            <Card className="relative hover:shadow-lg transition-shadow border-[#14ad9f]/30 shrink-0 w-[280px] snap-start">
               <CardContent className="p-5">
                 <div className="absolute top-4 right-4">
                   <button className="text-gray-400 hover:text-gray-600">

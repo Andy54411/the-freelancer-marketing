@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Upload, Trash2, CheckCircle, AlertCircle, Info, Loader2 } from 'lucide-react';
+import { Upload, Trash2, CheckCircle, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface ElsterCertificateSettingsProps {
   uid: string;
@@ -37,7 +38,7 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch {
       setError('Zertifikatsstatus konnte nicht abgerufen werden');
     } finally {
       setLoading(false);
@@ -52,13 +53,12 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validierung
     if (!file.name.toLowerCase().endsWith('.pfx')) {
       setError('Nur .pfx-Dateien werden unterstützt');
       return;
     }
 
-    if (file.size > 50 * 1024) { // Max 50KB
+    if (file.size > 50 * 1024) {
       setError('Datei ist zu groß (maximal 50 KB)');
       return;
     }
@@ -68,7 +68,6 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
       setError(null);
       setSuccessMessage(null);
 
-      // Datei als Base64 lesen
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64 = (e.target?.result as string).split(',')[1];
@@ -85,7 +84,7 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
         const data = await response.json();
         
         if (data.success) {
-          setSuccessMessage('Zertifikat erfolgreich hochgeladen');
+          setSuccessMessage('Zertifikat hochgeladen');
           await fetchStatus();
         } else {
           setError(data.error);
@@ -95,12 +94,11 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
       };
       
       reader.readAsDataURL(file);
-    } catch (err) {
-      setError('Fehler beim Hochladen des Zertifikats');
+    } catch {
+      setError('Fehler beim Hochladen');
       setUploading(false);
     }
 
-    // Input zurücksetzen
     event.target.value = '';
   };
 
@@ -121,13 +119,13 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
       const data = await response.json();
       
       if (data.success) {
-        setSuccessMessage('Zertifikat erfolgreich gelöscht');
+        setSuccessMessage('Zertifikat gelöscht');
         await fetchStatus();
       } else {
         setError(data.error);
       }
-    } catch (err) {
-      setError('Fehler beim Löschen des Zertifikats');
+    } catch {
+      setError('Fehler beim Löschen');
     } finally {
       setDeleting(false);
     }
@@ -150,176 +148,110 @@ export function ElsterCertificateSettings({ uid }: ElsterCertificateSettingsProp
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-[#14ad9f]/10 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-[#14ad9f]" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">ELSTER-Zertifikat</h2>
-            <p className="text-sm text-gray-500">Für elektronische Steuerübermittlung</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 text-[#14ad9f] animate-spin" />
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-5 bg-gray-100 rounded w-1/4"></div>
+          <div className="h-16 bg-gray-100 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+    <div className="bg-white rounded-xl border border-gray-200">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-lg bg-[#14ad9f]/10 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-[#14ad9f]" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">ELSTER-Zertifikat</h2>
-          <p className="text-sm text-gray-500">Für elektronische Steuerübermittlung</p>
-        </div>
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-        <div className="flex gap-3">
-          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-700">
-            <p className="font-medium mb-1">Wie funktioniert ELSTER?</p>
-            <ul className="list-disc list-inside space-y-1 text-blue-600">
-              <li>Laden Sie Ihr ELSTER-Zertifikat (.pfx-Datei) einmalig hier hoch</li>
-              <li>Bei jeder Übermittlung geben Sie Ihre PIN ein (wird nicht gespeichert)</li>
-              <li>Ihre Steuerdaten werden verschlüsselt ans Finanzamt gesendet</li>
-            </ul>
+      <div className="px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">ELSTER-Zertifikat</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Für elektronische Steuerübermittlung
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* Test-Modus Hinweis */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-        <div className="flex gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-700">
-            <p className="font-medium">Testmodus aktiv</p>
-            <p>Alle ELSTER-Übermittlungen werden aktuell im Testmodus an das Testfinanzamt 9198 gesendet. 
-              Ihre Daten werden nicht an ein echtes Finanzamt übermittelt.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Status Messages */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-          <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-            <p className="text-sm text-green-700">{successMessage}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Zertifikat Status */}
-      <div className="space-y-4">
-        {status?.certificateExists ? (
-          // Zertifikat vorhanden
-          <div className="border border-green-200 bg-green-50 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <div>
-                  <p className="font-medium text-gray-900">Zertifikat vorhanden</p>
-                  {status.fileInfo && (
-                    <p className="text-sm text-gray-500">
-                      Hochgeladen am {formatDate(status.fileInfo.uploadedAt)} • {formatFileSize(status.fileInfo.size)}
-                    </p>
-                  )}
-                </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-gray-400 hover:text-gray-500 transition-colors">
+                <HelpCircle className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <div className="text-sm space-y-1">
+                <p className="font-medium">So funktioniert ELSTER:</p>
+                <p>1. Zertifikat (.pfx) einmalig hochladen</p>
+                <p>2. PIN bei jeder Übermittlung eingeben</p>
+                <p>3. Daten werden verschlüsselt gesendet</p>
               </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6 space-y-4">
+        {/* Testmodus Hinweis */}
+        <p className="text-xs text-gray-400">
+          Testmodus: Übermittlungen gehen an Testfinanzamt 9198
+        </p>
+
+        {/* Status Messages */}
+        {error && (
+          <p className="text-sm text-red-600">{error}</p>
+        )}
+
+        {successMessage && (
+          <p className="text-sm text-green-600">{successMessage}</p>
+        )}
+
+        {/* Zertifikat Status */}
+        {status?.certificateExists ? (
+          <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Zertifikat vorhanden</p>
+                {status.fileInfo && (
+                  <p className="text-xs text-gray-500">
+                    {formatDate(status.fileInfo.uploadedAt)} · {formatFileSize(status.fileInfo.size)}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[#14ad9f] hover:text-[#0d8a7f] cursor-pointer transition-colors">
+                {uploading ? 'Lädt...' : 'Ersetzen'}
+                <input
+                  type="file"
+                  accept=".pfx"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-gray-300">|</span>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                className="text-sm text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
               >
-                {deleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                Löschen
+                {deleting ? 'Löscht...' : 'Löschen'}
               </button>
             </div>
           </div>
         ) : (
-          // Kein Zertifikat
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">
-              Kein Zertifikat vorhanden
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Laden Sie Ihr ELSTER-Zertifikat hoch, um Steuererklärungen elektronisch zu übermitteln.
-            </p>
-            <label className="inline-flex items-center gap-2 px-6 py-3 bg-[#14ad9f] text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors cursor-pointer">
-              {uploading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Wird hochgeladen...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  Zertifikat hochladen
-                </>
-              )}
-              <input
-                type="file"
-                accept=".pfx"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-            </label>
-            <p className="text-xs text-gray-400 mt-3">
-              Erlaubtes Format: .pfx • Maximale Größe: 50 KB
-            </p>
-          </div>
-        )}
-
-        {/* Neues Zertifikat hochladen (wenn bereits eins existiert) */}
-        {status?.certificateExists && (
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500 mb-3">
-              Sie können das bestehende Zertifikat durch ein neues ersetzen:
-            </p>
-            <label className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Wird hochgeladen...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Neues Zertifikat hochladen
-                </>
-              )}
-              <input
-                type="file"
-                accept=".pfx"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-            </label>
-          </div>
+          <label className="flex flex-col items-center justify-center py-8 border border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-gray-300 hover:bg-gray-50/50 transition-colors">
+            <Upload className="w-8 h-8 text-gray-300 mb-2" />
+            <span className="text-sm font-medium text-gray-600">
+              {uploading ? 'Wird hochgeladen...' : 'Zertifikat hochladen'}
+            </span>
+            <span className="text-xs text-gray-400 mt-1">.pfx · max. 50 KB</span>
+            <input
+              type="file"
+              accept=".pfx"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
         )}
       </div>
     </div>
