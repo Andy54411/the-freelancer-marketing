@@ -90,3 +90,9 @@ public/Video/*.mp4
 
 # Taskilo-KI (separat auf Hetzner deployt)
 taskilo-ki/
+
+# ERiC Library files (binary, too large for git)
+docs/elster/ERiC-*.jar
+docs/elster/ERiC-43.*/
+docs/elster/2025/
+docs/elster/META-INF/
