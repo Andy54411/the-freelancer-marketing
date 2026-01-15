@@ -83,8 +83,29 @@ export async function GET(
     let currentTokens = gmailConfig.tokens;
     let status = gmailConfig.status || 'disconnected';
     
-    // Try to refresh tokens if we have a refresh token and the current status indicates problems
-    if (hasRefreshToken && (status === 'disconnected' || status === 'authentication_required' || !gmailConfig.tokens?.access_token || gmailConfig.tokens.access_token === 'invalid')) {
+    // Prüfe ob der Access Token abgelaufen ist (mit 5 Minuten Puffer)
+    const tokenExpiryDate = gmailConfig.tokens?.expiry_date;
+    const isTokenExpired = tokenExpiryDate ? (Date.now() > tokenExpiryDate - 5 * 60 * 1000) : true;
+    
+    console.log('🕐 Token expiry check:', {
+      expiryDate: tokenExpiryDate ? new Date(tokenExpiryDate).toISOString() : 'nicht gesetzt',
+      isExpired: isTokenExpired,
+      now: new Date().toISOString()
+    });
+    
+    // Refresh Token wenn:
+    // 1. Status ist disconnected/authentication_required ODER
+    // 2. Access Token fehlt/invalid ODER
+    // 3. Access Token ist abgelaufen
+    const needsRefresh = hasRefreshToken && (
+      status === 'disconnected' || 
+      status === 'authentication_required' || 
+      !gmailConfig.tokens?.access_token || 
+      gmailConfig.tokens.access_token === 'invalid' ||
+      isTokenExpired
+    );
+    
+    if (needsRefresh) {
       console.log('🔄 Attempting to refresh Gmail tokens for company:', uid);
       
       const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -133,7 +154,9 @@ export async function GET(
       console.log('⏭️ Skipping token refresh:', {
         hasRefreshToken,
         hasAccessToken: !!gmailConfig.tokens?.access_token,
-        accessTokenValid: gmailConfig.tokens?.access_token !== 'invalid'
+        accessTokenValid: gmailConfig.tokens?.access_token !== 'invalid',
+        isTokenExpired,
+        status
       });
     }
     
