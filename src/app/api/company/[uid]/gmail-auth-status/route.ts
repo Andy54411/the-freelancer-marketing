@@ -145,6 +145,8 @@ export async function GET(
       lastError: gmailConfig.lastError,
       needsReauth: isExpired,
       reauthorizeUrl: `/api/company/${uid}/gmail-connect`,
+      // Access Token für Drive/Photos Picker
+      accessToken: hasValidTokens ? currentTokens?.access_token : null,
       // Debug info
       debug: {
         hasRefreshTokenInDb: !!gmailConfig.tokens?.refresh_token,

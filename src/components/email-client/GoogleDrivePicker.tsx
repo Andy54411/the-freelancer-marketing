@@ -485,9 +485,16 @@ export function GooglePhotosPicker({
         
         if (data.hasTokens && data.accessToken) {
           setToken(data.accessToken);
+        } else if (data.needsReauth) {
+          setError('Gmail-Verbindung abgelaufen. Bitte verbinde dein Gmail-Konto erneut unter Einstellungen → E-Mail Integration.');
+          setLoading(false);
+        } else {
+          setError('Kein Gmail-Konto verbunden. Bitte verbinde dein Gmail-Konto unter Einstellungen → E-Mail Integration.');
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Access Tokens:', err);
+        setError('Fehler beim Laden der Authentifizierung');
+        setLoading(false);
       }
     };
 
@@ -520,6 +527,10 @@ export function GooglePhotosPicker({
         );
 
         if (!response.ok) {
+          // Prüfe auf Berechtigungsfehler
+          if (response.status === 403 || response.status === 401) {
+            throw new Error('Keine Berechtigung für Google Drive. Bitte verbinde dein Gmail-Konto erneut unter Einstellungen → E-Mail Integration.');
+          }
           throw new Error('Fehler beim Laden der Fotos');
         }
 
