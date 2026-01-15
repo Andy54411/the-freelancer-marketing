@@ -115,11 +115,13 @@ export interface CertificateStatus {
 // CONFIGURATION
 // ============================================================================
 
+// In Production: webmail-proxy läuft auf mail.taskilo.de hinter nginx unter /webmail-api
+// Lokal: direkter Zugriff auf Port 3100
 const HETZNER_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://mail.taskilo.de'
+  ? 'https://mail.taskilo.de/webmail-api'
   : 'http://localhost:3100';
 
-const API_KEY = process.env.WEBMAIL_API_KEY || 'taskilo-webmail-secret-key-change-in-production';
+const API_KEY = process.env.WEBMAIL_API_KEY || '2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076';
 
 // ============================================================================
 // HELPER FUNCTIONS
