@@ -69,15 +69,51 @@ export async function GET(request: NextRequest) {
     // Die effektive User-ID für die Speicherung (Mitarbeiter oder Inhaber)
     const effectiveUserId = userId || companyId;
 
-    // Konfiguration in Firestore speichern (neue Subcollection Struktur)
-    // userId wird hinzugefügt, um benutzer-spezifische Configs zu ermöglichen
+    // KRITISCH: Prüfe ob bereits eine Gmail-Config für diesen User existiert
+    // Wenn ja, aktualisiere diese statt eine neue zu erstellen (verhindert Duplikate!)
+    const existingConfigsSnapshot = await db
+      .collection('companies')
+      .doc(companyId)
+      .collection('emailConfigs')
+      .where('userId', '==', effectiveUserId)
+      .where('provider', '==', 'gmail')
+      .get();
+
+    let emailConfigId: string;
+    const isUpdate = !existingConfigsSnapshot.empty;
+
+    if (isUpdate) {
+      // Verwende die existierende Config-ID
+      emailConfigId = existingConfigsSnapshot.docs[0].id;
+      console.log(`🔄 Existierende Gmail Config gefunden, aktualisiere: ${emailConfigId}`);
+
+      // Lösche alle anderen Duplikate (falls vorhanden)
+      if (existingConfigsSnapshot.docs.length > 1) {
+        console.log(`🧹 Lösche ${existingConfigsSnapshot.docs.length - 1} doppelte Gmail Configs...`);
+        for (let i = 1; i < existingConfigsSnapshot.docs.length; i++) {
+          await db
+            .collection('companies')
+            .doc(companyId)
+            .collection('emailConfigs')
+            .doc(existingConfigsSnapshot.docs[i].id)
+            .delete();
+        }
+      }
+    } else {
+      // Neue Config-ID generieren
+      emailConfigId = `gmail_${effectiveUserId}_${Date.now()}`;
+      console.log(`✨ Neue Gmail Config wird erstellt: ${emailConfigId}`);
+    }
+
+    // Konfiguration vorbereiten
     const emailConfig = {
-      id: `gmail_${effectiveUserId}_${Date.now()}`,
+      id: emailConfigId,
       provider: 'gmail',
       email: userInfo.data.email,
       companyId: companyId,
-      userId: effectiveUserId, // Die User-ID (kann Mitarbeiter oder Inhaber sein)
+      userId: effectiveUserId,
       isActive: true,
+      status: 'connected', // KRITISCH: Status setzen damit UI die Verbindung erkennt!
       tokens: {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -97,18 +133,18 @@ export async function GET(request: NextRequest) {
         threadsTotal: profile.data.threadsTotal,
         historyId: profile.data.historyId,
       },
-      createdAt: new Date().toISOString(),
+      createdAt: isUpdate ? existingConfigsSnapshot.docs[0].data().createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    // In neue Subcollection Struktur speichern
+    // In Firestore speichern (set mit merge für Updates)
     await db
       .collection('companies')
       .doc(companyId)
       .collection('emailConfigs')
-      .doc(emailConfig.id)
-      .set(emailConfig);
-    console.log(`✅ Gmail Config gespeichert für User: ${effectiveUserId} in Company: ${companyId}`);
+      .doc(emailConfigId)
+      .set(emailConfig, { merge: true });
+    console.log(`✅ Gmail Config ${isUpdate ? 'aktualisiert' : 'gespeichert'} für User: ${effectiveUserId} in Company: ${companyId}`);
 
     // KRITISCH: Gmail Watch für Real-time Push Notifications einrichten
     try {
@@ -197,7 +233,7 @@ export async function GET(request: NextRequest) {
         .collection('companies')
         .doc(companyId)
         .collection('emailConfigs')
-        .doc(emailConfig.id)
+        .doc(emailConfigId)
         .update({
           watchEnabled: true,
           watchSetupAt: new Date(),
@@ -255,7 +291,7 @@ export async function GET(request: NextRequest) {
           .collection('companies')
           .doc(companyId)
           .collection('emailConfigs')
-          .doc(emailConfig.id)
+          .doc(emailConfigId)
           .update({
             watchEnabled: false,
             watchSetupError: watchError instanceof Error ? watchError.message : String(watchError),

@@ -1,0 +1,29 @@
+# Große Verzeichnisse ausschließen
+docs/elster/
+docs/*.pdf
+emulator-exports/
+node_modules/
+.next/
+dist/
+build/
+*.pdf
+*.zip
+*.tar.gz
+
+# Generierte Dateien
+dataconnect-generated/
+pnpm-lock.yaml
+
+# Binärdateien
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Logs
+*.log
