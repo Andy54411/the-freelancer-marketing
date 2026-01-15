@@ -17,12 +17,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing uid parameter' }, { status: 400 });
     }
 
-    // Scopes für Gmail Zugriff
+    // Scopes für Gmail + Drive + Photos Zugriff
     const scopes = [
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/gmail.send', // E-Mails senden
       'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile'
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'https://www.googleapis.com/auth/drive.readonly', // Google Drive Dateien lesen
+      'https://www.googleapis.com/auth/photoslibrary.readonly', // Google Photos lesen
     ];
 
     // State enthält sowohl companyId als auch userId (getrennt durch "|")
