@@ -103,14 +103,24 @@ export async function GET(
         if (refreshedTokens) {
           console.log('✅ Successfully refreshed Gmail tokens');
           
-          // Update tokens in database
-          await db.collection('companies').doc(uid).update({
-            'gmailConfig.tokens': refreshedTokens,
-            'gmailConfig.status': 'connected',
-            'gmailConfig.lastRefresh': new Date().toISOString(),
+          // Update tokens in emailConfigs subcollection (where they are actually stored!)
+          await db.collection('companies').doc(uid).collection('emailConfigs').doc(emailConfigDoc.id).update({
+            'tokens.access_token': refreshedTokens.access_token,
+            'tokens.refresh_token': refreshedTokens.refresh_token,
+            'tokens.expires_in': refreshedTokens.expires_in,
+            'tokens.token_type': refreshedTokens.token_type,
+            'tokens.expiry_date': Date.now() + (refreshedTokens.expires_in * 1000),
+            'status': 'connected',
+            'lastRefresh': new Date().toISOString(),
+            'updatedAt': new Date().toISOString(),
           });
+          console.log('✅ Tokens in emailConfigs subcollection aktualisiert');
           
-          currentTokens = refreshedTokens;
+          currentTokens = {
+            ...currentTokens,
+            access_token: refreshedTokens.access_token,
+            refresh_token: refreshedTokens.refresh_token,
+          };
           status = 'connected';
         } else {
           console.log('❌ Failed to refresh Gmail tokens');
