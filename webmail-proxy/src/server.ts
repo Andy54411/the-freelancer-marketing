@@ -26,6 +26,7 @@ import settingsRouter from './routes/settings';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
+import { ericRouter } from './routes/eric';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -216,6 +217,9 @@ app.use('/api/payment', paymentRouter);
 // API Routes - Revolut Proxy (alle Revolut API-Aufrufe über Hetzner)
 app.use('/api/revolut-proxy', revolutProxyRouter);
 
+// API Routes - ERiC Proxy (ELSTER Steuerübermittlung)
+app.use('/api/eric', ericRouter);
+
 // API Routes - Mobileconfig (signierte Apple Profile, ÖFFENTLICH)
 app.use('/api/mobileconfig', mobileconfigRouter);
 
@@ -288,7 +292,7 @@ httpServer.listen(PORT, () => {
   console.log(`
 +-----------------------------------------------------------+
 |                                                           |
-|   Taskilo Webmail Proxy Server v2.0.0                     |
+|   Taskilo Webmail Proxy Server v2.1.0                     |
 |                                                           |
 |   Port: ${PORT}                                            |
 |   Environment: ${process.env.NODE_ENV || 'development'}                           |
@@ -317,6 +321,14 @@ httpServer.listen(PORT, () => {
 |   - GET  /api/payment/accounts       Revolut-Konten       |
 |   - GET  /api/payment/balance        Kontostand           |
 |   - POST /api/payment/webhook/*      Webhooks             |
+|                                                           |
+|   ELSTER/ERiC Endpoints (Steuerübermittlung):             |
+|   - GET  /api/eric/status            Service-Status       |
+|   - POST /api/eric/validate-steuernummer  Validierung     |
+|   - POST /api/eric/submit-ustva      UStVA übermitteln    |
+|   - POST /api/eric/submit-euer       EÜR übermitteln      |
+|   - POST /api/eric/generate-xml      XML-Vorschau         |
+|   - POST /api/eric/upload-certificate  Zertifikat-Upload  |
 |                                                           |
 |   WebSocket: /ws                                          |
 |   Meeting WebSocket: /ws/meeting                          |

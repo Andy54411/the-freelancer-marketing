@@ -10,9 +10,6 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  Crown,
-  Zap,
-  Star,
 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
@@ -39,7 +36,7 @@ interface StoragePlan {
   promoPrice?: number;
   promoDuration?: string;
   icon: React.ComponentType<{ className?: string }>;
-  tier: 'basic' | 'standard' | 'premium' | 'business';
+  tier: 'basic' | 'standard';
 }
 
 // Taskilo Speicherpläne (angelehnt an Google One)
@@ -94,94 +91,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     isRecommended: true,
     icon: Sparkles,
     tier: 'standard',
-  },
-  {
-    id: 'premium_2tb',
-    name: 'Premium',
-    storage: 2 * 1024 * 1024 * 1024 * 1024,
-    storageFormatted: '2 TB',
-    priceMonthly: 9.99,
-    priceYearly: 99.99,
-    yearlyDiscount: 17,
-    features: [
-      'Speicherplatz mit bis zu 5 Personen teilen',
-      'Alle Standard-Vorteile',
-      'Erweiterte KI-Funktionen',
-      '5% Cashback auf Taskilo-Käufe',
-    ],
-    isRecommended: false,
-    icon: Crown,
-    tier: 'premium',
-  },
-  {
-    id: 'premium_5tb',
-    name: 'Premium',
-    storage: 5 * 1024 * 1024 * 1024 * 1024,
-    storageFormatted: '5 TB',
-    priceMonthly: 24.99,
-    priceYearly: 249.99,
-    yearlyDiscount: 17,
-    features: [
-      'Speicherplatz mit bis zu 5 Personen teilen',
-      'Alle Premium-Vorteile',
-      'Unbegrenzte KI-Analysen',
-    ],
-    isRecommended: false,
-    icon: Crown,
-    tier: 'premium',
-  },
-  {
-    id: 'premium_10tb',
-    name: 'Premium',
-    storage: 10 * 1024 * 1024 * 1024 * 1024,
-    storageFormatted: '10 TB',
-    priceMonthly: 49.99,
-    priceYearly: 499.99,
-    yearlyDiscount: 17,
-    features: [
-      'Speicherplatz mit bis zu 5 Personen teilen',
-      'Alle Premium-Vorteile',
-      'Dedizierter Support',
-    ],
-    isRecommended: false,
-    icon: Crown,
-    tier: 'premium',
-  },
-  {
-    id: 'business_20tb',
-    name: 'Business',
-    storage: 20 * 1024 * 1024 * 1024 * 1024,
-    storageFormatted: '20 TB',
-    priceMonthly: 99.99,
-    priceYearly: 999.99,
-    yearlyDiscount: 17,
-    features: [
-      'Speicherplatz mit bis zu 10 Personen teilen',
-      'Alle Premium-Vorteile',
-      'Team-Verwaltung',
-      'API-Zugang',
-    ],
-    isRecommended: false,
-    icon: Zap,
-    tier: 'business',
-  },
-  {
-    id: 'business_30tb',
-    name: 'Business Pro',
-    storage: 30 * 1024 * 1024 * 1024 * 1024,
-    storageFormatted: '30 TB',
-    priceMonthly: 149.99,
-    priceYearly: 1499.99,
-    yearlyDiscount: 17,
-    features: [
-      'Speicherplatz mit bis zu 20 Personen teilen',
-      'Alle Business-Vorteile',
-      'White-Label-Option',
-      'SLA-Garantie',
-    ],
-    isRecommended: false,
-    icon: Zap,
-    tier: 'business',
   },
 ];
 
@@ -274,10 +183,6 @@ export function StorageUpgradeModal({
         return isDark ? 'text-gray-400' : 'text-gray-600';
       case 'standard':
         return isDark ? 'text-teal-400' : 'text-teal-600';
-      case 'premium':
-        return isDark ? 'text-amber-400' : 'text-amber-600';
-      case 'business':
-        return isDark ? 'text-purple-400' : 'text-purple-600';
       default:
         return isDark ? 'text-gray-400' : 'text-gray-600';
     }
@@ -287,14 +192,7 @@ export function StorageUpgradeModal({
     if (isRecommended) {
       return isDark ? 'bg-teal-900/30 border-teal-500' : 'bg-teal-50 border-teal-500';
     }
-    switch (tier) {
-      case 'premium':
-        return isDark ? 'bg-amber-900/20 border-amber-500/30' : 'bg-amber-50 border-amber-200';
-      case 'business':
-        return isDark ? 'bg-purple-900/20 border-purple-500/30' : 'bg-purple-50 border-purple-200';
-      default:
-        return isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-    }
+    return isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   };
 
   return (
@@ -449,7 +347,7 @@ export function StorageUpgradeModal({
                         </div>
                         <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <Users className="w-3.5 h-3.5 inline mr-1" />
-                          Speicherplatz mit bis zu {plan.tier === 'business' ? '10' : '5'} Personen teilen
+                          Speicherplatz mit bis zu 5 Personen teilen
                         </p>
                       </div>
                     </div>

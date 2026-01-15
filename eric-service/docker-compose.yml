@@ -1,0 +1,32 @@
+services:
+  eric-service:
+    build: .
+    container_name: taskilo-eric
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      # ERiC-Bibliotheken (vom Host gemountet)
+      - /opt/taskilo/eric/lib:/opt/taskilo/eric/lib:ro
+      - /opt/taskilo/eric/plugins:/opt/taskilo/eric/plugins:ro
+      # Zertifikate (read-write für Uploads)
+      - /opt/taskilo/eric/certificates:/opt/taskilo/eric/certificates
+      # Logs
+      - /opt/taskilo/logs/eric:/opt/taskilo/logs/eric
+    environment:
+      - ERIC_HOME=/opt/taskilo/eric/lib
+      - ERIC_LOG_DIR=/opt/taskilo/logs/eric
+      - ERIC_CERT_DIR=/opt/taskilo/eric/certificates
+      - LD_LIBRARY_PATH=/opt/taskilo/eric/lib
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - taskilo-network
+
+networks:
+  taskilo-network:
+    external: true

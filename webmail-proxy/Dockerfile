@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install build dependencies for native modules (better-sqlite3, bcrypt, canvas) and ffmpeg for video thumbnails
+# Install build dependencies for native modules (better-sqlite3, bcrypt, canvas, ffi-napi for ERiC) and ffmpeg for video thumbnails
 RUN apk add --no-cache \
     python3 \
     make \
@@ -15,7 +15,14 @@ RUN apk add --no-cache \
     librsvg-dev \
     pixman-dev \
     ffmpeg \
-    openssl
+    openssl \
+    libffi-dev
+
+# ERiC-Bibliothek Verzeichnisse erstellen
+RUN mkdir -p /opt/taskilo/eric/lib \
+    /opt/taskilo/eric/plugins \
+    /opt/taskilo/eric/certificates \
+    /opt/taskilo/logs/eric
 
 # Copy package files
 COPY package.json ./

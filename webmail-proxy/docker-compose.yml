@@ -15,10 +15,18 @@ services:
       - TURN_SECRET=${TURN_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - RECORDING_PATH=/data/recordings
+      - ERIC_CERT_PATH=/opt/taskilo/eric/certificates
+      - ERIC_LIB_PATH=/opt/taskilo/eric/lib
+      - ERIC_PLUGIN_PATH=/opt/taskilo/eric/plugins
+      - ERIC_LOG_PATH=/opt/taskilo/logs/eric
     volumes:
       - recordings:/data/recordings
       - drive-data:/opt/taskilo/webmail-proxy/data
       - /opt/mailcow-dockerized/data/assets/ssl:/certs:ro
+      - eric-lib:/opt/taskilo/eric/lib:ro
+      - eric-plugins:/opt/taskilo/eric/plugins:ro
+      - eric-certificates:/opt/taskilo/eric/certificates
+      - eric-logs:/opt/taskilo/logs/eric
     depends_on:
       - redis
     healthcheck:
@@ -85,6 +93,30 @@ volumes:
     driver: local
   drive-data:
     driver: local
+  eric-lib:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/taskilo/eric/lib
+  eric-plugins:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/taskilo/eric/plugins
+  eric-certificates:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/taskilo/eric/certificates
+  eric-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/taskilo/logs/eric
 
 networks:
   webmail-network:

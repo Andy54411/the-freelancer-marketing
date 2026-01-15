@@ -1,6 +1,6 @@
 {
   "name": "taskilo-webmail-proxy",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Secure Webmail IMAP/SMTP Proxy Server for Taskilo - runs on Hetzner",
   "main": "dist/server.js",
   "scripts": {
