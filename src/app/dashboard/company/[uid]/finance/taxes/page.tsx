@@ -1,16 +1,22 @@
 'use client';
 
 /**
- * Steuerzentrale - Accountable-Style Design
- * Übersicht aller Steuerverpflichtungen nach Quartal/Jahr
+ * Steuerzentrale - UStVA-Übersicht mit Echtzeit-Schätzung
+ * 
+ * Features:
+ * - Echtzeit-Vorsteuer-Schätzung basierend auf Rechnungen & Ausgaben
+ * - Fehlende Daten werden klar angezeigt
+ * - Vollständigkeits-Prüfung vor Absenden
+ * - Steuerberater einladen Option
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
   CheckCircle,
   AlertCircle,
@@ -25,10 +31,26 @@ import {
   BarChart3,
   Plus,
   Calculator,
+  FileText,
+  Send,
+  Users,
+  Shield,
+  Upload,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Euro,
+  Receipt,
+  ArrowRight,
+  Sparkles,
+  UserPlus,
+  Mail,
+  ExternalLink,
 } from 'lucide-react';
 import { TaxService } from '@/services/taxService';
+import { TaxRuleType } from '@/types/taxRules';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -39,6 +61,42 @@ interface CompanyTaxSettings {
   bundesland?: string;
   kleinunternehmer?: boolean;
   voranmeldungszeitraum?: 'monatlich' | 'vierteljaehrlich' | 'jaehrlich';
+  elsterCertificateExists?: boolean;
+  name?: string;
+  strasse?: string;
+  plz?: string;
+  ort?: string;
+  telefon?: string;
+  email?: string;
+}
+
+interface QuarterData {
+  quarter: number;
+  year: number;
+  // Umsätze nach Steuersatz (Bemessungsgrundlagen)
+  kz81: number; // 19%
+  kz86: number; // 7%
+  // Steuerfreie Umsätze
+  kz41: number; // Innergemeinschaftliche Lieferungen
+  kz43: number; // Ausfuhren
+  kz45: number; // Nicht steuerbar
+  kz48: number; // Steuerfrei ohne VoSt
+  kz60: number; // §13b steuerpflichtig
+  kz21: number; // §18b sonstige Leistungen
+  // Vorsteuer
+  kz66: number; // Vorsteuer aus Rechnungen
+  // Berechnete Werte
+  umsatzsteuer19: number;
+  umsatzsteuer7: number;
+  umsatzsteuerGesamt: number;
+  zahllast: number;
+  erstattung: number;
+  // Statistiken
+  invoiceCount: number;
+  expenseCount: number;
+  // Status
+  isComplete: boolean;
+  missingData: string[];
 }
 
 interface TaxObligation {
@@ -50,11 +108,15 @@ interface TaxObligation {
   dueDate: Date;
   amount: number;
   status: 'pending' | 'submitted' | 'paid' | 'overdue';
+  quarterData?: QuarterData;
 }
 
 interface YearlyStats {
   gewinn: number;
   geschaetzteEst: number;
+  totalUmsatz: number;
+  totalVorsteuer: number;
+  totalZahllast: number;
 }
 
 const formatCurrency = (value: number) => {
@@ -123,7 +185,7 @@ const generateTaxObligations = (year: number, isKleinunternehmer: boolean): TaxO
   return obligations;
 };
 
-// Jahresabschluss-Verpflichtungen
+// Generiere Jahresabschluss-Verpflichtungen
 const generateYearEndObligations = (year: number): TaxObligation[] => {
   const obligations: TaxObligation[] = [];
 
@@ -163,21 +225,182 @@ const generateYearEndObligations = (year: number): TaxObligation[] => {
   return obligations;
 };
 
+// Berechne Quartalsdaten aus Rechnungen und Ausgaben
+const calculateQuarterData = (
+  invoices: any[],
+  expenses: any[],
+  quarter: number,
+  year: number,
+  taxSettings: CompanyTaxSettings | null
+): QuarterData => {
+  const startMonth = (quarter - 1) * 3;
+  const quarterStart = new Date(year, startMonth, 1);
+  const quarterEnd = new Date(year, startMonth + 3, 0, 23, 59, 59);
+
+  // Filtere Rechnungen für dieses Quartal (nutze _parsedDate falls vorhanden)
+  const quarterInvoices = invoices.filter(inv => {
+    let date: Date;
+    if (inv._parsedDate) {
+      date = inv._parsedDate;
+    } else if (inv.invoiceDate?.toDate) {
+      date = inv.invoiceDate.toDate();
+    } else if (inv.issueDate) {
+      date = new Date(inv.issueDate);
+    } else if (inv.date) {
+      date = new Date(inv.date);
+    } else {
+      return false;
+    }
+    return date >= quarterStart && date <= quarterEnd;
+  });
+
+  // Filtere Ausgaben für dieses Quartal
+  const quarterExpenses = expenses.filter(exp => {
+    let date: Date;
+    if (exp._parsedDate) {
+      date = exp._parsedDate;
+    } else if (exp.expenseDate?.toDate) {
+      date = exp.expenseDate.toDate();
+    } else if (exp.date?.toDate) {
+      date = exp.date.toDate();
+    } else if (exp.expenseDate) {
+      date = new Date(exp.expenseDate);
+    } else if (exp.date) {
+      date = new Date(exp.date);
+    } else {
+      return false;
+    }
+    return date >= quarterStart && date <= quarterEnd;
+  });
+
+  // Initialisiere Kennzahlen
+  let kz81 = 0, kz86 = 0, kz41 = 0, kz43 = 0, kz45 = 0, kz48 = 0, kz60 = 0, kz21 = 0;
+  let umsatzsteuer19 = 0, umsatzsteuer7 = 0;
+
+  // Verarbeite Rechnungen nach TaxRuleType
+  quarterInvoices.forEach(inv => {
+    if (!['paid', 'sent', 'overdue', 'finalized'].includes(inv.status)) return;
+    
+    const netAmount = (inv.netAmount || inv.subtotal || inv.amount || 0) / 100;
+    const taxAmount = (inv.taxAmount || inv.tax || 0) / 100;
+    const taxRule = inv.taxRuleType || inv.taxRule || 'DE_TAXABLE';
+    const vatRate = inv.vatRate || inv.taxRate || 19;
+
+    switch (taxRule) {
+      case TaxRuleType.DE_TAXABLE:
+      case 'DE_TAXABLE':
+        kz81 += netAmount;
+        umsatzsteuer19 += taxAmount || netAmount * 0.19;
+        break;
+      case TaxRuleType.DE_TAXABLE_REDUCED:
+      case 'DE_TAXABLE_REDUCED':
+        kz86 += netAmount;
+        umsatzsteuer7 += taxAmount || netAmount * 0.07;
+        break;
+      case TaxRuleType.EU_INTRACOMMUNITY_SUPPLY:
+      case 'EU_INTRACOMMUNITY_SUPPLY':
+        kz41 += netAmount;
+        break;
+      case TaxRuleType.NON_EU_EXPORT:
+      case 'NON_EU_EXPORT':
+        kz43 += netAmount;
+        break;
+      case TaxRuleType.NON_EU_OUT_OF_SCOPE:
+      case 'NON_EU_OUT_OF_SCOPE':
+        kz45 += netAmount;
+        break;
+      case TaxRuleType.DE_EXEMPT_4_USTG:
+      case 'DE_EXEMPT_4_USTG':
+        kz48 += netAmount;
+        break;
+      case TaxRuleType.DE_REVERSE_13B:
+      case 'DE_REVERSE_13B':
+        kz60 += netAmount;
+        break;
+      case TaxRuleType.EU_REVERSE_18B:
+      case 'EU_REVERSE_18B':
+        kz21 += netAmount;
+        break;
+      default:
+        // Fallback basierend auf Steuersatz
+        if (vatRate === 19 || vatRate === 0.19) {
+          kz81 += netAmount;
+          umsatzsteuer19 += taxAmount || netAmount * 0.19;
+        } else if (vatRate === 7 || vatRate === 0.07) {
+          kz86 += netAmount;
+          umsatzsteuer7 += taxAmount || netAmount * 0.07;
+        }
+    }
+  });
+
+  // Verarbeite Ausgaben → Vorsteuer (Kz66)
+  let kz66 = 0;
+  quarterExpenses.forEach(exp => {
+    if (!['PAID', 'APPROVED', 'paid', 'approved'].includes(exp.status)) return;
+    const vatAmount = (exp.vatAmount || exp.taxAmount || 0) / 100;
+    kz66 += vatAmount;
+  });
+
+  const umsatzsteuerGesamt = umsatzsteuer19 + umsatzsteuer7;
+  const saldo = umsatzsteuerGesamt - kz66;
+
+  // Prüfe auf fehlende Daten
+  const missingData: string[] = [];
+  if (!taxSettings?.steuernummer) missingData.push('Steuernummer');
+  if (!taxSettings?.finanzamt) missingData.push('Finanzamt');
+  if (!taxSettings?.elsterCertificateExists) missingData.push('ELSTER-Zertifikat');
+  if (quarterInvoices.length === 0) missingData.push('Keine Rechnungen im Quartal');
+
+  return {
+    quarter,
+    year,
+    kz81: Math.round(kz81),
+    kz86: Math.round(kz86),
+    kz41: Math.round(kz41),
+    kz43: Math.round(kz43),
+    kz45: Math.round(kz45),
+    kz48: Math.round(kz48),
+    kz60: Math.round(kz60),
+    kz21: Math.round(kz21),
+    kz66: Math.round(kz66 * 100) / 100,
+    umsatzsteuer19: Math.round(umsatzsteuer19 * 100) / 100,
+    umsatzsteuer7: Math.round(umsatzsteuer7 * 100) / 100,
+    umsatzsteuerGesamt: Math.round(umsatzsteuerGesamt * 100) / 100,
+    zahllast: saldo > 0 ? Math.round(saldo * 100) / 100 : 0,
+    erstattung: saldo < 0 ? Math.round(Math.abs(saldo) * 100) / 100 : 0,
+    invoiceCount: quarterInvoices.length,
+    expenseCount: quarterExpenses.length,
+    isComplete: missingData.length === 0 || (missingData.length === 1 && missingData[0] === 'Keine Rechnungen im Quartal'),
+    missingData,
+  };
+};
+
 export default function TaxesPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   const currentYear = new Date().getFullYear();
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSetupBanner, setShowSetupBanner] = useState(true);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
   
   const [taxSettings, setTaxSettings] = useState<CompanyTaxSettings | null>(null);
-  const [yearlyStats, setYearlyStats] = useState<YearlyStats>({ gewinn: 0, geschaetzteEst: 0 });
+  const [yearlyStats, setYearlyStats] = useState<YearlyStats>({ 
+    gewinn: 0, 
+    geschaetzteEst: 0,
+    totalUmsatz: 0,
+    totalVorsteuer: 0,
+    totalZahllast: 0,
+  });
   const [obligations, setObligations] = useState<TaxObligation[]>([]);
   const [yearEndObligations, setYearEndObligations] = useState<TaxObligation[]>([]);
+  const [allInvoices, setAllInvoices] = useState<any[]>([]);
+  const [allExpenses, setAllExpenses] = useState<any[]>([]);
 
   const availableYears = [currentYear, currentYear - 1, currentYear - 2];
 
@@ -190,70 +413,134 @@ export default function TaxesPage() {
       // Lade Unternehmenseinstellungen
       const companyDoc = await getDoc(doc(db, 'companies', uid));
       let isKleinunternehmer = false;
+      let settings: CompanyTaxSettings = {};
       
       if (companyDoc.exists()) {
         const data = companyDoc.data();
         isKleinunternehmer = data.kleinunternehmer === 'ja' || data.ust === 'kleinunternehmer';
-        setTaxSettings({
+        settings = {
           steuernummer: data.taxNumber || data.steuernummer,
           ustIdNr: data.vatId || data.ustIdNr,
           finanzamt: data.finanzamt || data.step3?.finanzamt,
           bundesland: data.bundesland || data.step3?.bundesland,
           kleinunternehmer: isKleinunternehmer,
           voranmeldungszeitraum: data.voranmeldungszeitraum || 'vierteljaehrlich',
-        });
+          name: data.companyName || data.name,
+          strasse: data.street || data.step1?.street,
+          plz: data.zipCode || data.step1?.zipCode,
+          ort: data.city || data.step1?.city,
+          telefon: data.phone || data.step1?.phone,
+          email: data.email || data.step1?.email,
+        };
+        setTaxSettings(settings);
         
         // Prüfe ob Setup Banner angezeigt werden soll
-        setShowSetupBanner(!data.taxNumber && !data.steuernummer && !data.vatId);
+        setShowSetupBanner(!data.taxNumber && !data.steuernummer);
       }
 
-      // Berechne Gewinn für das Jahr
+      // Prüfe ELSTER-Zertifikat
+      try {
+        const certResponse = await fetch(`/api/company/${uid}/elster/certificate-status`);
+        const certData = await certResponse.json();
+        if (certData.success) {
+          settings.elsterCertificateExists = certData.certificateExists;
+          setTaxSettings({ ...settings });
+        }
+      } catch {
+        // Ignorieren
+      }
+
+      // Lade ALLE Rechnungen für das Jahr (für Quartals-Berechnung)
+      // HINWEIS: Rechnungen haben issueDate/date als String, nicht als Timestamp
+      // Daher laden wir alle und filtern clientseitig
       const yearStart = new Date(selectedYear, 0, 1);
       const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
 
-      // Lade Einnahmen
       const invoicesRef = collection(db, 'companies', uid, 'invoices');
-      const invoicesQuery = query(
-        invoicesRef,
-        where('invoiceDate', '>=', Timestamp.fromDate(yearStart)),
-        where('invoiceDate', '<=', Timestamp.fromDate(yearEnd))
-      );
-      const invoicesSnap = await getDocs(invoicesQuery);
+      const invoicesSnap = await getDocs(invoicesRef);
+      const invoices: any[] = [];
       let totalIncome = 0;
       invoicesSnap.forEach(docSnap => {
-        const data = docSnap.data();
-        if (['paid', 'sent', 'overdue'].includes(data.status)) {
-          totalIncome += (data.netAmount || data.subtotal || 0) / 100;
+        const data = { id: docSnap.id, ...docSnap.data() };
+        
+        // Datum ermitteln (verschiedene Formate unterstützen)
+        let invoiceDate: Date | null = null;
+        if (data.invoiceDate?.toDate) {
+          invoiceDate = data.invoiceDate.toDate();
+        } else if (data.issueDate) {
+          invoiceDate = new Date(data.issueDate);
+        } else if (data.date) {
+          invoiceDate = new Date(data.date);
+        } else if (data.createdAt?.toDate) {
+          invoiceDate = data.createdAt.toDate();
+        }
+        
+        // Nur Rechnungen im ausgewählten Jahr
+        if (invoiceDate && invoiceDate >= yearStart && invoiceDate <= yearEnd) {
+          // Normalisiertes Datum speichern für spätere Quartals-Berechnung
+          data._parsedDate = invoiceDate;
+          invoices.push(data);
+          if (['paid', 'sent', 'overdue', 'finalized'].includes(data.status)) {
+            totalIncome += (data.netAmount || data.subtotal || 0) / 100;
+          }
         }
       });
+      setAllInvoices(invoices);
 
-      // Lade Ausgaben
+      // Lade ALLE Ausgaben für das Jahr
       const expensesRef = collection(db, 'companies', uid, 'expenses');
-      const expensesQuery = query(
-        expensesRef,
-        where('expenseDate', '>=', Timestamp.fromDate(yearStart)),
-        where('expenseDate', '<=', Timestamp.fromDate(yearEnd))
-      );
-      const expensesSnap = await getDocs(expensesQuery);
+      const expensesSnap = await getDocs(expensesRef);
+      const expenses: any[] = [];
       let totalExpenses = 0;
+      let totalVorsteuer = 0;
       expensesSnap.forEach(docSnap => {
-        const data = docSnap.data();
-        if (['PAID', 'APPROVED', 'paid', 'approved'].includes(data.status)) {
-          totalExpenses += (data.netAmount || data.amount || 0) / 100;
+        const data = { id: docSnap.id, ...docSnap.data() };
+        
+        // Datum ermitteln (verschiedene Formate unterstützen)
+        let expenseDate: Date | null = null;
+        if (data.expenseDate?.toDate) {
+          expenseDate = data.expenseDate.toDate();
+        } else if (data.date?.toDate) {
+          expenseDate = data.date.toDate();
+        } else if (data.expenseDate) {
+          expenseDate = new Date(data.expenseDate);
+        } else if (data.date) {
+          expenseDate = new Date(data.date);
+        } else if (data.createdAt?.toDate) {
+          expenseDate = data.createdAt.toDate();
+        }
+        
+        // Nur Ausgaben im ausgewählten Jahr
+        if (expenseDate && expenseDate >= yearStart && expenseDate <= yearEnd) {
+          data._parsedDate = expenseDate;
+          expenses.push(data);
+          if (['PAID', 'APPROVED', 'paid', 'approved'].includes(data.status)) {
+            totalExpenses += (data.netAmount || data.amount || 0) / 100;
+            totalVorsteuer += (data.vatAmount || data.taxAmount || 0) / 100;
+          }
         }
       });
+      setAllExpenses(expenses);
 
       const gewinn = totalIncome - totalExpenses;
-      // Geschätzte ESt (vereinfacht: ~25% auf Gewinn über Grundfreibetrag)
-      const grundfreibetrag = 11604; // 2024
+      const grundfreibetrag = 11604;
       const zuVersteuern = Math.max(0, gewinn - grundfreibetrag);
       const geschaetzteEst = zuVersteuern * 0.25;
 
-      setYearlyStats({ gewinn, geschaetzteEst });
-
-      // Generiere Steuerverpflichtungen
+      // Generiere Steuerverpflichtungen mit Echtzeit-Quartalsdaten
       const quarterlyObligations = generateTaxObligations(selectedYear, isKleinunternehmer);
       
+      // Berechne Quartalsdaten für jede UStVA
+      let totalZahllast = 0;
+      quarterlyObligations.forEach(obl => {
+        if (obl.type === 'ustVA' && obl.quarter) {
+          const qData = calculateQuarterData(invoices, expenses, obl.quarter, selectedYear, settings);
+          obl.quarterData = qData;
+          obl.amount = qData.zahllast || -qData.erstattung;
+          totalZahllast += qData.zahllast - qData.erstattung;
+        }
+      });
+
       // Lade bereits eingereichte UStVAs
       const reports = await TaxService.getTaxReportsByCompany(uid);
       const submittedUstvas = reports.filter(r => r.type === 'ustVA' && r.year === selectedYear);
@@ -264,9 +551,6 @@ export default function TaxesPage() {
           const submitted = submittedUstvas.find(r => r.quarter === obl.quarter);
           if (submitted) {
             obl.status = submitted.status === 'submitted' ? 'submitted' : 'pending';
-            if (submitted.taxData?.ustVA) {
-              obl.amount = submitted.taxData.ustVA.zahllast || 0;
-            }
           }
         }
         
@@ -276,6 +560,13 @@ export default function TaxesPage() {
         }
       });
 
+      setYearlyStats({ 
+        gewinn, 
+        geschaetzteEst,
+        totalUmsatz: totalIncome,
+        totalVorsteuer,
+        totalZahllast,
+      });
       setObligations(quarterlyObligations);
       setYearEndObligations(generateYearEndObligations(selectedYear));
 
@@ -291,16 +582,33 @@ export default function TaxesPage() {
     loadTaxData();
   }, [loadTaxData]);
 
-  // Gruppiere Verpflichtungen nach Quartal
-  const groupedByQuarter = obligations.reduce((acc, obl) => {
-    const key = obl.quarter || 0;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(obl);
-    return acc;
-  }, {} as Record<number, TaxObligation[]>);
+  // Gruppiere UStVA-Verpflichtungen
+  const ustvaObligations = obligations.filter(o => o.type === 'ustVA');
+  const estObligations = obligations.filter(o => o.type === 'estVorauszahlung');
 
-  // Prüfe ob alle Steuern aktuell sind
-  const allUpToDate = obligations.every(o => o.status !== 'overdue' && o.status !== 'pending');
+  // Gruppiere nach Quartal
+  const groupedByQuarter: Record<number, TaxObligation[]> = {};
+  obligations.forEach(obl => {
+    if (obl.quarter) {
+      if (!groupedByQuarter[obl.quarter]) {
+        groupedByQuarter[obl.quarter] = [];
+      }
+      groupedByQuarter[obl.quarter].push(obl);
+    }
+  });
+
+  // Prüfe ob alle Verpflichtungen aktuell sind
+  const allUpToDate = obligations.every(o => 
+    o.status === 'submitted' || o.status === 'paid' || o.dueDate > new Date()
+  );
+
+  // Prüfe globale Vollständigkeit
+  const globalMissingData: string[] = [];
+  if (!taxSettings?.steuernummer) globalMissingData.push('Steuernummer');
+  if (!taxSettings?.finanzamt) globalMissingData.push('Finanzamt');
+  if (!taxSettings?.elsterCertificateExists) globalMissingData.push('ELSTER-Zertifikat');
+  
+  const isReadyForSubmission = globalMissingData.length === 0;
 
   // Autorisierung
   const isOwner = user?.uid === uid;
@@ -496,79 +804,261 @@ export default function TaxesPage() {
         </div>
       )}
 
-      {/* Quartale */}
-      {[1, 2, 3, 4].map((quarter) => {
-        const quarterObligations = groupedByQuarter[quarter] || [];
-        if (quarterObligations.length === 0) return null;
-
-        return (
-          <div key={quarter} className="space-y-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              {quarter}. Quartal {selectedYear}
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quarterObligations.map((obl) => (
-                <Card 
-                  key={obl.id} 
-                  className={`relative hover:shadow-lg transition-shadow ${
-                    obl.status === 'overdue' ? 'border-red-200' : 'border-gray-200'
-                  }`}
+      {/* Globale Warnungen für fehlende Daten */}
+      {globalMissingData.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900">
+                  Fehlende Daten für ELSTER-Übermittlung
+                </h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Folgende Angaben fehlen noch:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {globalMissingData.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-sm rounded-md">
+                      <X className="w-3 h-3" />
+                      {item}
+                    </span>
+                  ))}
+                </div>
+                <Link 
+                  href={`/dashboard/company/${uid}/settings?view=tax`}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-900 mt-3"
                 >
-                  <CardContent className="p-5">
-                    <div className="absolute top-4 right-4">
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                    </div>
+                  Jetzt vervollständigen
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                    {/* Fälligkeitsdatum */}
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium mb-4 ${
-                      obl.status === 'overdue' 
-                        ? 'bg-red-100 text-red-700'
-                        : obl.status === 'submitted'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-teal-100 text-teal-700'
-                    }`}>
-                      <Clock className="w-4 h-4" />
-                      {obl.status === 'submitted' ? 'Eingereicht' : `Fällig am ${formatDate(obl.dueDate)}`}
-                    </div>
-
-                    {/* Titel */}
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {obl.title}
-                    </h3>
-
-                    {/* Betrag */}
-                    <p className="text-2xl font-bold text-gray-900 mb-4">
-                      {formatCurrency(obl.amount)}
-                    </p>
-
-                    {/* Action Button */}
-                    {obl.type === 'ustVA' ? (
-                      <Link href={`/dashboard/company/${uid}/finance/taxes/wizard?year=${selectedYear}&quarter=${quarter}`}>
-                        <Button variant="outline" className="w-full">
-                          {obl.status === 'submitted' ? 'Details ansehen' : 'Überprüfen'}
-                        </Button>
-                      </Link>
-                    ) : obl.type === 'estVorauszahlung' ? (
-                      <Link href={`/dashboard/company/${uid}/finance/taxes/prepayment/est-${selectedYear}-q${quarter}`}>
-                        <Button variant="outline" className="w-full">
-                          {obl.status === 'submitted' ? 'Details ansehen' : 'Überprüfen'}
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Button variant="outline" className="w-full">
-                        Überprüfen
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+      {/* UStVA Quartals-Übersicht mit Echtzeit-Schätzung */}
+      {!taxSettings?.kleinunternehmer && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-[#14ad9f]" />
+              Umsatzsteuer-Voranmeldungen {selectedYear}
+            </h2>
+            <div className="flex items-center gap-2">
+              {isReadyForSubmission ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                  <CheckCircle className="w-4 h-4" />
+                  Bereit für ELSTER
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-sm font-medium rounded-full">
+                  <AlertCircle className="w-4 h-4" />
+                  Daten unvollständig
+                </span>
+              )}
             </div>
           </div>
-        );
-      })}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {ustvaObligations.map((obl) => {
+              const qData = obl.quarterData;
+              const isPastQuarter = obl.quarter && obl.quarter < currentQuarter && obl.year === currentYear;
+              const isCurrentQuarter = obl.quarter === currentQuarter && obl.year === currentYear;
+              
+              return (
+                <Card 
+                  key={obl.id} 
+                  className={`relative hover:shadow-lg transition-all duration-300 ${
+                    obl.status === 'overdue' 
+                      ? 'border-red-300 bg-red-50/50' 
+                      : obl.status === 'submitted'
+                      ? 'border-green-300 bg-green-50/50'
+                      : isCurrentQuarter
+                      ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          Q{obl.quarter} - {obl.title}
+                          {isCurrentQuarter && (
+                            <span className="text-xs bg-[#14ad9f] text-white px-2 py-0.5 rounded-full">
+                              Aktuell
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1.5 mt-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          Fällig: {formatDate(obl.dueDate)}
+                        </CardDescription>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        obl.status === 'submitted' 
+                          ? 'bg-green-100 text-green-700'
+                          : obl.status === 'overdue'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {obl.status === 'submitted' ? 'Eingereicht' : obl.status === 'overdue' ? 'Überfällig' : 'Offen'}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {qData && (
+                      <>
+                        {/* Haupt-Ergebnis */}
+                        <div className={`p-4 rounded-xl ${
+                          qData.zahllast > 0 
+                            ? 'bg-amber-50 border border-amber-200' 
+                            : qData.erstattung > 0 
+                            ? 'bg-green-50 border border-green-200'
+                            : 'bg-gray-50 border border-gray-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600">
+                                {qData.zahllast > 0 ? 'Geschätzte Zahllast' : qData.erstattung > 0 ? 'Geschätzte Erstattung' : 'Saldo'}
+                              </p>
+                              <p className={`text-2xl font-bold ${
+                                qData.zahllast > 0 
+                                  ? 'text-amber-700' 
+                                  : qData.erstattung > 0 
+                                  ? 'text-green-700'
+                                  : 'text-gray-700'
+                              }`}>
+                                {qData.zahllast > 0 
+                                  ? formatCurrency(qData.zahllast) 
+                                  : qData.erstattung > 0 
+                                  ? formatCurrency(qData.erstattung)
+                                  : formatCurrency(0)
+                                }
+                              </p>
+                            </div>
+                            {qData.zahllast > 0 ? (
+                              <TrendingUp className="w-8 h-8 text-amber-400" />
+                            ) : qData.erstattung > 0 ? (
+                              <TrendingDown className="w-8 h-8 text-green-400" />
+                            ) : (
+                              <Euro className="w-8 h-8 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Detail-Zeilen */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600">Umsätze 19%</span>
+                            <span className="font-medium">{formatCurrency(qData.kz81)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600">USt 19%</span>
+                            <span className="font-medium">{formatCurrency(qData.umsatzsteuer19)}</span>
+                          </div>
+                          {qData.kz86 > 0 && (
+                            <>
+                              <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <span className="text-gray-600">Umsätze 7%</span>
+                                <span className="font-medium">{formatCurrency(qData.kz86)}</span>
+                              </div>
+                              <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <span className="text-gray-600">USt 7%</span>
+                                <span className="font-medium">{formatCurrency(qData.umsatzsteuer7)}</span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg col-span-2">
+                            <span className="text-blue-700">Vorsteuer (abziehbar)</span>
+                            <span className="font-medium text-blue-700">- {formatCurrency(qData.kz66)}</span>
+                          </div>
+                        </div>
+
+                        {/* Statistiken */}
+                        <div className="flex items-center gap-4 text-sm text-gray-500 pt-2 border-t">
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="w-4 h-4" />
+                            {qData.invoiceCount} Rechnungen
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Receipt className="w-4 h-4" />
+                            {qData.expenseCount} Ausgaben
+                          </div>
+                          {qData.missingData.length > 0 && !qData.missingData.includes('Keine Rechnungen im Quartal') && (
+                            <div className="flex items-center gap-1.5 text-amber-600">
+                              <AlertTriangle className="w-4 h-4" />
+                              {qData.missingData.length} fehlend
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Link href={`/dashboard/company/${uid}/finance/taxes/wizard?year=${selectedYear}&quarter=${obl.quarter}`} className="flex-1">
+                        <Button 
+                          variant={obl.status === 'submitted' ? 'outline' : 'default'}
+                          className={`w-full ${obl.status !== 'submitted' ? 'bg-[#14ad9f] hover:bg-teal-700' : ''}`}
+                        >
+                          {obl.status === 'submitted' ? 'Details ansehen' : 'Prüfen & Absenden'}
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Einkommensteuer-Vorauszahlungen */}
+      {estObligations.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Euro className="w-5 h-5 text-[#14ad9f]" />
+            Einkommensteuer-Vorauszahlungen {selectedYear}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {estObligations.map((obl) => (
+              <Card 
+                key={obl.id} 
+                className={`relative hover:shadow-lg transition-shadow ${
+                  obl.status === 'overdue' ? 'border-red-200' : 'border-gray-200'
+                }`}
+              >
+                <CardContent className="p-5">
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium mb-3 ${
+                    obl.status === 'overdue' 
+                      ? 'bg-red-100 text-red-700'
+                      : obl.status === 'submitted' || obl.status === 'paid'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-teal-100 text-teal-700'
+                  }`}>
+                    <Clock className="w-4 h-4" />
+                    Q{obl.quarter}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-sm">
+                    {obl.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Fällig: {formatDate(obl.dueDate)}
+                  </p>
+                  <Link href={`/dashboard/company/${uid}/finance/taxes/prepayment/est-${selectedYear}-q${obl.quarter}`}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      Details
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Jahresabschluss */}
       <div className="space-y-3 mt-8">
@@ -669,7 +1159,7 @@ export default function TaxesPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#14ad9f]/10 flex items-center justify-center">
-                <Calculator className="w-6 h-6 text-[#14ad9f]" />
+                <Sparkles className="w-6 h-6 text-[#14ad9f]" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">KI Steuerberater & Hilfe</h3>
@@ -683,6 +1173,98 @@ export default function TaxesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Steuerberater einladen */}
+      <Card className="border-purple-200 bg-linear-to-r from-purple-50 to-transparent mt-4">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                <UserPlus className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Steuerberater einladen</h3>
+                <p className="text-sm text-gray-600">
+                  Lade deinen Steuerberater ein, um die UStVA-Daten gemeinsam zu prüfen und abzusenden.
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+              onClick={() => setShowInviteModal(true)}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Einladen
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Steuerberater Einladungs-Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-purple-600" />
+                Steuerberater einladen
+              </CardTitle>
+              <CardDescription>
+                Ihr Steuerberater erhält einen Link, um Ihre UStVA-Daten einzusehen und bei Bedarf abzusenden.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-Mail-Adresse des Steuerberaters
+                </label>
+                <Input
+                  type="email"
+                  placeholder="steuerberater@kanzlei.de"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                <p className="font-medium text-gray-900 mb-1">Der Steuerberater kann:</p>
+                <ul className="space-y-1 ml-4 list-disc">
+                  <li>Ihre Rechnungen und Ausgaben einsehen</li>
+                  <li>Die UStVA-Berechnung prüfen</li>
+                  <li>Die UStVA an ELSTER übermitteln</li>
+                </ul>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setInviteEmail('');
+                  }}
+                >
+                  Abbrechen
+                </Button>
+                <Button 
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    if (inviteEmail) {
+                      toast.success(`Einladung an ${inviteEmail} gesendet`);
+                      setShowInviteModal(false);
+                      setInviteEmail('');
+                    } else {
+                      toast.error('Bitte geben Sie eine E-Mail-Adresse ein');
+                    }
+                  }}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Einladung senden
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

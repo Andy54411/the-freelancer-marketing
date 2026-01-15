@@ -3,6 +3,7 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { ReminderSettings } from '@/components/finance/ReminderSettings';
+import { ElsterCertificateSettings } from '@/components/finance/ElsterCertificateSettings';
 
 export default function FinanceSettingsPage() {
   const params = useParams();
@@ -14,6 +15,8 @@ export default function FinanceSettingsPage() {
         <h1 className="text-3xl font-bold">Finanzeinstellungen</h1>
       </div>
 
+      <ElsterCertificateSettings uid={uid} />
+      
       <ReminderSettings uid={uid} />
     </div>
   );

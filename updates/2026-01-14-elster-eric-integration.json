@@ -1,0 +1,75 @@
+{
+  "version": "2.1.0",
+  "date": "2026-01-14",
+  "title": "ELSTER ERiC Integration",
+  "description": "Integration der ERiC-Bibliothek (ELSTER Rich Client) für die elektronische Steuerübermittlung an das Finanzamt. Ermöglicht die direkte Übermittlung von Umsatzsteuer-Voranmeldungen (UStVA) aus Taskilo.",
+  "type": "feature",
+  "priority": "high",
+  "categories": ["steuer", "buchhaltung", "compliance"],
+  "changes": [
+    {
+      "type": "added",
+      "title": "ERiC-Service auf Hetzner",
+      "description": "Neuer Service für die Integration der ELSTER ERiC-Bibliothek auf dem Hetzner-Server. Die ERiC C-Bibliothek wird über Node.js FFI (ffi-napi) angesprochen."
+    },
+    {
+      "type": "added",
+      "title": "UStVA-XML-Generator",
+      "description": "Automatische Generierung von ELSTER-konformen XML-Dateien für Umsatzsteuer-Voranmeldungen nach dem aktuellen Schema."
+    },
+    {
+      "type": "added",
+      "title": "Steuernummer-Validierung",
+      "description": "Validierung von Steuernummern über die offizielle ERiC-Bibliothek vor der Übermittlung."
+    },
+    {
+      "type": "added",
+      "title": "ELSTER-Zertifikatsverwaltung",
+      "description": "Upload und sichere Speicherung von ELSTER-Zertifikaten (.pfx) pro Unternehmen auf dem Hetzner-Server."
+    },
+    {
+      "type": "added",
+      "title": "Vercel Client-Bibliothek",
+      "description": "TypeScript-Client für die Kommunikation zwischen Vercel (Frontend) und dem ERiC-Proxy auf Hetzner."
+    },
+    {
+      "type": "added",
+      "title": "API-Endpunkte",
+      "description": "Neue API-Endpunkte: /api/eric/status, /api/eric/validate-steuernummer, /api/eric/submit-ustva, /api/eric/generate-xml, /api/eric/upload-certificate"
+    }
+  ],
+  "technical": {
+    "files_created": [
+      "webmail-proxy/src/services/EricService.ts",
+      "webmail-proxy/src/routes/eric.ts",
+      "src/lib/eric-hetzner-proxy.ts"
+    ],
+    "files_modified": [
+      "webmail-proxy/src/server.ts",
+      "webmail-proxy/package.json",
+      "webmail-proxy/Dockerfile",
+      "webmail-proxy/docker-compose.yml"
+    ],
+    "dependencies_added": [
+      "ffi-napi@^4.0.3",
+      "ref-napi@^3.0.3"
+    ]
+  },
+  "deployment": {
+    "vercel": "Automatisch via git push (src/lib/eric-hetzner-proxy.ts)",
+    "hetzner": "MANUELL: scp webmail-proxy/* root@mail.taskilo.de:/opt/taskilo/webmail-proxy/ && docker compose up -d --build"
+  },
+  "next_steps": [
+    "ERiC-Bibliothek vom ELSTER-Entwicklerportal herunterladen",
+    "ERiC-Bibliothek auf Hetzner installieren (/opt/taskilo/eric/)",
+    "Testzertifikat für Entwicklung einrichten",
+    "UStVA-UI im Dashboard implementieren",
+    "EÜR-Übermittlung implementieren"
+  ],
+  "elster_developer_access": {
+    "username": "entwickler",
+    "login_url": "https://www.elster.de/entwicklerbereich",
+    "documentation": "docs/elster/ERiC-41.6.2.0/Dokumentation/"
+  },
+  "author": "Taskilo Team"
+}
