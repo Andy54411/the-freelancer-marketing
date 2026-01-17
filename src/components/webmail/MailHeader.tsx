@@ -284,7 +284,9 @@ export function MailHeader({
               alt="Taskilo" 
               width={120} 
               height={34} 
-              className="h-8 w-auto" 
+              className="h-8 w-auto"
+              style={{ maxWidth: '120px', maxHeight: '32px' }}
+              priority
             />
           </Link>
         </div>
@@ -508,6 +510,8 @@ export function MailHeader({
             width={120}
             height={34}
             className="h-6 md:h-8 w-auto"
+            style={{ maxWidth: '120px', maxHeight: '32px' }}
+            priority
           />
           {appName && (
             <span className={cn(
