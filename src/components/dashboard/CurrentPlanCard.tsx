@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Crown, Zap, CreditCard, Gift, ArrowUpRight } from 'lucide-react';
+import { Crown, Zap, CreditCard, Gift, ArrowUpRight, Mail, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface PlanInfo {
@@ -17,33 +17,55 @@ interface PlanInfo {
   billingInterval: string;
 }
 
+interface EmailStatus {
+  type: 'gmail' | 'taskilo' | 'none';
+  email?: string;
+  plan?: PlanInfo;
+}
+
 interface CurrentPlanCardProps {
   companyId: string;
 }
 
 export function CurrentPlanCard({ companyId }: CurrentPlanCardProps) {
-  const [plan, setPlan] = useState<PlanInfo | null>(null);
+  const [emailStatus, setEmailStatus] = useState<EmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadPlan = async () => {
+    const loadEmailStatus = async () => {
       try {
+        // Prüfe zuerst Gmail-Verbindung
+        const gmailResponse = await fetch(`/api/company/${companyId}/gmail-auth-status`);
+        const gmailData = await gmailResponse.json();
+        
+        if (gmailData.hasConfig && gmailData.status === 'connected') {
+          setEmailStatus({
+            type: 'gmail',
+            email: gmailData.email,
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Prüfe Taskilo Webmail Subscription
         const response = await fetch(`/api/company/${companyId}/subscription`);
         const data = await response.json();
         
         if (data.success && data.subscription) {
-          setPlan(data.subscription);
+          setEmailStatus({
+            type: 'taskilo',
+            plan: data.subscription,
+          });
+        } else {
+          // Keine E-Mail-Anbindung
+          setEmailStatus({
+            type: 'none',
+          });
         }
       } catch {
-        // Fallback zu Free Plan
-        setPlan({
-          planId: 'free',
-          planName: 'FreeMail',
-          status: 'active',
-          statusLabel: 'Kostenlos',
-          isTrialing: false,
-          priceGross: 0,
-          billingInterval: 'monthly',
+        // Keine E-Mail-Anbindung
+        setEmailStatus({
+          type: 'none',
         });
       } finally {
         setLoading(false);
@@ -51,11 +73,13 @@ export function CurrentPlanCard({ companyId }: CurrentPlanCardProps) {
     };
 
     if (companyId) {
-      loadPlan();
+      loadEmailStatus();
     }
   }, [companyId]);
 
-  const getPlanIcon = (planId: string) => {
+  const getPlanIcon = (planId?: string) => {
+    if (!planId) return <Zap className="h-4 w-4 text-gray-500" />;
+    
     switch (planId) {
       case 'free':
         return <Zap className="h-4 w-4 text-gray-500" />;
@@ -70,7 +94,8 @@ export function CurrentPlanCard({ companyId }: CurrentPlanCardProps) {
   };
 
   const getStatusBadge = () => {
-    if (!plan) return null;
+    if (!emailStatus?.plan) return null;
+    const plan = emailStatus.plan;
     
     if (plan.isTrialing) {
       return (
@@ -104,6 +129,67 @@ export function CurrentPlanCard({ companyId }: CurrentPlanCardProps) {
     );
   }
 
+  // Keine E-Mail-Anbindung - Aufforderung zur Erstellung
+  if (!emailStatus || emailStatus.type === 'none') {
+    return (
+      <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Mail className="h-4 w-4 text-amber-600" />
+          <span className="text-xs font-semibold text-amber-700">E-Mail einrichten</span>
+        </div>
+        <p className="text-xs text-amber-600 mb-2">
+          Verbinden Sie Ihre E-Mail für volle Funktionalität.
+        </p>
+        <Link 
+          href={`/dashboard/company/${companyId}/settings?view=email-integration`}
+          className="flex items-center justify-center gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-white font-medium py-1.5 px-3 rounded-md transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+          E-Mail verbinden
+        </Link>
+      </div>
+    );
+  }
+
+  // Gmail verbunden
+  if (emailStatus.type === 'gmail') {
+    return (
+      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+            </svg>
+            <span className="text-xs font-semibold text-gray-700">E-Mail-Konto</span>
+          </div>
+          <Badge className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0">
+            Verbunden
+          </Badge>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900">Gmail</p>
+            {emailStatus.email && (
+              <p className="text-xs text-gray-500 truncate">{emailStatus.email}</p>
+            )}
+          </div>
+          
+          <Link 
+            href="/webmail/pricing"
+            className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap shrink-0"
+            title="Zu Taskilo Webmail wechseln"
+          >
+            Taskilo Mail
+            <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Taskilo Webmail
+  const plan = emailStatus.plan;
   if (!plan) return null;
 
   return (

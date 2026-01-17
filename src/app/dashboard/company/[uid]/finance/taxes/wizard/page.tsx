@@ -118,7 +118,7 @@ export default function WizardStep1Page() {
                   <li>Sie weisen keine Umsatzsteuer auf Ihren Rechnungen aus</li>
                   <li>Sie zahlen keine Umsatzsteuer ans Finanzamt</li>
                   <li>Sie können keine Vorsteuer geltend machen</li>
-                  <li>Die Umsatzgrenze beträgt 22.000 € pro Jahr</li>
+                  <li>Die Umsatzgrenze beträgt 25.000 € pro Jahr (seit 2025)</li>
                 </ul>
               </div>
               <Link href={`/dashboard/company/${uid}/finance/taxes`}>

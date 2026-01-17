@@ -1,0 +1,59 @@
+{
+  "date": "2026-01-16",
+  "title": "Steuer- und Buchhaltungsdokumentation konsolidiert & offiziell verifiziert",
+  "version": "2.1.0",
+  "type": "documentation",
+  "priority": "medium",
+  "tags": ["dokumentation", "steuern", "buchhaltung", "datev", "verifizierung", "compliance"],
+  "summary": "Alle steuer- und buchhaltungsbezogenen Dokumentationen wurden konsolidiert und gegen offizielle Gesetzesquellen verifiziert.",
+  "changes": [
+    {
+      "type": "improved",
+      "description": "STEUERN_BUCHHALTUNG_DOKUMENTATION.md zur Hauptdokumentation erweitert"
+    },
+    {
+      "type": "improved",
+      "description": "Neue Abschnitte: Buchhaltungsmodul-Routen, Firestore-Datenstrukturen, Services & Backend"
+    },
+    {
+      "type": "fixed",
+      "description": "Kleinunternehmer laufendes Jahr von 50.000€ auf 100.000€ korrigiert (§19 UStG Neufassung 2025)"
+    },
+    {
+      "type": "fixed",
+      "description": "Grundfreibetrag von 11.604€ (2024) auf 12.348€ (2026) korrigiert (§32a EStG)"
+    },
+    {
+      "type": "fixed",
+      "description": "Einkommensteuertarif auf 2026-Werte aktualisiert (Spitzensteuersatz ab 69.879€)"
+    },
+    {
+      "type": "improved",
+      "description": "Verifizierungs-Protokoll (Anhang D) mit allen geprüften Werten hinzugefügt"
+    },
+    {
+      "type": "info",
+      "description": "BUCHHALTUNGSMODUL_DOKUMENTATION.md und STEUER_COMPLIANCE_SYSTEMANALYSE.md gelöscht (konsolidiert)"
+    }
+  ],
+  "affectedFiles": [
+    "docs/STEUERN_BUCHHALTUNG_DOKUMENTATION.md"
+  ],
+  "technicalDetails": {
+    "verifiedSources": [
+      "gesetze-im-internet.de (offizieller Bundesgesetz-Server)",
+      "Bundesministerium der Finanzen (BMF)"
+    ],
+    "correctedValues": {
+      "kleinunternehmer_laufend": "50.000€ → 100.000€ (§19 UStG seit 01.01.2025)",
+      "grundfreibetrag": "11.604€ (2024) → 12.348€ (2026) (§32a EStG)",
+      "spitzensteuersatz_grenze": "66.760€ → 69.879€ (2026)"
+    },
+    "consolidatedFrom": [
+      "STEUERN_BUCHHALTUNG_DOKUMENTATION.md (Original)",
+      "BUCHHALTUNGSMODUL_DOKUMENTATION.md (gelöscht)",
+      "STEUER_COMPLIANCE_SYSTEMANALYSE.md (gelöscht)"
+    ]
+  },
+  "author": "GitHub Copilot"
+}

@@ -38,6 +38,11 @@ const DeleteSchema = BaseSchema.extend({
   uid: z.number(),
 });
 
+const PermanentDeleteSchema = BaseSchema.extend({
+  action: z.literal('permanentDelete'),
+  uid: z.number(),
+});
+
 const MoveSchema = BaseSchema.extend({
   action: z.literal('move'),
   uid: z.number(),
@@ -121,6 +126,7 @@ const ActionSchema = z.discriminatedUnion('action', [
   MarkUnreadSchema,
   FlagSchema,
   DeleteSchema,
+  PermanentDeleteSchema,
   MoveSchema,
   CreateMailboxSchema,
   DeleteMailboxSchema,
@@ -159,6 +165,11 @@ router.post('/', async (req, res) => {
         
       case 'delete':
         await emailService.deleteMessage(data.mailbox, data.uid);
+        break;
+        
+      case 'permanentDelete':
+        console.log('[ACTIONS] Permanently deleting message:', data.uid);
+        await emailService.permanentlyDeleteMessage(data.mailbox, data.uid);
         break;
         
       case 'move':

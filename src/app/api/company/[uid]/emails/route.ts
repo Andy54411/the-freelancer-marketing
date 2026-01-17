@@ -94,9 +94,55 @@ async function syncWebmailEmails(companyId: string, email: string, password: str
 
     console.log(`📬 Webmail-Sync: Got ${messages.length} messages, saving to Firebase`);
 
+    // WICHTIG: Prüfe welche E-Mails aus diesem Ordner bereits im Cache sind
+    // Lösche E-Mails die nicht mehr auf dem Server existieren (permanent gelöscht)
+    const folderToLabel: Record<string, string> = {
+      'INBOX': 'INBOX',
+      'inbox': 'INBOX',
+      'Sent': 'SENT',
+      'sent': 'SENT',
+      'Drafts': 'DRAFT',
+      'drafts': 'DRAFT',
+      'Trash': 'TRASH',
+      'trash': 'TRASH',
+      'Deleted': 'TRASH',
+      'Junk': 'SPAM',
+      'Spam': 'SPAM',
+      'spam': 'SPAM',
+      'Archive': 'ARCHIVED',
+      'archive': 'ARCHIVED',
+    };
+    
+    const requestedMailbox = folder === 'inbox' ? 'INBOX' : folder.toUpperCase();
+    const emailLabel = folderToLabel[requestedMailbox] || 'INBOX';
+    
+    // Lade bestehende E-Mails aus diesem Ordner
+    const existingEmailsSnapshot = await db!.collection('companies').doc(companyId).collection('emailCache')
+      .where('labels', 'array-contains', emailLabel)
+      .get();
+    
+    const existingEmailIds = new Set(existingEmailsSnapshot.docs.map(doc => doc.id));
+    const serverMessageIds = new Set(
+      messages.map((msg: { messageId: string; uid: number }) => 
+        msg.messageId 
+          ? Buffer.from(msg.messageId).toString('base64').replace(/[/+=]/g, '_')
+          : `webmail_${msg.uid}`
+      )
+    );
+    
+    // Finde E-Mails die gelöscht wurden (im Cache aber nicht mehr auf Server)
+    const deletedEmailIds = Array.from(existingEmailIds).filter(id => !serverMessageIds.has(id));
+    
+    console.log(`📬 Webmail-Sync: ${deletedEmailIds.length} emails were deleted from server, removing from cache`);
+
     // Speichere in Firebase
     const batch = db!.batch();
     const emailCacheRef = db!.collection('companies').doc(companyId).collection('emailCache');
+
+    // Lösche permanent gelöschte E-Mails aus dem Cache
+    for (const deletedId of deletedEmailIds) {
+      batch.delete(emailCacheRef.doc(deletedId));
+    }
 
     for (const msg of messages) {
       const emailId = msg.messageId 
@@ -123,8 +169,8 @@ async function syncWebmailEmails(companyId: string, email: string, password: str
         htmlBody: '',
         read: msg.flags?.includes('\\Seen') || false,
         starred: msg.flags?.includes('\\Flagged') || false,
-        labels: ['INBOX'],
-        labelIds: ['INBOX'],
+        labels: [emailLabel],
+        labelIds: [emailLabel],
         provider: 'webmail',
         userId: companyId,
         companyId: companyId,
@@ -185,8 +231,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const needsSync = triggerSync || forceRefresh || !cacheCheck || cacheCheck.empty;
       
       if (needsSync) {
-        console.log('📬 API: Cache empty or sync requested - triggering Webmail sync');
-        await syncWebmailEmails(uid, webmailStatus.email, webmailStatus.password, folder);
+        console.log('📬 API: Cache empty or sync requested - triggering Webmail sync for ALL folders');
+        
+        // Synchronisiere ALLE wichtigen Ordner, nicht nur den aktuellen
+        const foldersToSync = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];
+        for (const folderName of foldersToSync) {
+          console.log(`📬 API: Syncing folder: ${folderName}`);
+          await syncWebmailEmails(uid, webmailStatus.email, webmailStatus.password, folderName.toLowerCase());
+        }
+        console.log('📬 API: All folders synced successfully');
       }
     } else if (triggerSync) {
       // Fallback: Gmail Sync wenn Webmail nicht verbunden

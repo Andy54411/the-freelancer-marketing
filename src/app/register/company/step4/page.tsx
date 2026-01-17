@@ -441,7 +441,7 @@ export default function Step4() {
               href="/register/company/step3"
               className="flex items-center text-white/80 hover:text-white transition-colors"
             >
-              <span className="mr-2">Zurueck</span>
+              <span className="mr-2">Zurück</span>
             </Link>
             <Link 
               href="/"

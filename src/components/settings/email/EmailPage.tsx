@@ -3,13 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Settings, FileText, History, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { EmailProviderGrid } from './EmailProviderGrid';
-import { EmailTemplates } from './EmailTemplates';
-import { EmailSettingsCard } from './EmailSettingsCard';
-import { EmailConfig, EmailSettings, EmailTemplate } from './types';
+import { EmailConfig } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface WebmailConfig {
@@ -28,21 +25,13 @@ interface EmailPageProps {
 
 export function EmailPage({ companyId }: EmailPageProps) {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, firebaseUser, loading: authLoading } = useAuth();
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
   const [webmailConfig, setWebmailConfig] = useState<WebmailConfig | null>(null);
   const [useMasterUser, setUseMasterUser] = useState(false);
   const [isConnectingWebmail, setIsConnectingWebmail] = useState(false);
-  const [emailSettings, setEmailSettings] = useState<EmailSettings>({
-    defaultFrom: '',
-    signature: '',
-    autoReply: false,
-    autoReplyMessage: '',
-    trackOpens: false,
-    trackClicks: false
-  });
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Die tatsächliche User-ID für die E-Mail-Konfiguration
   // Mitarbeiter haben ihre eigene Config, Inhaber nutzen die Company-ID
@@ -53,17 +42,49 @@ export function EmailPage({ companyId }: EmailPageProps) {
 
   // Lade E-Mail-Konfiguration, Einstellungen und Vorlagen
   useEffect(() => {
+    // Warte bis Auth geladen ist UND user/firebaseUser verfügbar
+    if (authLoading) {
+      return;
+    }
+
+    // Wenn kein User oder kein firebaseUser, beende das Laden
+    if (!user || !firebaseUser) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Verhindere doppeltes Laden
+    if (dataLoaded) {
+      return;
+    }
+
     const loadData = async () => {
       try {
-        // E-Mail-Konfiguration laden - mit userId für benutzer-spezifische Config
-        const configResponse = await fetch(`/api/company/${companyId}/email-config?userId=${effectiveUserId}`);
+        // Token holen - wichtig: firebaseUser hat getIdToken(), nicht user
+        const token = await firebaseUser.getIdToken();
+        const authHeaders = {
+          'Authorization': `Bearer ${token}`
+        };
+
+        // E-Mail-Konfiguration laden - mit Auth-Token für authentifizierten Zugriff
+        const configResponse = await fetch(
+          `/api/company/${companyId}/email-config?userId=${effectiveUserId}`,
+          { headers: authHeaders }
+        );
+        
         if (configResponse.ok) {
           const config = await configResponse.json();
-          setEmailConfig(config);
+          // Nur setzen wenn hasConfig true ist oder status vorhanden
+          if (config.hasConfig || config.status === 'connected') {
+            setEmailConfig(config);
+          }
         }
 
         // Webmail-Konfiguration laden
-        const webmailResponse = await fetch(`/api/company/${companyId}/webmail-connect`);
+        const webmailResponse = await fetch(
+          `/api/company/${companyId}/webmail-connect`,
+          { headers: authHeaders }
+        );
         if (webmailResponse.ok) {
           const webmailData = await webmailResponse.json();
           if (webmailData.connected && webmailData.config) {
@@ -74,42 +95,44 @@ export function EmailPage({ companyId }: EmailPageProps) {
             setUseMasterUser(true);
           }
         }
-
-        // E-Mail-Einstellungen laden
-        const settingsResponse = await fetch(`/api/company/${companyId}/email-settings?userId=${effectiveUserId}`);
-        if (settingsResponse.ok) {
-          const settings = await settingsResponse.json();
-          setEmailSettings(settings);
+        
+        setDataLoaded(true);
+      } catch (error) {
+        // Bei Fehler loggen (nur für Debugging)
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('[EmailPage] Fehler beim Laden:', error);
         }
-
-        // E-Mail-Vorlagen laden (bleiben auf Company-Ebene)
-        const templatesResponse = await fetch(`/api/company/${companyId}/email-templates`);
-        if (templatesResponse.ok) {
-          const templates = await templatesResponse.json();
-          setTemplates(templates);
-        }
-      } catch {
-        // Fehler beim Laden werden ignoriert
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (effectiveUserId) {
-      loadData();
-    }
-  }, [companyId, effectiveUserId]);
+    loadData();
+  }, [companyId, effectiveUserId, authLoading, user, firebaseUser, dataLoaded]);
 
   // Gmail verbinden - mit userId für benutzer-spezifische Verbindung
   const handleGmailConnect = () => {
     window.location.href = `/api/gmail/connect?uid=${companyId}&userId=${effectiveUserId}`;
   };
 
-  // Gmail trennen
+  // Gmail trennen - mit Loading-State um Mehrfach-Klicks zu verhindern
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  
   const handleGmailDisconnect = async () => {
+    if (isDisconnecting) return; // Verhindere Mehrfach-Klicks
+    
+    setIsDisconnecting(true);
     try {
+      const token = await firebaseUser?.getIdToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`/api/company/${companyId}/gmail-disconnect?userId=${effectiveUserId}`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
       
       if (response.ok) {
@@ -117,6 +140,8 @@ export function EmailPage({ companyId }: EmailPageProps) {
       }
     } catch {
       // Fehler beim Trennen werden ignoriert
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
@@ -124,11 +149,17 @@ export function EmailPage({ companyId }: EmailPageProps) {
   const handleWebmailConnect = useCallback(async (email: string, password: string) => {
     setIsConnectingWebmail(true);
     try {
+      const token = await firebaseUser?.getIdToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`/api/company/${companyId}/webmail-connect`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({ email, password })
       });
       
@@ -144,7 +175,10 @@ export function EmailPage({ companyId }: EmailPageProps) {
         // Starte initialen E-Mail-Sync im Hintergrund
         fetch(`/api/company/${companyId}/webmail-sync`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({ email, password })
         }).catch(() => {
           // Sync-Fehler ignorieren
@@ -159,13 +193,20 @@ export function EmailPage({ companyId }: EmailPageProps) {
     } finally {
       setIsConnectingWebmail(false);
     }
-  }, [companyId]);
+  }, [companyId, firebaseUser]);
 
   // Webmail trennen
   const handleWebmailDisconnect = useCallback(async () => {
     try {
+      const token = await firebaseUser?.getIdToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`/api/company/${companyId}/webmail-connect`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       
       if (response.ok) {
@@ -174,71 +215,9 @@ export function EmailPage({ companyId }: EmailPageProps) {
     } catch {
       // Fehler beim Trennen werden ignoriert
     }
-  }, [companyId]);
+  }, [companyId, firebaseUser]);
 
-  // Einstellungen speichern
-  const handleSaveSettings = async (settings: EmailSettings) => {
-    try {
-      const response = await fetch(`/api/company/${companyId}/email-settings?userId=${effectiveUserId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
-      });
-      
-      if (response.ok) {
-        setEmailSettings(settings);
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  // Template speichern
-  const handleSaveTemplate = async (template: EmailTemplate) => {
-    try {
-      const response = await fetch(`/api/company/${companyId}/email-templates`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(template)
-      });
-      
-      if (response.ok) {
-        const savedTemplate = await response.json();
-        setTemplates(prev => {
-          const existing = prev.find(t => t.id === savedTemplate.id);
-          if (existing) {
-            return prev.map(t => t.id === savedTemplate.id ? savedTemplate : t);
-          }
-          return [...prev, savedTemplate];
-        });
-      }
-    } catch (error) {
-      console.error('Fehler beim Speichern der Vorlage:', error);
-      throw error;
-    }
-  };
-
-  // Template löschen
-  const handleDeleteTemplate = async (templateId: string) => {
-    try {
-      const response = await fetch(`/api/company/${companyId}/email-templates/${templateId}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        setTemplates(prev => prev.filter(t => t.id !== templateId));
-      }
-    } catch (error) {
-      console.error('Fehler beim Löschen der Vorlage:', error);
-      throw error;
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-6">
@@ -271,100 +250,24 @@ export function EmailPage({ companyId }: EmailPageProps) {
         </Alert>
       )}
 
-      <Tabs defaultValue="connections" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="connections" className="flex items-center">
-            <Mail className="h-4 w-4 mr-2" />
-            Verbindungen
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center">
-            <FileText className="h-4 w-4 mr-2" />
-            Vorlagen
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center">
-            <Settings className="h-4 w-4 mr-2" />
-            Einstellungen
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center">
-            <History className="h-4 w-4 mr-2" />
-            Verlauf
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="connections" className="mt-6">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>E-Mail-Anbieter</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EmailProviderGrid
-                  companyId={companyId}
-                  emailConfigs={emailConfig ? [emailConfig] : []}
-                  webmailConfig={webmailConfig ?? undefined}
-                  useMasterUser={useMasterUser}
-                  onDeleteConfig={handleGmailDisconnect}
-                  onConnectGmail={handleGmailConnect}
-                  onConnectWebmail={handleWebmailConnect}
-                  onDisconnectWebmail={handleWebmailDisconnect}
-                  isConnectingWebmail={isConnectingWebmail}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="templates" className="mt-6">
-          <EmailTemplates
+      <Card>
+        <CardHeader>
+          <CardTitle>E-Mail-Anbieter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmailProviderGrid
             companyId={companyId}
-            templates={templates}
-            onCreateTemplate={async (template) => {
-              const newTemplate = {
-                ...template,
-                id: Date.now().toString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              };
-              await handleSaveTemplate(newTemplate);
-            }}
-            onUpdateTemplate={async (templateId, updates) => {
-              const existingTemplate = templates.find(t => t.id === templateId);
-              if (existingTemplate) {
-                const updatedTemplate = {
-                  ...existingTemplate,
-                  ...updates,
-                  updatedAt: new Date().toISOString()
-                };
-                await handleSaveTemplate(updatedTemplate);
-              }
-            }}
-            onDeleteTemplate={handleDeleteTemplate}
+            emailConfigs={emailConfig ? [emailConfig] : []}
+            webmailConfig={webmailConfig ?? undefined}
+            useMasterUser={useMasterUser}
+            onDeleteConfig={handleGmailDisconnect}
+            onConnectGmail={handleGmailConnect}
+            onConnectWebmail={handleWebmailConnect}
+            onDisconnectWebmail={handleWebmailDisconnect}
+            isConnectingWebmail={isConnectingWebmail}
           />
-        </TabsContent>
-
-        <TabsContent value="settings" className="mt-6">
-          <EmailSettingsCard
-            companyId={companyId}
-            settings={emailSettings}
-            onSaveSettings={handleSaveSettings}
-          />
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>E-Mail-Verlauf</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>E-Mail-Verlauf wird hier angezeigt</p>
-                <p className="text-sm">Bald verfügbar...</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

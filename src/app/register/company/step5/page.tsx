@@ -1331,7 +1331,7 @@ export default function Step5CompanyPage() {
               href="/register/company/step4"
               className={`flex items-center text-white/80 hover:text-white transition-colors ${isLoading || isRedirecting ? 'pointer-events-none opacity-50' : ''}`}
             >
-              <span>Zurueck</span>
+              <span>Zurück</span>
             </Link>
             <Link 
               href="/"

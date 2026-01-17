@@ -9,7 +9,7 @@ const ActionSchema = z.object({
   password: z.string().min(1),
   mailbox: z.string().default('INBOX'),
   uid: z.number().optional(),
-  action: z.enum(['markRead', 'markUnread', 'delete', 'move', 'flag', 'saveDraft']),
+  action: z.enum(['markRead', 'markUnread', 'delete', 'permanentDelete', 'move', 'flag', 'saveDraft']),
   targetMailbox: z.string().optional(),
   flagged: z.boolean().optional(),
   draft: z.object({
@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
         break;
       case 'delete':
         await emailService.deleteMessage(mailbox, uid);
+        break;
+      case 'permanentDelete':
+        await emailService.permanentlyDeleteMessage(mailbox, uid);
         break;
       case 'move':
         if (!targetMailbox) {

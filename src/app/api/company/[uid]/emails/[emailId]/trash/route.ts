@@ -107,8 +107,16 @@ export async function POST(
         throw new Error('Unauthorized: Email belongs to another user');
       }
 
-      // Gmail Message ID speichern für API-Aufruf
-      gmailMessageId = emailData?.messageId || emailData?.id || emailId;
+      // Gmail Message ID extrahieren
+      // Format: email@address_gmailMessageId -> wir brauchen nur den Teil nach dem Unterstrich
+      let rawMessageId = emailData?.messageId || emailData?.gmailMessageId || emailId;
+      
+      // WICHTIG: Auch messageId kann das Format email@address_id haben!
+      if (rawMessageId.includes('_')) {
+        gmailMessageId = rawMessageId.split('_')[1];
+      } else {
+        gmailMessageId = rawMessageId;
+      }
 
       const labels = emailData?.labels || emailData?.labelIds || [];
 

@@ -7,6 +7,12 @@ firebase_functions/node_modules/
 .pnpm-debug.log*
 .pnpm-store/
 
+# TypeScript Build Cache (große Dateien!)
+*.tsbuildinfo
+*.tsbuildinfo.incremental
+.tsbuildinfo*
+src/tsconfig.tsbuildinfo
+
 # Build-Output
 /lib/
 /dist/

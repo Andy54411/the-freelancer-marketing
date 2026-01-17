@@ -591,7 +591,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
               {isSearchDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">
+                <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-100 ring-1 ring-black ring-opacity-5">
                   {filteredCategories.map((category: Category) => (
                     <div key={category.title} className="p-2">
                       <h3 className="font-semibold text-gray-700 px-2 text-sm sticky top-0 bg-gray-50 py-1">
@@ -662,7 +662,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                   </span>
                 )}
                 {isNotificationDropdownOpen && currentUser && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-100 ring-1 ring-black ring-opacity-5">
                     <div className="p-3 border-b flex items-center justify-between">
                       <h4 className="font-semibold text-gray-800">Benachrichtigungen</h4>
                       {unreadNotificationsCount > 0 && (
@@ -948,7 +948,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                   </span>
                 )}
                 {isInboxDropdownOpen && currentUser && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-100 ring-1 ring-black ring-opacity-5">
                     <div className="p-3 border-b">
                       <h4 className="font-semibold text-gray-800">Letzte Nachrichten</h4>
                     </div>
@@ -1055,7 +1055,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                     />
                   </button>
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-100 ring-1 ring-black ring-opacity-5">
                       <div className="px-4 py-3 text-left">
                         <p className="text-sm font-semibold">
                           {authUser?.firstName && authUser?.lastName

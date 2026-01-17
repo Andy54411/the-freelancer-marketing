@@ -1,6 +1,6 @@
 'use client';
 
-import { collection, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, Timestamp, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import COMPLETE_DATEV_ACCOUNTS from '@/data/complete-datev-accounts';
 
@@ -446,8 +446,21 @@ export class DatevAuswertungsService {
                  sonstigeAufwendungen.kumuliert,
     };
     
-    // Abschreibungen
-    const abschreibungen = this.berechneBWAZeile(65, 'Abschreibungen', BWA_KONTEN_MAPPING.abschreibungen, buchungen, kumulierteBuchungen, true);
+    // Abschreibungen aus Buchungen
+    const abschreibungenAusBuchungen = this.berechneBWAZeile(65, 'Abschreibungen', BWA_KONTEN_MAPPING.abschreibungen, buchungen, kumulierteBuchungen, true);
+    
+    // Abschreibungen aus fixedAssets Collection berechnen
+    const afaAusAnlagen = await this.berechneAfaAusFixedAssets(companyId, monat, jahr);
+    
+    // Kombiniere Buchungen und berechnete AfA aus Anlagen
+    const abschreibungen: BWAZeile = {
+      zeile: 65,
+      bezeichnung: 'Abschreibungen',
+      kontenVon: 6900,
+      kontenBis: 6999,
+      aktuellerMonat: abschreibungenAusBuchungen.aktuellerMonat + afaAusAnlagen.monatlich,
+      kumuliert: abschreibungenAusBuchungen.kumuliert + afaAusAnlagen.kumuliert,
+    };
     
     // Betriebsergebnis
     const gesamtkosten = personalkostenGesamt.aktuellerMonat + raumkostenGesamt.aktuellerMonat + 
@@ -708,20 +721,28 @@ export class DatevAuswertungsService {
     const buchungen = await this.getBuchungenFuerZeitraum(companyId, startDate, endDate);
     
     // Einnahmen nach Steuersatz gruppieren
-    const einnahmen19 = this.summiereBuchungen(buchungen.filter(b => 
-      b.typ === 'einnahme' && (b.ustSatz === 19 || !b.ustSatz)
+    // WICHTIG: Die Buchungen enthalten bereits NETTO-Beträge!
+    const einnahmen19Netto = this.summiereBuchungen(buchungen.filter(b => 
+      b.typ === 'einnahme' && b.ustSatz === 19
     ));
-    const einnahmen7 = this.summiereBuchungen(buchungen.filter(b => 
+    const einnahmen7Netto = this.summiereBuchungen(buchungen.filter(b => 
       b.typ === 'einnahme' && b.ustSatz === 7
     ));
-    const einnahmenSteuerfrei = this.summiereBuchungen(buchungen.filter(b => 
-      b.typ === 'einnahme' && b.ustSatz === 0
+    const einnahmenSteuerfreiNetto = this.summiereBuchungen(buchungen.filter(b => 
+      b.typ === 'einnahme' && (b.ustSatz === 0 || !b.ustSatz)
     ));
+    
+    // USt-Beträge berechnen (Netto * Steuersatz)
+    const ust19 = einnahmen19Netto * 0.19;
+    const ust7 = einnahmen7Netto * 0.07;
     
     // Ausgaben nach Kategorien
     const ausgabenNachKategorie = this.kategorisiereAusgaben(buchungen.filter(b => b.typ === 'ausgabe'));
     
-    const summeEinnahmen = einnahmen19 + einnahmen7 + einnahmenSteuerfrei;
+    // Summe Einnahmen = Netto + USt (Bruttoprinzip bei EÜR für Ist-Versteuerung)
+    const summeEinnahmenNetto = einnahmen19Netto + einnahmen7Netto + einnahmenSteuerfreiNetto;
+    const summeVereinnUst = ust19 + ust7;
+    const summeEinnahmen = summeEinnahmenNetto + summeVereinnUst;
     const summeAusgaben = Object.values(ausgabenNachKategorie).reduce((a, b) => a + b, 0);
     
     return {
@@ -731,10 +752,10 @@ export class DatevAuswertungsService {
       erstelltAm: new Date(),
       
       betriebseinnahmen: {
-        umsatzerloeseSteuerpflichtig19: { zeile: 14, bezeichnung: 'Umsätze 19%', betrag: einnahmen19 / 1.19 },
-        umsatzerloeseSteuerpflichtig7: { zeile: 15, bezeichnung: 'Umsätze 7%', betrag: einnahmen7 / 1.07 },
-        umsatzerloeseSteuerfrei: { zeile: 16, bezeichnung: 'Steuerfreie Umsätze', betrag: einnahmenSteuerfrei },
-        vereinnahmteUmsatzsteuer: { zeile: 17, bezeichnung: 'Vereinnahmte USt', betrag: (einnahmen19 - einnahmen19/1.19) + (einnahmen7 - einnahmen7/1.07) },
+        umsatzerloeseSteuerpflichtig19: { zeile: 14, bezeichnung: 'Umsätze 19%', betrag: einnahmen19Netto },
+        umsatzerloeseSteuerpflichtig7: { zeile: 15, bezeichnung: 'Umsätze 7%', betrag: einnahmen7Netto },
+        umsatzerloeseSteuerfrei: { zeile: 16, bezeichnung: 'Steuerfreie Umsätze', betrag: einnahmenSteuerfreiNetto },
+        vereinnahmteUmsatzsteuer: { zeile: 17, bezeichnung: 'Vereinnahmte USt', betrag: summeVereinnUst },
         sonstigeEinnahmen: { zeile: 18, bezeichnung: 'Sonstige Einnahmen', betrag: 0 },
         privatnutzungFahrzeug: { zeile: 19, bezeichnung: 'Privatnutzung Kfz', betrag: 0 },
         privatnutzungSonstige: { zeile: 20, bezeichnung: 'Sonstige Privatnutzung', betrag: 0 },
@@ -777,10 +798,10 @@ export class DatevAuswertungsService {
       // Für UI-Kompatibilität
       jahr,
       anlageZeilen: [
-        { zeile: 14, bezeichnung: 'Umsatzerlöse 19%', betrag: einnahmen19 / 1.19 },
-        { zeile: 15, bezeichnung: 'Umsatzerlöse 7%', betrag: einnahmen7 / 1.07 },
-        { zeile: 16, bezeichnung: 'Steuerfreie Umsätze', betrag: einnahmenSteuerfrei },
-        { zeile: 17, bezeichnung: 'Vereinnahmte USt', betrag: (einnahmen19 - einnahmen19/1.19) + (einnahmen7 - einnahmen7/1.07) },
+        { zeile: 14, bezeichnung: 'Umsatzerlöse 19%', betrag: einnahmen19Netto },
+        { zeile: 15, bezeichnung: 'Umsatzerlöse 7%', betrag: einnahmen7Netto },
+        { zeile: 16, bezeichnung: 'Steuerfreie Umsätze', betrag: einnahmenSteuerfreiNetto },
+        { zeile: 17, bezeichnung: 'Vereinnahmte USt', betrag: summeVereinnUst },
         { zeile: 23, bezeichnung: 'Summe Betriebseinnahmen', betrag: summeEinnahmen },
         { zeile: 25, bezeichnung: 'Wareneinkauf', betrag: ausgabenNachKategorie.wareneinkauf || 0 },
         { zeile: 26, bezeichnung: 'Bezogene Leistungen', betrag: ausgabenNachKategorie.fremdleistungen || 0 },
@@ -805,6 +826,61 @@ export class DatevAuswertungsService {
   // HELPER METHODS
   // ============================================================================
   
+  /**
+   * Berechnet den Nettobetrag aus dem Bruttobetrag basierend auf taxRuleType
+   * Unterstützt alle deutschen Steuersätze: 19%, 7%, 0% und Reverse Charge
+   */
+  private static calculateNetAmount(bruttoAmount: number, taxRuleType?: string): number {
+    if (!taxRuleType) {
+      // Fallback auf 19% wenn kein taxRuleType angegeben
+      return bruttoAmount / 1.19;
+    }
+    
+    // Mapping von taxRuleType zu Steuersatz
+    const noTaxRules = [
+      'DE_EXEMPT_4_USTG',       // §4 UStG Steuerbefreiung (0%)
+      'DE_REVERSE_13B',         // §13b Reverse Charge - Leistungsempfänger schuldet USt
+      'EU_REVERSE_18B',         // §18b EU Reverse Charge
+      'EU_INTRACOMMUNITY_SUPPLY', // Innergemeinschaftliche Lieferung (0%)
+      'NON_EU_EXPORT',          // Ausfuhrlieferung (0%)
+      'NON_EU_OUT_OF_SCOPE',    // Nicht steuerbar
+    ];
+    
+    const reducedTaxRules = [
+      'DE_TAXABLE_REDUCED',     // §12 Abs. 2 UStG - 7%
+    ];
+    
+    if (noTaxRules.includes(taxRuleType)) {
+      // Keine Umsatzsteuer - Brutto = Netto
+      return bruttoAmount;
+    }
+    
+    if (reducedTaxRules.includes(taxRuleType)) {
+      // 7% ermäßigter Steuersatz
+      return bruttoAmount / 1.07;
+    }
+    
+    // Standard: 19% Regelsteuersatz (DE_TAXABLE)
+    return bruttoAmount / 1.19;
+  }
+  
+  /**
+   * Ermittelt den USt-Satz aus dem taxRuleType
+   */
+  private static getUstSatzFromTaxRuleType(taxRuleType?: string): number {
+    if (!taxRuleType) return 19;
+    
+    const noTaxRules = [
+      'DE_EXEMPT_4_USTG', 'DE_REVERSE_13B', 'EU_REVERSE_18B',
+      'EU_INTRACOMMUNITY_SUPPLY', 'NON_EU_EXPORT', 'NON_EU_OUT_OF_SCOPE',
+    ];
+    
+    if (noTaxRules.includes(taxRuleType)) return 0;
+    if (taxRuleType === 'DE_TAXABLE_REDUCED') return 7;
+    
+    return 19;
+  }
+  
   private static async getBuchungenFuerZeitraum(
     companyId: string,
     startDate: Date,
@@ -827,14 +903,24 @@ export class DatevAuswertungsService {
         const isPaid = data.status === 'paid';
         
         if (datum >= startDate && datum <= endDate && (isPaid || isGobdLocked)) {
+          // Ermittle den korrekten USt-Satz aus taxRuleType oder vatRate
+          const taxRuleType = data.taxRuleType as string | undefined;
+          const ustSatz = taxRuleType 
+            ? this.getUstSatzFromTaxRuleType(taxRuleType)
+            : (data.vatRate ?? 19);
+          
+          // Berechne Nettobetrag korrekt basierend auf taxRuleType
+          const bruttoTotal = data.total || 0;
+          const nettoAmount = data.netAmount || data.amount || this.calculateNetAmount(bruttoTotal, taxRuleType);
+          
           buchungen.push({
             id: doc.id,
             datum,
-            betrag: data.total || 0,
+            betrag: nettoAmount, // WICHTIG: Nettobetrag für Buchungen verwenden!
             kontoNummer: data.datevKonto || '4000', // Standard: Umsatzerlöse
             beschreibung: data.description || 'Rechnung',
             belegNummer: data.invoiceNumber,
-            ustSatz: data.vatRate || 19,
+            ustSatz,
             typ: 'einnahme',
           });
         }
@@ -1047,5 +1133,109 @@ export class DatevAuswertungsService {
       return new Date(value);
     }
     return new Date();
+  }
+
+  // ============================================================================
+  // ABSCHREIBUNGEN AUS ANLAGEVERMÖGEN (fixedAssets)
+  // ============================================================================
+
+  /**
+   * Berechnet AfA aus der fixedAssets Collection
+   * Berücksichtigt: Lineare AfA, GWG-Sofortabschreibung, Sammelposten
+   */
+  private static async berechneAfaAusFixedAssets(
+    companyId: string,
+    monat: number,
+    jahr: number
+  ): Promise<{ monatlich: number; kumuliert: number }> {
+    try {
+      const assetsRef = collection(db, 'companies', companyId, 'fixedAssets');
+      const assetsQuery = query(assetsRef, where('status', '==', 'active'));
+      const assetsSnapshot = await getDocs(assetsQuery);
+
+      let monatlicheAfa = 0;
+      let kumulierteAfa = 0;
+
+      assetsSnapshot.forEach(docSnapshot => {
+        const asset = docSnapshot.data();
+        
+        // Berechne monatliche AfA für diesen Monat
+        const monatAfa = this.berechneMonatlicheAfa(asset, monat, jahr);
+        monatlicheAfa += monatAfa;
+        
+        // Berechne kumulierte AfA (Januar bis aktueller Monat)
+        for (let m = 1; m <= monat; m++) {
+          kumulierteAfa += this.berechneMonatlicheAfa(asset, m, jahr);
+        }
+      });
+
+      return {
+        monatlich: Math.round(monatlicheAfa * 100) / 100,
+        kumuliert: Math.round(kumulierteAfa * 100) / 100,
+      };
+    } catch {
+      // fixedAssets Collection existiert möglicherweise noch nicht
+      return { monatlich: 0, kumuliert: 0 };
+    }
+  }
+
+  /**
+   * Berechnet die monatliche AfA für ein einzelnes Anlagegut
+   */
+  private static berechneMonatlicheAfa(
+    asset: Record<string, unknown>,
+    monat: number,
+    jahr: number
+  ): number {
+    const purchaseDateRaw = asset.purchaseDate as { toDate?: () => Date } | undefined;
+    const acquisitionDateRaw = asset.acquisitionDate as { toDate?: () => Date } | undefined;
+    const purchaseDate = purchaseDateRaw?.toDate?.() || acquisitionDateRaw?.toDate?.();
+    if (!purchaseDate) return 0;
+
+    // Anschaffungskosten (in Cent oder Euro gespeichert)
+    const rawCost = (asset.purchasePrice as number) || (asset.acquisitionCost as number) || 0;
+    const purchasePrice = rawCost > 10000 ? rawCost / 100 : rawCost; // Cent zu Euro wenn nötig
+    
+    const usefulLifeMonths = ((asset.usefulLife as number) || (asset.usefulLifeYears as number) * 12) || 36;
+    const depreciationMethod = (asset.depreciationMethod as string) || 'linear';
+
+    const purchaseYear = purchaseDate.getFullYear();
+    const purchaseMonth = purchaseDate.getMonth() + 1; // 1-12
+
+    // Prüfe ob das Asset in diesem Monat/Jahr überhaupt abgeschrieben wird
+    if (jahr < purchaseYear) return 0;
+    if (jahr === purchaseYear && monat < purchaseMonth) return 0;
+
+    // GWG: Sofortabschreibung im Anschaffungsmonat
+    if (asset.isGwg && purchaseYear === jahr && purchaseMonth === monat) {
+      return purchasePrice;
+    }
+    if (asset.isGwg && (purchaseYear !== jahr || purchaseMonth !== monat)) {
+      return 0; // GWG nur im Anschaffungsmonat
+    }
+
+    // Sammelposten: 20% pro Jahr über 5 Jahre (gleichmäßig auf 12 Monate)
+    if (asset.isSammelposten) {
+      const yearsActive = jahr - purchaseYear;
+      if (yearsActive >= 0 && yearsActive < 5) {
+        return (purchasePrice * 0.2) / 12;
+      }
+      return 0;
+    }
+
+    // Lineare AfA
+    if (depreciationMethod === 'linear' || depreciationMethod === 'none') {
+      const monthlyAfa = purchasePrice / usefulLifeMonths;
+      
+      // Berechne wie viele Monate seit Anschaffung
+      const monthsSincePurchase = (jahr - purchaseYear) * 12 + (monat - purchaseMonth);
+      
+      // Noch innerhalb der Nutzungsdauer?
+      if (monthsSincePurchase >= 0 && monthsSincePurchase < usefulLifeMonths) {
+        return monthlyAfa;
+      }
+    }
+
+    return 0;
   }
 }

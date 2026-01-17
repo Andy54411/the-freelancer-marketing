@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Mail, Send, Inbox, Settings, Check, X, Loader2, Info, Eye, EyeOff } from 'lucide-react';
+import { Mail, Send, Inbox, Settings, Check, X, Loader2, Info, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import {
   getEmailConfig,
   saveEmailConfig,
@@ -29,11 +30,30 @@ import {
 
 export default function EmailIntegrationPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const [showImapPassword, setShowImapPassword] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // Prüfe auf OAuth-Fehler in URL-Parametern
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const missing = searchParams.get('missing');
+    const details = searchParams.get('details');
+    
+    if (error === 'scope_denied') {
+      setOauthError(`Google hat wichtige Berechtigungen nicht gewährt (${missing || 'unbekannt'}). Bitte entferne die App zuerst unter https://myaccount.google.com/permissions und verbinde dann Gmail erneut.`);
+    } else if (error === 'watch_setup_failed') {
+      setOauthError(`Gmail Push-Benachrichtigungen konnten nicht eingerichtet werden: ${details || 'Unbekannter Fehler'}`);
+    } else if (error === 'gmail_auth_failed') {
+      setOauthError('Gmail-Authentifizierung fehlgeschlagen. Bitte versuche es erneut.');
+    } else if (error === 'connection_failed') {
+      setOauthError('Verbindung zu Gmail fehlgeschlagen. Bitte versuche es erneut.');
+    }
+  }, [searchParams]);
 
   const [selectedProvider, setSelectedProvider] = useState('custom');
   const [config, setConfig] = useState<Partial<EmailConfig>>({
@@ -243,6 +263,39 @@ export default function EmailIntegrationPage() {
 
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
+      {/* OAuth Fehleranzeige */}
+      {oauthError && (
+        <Card className="border-red-300 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="space-y-3">
+                <p className="font-medium text-red-900">Gmail-Verbindungsfehler</p>
+                <p className="text-sm text-red-800">{oauthError}</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white border-red-300 text-red-700 hover:bg-red-100"
+                    onClick={() => window.open('https://myaccount.google.com/permissions', '_blank')}
+                  >
+                    Google-Berechtigungen öffnen
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white"
+                    onClick={() => setOauthError(null)}
+                  >
+                    Schließen
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">E-Mail Integration</h1>

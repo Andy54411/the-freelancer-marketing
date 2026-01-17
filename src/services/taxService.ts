@@ -158,10 +158,16 @@ export interface TaxCalculation {
   bwa?: {
     // Umsätze
     gesamtleistung: number;
+    bestandsveraenderung: number;    // BWA-Zeile 2: Veränderung Lagerbestand
     rohertrag: number;
 
-    // Kosten
-    personalkosten: number;
+    // Personalkosten (getrennt nach Löhne/Gehälter)
+    loehne: number;                  // BWA-Zeile 20: Gewerbliche MA (Stundenlohn)
+    gehaelter: number;               // BWA-Zeile 21: Angestellte (Monatsfixum)
+    sozialversicherungAG: number;    // BWA-Zeile 22: AG-Anteile SV
+    personalkosten: number;          // Summe: Löhne + Gehälter + SV
+    
+    // Sonstige Kosten
     materialkosten: number;
     raumkosten: number;
     fahrzeugkosten: number;
@@ -680,7 +686,6 @@ export class TaxService {
     const expensesSnapshot = await getDocs(expensesQuery);
 
     let materialkosten = 0;
-    let personalkosten = 0;
     let raumkosten = 0;
     let fahrzeugkosten = 0;
     let werbekosten = 0;
@@ -715,22 +720,66 @@ export class TaxService {
     });
 
     // ========================================================================
-    // 3. PERSONALKOSTEN (aus separater Collection oder geschätzt)
+    // 3. PERSONALKOSTEN (aus Payrolls - echte Lohnabrechnungsdaten)
     // ========================================================================
+    let loehne = 0;        // BWA-Zeile 20: Gewerbliche Mitarbeiter (Stundenlohn)
+    let gehaelter = 0;     // BWA-Zeile 21: Angestellte (Monatsfixum)
+    let sozialversicherungAG = 0; // AG-Anteile SV
+    
     try {
-      const employeesRef = collection(db, 'companies', companyId, 'employees');
-      const employeesSnapshot = await getDocs(employeesRef);
+      const payrollsRef = collection(db, 'companies', companyId, 'payrolls');
+      const payrollsSnapshot = await getDocs(payrollsRef);
       
-      employeesSnapshot.forEach(docSnapshot => {
-        const emp = docSnapshot.data();
-        if (emp.status === 'active' && emp.salary) {
-          // Monatliches Bruttogehalt + ca. 20% AG-Anteil SV
-          personalkosten += (emp.salary / 100) * 1.2;
+      payrollsSnapshot.forEach(docSnapshot => {
+        const payroll = docSnapshot.data();
+        
+        // Prüfe ob Payroll im richtigen Monat liegt
+        const payrollDate = payroll.payrollDate?.toDate?.() || payroll.periodEnd?.toDate?.();
+        if (!payrollDate) return;
+        
+        const payrollMonth = payrollDate.getMonth() + 1;
+        const payrollYear = payrollDate.getFullYear();
+        
+        if (payrollYear !== year || payrollMonth !== month) return;
+        
+        // Bruttogehalt (in Cent gespeichert)
+        const grossSalary = (payroll.grossSalary || 0) / 100;
+        
+        // Unterscheide Löhne (Stundenlohn) vs. Gehälter (Monatsfixum)
+        // isWage = true bedeutet Lohn, false = Gehalt
+        if (payroll.isWage === true || payroll.employmentType === 'hourly') {
+          loehne += grossSalary;
+        } else {
+          gehaelter += grossSalary;
         }
+        
+        // AG-Anteil Sozialversicherung
+        const svAG = (payroll.employerCosts?.socialSecurity || 0) / 100;
+        sozialversicherungAG += svAG;
       });
+      
+      // Falls keine Payrolls gefunden, Fallback auf Employees-Schätzung
+      if (loehne === 0 && gehaelter === 0) {
+        const employeesRef = collection(db, 'companies', companyId, 'employees');
+        const employeesSnapshot = await getDocs(employeesRef);
+        
+        employeesSnapshot.forEach(docSnapshot => {
+          const emp = docSnapshot.data();
+          if (emp.status === 'active' && emp.salary) {
+            const monthlySalary = (emp.salary || 0) / 100;
+            // Bei Fallback: Alle als Gehälter behandeln
+            gehaelter += monthlySalary;
+            // Schätze AG-Anteile (ca. 20%)
+            sozialversicherungAG += monthlySalary * 0.2;
+          }
+        });
+      }
     } catch {
-      // employees Collection existiert möglicherweise nicht
+      // payrolls/employees Collection existiert möglicherweise nicht
     }
+    
+    // Gesamte Personalkosten = Löhne + Gehälter + AG-SV
+    const personalkosten = loehne + gehaelter + sozialversicherungAG;
 
     // ========================================================================
     // 4. ABSCHREIBUNGEN (anteilig für den Monat)
@@ -752,13 +801,27 @@ export class TaxService {
     }
 
     // ========================================================================
-    // 5. KENNZAHLEN BERECHNEN
+    // 5. BESTANDSVERÄNDERUNG (BWA-Zeile 2)
     // ========================================================================
-    const rohertrag = gesamtleistung - materialkosten;
+    let bestandsveraenderung = 0;
+    
+    try {
+      // Importiere dynamisch, um zirkuläre Abhängigkeiten zu vermeiden
+      const { InventurService } = await import('./inventurService');
+      const stockChange = await InventurService.calculateStockChange(companyId, startDate, endDate);
+      bestandsveraenderung = stockChange.change / 100; // Von Cent zu Euro
+    } catch {
+      // InventurService nicht verfügbar oder keine Snapshots
+    }
+
+    // ========================================================================
+    // 6. KENNZAHLEN BERECHNEN
+    // ========================================================================
+    const rohertrag = gesamtleistung + bestandsveraenderung - materialkosten;
     const gesamtkosten = materialkosten + personalkosten + raumkosten + 
                          fahrzeugkosten + werbekosten + abschreibungen + sonstigeKosten;
     const deckungsbeitrag = rohertrag - personalkosten;
-    const betriebsergebnis = gesamtleistung - gesamtkosten;
+    const betriebsergebnis = gesamtleistung + bestandsveraenderung - gesamtkosten;
 
     const personalaufwandsquote = gesamtleistung > 0 ? (personalkosten / gesamtleistung) * 100 : 0;
     const materialeinsatzquote = gesamtleistung > 0 ? (materialkosten / gesamtleistung) * 100 : 0;
@@ -766,14 +829,21 @@ export class TaxService {
 
     return {
       gesamtleistung: Math.round(gesamtleistung * 100) / 100,
+      bestandsveraenderung: Math.round(bestandsveraenderung * 100) / 100,
       rohertrag: Math.round(rohertrag * 100) / 100,
+      // Personalkosten aufgeschlüsselt
+      loehne: Math.round(loehne * 100) / 100,
+      gehaelter: Math.round(gehaelter * 100) / 100,
+      sozialversicherungAG: Math.round(sozialversicherungAG * 100) / 100,
       personalkosten: Math.round(personalkosten * 100) / 100,
+      // Sonstige Kosten
       materialkosten: Math.round(materialkosten * 100) / 100,
       raumkosten: Math.round(raumkosten * 100) / 100,
       fahrzeugkosten: Math.round(fahrzeugkosten * 100) / 100,
       werbekosten: Math.round(werbekosten * 100) / 100,
       abschreibungen: Math.round(abschreibungen * 100) / 100,
       sonstigeKosten: Math.round(sonstigeKosten * 100) / 100,
+      // Kennzahlen
       deckungsbeitrag: Math.round(deckungsbeitrag * 100) / 100,
       betriebsergebnis: Math.round(betriebsergebnis * 100) / 100,
       personalaufwandsquote: Math.round(personalaufwandsquote * 10) / 10,

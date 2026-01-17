@@ -59,6 +59,7 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [gmailPopupWindow, setGmailPopupWindow] = useState<Window | null>(null);
   
   // State für bestehendes Konto verbinden
   const [existingEmail, setExistingEmail] = useState('');
@@ -90,44 +91,96 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
     }
   }, [searchParams]);
 
+  // Listener für Gmail OAuth Success (aus Popup-Fenster)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Nur Nachrichten von der eigenen Domain akzeptieren
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data?.type === 'GMAIL_OAUTH_SUCCESS') {
+        const { email } = event.data;
+        
+        // Gmail erfolgreich verbunden
+        const newData: Step5Data = {
+          ...step5Data,
+          emailType: 'gmail',
+          gmailConnected: true,
+          gmailEmail: email,
+        };
+        setStep5Data(newData);
+        updateStepData(5, newData);
+        setIsConnecting(false);
+        setConnectionError(null);
+        
+        // Popup schließen falls noch offen
+        if (gmailPopupWindow && !gmailPopupWindow.closed) {
+          gmailPopupWindow.close();
+        }
+        setGmailPopupWindow(null);
+      } else if (event.data?.type === 'GMAIL_OAUTH_ERROR') {
+        setConnectionError(event.data.error || 'Gmail-Verbindung fehlgeschlagen');
+        setIsConnecting(false);
+        setGmailPopupWindow(null);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [step5Data, gmailPopupWindow, updateStepData]);
+
+  // Prüfe regelmäßig ob Popup geschlossen wurde (ohne Erfolg)
+  useEffect(() => {
+    if (!gmailPopupWindow) return;
+
+    const checkPopup = setInterval(() => {
+      if (gmailPopupWindow.closed) {
+        clearInterval(checkPopup);
+        // Nur Fehler zeigen wenn nicht bereits verbunden
+        if (!step5Data.gmailConnected) {
+          setIsConnecting(false);
+        }
+        setGmailPopupWindow(null);
+      }
+    }, 500);
+
+    return () => clearInterval(checkPopup);
+  }, [gmailPopupWindow, step5Data.gmailConnected]);
+
   const updateField = <K extends keyof Step5Data>(field: K, value: Step5Data[K]) => {
     const newData = { ...step5Data, [field]: value };
     setStep5Data(newData);
     updateStepData(5, newData);
   };
 
-  // Gmail OAuth verbinden
-  const handleConnectGmail = async () => {
+  // Gmail OAuth verbinden - öffnet in neuem Tab
+  const handleConnectGmail = () => {
     setIsConnecting(true);
     setConnectionError(null);
 
-    try {
-      // OAuth Flow starten
-      const response = await fetch('/api/auth/gmail/authorize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          companyId: companyUid || user?.uid,
-          redirectUrl: window.location.href
-        }),
-      });
+    const companyId = companyUid || user?.uid;
+    if (!companyId) {
+      setConnectionError('Keine Unternehmens-ID gefunden');
+      setIsConnecting(false);
+      return;
+    }
 
-      if (!response.ok) {
-        throw new Error('Fehler beim Starten der Gmail-Verbindung');
-      }
-
-      const data = await response.json();
-      
-      if (data.authUrl) {
-        // Redirect zu Google OAuth
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error('Keine Auth-URL erhalten');
-      }
-    } catch (error) {
-      setConnectionError(
-        error instanceof Error ? error.message : 'Fehler beim Verbinden mit Gmail'
-      );
+    // Öffne OAuth in neuem Fenster (Popup)
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      `/api/gmail/connect?uid=${companyId}&popup=true`,
+      'gmail-oauth',
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+    );
+    
+    if (popup) {
+      setGmailPopupWindow(popup);
+      popup.focus();
+    } else {
+      setConnectionError('Popup wurde blockiert. Bitte erlauben Sie Popups für diese Seite.');
       setIsConnecting(false);
     }
   };

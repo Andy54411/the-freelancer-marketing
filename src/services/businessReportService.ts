@@ -283,6 +283,51 @@ export class BusinessReportService {
   // FINANCE KPIs
   // ============================================================================
 
+  /**
+   * Berechnet den Nettobetrag einer Rechnung korrekt basierend auf dem Steuersatz
+   * Unterstützt 19%, 7% und 0% (steuerfreie Umsätze)
+   */
+  private static calculateNetAmount(inv: any): number {
+    // Wenn Nettobetrag direkt vorhanden ist, verwende diesen
+    if (inv.amount) return inv.amount;
+    if (inv.netAmount) return inv.netAmount;
+    
+    // Ansonsten: Berechne aus Bruttobetrag basierend auf Steuersatz
+    if (!inv.total) return 0;
+    
+    const taxRule = inv.taxRuleType || inv.taxRule;
+    const vatRate = inv.vatRate || inv.taxRate;
+    
+    // Steuerfreie Regelungen (0% MwSt) - Brutto = Netto
+    const zeroVatRules = [
+      'EU_INTRACOMMUNITY_SUPPLY',
+      'NON_EU_EXPORT', 
+      'NON_EU_OUT_OF_SCOPE',
+      'DE_EXEMPT_4_USTG',
+      'DE_REVERSE_13B',
+      'EU_REVERSE_18B'
+    ];
+    
+    if (taxRule && zeroVatRules.includes(taxRule)) {
+      return inv.total; // Brutto = Netto bei 0% MwSt
+    }
+    
+    // Ermäßigter Steuersatz (7%)
+    if (taxRule === 'DE_TAXABLE_REDUCED' || vatRate === 7 || vatRate === 0.07) {
+      return inv.total / 1.07;
+    }
+    
+    // Wenn vatRate explizit gesetzt ist
+    if (vatRate !== undefined && vatRate !== null) {
+      if (vatRate === 0) return inv.total;
+      const rate = vatRate > 1 ? vatRate / 100 : vatRate;
+      return inv.total / (1 + rate);
+    }
+    
+    // Standard: 19%
+    return inv.total / 1.19;
+  }
+
   static async getFinanceKPIs(
     companyId: string,
     startDate: Date,
@@ -310,31 +355,99 @@ export class BusinessReportService {
     const paidOrLockedInvoices = periodInvoices.filter(inv => 
       inv.status === 'paid' || inv.isLocked === true || inv.gobdStatus === 'locked'
     );
-    const paidAmount = paidOrLockedInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+    const paidAmount = paidOrLockedInvoices.reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
 
     const outstandingInv = periodInvoices.filter(inv => 
       (inv.status === 'sent' || inv.status === 'pending') && 
       inv.isLocked !== true && 
       inv.gobdStatus !== 'locked'
     );
-    const outstandingAmount = outstandingInv.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+    const outstandingAmount = outstandingInv.reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
 
     const overdueInv = periodInvoices.filter(inv => 
       inv.status === 'overdue' && 
       inv.isLocked !== true && 
       inv.gobdStatus !== 'locked'
     );
-    const overdueAmount = overdueInv.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+    const overdueAmount = overdueInv.reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
 
     const totalRevenue = paidAmount + outstandingAmount + overdueAmount;
-    const totalExpenses = periodExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+    // EÜR: Verwende Nettobetrag für Ausgaben
+    const totalExpenses = periodExpenses.reduce((sum, exp) => {
+      // netAmount ist Netto, amount ist oft Brutto
+      const netAmount = exp.netAmount || (exp.amount && exp.vatAmount ? exp.amount - exp.vatAmount : exp.amount / 1.19);
+      return sum + (netAmount || 0);
+    }, 0);
     const netProfit = totalRevenue - totalExpenses;
 
-    // USt
-    const vatCollected = periodInvoices.reduce((sum, inv) => sum + (inv.vatAmount || inv.total * 0.19 || 0), 0);
-    const vatPaid = periodExpenses
-      .filter(exp => exp.taxDeductible)
-      .reduce((sum, exp) => sum + (exp.amount * 0.19), 0);
+    // USt: Gleiche Logik wie Taxes-Seite - nur relevante Rechnungen (keine Entwürfe/Stornos)
+    // Dieselbe Status-Filterung wie in calculateQuarterData der Taxes-Seite
+    const excludedStatuses = ['draft', 'cancelled', 'storno', 'deleted'];
+    const vatRelevantInvoices = periodInvoices.filter(inv => {
+      const status = (inv.status || 'finalized').toLowerCase();
+      return !excludedStatuses.includes(status);
+    });
+    
+    // USt-Berechnung: Gleiche Logik wie calculateQuarterData in Taxes-Seite
+    // Berücksichtigt 19%, 7% und 0% korrekt nach taxRuleType oder vatRate
+    const vatCollected = vatRelevantInvoices.reduce((sum, inv) => {
+      // Nettobetrag korrekt berechnen mit dem richtigen Steuersatz
+      const netAmount = this.calculateNetAmount(inv);
+      
+      // Falls tax bereits korrekt gespeichert ist, verwende diesen Wert
+      if (inv.tax !== undefined && inv.tax !== null && inv.tax >= 0) {
+        return sum + inv.tax;
+      }
+      if (inv.taxAmount !== undefined && inv.taxAmount !== null && inv.taxAmount >= 0) {
+        return sum + inv.taxAmount;
+      }
+      
+      // Ansonsten: Berechne basierend auf taxRuleType (wie Taxes-Seite)
+      const taxRule = inv.taxRuleType || inv.taxRule;
+      const vatRate = inv.vatRate || inv.taxRate;
+      
+      // Steuerfreie Regelungen (0% MwSt)
+      const zeroVatRules = [
+        'EU_INTRACOMMUNITY_SUPPLY',
+        'NON_EU_EXPORT', 
+        'NON_EU_OUT_OF_SCOPE',
+        'DE_EXEMPT_4_USTG',
+        'DE_REVERSE_13B',
+        'EU_REVERSE_18B'
+      ];
+      
+      if (taxRule && zeroVatRules.includes(taxRule)) {
+        return sum; // Keine MwSt für steuerfreie Umsätze
+      }
+      
+      // Ermäßigter Steuersatz (7%)
+      if (taxRule === 'DE_TAXABLE_REDUCED' || vatRate === 7 || vatRate === 0.07) {
+        return sum + (netAmount * 0.07);
+      }
+      
+      // Regelsteuersatz (19%) - Standard
+      if (taxRule === 'DE_TAXABLE' || vatRate === 19 || vatRate === 0.19 || !taxRule) {
+        return sum + (netAmount * 0.19);
+      }
+      
+      // Fallback: Wenn vatRate explizit gesetzt, verwende diesen
+      if (vatRate && vatRate > 0) {
+        const rate = vatRate > 1 ? vatRate / 100 : vatRate;
+        return sum + (netAmount * rate);
+      }
+      
+      return sum;
+    }, 0);
+    
+    // Vorsteuer: Gleiche Status-Filter wie Taxes-Seite
+    const vatRelevantExpenses = periodExpenses.filter(exp => {
+      const status = (exp.status || 'paid').toLowerCase();
+      return ['paid', 'approved', 'open', 'pending'].includes(status);
+    });
+    const vatPaid = vatRelevantExpenses.reduce((sum, exp) => sum + (exp.vatAmount || exp.taxAmount || 0), 0);
 
     // Letzter Monat für Vergleich
     const lastMonthStart = new Date(startDate);
@@ -346,16 +459,21 @@ export class BusinessReportService {
       const date = inv.issueDate instanceof Date ? inv.issueDate : new Date(inv.issueDate);
       return date >= lastMonthStart && date <= lastMonthEnd;
     });
+    // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
     const lastMonthRevenue = lastMonthInvoices
       .filter(inv => inv.status === 'paid' || inv.isLocked === true || inv.gobdStatus === 'locked')
-      .reduce((sum, inv) => sum + (inv.total || 0), 0);
+      .reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
 
+    // EÜR: Verwende Nettobetrag für Ausgaben
     const lastMonthExpenses = expenses
       .filter(exp => {
         const date = exp.date instanceof Date ? exp.date : new Date(exp.date);
         return date >= lastMonthStart && date <= lastMonthEnd;
       })
-      .reduce((sum, exp) => sum + (exp.amount || 0), 0);
+      .reduce((sum, exp) => {
+        const netAmount = exp.netAmount || (exp.amount && exp.vatAmount ? exp.amount - exp.vatAmount : exp.amount / 1.19);
+        return sum + (netAmount || 0);
+      }, 0);
 
     // Angebote
     const acceptedQuotes = quotes.filter(q => q.status === 'accepted' || q.status === 'invoiced');
@@ -756,7 +874,8 @@ export class BusinessReportService {
         const key = `${date.getFullYear()}-${date.getMonth()}`;
         const data = monthlyMap.get(key);
         if (data) {
-          data.revenue += inv.total || 0;
+          // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+          data.revenue += this.calculateNetAmount(inv);
         }
       }
     });
@@ -768,7 +887,9 @@ export class BusinessReportService {
         const key = `${date.getFullYear()}-${date.getMonth()}`;
         const data = monthlyMap.get(key);
         if (data) {
-          data.expenses += exp.amount || 0;
+          // EÜR: Verwende Nettobetrag
+          const netAmount = exp.netAmount || (exp.amount && exp.vatAmount ? exp.amount - exp.vatAmount : exp.amount / 1.19);
+          data.expenses += netAmount || 0;
         }
       }
     });
@@ -806,10 +927,11 @@ export class BusinessReportService {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
 
-    const [invoices, expenses, payrolls] = await Promise.all([
+    const [invoices, expenses, payrolls, afaFromAssets] = await Promise.all([
       this.getInvoicesFromSubcollection(companyId),
       this.getExpensesFromSubcollection(companyId),
       this.getPayrollsFromSubcollection(companyId, startDate, endDate),
+      this.getFixedAssetsDepreciation(companyId, month, year),
     ]);
 
     // Filtere nach Monat - GoBD-Konformität: Festgeschriebene ODER bezahlte Rechnungen
@@ -824,11 +946,14 @@ export class BusinessReportService {
       return date >= startDate && date <= endDate;
     });
 
-    // Umsatz
-    const netRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.netAmount || inv.total / 1.19 || 0), 0);
+    // Umsatz - EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+    const netRevenue = monthInvoices.reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
 
     // Kategorisierte Ausgaben
     const categorizedExpenses = this.categorizeExpenses(monthExpenses);
+    
+    // Kombiniere AfA aus Ausgaben-Kategorien mit berechneter AfA aus Anlagen
+    const totalDepreciation = categorizedExpenses.depreciation + afaFromAssets;
 
     // Personalkosten
     const totalSalaries = payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
@@ -838,7 +963,7 @@ export class BusinessReportService {
     const grossProfit = netRevenue - categorizedExpenses.material;
     const operatingResult = grossProfit - totalPersonnelCosts - 
       categorizedExpenses.room - categorizedExpenses.vehicle - 
-      categorizedExpenses.other - categorizedExpenses.depreciation;
+      categorizedExpenses.other - totalDepreciation;
 
     return {
       period: { month, year },
@@ -873,7 +998,7 @@ export class BusinessReportService {
         categorizedExpenses.advertising + categorizedExpenses.office + 
         categorizedExpenses.telecom + categorizedExpenses.bookkeeping + 
         categorizedExpenses.legal + categorizedExpenses.other,
-      depreciation: categorizedExpenses.depreciation,
+      depreciation: totalDepreciation,
       interestIncome: 0,
       interestExpense: 0,
       operatingResult,
@@ -892,10 +1017,11 @@ export class BusinessReportService {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31);
 
-    const [invoices, expenses, payrolls] = await Promise.all([
+    const [invoices, expenses, payrolls, afaFromAssets] = await Promise.all([
       this.getInvoicesFromSubcollection(companyId),
       this.getExpensesFromSubcollection(companyId),
       this.getPayrollsFromSubcollection(companyId, startDate, endDate),
+      this.getFixedAssetsDepreciationYear(companyId, year),
     ]);
 
     // Jahres-Rechnungen - GoBD-Konformität: Festgeschriebene ODER bezahlte Rechnungen
@@ -910,9 +1036,13 @@ export class BusinessReportService {
       return date >= startDate && date <= endDate;
     });
 
-    const salesRevenue = yearInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    // EÜR: Verwende Nettobetrag mit korrektem Steuersatz (19%, 7%, 0%)
+    const salesRevenue = yearInvoices.reduce((sum, inv) => sum + this.calculateNetAmount(inv), 0);
     const categorizedExpenses = this.categorizeExpenses(yearExpenses);
     const personnelCosts = payrolls.reduce((sum, p) => sum + (p.grossSalary || 0) + (p.employerCosts?.socialSecurity || 0), 0);
+    
+    // Kombiniere AfA aus Ausgaben-Kategorien mit berechneter AfA aus Anlagen
+    const totalDepreciation = categorizedExpenses.depreciation + afaFromAssets;
 
     const totalExpenses = 
       categorizedExpenses.material + 
@@ -924,7 +1054,7 @@ export class BusinessReportService {
       categorizedExpenses.advertising +
       categorizedExpenses.office +
       categorizedExpenses.other +
-      categorizedExpenses.depreciation;
+      totalDepreciation;
 
     return {
       period: { year },
@@ -941,7 +1071,7 @@ export class BusinessReportService {
       advertisingCosts: categorizedExpenses.advertising,
       officeCosts: categorizedExpenses.office,
       otherOperatingCosts: categorizedExpenses.other,
-      depreciation: categorizedExpenses.depreciation,
+      depreciation: totalDepreciation,
       totalExpenses,
       profit: salesRevenue - totalExpenses,
     };
@@ -978,15 +1108,16 @@ export class BusinessReportService {
     // Berechne Umsätze nach Steuersatz
     const revenue19 = monthInvoices
       .filter(inv => !inv.vatRate || inv.vatRate === 19)
-      .reduce((sum, inv) => sum + (inv.netAmount || inv.total / 1.19 || 0), 0);
+      .reduce((sum, inv) => sum + (inv.amount || inv.netAmount || (inv.total ? inv.total / 1.19 : 0)), 0);
 
     const revenue7 = monthInvoices
       .filter(inv => inv.vatRate === 7)
-      .reduce((sum, inv) => sum + (inv.netAmount || inv.total / 1.07 || 0), 0);
+      .reduce((sum, inv) => sum + (inv.amount || inv.netAmount || (inv.total ? inv.total / 1.07 : 0)), 0);
 
+    // EÜR: Bei steuerfreien Umsätzen ist Netto = Brutto
     const taxFreeRevenue = monthInvoices
       .filter(inv => inv.vatRate === 0 || inv.taxFree)
-      .reduce((sum, inv) => sum + (inv.total || 0), 0);
+      .reduce((sum, inv) => sum + (inv.amount || inv.total || 0), 0);
 
     // USt auf Umsätze
     const outputVat19 = revenue19 * 0.19;
@@ -1195,5 +1326,126 @@ export class BusinessReportService {
     categories.room = categories.rent + categories.utilities;
 
     return categories;
+  }
+
+  // ============================================================================
+  // ABSCHREIBUNGEN AUS ANLAGEVERMÖGEN (fixedAssets)
+  // ============================================================================
+
+  /**
+   * Berechnet AfA aus der fixedAssets Collection für einen bestimmten Monat
+   */
+  private static async getFixedAssetsDepreciation(
+    companyId: string,
+    month: number,
+    year: number
+  ): Promise<number> {
+    try {
+      const assetsRef = collection(db, 'companies', companyId, 'fixedAssets');
+      const assetsQuery = query(assetsRef, where('status', '==', 'active'));
+      const assetsSnapshot = await getDocs(assetsQuery);
+
+      let totalAfa = 0;
+
+      assetsSnapshot.forEach(docSnapshot => {
+        const asset = docSnapshot.data();
+        totalAfa += this.calculateMonthlyDepreciation(asset, month, year);
+      });
+
+      return Math.round(totalAfa * 100) / 100;
+    } catch {
+      // fixedAssets Collection existiert möglicherweise noch nicht
+      return 0;
+    }
+  }
+
+  /**
+   * Berechnet AfA aus der fixedAssets Collection für ein ganzes Jahr
+   */
+  private static async getFixedAssetsDepreciationYear(
+    companyId: string,
+    year: number
+  ): Promise<number> {
+    try {
+      const assetsRef = collection(db, 'companies', companyId, 'fixedAssets');
+      const assetsQuery = query(assetsRef, where('status', '==', 'active'));
+      const assetsSnapshot = await getDocs(assetsQuery);
+
+      let totalAfa = 0;
+
+      assetsSnapshot.forEach(docSnapshot => {
+        const asset = docSnapshot.data();
+        // Summiere alle Monate des Jahres
+        for (let month = 1; month <= 12; month++) {
+          totalAfa += this.calculateMonthlyDepreciation(asset, month, year);
+        }
+      });
+
+      return Math.round(totalAfa * 100) / 100;
+    } catch {
+      // fixedAssets Collection existiert möglicherweise noch nicht
+      return 0;
+    }
+  }
+
+  /**
+   * Berechnet die monatliche AfA für ein einzelnes Anlagegut
+   * Berücksichtigt: Lineare AfA, GWG-Sofortabschreibung, Sammelposten
+   */
+  private static calculateMonthlyDepreciation(
+    asset: Record<string, unknown>,
+    month: number,
+    year: number
+  ): number {
+    const purchaseDateRaw = asset.purchaseDate as { toDate?: () => Date } | undefined;
+    const acquisitionDateRaw = asset.acquisitionDate as { toDate?: () => Date } | undefined;
+    const purchaseDate = purchaseDateRaw?.toDate?.() || acquisitionDateRaw?.toDate?.();
+    if (!purchaseDate) return 0;
+
+    // Anschaffungskosten (in Cent oder Euro gespeichert)
+    const rawCost = (asset.purchasePrice as number) || (asset.acquisitionCost as number) || 0;
+    const purchasePrice = rawCost > 10000 ? rawCost / 100 : rawCost; // Cent zu Euro wenn nötig
+    
+    const usefulLifeMonths = ((asset.usefulLife as number) || ((asset.usefulLifeYears as number) || 0) * 12) || 36;
+    const depreciationMethod = (asset.depreciationMethod as string) || 'linear';
+
+    const purchaseYear = purchaseDate.getFullYear();
+    const purchaseMonth = purchaseDate.getMonth() + 1; // 1-12
+
+    // Prüfe ob das Asset in diesem Monat/Jahr überhaupt abgeschrieben wird
+    if (year < purchaseYear) return 0;
+    if (year === purchaseYear && month < purchaseMonth) return 0;
+
+    // GWG: Sofortabschreibung im Anschaffungsmonat
+    if (asset.isGwg && purchaseYear === year && purchaseMonth === month) {
+      return purchasePrice;
+    }
+    if (asset.isGwg && (purchaseYear !== year || purchaseMonth !== month)) {
+      return 0; // GWG nur im Anschaffungsmonat
+    }
+
+    // Sammelposten: 20% pro Jahr über 5 Jahre (gleichmäßig auf 12 Monate)
+    if (asset.isSammelposten) {
+      const yearsActive = year - purchaseYear;
+      if (yearsActive >= 0 && yearsActive < 5) {
+        return (purchasePrice * 0.2) / 12;
+      }
+      return 0;
+    }
+
+    // Lineare AfA
+    if (depreciationMethod === 'linear' || depreciationMethod === 'none' || !depreciationMethod) {
+      const monthlyAfa = purchasePrice / usefulLifeMonths;
+      
+      // Berechne wie viele Monate seit Anschaffung
+      const monthsSincePurchase = (year - purchaseYear) * 12 + (month - purchaseMonth);
+      
+      // Noch innerhalb der Nutzungsdauer?
+      if (monthsSincePurchase >= 0 && monthsSincePurchase < usefulLifeMonths) {
+        return monthlyAfa;
+      }
+    }
+
+    return 0;
   }
 }

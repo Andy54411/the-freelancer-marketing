@@ -1078,6 +1078,26 @@ export class InventoryService {
   }
 
   /**
+   * Eindeutige Lagerorte laden
+   */
+  static async getUniqueLocations(companyId: string): Promise<string[]> {
+    try {
+      const items = await this.getInventoryItems(companyId);
+      const locationSet = new Set<string>();
+
+      items.forEach(item => {
+        if (item.location && item.location.trim()) {
+          locationSet.add(item.location.trim());
+        }
+      });
+
+      return Array.from(locationSet).sort((a, b) => a.localeCompare(b, 'de'));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Lagerbestand für Lieferschein reduzieren
    */
   static async reduceStockForDeliveryNote(

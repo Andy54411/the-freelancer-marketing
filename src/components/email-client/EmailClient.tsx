@@ -336,40 +336,42 @@ export function EmailClient({
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
-  // ✅ EMAIL VERBINDUNGS-CHECK - Prüfe ob Webmail ODER Gmail verbunden ist
+  // ✅ EMAIL VERBINDUNGS-CHECK - Prüfe ob Gmail ODER Webmail verbunden ist (Gmail hat Priorität pro User)
   useEffect(() => {
     const checkEmailConnection = async () => {
       if (!companyId) return;
 
       try {
-        // ZUERST: Prüfe Webmail-Verbindung
+        // ZUERST: Prüfe Gmail-Verbindung für diesen spezifischen User
+        const gmailResponse = await fetch(
+          `/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`
+        );
+        const gmailData = await gmailResponse.json();
+
+        // Prüfe auf gültige Gmail-Verbindung
+        const hasValidGmailConnection =
+          gmailData.hasConfig &&
+          gmailData.hasTokens &&
+          !gmailData.tokenExpired &&
+          gmailData.status !== 'authentication_required';
+
+        if (hasValidGmailConnection) {
+          setEmailProvider('gmail');
+          return; // Gmail ist verbunden für diesen User
+        }
+
+        // FALLBACK: Prüfe Webmail-Verbindung (Company-weit)
         const webmailResponse = await fetch(`/api/company/${companyId}/webmail-connect`);
         const webmailData = await webmailResponse.json();
 
         if (webmailData.connected) {
           setEmailProvider('webmail');
-          return; // Webmail ist verbunden, alles OK
+          return; // Webmail ist verbunden
         }
 
-        // FALLBACK: Prüfe Gmail-Verbindung
-        const response = await fetch(
-          `/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`
-        );
-        const data = await response.json();
-
-        // Prüfe auf gültige Verbindung (gleiche Logik wie in CompanySidebar)
-        const hasValidConnection =
-          data.hasConfig &&
-          data.hasTokens &&
-          !data.tokenExpired &&
-          data.status !== 'authentication_required';
-
-        if (!hasValidConnection) {
-          setEmailProvider(null);
-          window.location.href = `/dashboard/company/${companyId}/email-integration`;
-        } else {
-          setEmailProvider('gmail');
-        }
+        // Keine Verbindung gefunden - zur Integration-Seite
+        setEmailProvider(null);
+        window.location.href = `/dashboard/company/${companyId}/email-integration`;
       } catch (error) {
         console.error('Email connection check failed:', error);
         // Bei Fehler NICHT automatisch zur Integration-Seite - könnte ein temporärer Fehler sein
@@ -919,14 +921,122 @@ export function EmailClient({
     async (emailIds: string[]) => {
       if (emailIds.length === 0) return;
 
-      console.log(`🗑️ Lösche ${emailIds.length} E-Mails:`, emailIds);
+      // WICHTIG: Im Papierkorb = Permanente Löschung, sonst = In Papierkorb verschieben
+      const isPermanentDelete = selectedFolder === 'trash';
+      
+      console.log(`🗑️ ${isPermanentDelete ? 'Permanent' : 'Trash'}: ${emailIds.length} E-Mails:`, emailIds);
 
       try {
         // Speichere originale E-Mails für Rollback
         const originalEmails = emails.filter(e => emailIds.includes(e.id));
 
         // Optimistic UI update - BEIDE States updaten!
-        // Das verhindert Race Conditions zwischen setEmails und dem Firestore Listener
+        setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        setCachedEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        if (selectedEmail && emailIds.includes(selectedEmail.id)) {
+          setSelectedEmail(null);
+        }
+        setSelectedEmails([]);
+
+        // Alle API-Aufrufe parallel ausführen
+        const results = await Promise.allSettled(
+          emailIds.map(async emailId => {
+            if (isPermanentDelete) {
+              // Permanente Löschung via DELETE
+              const response = await fetch(`/api/company/${companyId}/emails/${emailId}/delete?userId=${effectiveUserId}`, {
+                method: 'DELETE',
+              });
+              
+              // Prüfe auf Scope-Fehler
+              if (!response.ok && response.status === 403) {
+                const data = await response.json();
+                if (data.error === 'GMAIL_SCOPE_MISSING') {
+                  throw new Error('GMAIL_SCOPE_MISSING');
+                }
+              }
+              
+              return response;
+            } else {
+              // In Papierkorb verschieben via POST
+              return fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trash: true, userId: effectiveUserId }),
+              });
+            }
+          })
+        );
+
+        // Prüfe auf Fehler
+        const failedIds: string[] = [];
+        let scopeErrorDetected = false;
+        
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            // Prüfe auf Scope-Fehler
+            if (result.reason?.message === 'GMAIL_SCOPE_MISSING') {
+              scopeErrorDetected = true;
+            }
+            failedIds.push(emailIds[index]);
+          } else if (result.status === 'fulfilled' && !result.value.ok) {
+            failedIds.push(emailIds[index]);
+          }
+        });
+
+        // KRITISCH: Scope-Fehler → Rollback ALLES und zeige Fehlermeldung
+        if (scopeErrorDetected) {
+          setEmails(prev => [...prev, ...originalEmails]);
+          setCachedEmails(prev => [...prev, ...originalEmails]);
+          toast.error(
+            'Gmail-Berechtigung fehlt! Bitte gehe zu Einstellungen → E-Mail Integration und verbinde Gmail neu.',
+            { duration: 8000 }
+          );
+          return;
+        }
+
+        if (failedIds.length > 0) {
+          // Rollback für fehlgeschlagene E-Mails - BEIDE States!
+          const failedEmails = originalEmails.filter(e => failedIds.includes(e.id));
+          setEmails(prev => [...prev, ...failedEmails]);
+          setCachedEmails(prev => [...prev, ...failedEmails]);
+          toast.error(`${failedIds.length} E-Mail(s) konnten nicht gelöscht werden`);
+        } else {
+          toast.success(
+            isPermanentDelete
+              ? (emailIds.length === 1 ? 'E-Mail permanent gelöscht' : `${emailIds.length} E-Mails permanent gelöscht`)
+              : (emailIds.length === 1 ? 'In Papierkorb verschoben' : `${emailIds.length} E-Mails in Papierkorb verschoben`)
+          );
+        }
+
+        // KEIN loadEmails() mehr! Der Firestore Listener updated automatisch
+        // Das verhindert Race Conditions, bei denen loadEmails() stale Daten zurückgibt
+      } catch (error) {
+        console.error('Fehler beim Löschen:', error);
+        toast.error(isPermanentDelete ? 'Fehler beim permanenten Löschen' : 'Fehler beim Verschieben in den Papierkorb');
+        // Nur bei Fehlern refreshen
+        refreshCachedEmails(true);
+      }
+    },
+    [emails, companyId, selectedEmail, effectiveUserId, selectedFolder, refreshCachedEmails]
+  );
+
+  const handlePermanentDelete = useCallback(
+    async (emailIds: string[]) => {
+      if (emailIds.length === 0) return;
+
+      // Bestätigung vor dauerhafter Löschung
+      const confirmed = window.confirm(
+        emailIds.length === 1
+          ? 'Diese E-Mail wird dauerhaft gelöscht und kann nicht wiederhergestellt werden. Fortfahren?'
+          : `Diese ${emailIds.length} E-Mails werden dauerhaft gelöscht und können nicht wiederhergestellt werden. Fortfahren?`
+      );
+
+      if (!confirmed) return;
+
+      console.log(`🗑️ Lösche dauerhaft ${emailIds.length} E-Mails:`, emailIds);
+
+      try {
+        // Optimistic UI update
         setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
         setCachedEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
         if (selectedEmail && emailIds.includes(selectedEmail.id)) {
@@ -937,10 +1047,8 @@ export function EmailClient({
         // Alle API-Aufrufe parallel ausführen
         const results = await Promise.allSettled(
           emailIds.map(emailId =>
-            fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ trash: true, userId: effectiveUserId }),
+            fetch(`/api/company/${companyId}/emails/${emailId}/delete?userId=${encodeURIComponent(effectiveUserId)}`, {
+              method: 'DELETE',
             })
           )
         );
@@ -954,25 +1062,18 @@ export function EmailClient({
         });
 
         if (failedIds.length > 0) {
-          // Rollback für fehlgeschlagene E-Mails - BEIDE States!
-          const failedEmails = originalEmails.filter(e => failedIds.includes(e.id));
-          setEmails(prev => [...prev, ...failedEmails]);
-          setCachedEmails(prev => [...prev, ...failedEmails]);
           toast.error(`${failedIds.length} E-Mail(s) konnten nicht gelöscht werden`);
+          refreshCachedEmails(true);
         } else {
           toast.success(
             emailIds.length === 1
-              ? 'In Papierkorb verschoben'
-              : `${emailIds.length} E-Mails in Papierkorb verschoben`
+              ? 'E-Mail dauerhaft gelöscht'
+              : `${emailIds.length} E-Mails dauerhaft gelöscht`
           );
         }
-
-        // KEIN loadEmails() mehr! Der Firestore Listener updated automatisch
-        // Das verhindert Race Conditions, bei denen loadEmails() stale Daten zurückgibt
       } catch (error) {
-        console.error('Fehler beim Löschen:', error);
-        toast.error('Fehler beim Verschieben in den Papierkorb');
-        // Nur bei Fehlern refreshen
+        console.error('Fehler beim dauerhaften Löschen:', error);
+        toast.error('Fehler beim dauerhaften Löschen');
         refreshCachedEmails(true);
       }
     },

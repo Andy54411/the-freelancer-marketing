@@ -49,10 +49,20 @@ export async function GET(
     }
     
     // Suche nach Config für diesen spezifischen User
-    const emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs')
+    let emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs')
       .where('userId', '==', userId)
+      .where('provider', '==', 'gmail')
       .limit(1)
       .get();
+
+    // Fallback: Wenn nicht gefunden, suche nach irgendeiner Gmail-Config für diese Company
+    if (emailConfigsSnapshot.empty) {
+      console.log('🔍 Keine Config mit userId gefunden, suche nach beliebiger Gmail-Config...');
+      emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs')
+        .where('provider', '==', 'gmail')
+        .limit(1)
+        .get();
+    }
 
     if (emailConfigsSnapshot.empty) {
       return NextResponse.json({
@@ -73,6 +83,7 @@ export async function GET(
     console.log('🔄 Refresh token present:', !!gmailConfig.tokens?.refresh_token);
     console.log('🔑 Access token present:', !!gmailConfig.tokens?.access_token);
     console.log('📊 Current status:', gmailConfig.status);
+    console.log('🔐 Token Scopes:', gmailConfig.tokens?.scope || 'KEINE SCOPES GESPEICHERT!');
     
     // Check if we have a refresh token
     const hasRefreshToken = gmailConfig.tokens?.refresh_token && 
@@ -124,6 +135,18 @@ export async function GET(
         if (refreshedTokens) {
           console.log('✅ Successfully refreshed Gmail tokens');
           
+          // KRITISCH: Behalte die originalen Scopes bei! Google gibt sie beim Refresh NICHT zurück!
+          const originalScopes = gmailConfig.tokens?.scope || [
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.modify',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/drive.readonly',
+            'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+            'https://www.googleapis.com/auth/contacts.readonly',
+          ].join(' ');
+          
           // Update tokens in emailConfigs subcollection (where they are actually stored!)
           await db.collection('companies').doc(uid).collection('emailConfigs').doc(emailConfigDoc.id).update({
             'tokens.access_token': refreshedTokens.access_token,
@@ -131,16 +154,18 @@ export async function GET(
             'tokens.expires_in': refreshedTokens.expires_in,
             'tokens.token_type': refreshedTokens.token_type,
             'tokens.expiry_date': Date.now() + (refreshedTokens.expires_in * 1000),
+            'tokens.scope': originalScopes, // FIXIERT: Scopes beibehalten!
             'status': 'connected',
             'lastRefresh': new Date().toISOString(),
             'updatedAt': new Date().toISOString(),
           });
-          console.log('✅ Tokens in emailConfigs subcollection aktualisiert');
+          console.log('✅ Tokens in emailConfigs subcollection aktualisiert (mit originalen Scopes)');
           
           currentTokens = {
             ...currentTokens,
             access_token: refreshedTokens.access_token,
             refresh_token: refreshedTokens.refresh_token,
+            scope: originalScopes, // FIXIERT: Scopes auch im Response
           };
           status = 'connected';
         } else {
@@ -168,6 +193,17 @@ export async function GET(
     
     const isExpired = !hasValidTokens || status === 'authentication_required';
     
+    // Prüfe ob Photos-Scope vorhanden ist
+    const tokenScopes = currentTokens?.scope || gmailConfig.tokens?.scope || '';
+    const hasPhotosScope = tokenScopes.includes('photoslibrary');
+    const hasDriveScope = tokenScopes.includes('drive');
+    
+    console.log('📸 Scope check:', {
+      tokenScopes: tokenScopes.substring(0, 100) + '...',
+      hasPhotosScope,
+      hasDriveScope
+    });
+    
     return NextResponse.json({
       hasConfig: true,
       email: gmailConfig.email,
@@ -180,6 +216,10 @@ export async function GET(
       reauthorizeUrl: `/api/company/${uid}/gmail-connect`,
       // Access Token für Drive/Photos Picker
       accessToken: hasValidTokens ? currentTokens?.access_token : null,
+      // Scope-Info für Client
+      hasPhotosScope,
+      hasDriveScope,
+      scopeHint: !hasPhotosScope ? 'Für Google Fotos: Gehe zu https://myaccount.google.com/permissions, entferne "Taskilo", dann verbinde Gmail erneut.' : null,
       // Debug info
       debug: {
         hasRefreshTokenInDb: !!gmailConfig.tokens?.refresh_token,
@@ -188,7 +228,8 @@ export async function GET(
         accessTokenValue: gmailConfig.tokens?.access_token ? 'present' : 'missing',
         originalStatus: gmailConfig.status,
         clientIdAvailable: !!process.env.GOOGLE_CLIENT_ID,
-        clientSecretAvailable: !!process.env.GOOGLE_CLIENT_SECRET
+        clientSecretAvailable: !!process.env.GOOGLE_CLIENT_SECRET,
+        scopes: tokenScopes
       }
     });
     

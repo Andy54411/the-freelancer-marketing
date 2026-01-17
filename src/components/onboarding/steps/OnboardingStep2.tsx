@@ -156,13 +156,13 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid: _companyU
                 <Calculator className="h-5 w-5 text-[#14ad9f]" />
                 <RequiredFieldLabel 
                   required={true}
-                  tooltip="Wichtig: Bestimmt Ihre Umsatzsteuerpflicht - bis 22.000€ Jahresumsatz keine Umsatzsteuer"
+                  tooltip="Wichtig: Bestimmt Ihre Umsatzsteuerpflicht - bis 25.000€ Jahresumsatz keine Umsatzsteuer (§19 UStG 2025)"
                 >
                   Kleinunternehmerregelung
                 </RequiredFieldLabel>
               </div>
               <p className="text-sm text-gray-600 mb-4">
-                Nutzen Sie die Kleinunternehmerregelung nach §19 UStG? (bis 22.000€ Jahresumsatz)
+                Nutzen Sie die Kleinunternehmerregelung nach §19 UStG? (bis 25.000€ Jahresumsatz)
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[

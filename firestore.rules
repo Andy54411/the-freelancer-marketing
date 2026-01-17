@@ -2096,6 +2096,90 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Inventories Collection (Inventuren) - für GoBD-konforme Bestandsaufnahmen
+    match /companies/{companyId}/inventories/{inventoryId} {
+      // Lesen: Nur eigene Firma, Mitarbeiter oder Support Staff
+      // VEREINFACHT: Ohne isCompany() Check für bessere Kompatibilität
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId ||
+                      isEmployeeOf(companyId) ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff());
+      
+      // Erstellen: Nur eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       (request.auth.uid == companyId ||
+                        isEmployeeOf(companyId));
+      
+      // Aktualisieren: Nur eigene Firma oder Mitarbeiter
+      allow update: if request.auth != null && 
+                       (request.auth.uid == companyId ||
+                        isEmployeeOf(companyId));
+      
+      // Löschen: Nur Support Staff (GoBD - keine Löschung durch Benutzer)
+      allow delete: if isSupportStaff();
+      
+      // Inventur-Items Subcollection
+      match /items/{itemId} {
+        // Lesen: Nur eigene Firma, Mitarbeiter oder Support Staff
+        // VEREINFACHT: Ohne isCompany() Check für bessere Kompatibilität
+        allow read: if request.auth != null && 
+                       (request.auth.uid == companyId ||
+                        isEmployeeOf(companyId) ||
+                        isSupportStaff());
+        
+        // Listen-Abfragen: Nur eigene Firma oder Mitarbeiter
+        allow list: if request.auth != null && 
+                      (request.auth.uid == companyId ||
+                       isEmployeeOf(companyId) ||
+                       isSupportStaff());
+        
+        // Erstellen: Nur eigene Firma oder Mitarbeiter
+        allow create: if request.auth != null && 
+                         (request.auth.uid == companyId ||
+                          isEmployeeOf(companyId));
+        
+        // Aktualisieren: Nur eigene Firma oder Mitarbeiter (für Zählergebnisse)
+        allow update: if request.auth != null && 
+                         (request.auth.uid == companyId ||
+                          isEmployeeOf(companyId));
+        
+        // Löschen: Nur Support Staff
+        allow delete: if isSupportStaff();
+      }
+    }
+
+    // InventorySnapshots Collection (Bestandsfotos für BWA)
+    match /companies/{companyId}/inventorySnapshots/{snapshotId} {
+      // Lesen: Nur eigene Firma, Mitarbeiter oder Support Staff
+      allow read: if request.auth != null && 
+                     ((request.auth.uid == companyId && isCompany()) ||
+                      isEmployeeOf(companyId) ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma oder Mitarbeiter
+      allow list: if request.auth != null && 
+                    ((request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
+                     isSupportStaff());
+      
+      // Erstellen: Nur eigene Firma oder Mitarbeiter
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId));
+      
+      // Aktualisieren: Nicht erlaubt (Snapshots sind unveränderlich)
+      allow update: if false;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
     // StockMovements Collection (Lagerbestand-Bewegungen) - als Subcollection
     match /companies/{companyId}/stockMovements/{movementId} {
       // Lesen: Nur eigene Firma oder Support Staff
@@ -2367,7 +2451,6 @@ service cloud.firestore {
                        ((request.auth.uid == companyId && isCompany()) ||
                         isEmployeeOf(companyId) ||
                         isSupportStaff());
-    }
     }
 
     // Invoices Collection (Rechnungen) - als Subcollection unter companies

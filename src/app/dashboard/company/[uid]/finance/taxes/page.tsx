@@ -279,13 +279,15 @@ const calculateQuarterData = (
 
   // Verarbeite Rechnungen nach TaxRuleType
   quarterInvoices.forEach(inv => {
-    // Erweiterte Status-Prüfung (verschiedene Schreibweisen)
-    const status = (inv.status || '').toLowerCase();
-    if (!['paid', 'sent', 'overdue', 'finalized', 'open', 'approved'].includes(status)) return;
+    // Status prüfen - Entwürfe und stornierte Rechnungen ausschließen
+    const status = (inv.status || 'finalized').toLowerCase();
+    const excludedStatuses = ['draft', 'cancelled', 'storno', 'deleted'];
+    if (excludedStatuses.includes(status)) return;
     
-    // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
-    const netAmount = inv.netAmount || inv.subtotal || inv.amount || 0;
-    const taxAmount = inv.taxAmount || inv.tax || 0;
+    // Nettobetrag: amount ist Netto, total ist Brutto
+    // Dieselbe Logik wie BWA-Report
+    const netAmount = inv.amount || inv.netAmount || (inv.total ? inv.total / 1.19 : 0);
+    const taxAmount = inv.tax || inv.taxAmount || 0;
     const taxRule = inv.taxRuleType || inv.taxRule || 'DE_TAXABLE';
     const vatRate = inv.vatRate || inv.taxRate || 19;
 
@@ -486,10 +488,14 @@ export default function TaxesPage() {
           // Normalisiertes Datum speichern für spätere Quartals-Berechnung
           data._parsedDate = invoiceDate;
           invoices.push(data);
-          const status = (data.status || '').toLowerCase();
-          if (['paid', 'sent', 'overdue', 'finalized', 'open', 'approved'].includes(status)) {
-            // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
-            totalIncome += data.netAmount || data.subtotal || 0;
+          // Status prüfen - Entwürfe und stornierte Rechnungen ausschließen
+          const status = (data.status || 'finalized').toLowerCase();
+          const excludedStatuses = ['draft', 'cancelled', 'storno', 'deleted'];
+          if (!excludedStatuses.includes(status)) {
+            // Nettobetrag: amount ist Netto, total ist Brutto
+            // Dieselbe Logik wie BWA-Report
+            const netAmount = data.amount || data.netAmount || (data.total ? data.total / 1.19 : 0);
+            totalIncome += netAmount;
           }
         }
       });
@@ -524,8 +530,15 @@ export default function TaxesPage() {
           expenses.push(data);
           const status = (data.status || 'paid').toLowerCase();
           if (['paid', 'approved', 'open', 'pending'].includes(status)) {
-            // WICHTIG: Beträge sind in Euro gespeichert, NICHT in Cent!
-            totalExpenses += data.netAmount || data.amount || 0;
+            // Für EÜR-Gewinn: Nettobetrag verwenden (Vorsteuer ist kein Aufwand)
+            // amount = Brutto, netAmount = Netto, vatAmount = MwSt
+            // Wenn netAmount fehlt, berechne aus amount - vatAmount
+            let expenseNet = data.netAmount;
+            if (!expenseNet && data.amount) {
+              const vat = data.vatAmount || 0;
+              expenseNet = data.amount - vat;
+            }
+            totalExpenses += expenseNet || 0;
             totalVorsteuer += data.vatAmount || data.taxAmount || 0;
           }
         }
@@ -707,7 +720,7 @@ export default function TaxesPage() {
                 </button>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                {yearlyStats.geschaetzteEst > 0 ? formatCurrency(yearlyStats.geschaetzteEst) : '-'}
+                {formatCurrency(yearlyStats.geschaetzteEst)}
               </p>
             </div>
           </div>
@@ -1138,17 +1151,17 @@ export default function TaxesPage() {
 
                 {/* Status */}
                 <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium mb-4 ${
-                  yearlyStats.gewinn < 22000
+                  yearlyStats.gewinn < 25000
                     ? 'bg-green-100 text-green-700'
                     : 'bg-orange-100 text-orange-700'
                 }`}>
                   <AlertCircle className="w-4 h-4" />
-                  {yearlyStats.gewinn < 22000 ? 'Im Rahmen' : 'Umsatzgrenze überschritten'}
+                  {yearlyStats.gewinn < 25000 ? 'Im Rahmen' : 'Umsatzgrenze überschritten'}
                 </div>
 
                 {/* Titel */}
                 <h3 className="font-semibold text-gray-900 mb-4">
-                  Umsatzgrenze für Kleinunternehmer
+                  Umsatzgrenze für Kleinunternehmer (§19 UStG 2025)
                 </h3>
 
                 {/* Action Button */}

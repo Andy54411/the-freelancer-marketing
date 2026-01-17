@@ -17,6 +17,9 @@ import ProgressBar from '@/components/ProgressBar';
 import { X, Info, Loader2, CheckCircle, AlertCircle, Upload, User, FileText, Award, Building2, Euro, ArrowLeft, ArrowRight } from 'lucide-react';
 import PopupModal from '@/app/register/company/step4/components/PopupModal';
 import { useRegistration } from '@/contexts/Registration-Context';
+import dynamic from 'next/dynamic';
+
+const PdfThumbnail = dynamic(() => import('@/components/PdfThumbnail'), { ssr: false });
 
 const steps: string[] = [
   'Über Sie',
@@ -121,15 +124,19 @@ export default function Step3CompanyPage() {
     };
   }, [registration.profilePictureFile]);
 
-  // UseEffect für Gewerbeschein-Vorschau
+  // UseEffect für Gewerbeschein-Vorschau (nur für Bilder, PDFs werden direkt gerendert)
   useEffect(() => {
     let objectUrl: string | null = null;
     if (registration.businessLicenseFile && registration.businessLicenseFile instanceof File) {
-      try {
-        objectUrl = URL.createObjectURL(registration.businessLicenseFile);
-        setBusinessLicensePreview(objectUrl);
-      } catch (e) {
-        setBusinessLicensePreview(null);
+      if (registration.businessLicenseFile.type !== 'application/pdf') {
+        try {
+          objectUrl = URL.createObjectURL(registration.businessLicenseFile);
+          setBusinessLicensePreview(objectUrl);
+        } catch {
+          setBusinessLicensePreview(null);
+        }
+      } else {
+        setBusinessLicensePreview('pdf');
       }
     } else {
       setBusinessLicensePreview(null);
@@ -139,18 +146,22 @@ export default function Step3CompanyPage() {
     };
   }, [registration.businessLicenseFile]);
 
-  // UseEffect für Meisterbrief-Vorschau
+  // UseEffect für Meisterbrief-Vorschau (nur für Bilder, PDFs werden direkt gerendert)
   useEffect(() => {
     let objectUrl: string | null = null;
     if (
       registration.masterCraftsmanCertificateFile &&
       registration.masterCraftsmanCertificateFile instanceof File
     ) {
-      try {
-        objectUrl = URL.createObjectURL(registration.masterCraftsmanCertificateFile);
-        setMasterCraftsmanCertificatePreview(objectUrl);
-      } catch (e) {
-        setMasterCraftsmanCertificatePreview(null);
+      if (registration.masterCraftsmanCertificateFile.type !== 'application/pdf') {
+        try {
+          objectUrl = URL.createObjectURL(registration.masterCraftsmanCertificateFile);
+          setMasterCraftsmanCertificatePreview(objectUrl);
+        } catch {
+          setMasterCraftsmanCertificatePreview(null);
+        }
+      } else {
+        setMasterCraftsmanCertificatePreview('pdf');
       }
     } else {
       setMasterCraftsmanCertificatePreview(null);
@@ -208,6 +219,9 @@ export default function Step3CompanyPage() {
               resolve(file);
               return;
             }
+            // Weißen Hintergrund setzen für transparente PNGs
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, targetDim, targetDim);
             ctx.drawImage(
               img,
               sourceX,
@@ -556,7 +570,7 @@ export default function Step3CompanyPage() {
                     Min. {MIN_PROFILE_PIC_DIMENSION}x{MIN_PROFILE_PIC_DIMENSION}px, max. {(MAX_PROFILE_PIC_SIZE_BYTES / 1024).toFixed(0)}KB, JPEG/PNG
                   </p>
                   
-                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.profilePictureFile && errorMessage ? 'border-red-300' : 'border-[#14ad9f]'} rounded-full flex justify-center items-center bg-gray-100 overflow-hidden`}>
+                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.profilePictureFile && errorMessage ? 'border-red-300' : 'border-[#14ad9f]'} rounded-full flex justify-center items-center bg-white overflow-hidden`}>
                     {profilePicturePreview ? (
                       <Image
                         src={profilePicturePreview}
@@ -606,14 +620,14 @@ export default function Step3CompanyPage() {
                     Max. {(MAX_BUSINESS_LICENSE_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB, PDF/JPEG/PNG
                   </p>
                   
-                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.businessLicenseFile && errorMessage ? 'border-red-300' : 'border-gray-200'} rounded-xl flex justify-center items-center bg-gray-100 overflow-hidden`}>
-                    {businessLicensePreview ? (
-                      <Image
+                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.businessLicenseFile && errorMessage ? 'border-red-300' : 'border-gray-200'} rounded-xl flex justify-center items-center bg-white overflow-hidden`}>
+                    {registration.businessLicenseFile?.type === 'application/pdf' ? (
+                      <PdfThumbnail file={registration.businessLicenseFile} width={96} />
+                    ) : businessLicensePreview ? (
+                      <img
                         src={businessLicensePreview}
                         alt="Gewerbeschein Vorschau"
-                        width={96}
-                        height={96}
-                        className="object-contain"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <FileText className="w-10 h-10 text-gray-400" />
@@ -657,14 +671,14 @@ export default function Step3CompanyPage() {
                     Max. {(MAX_MASTER_CERT_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB, PDF/JPEG/PNG
                   </p>
                   
-                  <div className="w-24 h-24 mx-auto mb-4 border-2 border-gray-200 rounded-xl flex justify-center items-center bg-gray-100 overflow-hidden">
-                    {masterCraftsmanCertificatePreview ? (
-                      <Image
+                  <div className="w-24 h-24 mx-auto mb-4 border-2 border-gray-200 rounded-xl flex justify-center items-center bg-white overflow-hidden">
+                    {registration.masterCraftsmanCertificateFile?.type === 'application/pdf' ? (
+                      <PdfThumbnail file={registration.masterCraftsmanCertificateFile} width={96} />
+                    ) : masterCraftsmanCertificatePreview ? (
+                      <img
                         src={masterCraftsmanCertificatePreview}
                         alt="Meisterbrief Vorschau"
-                        width={96}
-                        height={96}
-                        className="object-contain"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <Award className="w-10 h-10 text-gray-400" />

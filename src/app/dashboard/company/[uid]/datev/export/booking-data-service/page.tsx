@@ -1,13 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, HelpCircle, ExternalLink, Calendar } from 'lucide-react';
+import { ArrowLeft, HelpCircle, ExternalLink, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+
+interface DatevSettings {
+  beraternummer: string;
+  mandantennummer: string;
+  wirtschaftsjahresbeginn: string;
+  kontenrahmen: 'SKR03' | 'SKR04';
+  sachkontenlänge: number;
+  personenkontenlänge: number;
+  festschreibung: boolean;
+  exportType: 'both' | 'bookings-only' | 'documents-only';
+  withUnpaidDocuments: boolean;
+}
 
 export default function DatevBookingDataServicePage() {
   const params = useParams();
@@ -15,32 +29,106 @@ export default function DatevBookingDataServicePage() {
   const { user } = useAuth();
   const uid = params?.uid as string;
 
-  const [formData, setFormData] = useState({
-    accountantNumber: '',
-    accountantClientNumber: '',
-    fiscalYearStart: '01.01.2025',
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [formData, setFormData] = useState<DatevSettings>({
+    beraternummer: '',
+    mandantennummer: '',
+    wirtschaftsjahresbeginn: '01.01.2025',
+    kontenrahmen: 'SKR03',
+    sachkontenlänge: 4,
+    personenkontenlänge: 5,
+    festschreibung: false,
+    exportType: 'both',
     withUnpaidDocuments: false,
-    exportType: 'both', // 'both', 'bookings-only', 'documents-only'
   });
+
+  // Lade bestehende DATEV-Einstellungen
+  const loadDatevSettings = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const companyRef = doc(db, 'companies', uid);
+      const companySnap = await getDoc(companyRef);
+      
+      if (companySnap.exists()) {
+        const data = companySnap.data();
+        if (data.datevSettings) {
+          setFormData(prev => ({
+            ...prev,
+            beraternummer: data.datevSettings.beraternummer ?? '',
+            mandantennummer: data.datevSettings.mandantennummer ?? '',
+            wirtschaftsjahresbeginn: data.datevSettings.wirtschaftsjahresbeginn ?? '01.01.2025',
+            kontenrahmen: data.datevSettings.kontenrahmen ?? 'SKR03',
+            sachkontenlänge: data.datevSettings.sachkontenlänge ?? 4,
+            personenkontenlänge: data.datevSettings.personenkontenlänge ?? 5,
+            festschreibung: data.datevSettings.festschreibung ?? false,
+            exportType: data.datevSettings.exportType ?? 'both',
+            withUnpaidDocuments: data.datevSettings.withUnpaidDocuments ?? false,
+          }));
+        }
+      }
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Fehler beim Laden der Einstellungen' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [uid]);
+
+  useEffect(() => {
+    loadDatevSettings();
+  }, [loadDatevSettings]);
 
   const handleBack = () => {
     router.push(`/dashboard/company/${uid}/datev/export?type=accounting`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validierung
-    if (!formData.accountantNumber || !formData.accountantClientNumber) {
-      alert('Bitte füllen Sie alle Pflichtfelder aus.');
+    if (!formData.beraternummer || !formData.mandantennummer) {
+      setSaveMessage({ type: 'error', text: 'Bitte füllen Sie alle Pflichtfelder aus.' });
       return;
     }
 
-    // TODO: Save DATEV connection to Firebase
-    console.log('DATEV Verbindung:', formData);
+    // Beraternummer validieren (5-7 Ziffern)
+    if (!/^\d{5,7}$/.test(formData.beraternummer)) {
+      setSaveMessage({ type: 'error', text: 'Die Beraternummer muss 5-7 Ziffern enthalten.' });
+      return;
+    }
 
-    // Weiter zur Transfer-Seite
-    router.push(`/dashboard/company/${uid}/datev/export/booking-data-service/transfer`);
+    // Mandantennummer validieren (1-5 Ziffern)
+    if (!/^\d{1,5}$/.test(formData.mandantennummer)) {
+      setSaveMessage({ type: 'error', text: 'Die Mandantennummer muss 1-5 Ziffern enthalten.' });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveMessage(null);
+      
+      // DATEV-Einstellungen in Firebase speichern
+      const companyRef = doc(db, 'companies', uid);
+      await updateDoc(companyRef, {
+        datevSettings: {
+          ...formData,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+
+      setSaveMessage({ type: 'success', text: 'Einstellungen erfolgreich gespeichert!' });
+
+      // Nach kurzer Verzögerung zur Transfer-Seite weiterleiten
+      setTimeout(() => {
+        router.push(`/dashboard/company/${uid}/datev/export/booking-data-service/transfer`);
+      }, 1000);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Fehler beim Speichern der Einstellungen.' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isOwner = user?.uid === uid;
@@ -48,6 +136,17 @@ export default function DatevBookingDataServicePage() {
 
   if (!user || (!isOwner && !isEmployee)) {
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade DATEV-Einstellungen...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -64,6 +163,24 @@ export default function DatevBookingDataServicePage() {
           Übertragungsart ändern
         </Button>
       </div>
+
+      {/* Meldungen */}
+      {saveMessage && (
+        <div className={`p-4 rounded-lg flex items-start gap-3 ${
+          saveMessage.type === 'success' 
+            ? 'bg-green-50 border border-green-200' 
+            : 'bg-red-50 border border-red-200'
+        }`}>
+          {saveMessage.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+          )}
+          <p className={`text-sm ${saveMessage.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+            {saveMessage.text}
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-12 gap-6">
@@ -115,7 +232,7 @@ export default function DatevBookingDataServicePage() {
                     Buchungsdaten + Belegbilder
                   </p>
                   <p className="text-xs text-gray-600">
-                    via DATEV Schnittstelle
+                    via DATEV EXTF-Format
                   </p>
                 </div>
               </div>
@@ -131,19 +248,16 @@ export default function DatevBookingDataServicePage() {
                 </h1>
                 <div className="space-y-4">
                   <p className="text-sm text-gray-700">
-                    Buchungsstapel inkl. Stammdaten und Belegbilder werden per Knopfdruck an DATEV Rechenzentrum übertragen. 
-                    Die Daten stehen anschließend zum Abruf in DATEV Kanzlei-Rechnungswesen zur Verfügung.
-                  </p>
-                  <p className="text-xs text-amber-700 font-medium">
-                    Bitte beachte, dass dieser Service kostenpflichtig bei DATEV gebucht werden muss.
+                    Buchungsstapel inkl. Stammdaten und Belegbilder werden im DATEV EXTF-Format exportiert. 
+                    Die CSV-Datei kann direkt in DATEV Kanzlei-Rechnungswesen importiert werden.
                   </p>
                   <a 
-                    href="https://www.datev.de/web/de/datev-shop/91000-buchungsdatenservice/" 
+                    href="https://developer.datev.de/datev/platform/de/dtvf" 
                     target="_blank" 
                     rel="noreferrer"
                     className="text-sm text-[#14ad9f] hover:underline inline-flex items-center gap-1"
                   >
-                    Mehr Informationen
+                    DATEV Format-Dokumentation
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -152,63 +266,85 @@ export default function DatevBookingDataServicePage() {
               {/* Allgemeine Exporteinstellungen */}
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                  Allgemeine Exporteinstellungen
+                  DATEV-Zugangsdaten
                 </h3>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Beraternummer */}
                   <div className="space-y-2">
-                    <Label htmlFor="accountantNumber" className="text-sm font-medium flex items-center gap-1">
+                    <Label htmlFor="beraternummer" className="text-sm font-medium flex items-center gap-1">
                       Beraternummer <span className="text-red-500">*</span>
                       <button type="button" className="text-gray-400 hover:text-gray-600">
                         <HelpCircle className="w-3 h-3" />
                       </button>
                     </Label>
                     <Input
-                      id="accountantNumber"
-                      type="number"
-                      placeholder="Beraternummer"
-                      value={formData.accountantNumber}
-                      onChange={(e) => setFormData({...formData, accountantNumber: e.target.value})}
+                      id="beraternummer"
+                      type="text"
+                      placeholder="z.B. 12345"
+                      value={formData.beraternummer}
+                      onChange={(e) => setFormData({...formData, beraternummer: e.target.value.replace(/\D/g, '')})}
+                      maxLength={7}
                       required
                     />
+                    <p className="text-xs text-gray-500">5-7 Ziffern</p>
                   </div>
 
                   {/* Mandantennummer */}
                   <div className="space-y-2">
-                    <Label htmlFor="accountantClientNumber" className="text-sm font-medium flex items-center gap-1">
+                    <Label htmlFor="mandantennummer" className="text-sm font-medium flex items-center gap-1">
                       Mandantennummer <span className="text-red-500">*</span>
                       <button type="button" className="text-gray-400 hover:text-gray-600">
                         <HelpCircle className="w-3 h-3" />
                       </button>
                     </Label>
                     <Input
-                      id="accountantClientNumber"
-                      type="number"
-                      placeholder="Mandantennummer"
-                      value={formData.accountantClientNumber}
-                      onChange={(e) => setFormData({...formData, accountantClientNumber: e.target.value})}
+                      id="mandantennummer"
+                      type="text"
+                      placeholder="z.B. 67890"
+                      value={formData.mandantennummer}
+                      onChange={(e) => setFormData({...formData, mandantennummer: e.target.value.replace(/\D/g, '')})}
+                      maxLength={5}
                       required
                     />
+                    <p className="text-xs text-gray-500">1-5 Ziffern</p>
                   </div>
 
                   {/* Wirtschaftsjahresbeginn */}
                   <div className="space-y-2">
-                    <Label htmlFor="fiscalYearStart" className="text-sm font-medium">
+                    <Label htmlFor="wirtschaftsjahresbeginn" className="text-sm font-medium">
                       Wirtschaftsjahresbeginn <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                       <Input
-                        id="fiscalYearStart"
+                        id="wirtschaftsjahresbeginn"
                         type="text"
                         placeholder="dd.MM.yyyy"
-                        value={formData.fiscalYearStart}
-                        onChange={(e) => setFormData({...formData, fiscalYearStart: e.target.value})}
+                        value={formData.wirtschaftsjahresbeginn}
+                        onChange={(e) => setFormData({...formData, wirtschaftsjahresbeginn: e.target.value})}
                         required
                         className="pr-10"
                       />
                       <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                     </div>
+                  </div>
+                </div>
+
+                {/* Kontenrahmen */}
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="kontenrahmen" className="text-sm font-medium">
+                      Kontenrahmen
+                    </Label>
+                    <select
+                      id="kontenrahmen"
+                      value={formData.kontenrahmen}
+                      onChange={(e) => setFormData({...formData, kontenrahmen: e.target.value as 'SKR03' | 'SKR04'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
+                    >
+                      <option value="SKR03">SKR03 (Standard)</option>
+                      <option value="SKR04">SKR04</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -246,7 +382,7 @@ export default function DatevBookingDataServicePage() {
                           Buchungsdaten und Belegbilder
                         </h4>
                         <p className="text-sm text-gray-600">
-                          CSV-Datei mit Buchungen + ZIP mit Belegbildern
+                          DATEV EXTF-Datei mit Buchungen + ZIP mit Belegbildern
                         </p>
                       </div>
                     </div>
@@ -278,7 +414,7 @@ export default function DatevBookingDataServicePage() {
                           Nur Buchungsdaten
                         </h4>
                         <p className="text-sm text-gray-600">
-                          Nur CSV-Datei mit Buchungen
+                          Nur DATEV EXTF-Datei mit Buchungen
                         </p>
                       </div>
                     </div>
@@ -324,24 +460,47 @@ export default function DatevBookingDataServicePage() {
                   Weitere Einstellungen
                 </h3>
                 
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="withUnpaidDocuments"
-                    checked={formData.withUnpaidDocuments}
-                    onCheckedChange={(checked) => 
-                      setFormData({...formData, withUnpaidDocuments: checked as boolean})
-                    }
-                  />
-                  <div className="flex items-center gap-2">
-                    <Label 
-                      htmlFor="withUnpaidDocuments" 
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      Auch offene Rechnungen und Belege exportieren
-                    </Label>
-                    <button type="button" className="text-gray-400 hover:text-gray-600">
-                      <HelpCircle className="w-4 h-4" />
-                    </button>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="withUnpaidDocuments"
+                      checked={formData.withUnpaidDocuments}
+                      onCheckedChange={(checked) => 
+                        setFormData({...formData, withUnpaidDocuments: checked as boolean})
+                      }
+                    />
+                    <div className="flex items-center gap-2">
+                      <Label 
+                        htmlFor="withUnpaidDocuments" 
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Auch offene Rechnungen und Belege exportieren
+                      </Label>
+                      <button type="button" className="text-gray-400 hover:text-gray-600">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="festschreibung"
+                      checked={formData.festschreibung}
+                      onCheckedChange={(checked) => 
+                        setFormData({...formData, festschreibung: checked as boolean})
+                      }
+                    />
+                    <div className="flex items-center gap-2">
+                      <Label 
+                        htmlFor="festschreibung" 
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Festschreibung aktivieren (Buchungen als unveränderbar kennzeichnen)
+                      </Label>
+                      <button type="button" className="text-gray-400 hover:text-gray-600">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -350,14 +509,12 @@ export default function DatevBookingDataServicePage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-blue-900">
-                    Um den Export durchzuführen, melde dich bitte bei DATEV an.
+                    Hinweis zum DATEV-Export
                   </h4>
                   <p className="text-sm text-blue-800">
-                    Nach erstmaliger Anmeldung wird eine Verknüpfung zwischen Taskilo und DATEV hergestellt. 
-                    Diese Verknüpfung ist dank des DATEV Langzeit Tokens für 2 Jahre aktiv. 
-                    Bei jedem erfolgreichen Export wird die Verknüpfung erneut um 2 Jahre verlängert.
-                    <br /><br />
-                    <strong>Wichtig:</strong> Hast du einen Steuerberater, braucht jeder von euch einen eigenen DATEV-Zugang.
+                    Der Export erfolgt im DATEV EXTF-Format (Extended Transfer Format), das direkt in
+                    DATEV Kanzlei-Rechnungswesen importiert werden kann. Die Beraternummer und 
+                    Mandantennummer erhalten Sie von Ihrem Steuerberater.
                   </p>
                 </div>
               </div>
@@ -365,21 +522,27 @@ export default function DatevBookingDataServicePage() {
               {/* Actions */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <a 
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert('Wissensdatenbank wird bald verfügbar sein!');
-                  }}
+                  href="https://developer.datev.de/datev/platform/de/dtvf"
+                  target="_blank"
+                  rel="noreferrer"
                   className="text-sm text-[#14ad9f] hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Anleitung zum Export und Import in der Wissensdatenbank
+                  DATEV-Formatdokumentation
                   <ExternalLink className="w-3 h-3" />
                 </a>
                 <Button
                   type="submit"
-                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+                  disabled={isSaving}
+                  className="bg-[#14ad9f] hover:bg-teal-700 text-white"
                 >
-                  Zur Anmeldung
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Speichere...
+                    </>
+                  ) : (
+                    'Einstellungen speichern & weiter'
+                  )}
                 </Button>
               </div>
             </div>

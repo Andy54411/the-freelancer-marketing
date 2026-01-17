@@ -1302,10 +1302,11 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
   const filteredMessages = useMemo(() => {
     let filtered = messages;
     
-    // Apply category filter (nur im Posteingang)
-    if (currentMailbox.toLowerCase() === 'inbox') {
-      filtered = filtered.filter(msg => categorizeEmail(msg) === activeCategory);
-    }
+    // BUGFIX: Kategoriefilterung deaktiviert, da sie alle E-Mails ausblendet
+    // TODO: Kategorisierung muss überarbeitet werden
+    // if (currentMailbox.toLowerCase() === 'inbox') {
+    //   filtered = filtered.filter(msg => categorizeEmail(msg) === activeCategory);
+    // }
     
     // Apply simple text search
     if (searchQuery) {

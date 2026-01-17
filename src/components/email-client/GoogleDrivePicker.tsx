@@ -139,7 +139,7 @@ function SimpleDriveBrowser({
     try {
       // Google Drive API Query - korrekte Syntax für folder parent
       const query = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
-      const fields = encodeURIComponent('files(id,name,mimeType,size,iconLink,thumbnailLink,webViewLink,webContentLink)');
+      const fields = encodeURIComponent('files(id,name,mimeType,size,iconLink,hasThumbnail,thumbnailLink,webViewLink,webContentLink)');
       const apiUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&orderBy=folder,name&pageSize=100`;
       
       const response = await fetch(apiUrl, {
@@ -154,7 +154,37 @@ function SimpleDriveBrowser({
       }
 
       const data = await response.json();
-      setFiles(data.files || []);
+      
+      // Für Dateien MIT Thumbnail: Lade Thumbnail-Daten separat
+      const filesWithThumbnails = await Promise.all(
+        (data.files || []).map(async (file: GoogleDriveFile) => {
+          if (file.thumbnailLink) {
+            try {
+              // Thumbnail URL direkt mit Authorization Header laden
+              const thumbResponse = await fetch(file.thumbnailLink, {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              });
+              
+              if (thumbResponse.ok) {
+                const blob = await thumbResponse.blob();
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                return { ...file, thumbnailUrl: dataUrl };
+              }
+            } catch {
+              // Fehler ignorieren, Datei ohne Thumbnail zurückgeben
+            }
+          }
+          return file;
+        })
+      );
+      
+      setFiles(filesWithThumbnails);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
@@ -206,20 +236,20 @@ function SimpleDriveBrowser({
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType === 'application/vnd.google-apps.folder') {
-      return <FolderOpen className="h-5 w-5 text-yellow-500" />;
+      return <FolderOpen className="h-12 w-12 text-yellow-500" />;
     }
     if (mimeType.startsWith('image/')) {
-      return <Image className="h-5 w-5 text-green-500" />;
+      return <Image className="h-12 w-12 text-green-500" />;
     }
     if (mimeType.includes('document') || mimeType.includes('text')) {
-      return <FileText className="h-5 w-5 text-blue-500" />;
+      return <FileText className="h-12 w-12 text-blue-500" />;
     }
-    return <File className="h-5 w-5 text-gray-500" />;
+    return <File className="h-12 w-12 text-gray-500" />;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HardDrive className="h-5 w-5 text-[#14ad9f]" />
@@ -266,25 +296,55 @@ function SimpleDriveBrowser({
               Keine Dateien in diesem Ordner
             </div>
           ) : (
-            <div className="space-y-1">
-              {files.map(file => (
-                <div
-                  key={file.id}
-                  onClick={() => handleFileClick(file)}
-                  className={`
-                    flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors
-                    ${selectedFiles.has(file.id) ? 'bg-[#14ad9f]/10 border border-[#14ad9f]' : 'hover:bg-gray-100'}
-                  `}
-                >
-                  {getFileIcon(file.mimeType)}
-                  <span className="flex-1 truncate">{file.name}</span>
-                  {file.size && (
-                    <span className="text-xs text-gray-400">
-                      {(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {files.map(file => {
+                const thumbnailUrl = file.thumbnailUrl || file.thumbnailLink;
+                
+                return (
+                  <div
+                    key={file.id}
+                    onClick={() => handleFileClick(file)}
+                    className={`
+                      relative group rounded-lg cursor-pointer transition-all overflow-hidden bg-white border-2
+                      ${selectedFiles.has(file.id) ? 'border-[#14ad9f] shadow-lg' : 'border-gray-200 hover:border-[#14ad9f] hover:shadow-md'}
+                    `}
+                  >
+                    {/* Vorschaubild für ALLE Dateitypen */}
+                    <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                      {thumbnailUrl ? (
+                        <img 
+                          src={thumbnailUrl}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-gray-300">
+                          {getFileIcon(file.mimeType)}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Dateiname */}
+                    <div className="p-2 bg-white border-t border-gray-100">
+                      <p className="text-xs truncate font-medium text-gray-900">{file.name}</p>
+                      {file.size && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Ausgewählt-Badge */}
+                    {selectedFiles.has(file.id) && (
+                      <div className="absolute top-2 right-2 bg-[#14ad9f] text-white rounded-full p-1.5 shadow-lg">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -422,239 +482,4 @@ export function GoogleDrivePicker({
 
   // Google Picker wird extern geöffnet, Dialog nur für Loading State
   return null;
-}
-
-// Google Photos Picker Komponente
-interface GooglePhotosPickerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (photos: GoogleDriveFile[]) => void;
-  companyId: string;
-  accessToken?: string;
-  multiSelect?: boolean;
-}
-
-export function GooglePhotosPicker({
-  isOpen,
-  onClose,
-  onSelect,
-  companyId,
-  accessToken,
-  multiSelect = true,
-}: GooglePhotosPickerProps) {
-  const [photos, setPhotos] = useState<GoogleDriveFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
-  const [token, setToken] = useState<string | null>(accessToken || null);
-
-  // Lade Token
-  useEffect(() => {
-    const fetchToken = async () => {
-      if (accessToken) {
-        setToken(accessToken);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/company/${companyId}/gmail-auth-status`);
-        const data = await response.json();
-        
-        if (data.hasTokens && data.accessToken) {
-          setToken(data.accessToken);
-        } else if (data.needsReauth) {
-          setError('Gmail-Verbindung abgelaufen. Bitte verbinde dein Gmail-Konto erneut unter Einstellungen → E-Mail Integration.');
-          setLoading(false);
-        } else {
-          setError('Kein Gmail-Konto verbunden. Bitte verbinde dein Gmail-Konto unter Einstellungen → E-Mail Integration.');
-          setLoading(false);
-        }
-      } catch (err) {
-        setError('Fehler beim Laden der Authentifizierung');
-        setLoading(false);
-      }
-    };
-
-    if (isOpen) {
-      fetchToken();
-    }
-  }, [isOpen, companyId, accessToken]);
-
-  // Lade Fotos von Google Photos Library API
-  useEffect(() => {
-    const loadPhotos = async () => {
-      if (!token || !isOpen) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Google Photos Library API - POST Request für mediaItems:search
-        const response = await fetch(
-          `https://photoslibrary.googleapis.com/v1/mediaItems:search`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              pageSize: 50,
-              filters: {
-                mediaTypeFilter: {
-                  mediaTypes: ['PHOTO']
-                }
-              }
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.error?.message || '';
-          
-          // Scope-Fehler = Verbindung wurde vor Photos-Freigabe erstellt
-          if (errorMessage.includes('insufficient authentication scopes')) {
-            throw new Error(
-              'Deine Gmail-Verbindung wurde erstellt, bevor Google Fotos freigeschaltet war. ' +
-              'Bitte trenne die Verbindung unter Einstellungen → E-Mail Integration und verbinde Gmail erneut.'
-            );
-          }
-          
-          throw new Error(
-            errorData.error?.message || `Fehler beim Laden der Fotos (${response.status})`
-          );
-        }
-
-        const data = await response.json();
-        
-        // Konvertiere Google Photos Format zu unserem Format
-        const mediaItems = data.mediaItems || [];
-        const convertedPhotos: GoogleDriveFile[] = mediaItems
-          .filter((item: { mimeType?: string }) => item.mimeType?.startsWith('image/'))
-          .map((item: { id: string; filename?: string; mimeType?: string; baseUrl?: string; mediaMetadata?: { width?: string; height?: string } }) => ({
-            id: item.id,
-            name: item.filename || 'Foto',
-            mimeType: item.mimeType || 'image/jpeg',
-            thumbnailLink: item.baseUrl ? `${item.baseUrl}=w200-h200` : undefined,
-            webContentLink: item.baseUrl ? `${item.baseUrl}=d` : undefined,
-          }));
-        
-        setPhotos(convertedPhotos);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPhotos();
-  }, [token, isOpen]);
-
-  const handlePhotoClick = (photo: GoogleDriveFile) => {
-    if (multiSelect) {
-      setSelectedPhotos(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(photo.id)) {
-          newSet.delete(photo.id);
-        } else {
-          newSet.add(photo.id);
-        }
-        return newSet;
-      });
-    } else {
-      setSelectedPhotos(new Set([photo.id]));
-    }
-  };
-
-  const handleConfirm = () => {
-    const selected = photos.filter(p => selectedPhotos.has(p.id));
-    onSelect(selected);
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Image className="h-5 w-5 text-[#14ad9f]" />
-            Google Fotos
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Photo Grid */}
-        <div className="flex-1 overflow-y-auto min-h-[400px]">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full text-red-500">
-              <p>{error}</p>
-              <p className="text-sm text-gray-500 mt-2">
-                Stellen Sie sicher, dass Google Fotos Zugriff gewährt wurde.
-              </p>
-            </div>
-          ) : photos.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Keine Fotos gefunden
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 gap-2">
-              {photos.map(photo => (
-                <div
-                  key={photo.id}
-                  onClick={() => handlePhotoClick(photo)}
-                  className={`
-                    relative aspect-square rounded-lg overflow-hidden cursor-pointer
-                    transition-all duration-200
-                    ${selectedPhotos.has(photo.id) 
-                      ? 'ring-2 ring-[#14ad9f] ring-offset-2 scale-95' 
-                      : 'hover:opacity-80'}
-                  `}
-                >
-                  {photo.thumbnailLink ? (
-                    <img
-                      src={photo.thumbnailLink}
-                      alt={photo.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <Image className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                  {selectedPhotos.has(photo.id) && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center">
-                      <X className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-between items-center pt-4 border-t">
-          <span className="text-sm text-gray-500">
-            {selectedPhotos.size} Foto(s) ausgewählt
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Abbrechen
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={selectedPhotos.size === 0}
-              className="bg-[#14ad9f] hover:bg-teal-700"
-            >
-              Einfügen
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
 }

@@ -244,7 +244,7 @@ export default function SteuerGrundlagenPage() {
                   <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                     <h4 className="font-semibold text-green-800 mb-3">Voraussetzungen:</h4>
                     <ul className="text-green-700 text-sm space-y-1 mb-4">
-                      <li>• Umsatz letztes Jahr ≤ 22.000€</li>
+                      <li>• Umsatz letztes Jahr ≤ 25.000€ (seit 2025)</li>
                       <li>• Umsatz aktuelles Jahr voraussichtlich ≤ 50.000€</li>
                     </ul>
 

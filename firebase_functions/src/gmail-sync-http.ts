@@ -238,10 +238,37 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
       emailCount: emails.length 
     });
 
+    // WICHTIG: Prüfe welche E-Mails permanent gelöscht wurden (nicht mehr in Gmail)
+    // Lade alle existierenden E-Mails für diesen User aus dem Cache
+    const existingEmailsSnapshot = await db
+      .collection('companies')
+      .doc(companyId)
+      .collection('emailCache')
+      .where('userId', '==', effectiveUserId)
+      .where('source', '==', 'gmail_http_sync')
+      .get();
+
+    const existingEmailIds = new Set(existingEmailsSnapshot.docs.map(doc => doc.id));
+    const gmailEmailIds = new Set(emails.map(email => email.id));
+
+    // Finde E-Mails die permanent gelöscht wurden (im Cache aber nicht mehr in Gmail)
+    const deletedEmailIds = Array.from(existingEmailIds).filter(id => !gmailEmailIds.has(id));
+    
+    logger.info(`🗑️ ${deletedEmailIds.length} E-Mails wurden permanent aus Gmail gelöscht`);
+
     // Batch für bessere Performance
     const batch = db.batch();
     let savedCount = 0;
     let updatedCount = 0;
+    let deletedCount = 0;
+
+    // Lösche permanent gelöschte E-Mails aus dem Cache
+    for (const deletedId of deletedEmailIds) {
+      const emailRef = db.collection('companies').doc(companyId).collection('emailCache').doc(deletedId);
+      batch.delete(emailRef);
+      deletedCount++;
+      logger.info(`🗑️ Entferne permanent gelöschte E-Mail: ${deletedId}`);
+    }
 
     for (const email of emails) {
       try {
@@ -373,9 +400,9 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
     }
 
     // Batch ausführen wenn Änderungen vorhanden
-    if (savedCount > 0 || updatedCount > 0) {
+    if (savedCount > 0 || updatedCount > 0 || deletedCount > 0) {
       await batch.commit();
-      logger.info(`✅ ${savedCount} neue E-Mails gespeichert, ${updatedCount} E-Mails aktualisiert in companies/${companyId}/emailCache`);
+      logger.info(`✅ ${savedCount} neue E-Mails gespeichert, ${updatedCount} E-Mails aktualisiert, ${deletedCount} E-Mails gelöscht in companies/${companyId}/emailCache`);
     } else {
       logger.info('📭 Keine E-Mail-Änderungen zum Speichern');
     }

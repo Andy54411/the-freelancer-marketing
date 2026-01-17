@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AdminApprovalStatus from '@/components/AdminApprovalStatus';
 import { useUpdateNotifications } from '@/hooks/useUpdateNotifications';
 import UpdateNotificationModal from '@/components/ui/UpdateNotificationModal';
+import { HelpChatbot } from '@/components/dashboard/HelpChatbot';
 import { Loader2 as FiLoader } from 'lucide-react';
 import {
   Grid as FiGrid,
@@ -476,9 +477,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const HeaderIcon = getHeaderIcon();
 
   // Prüfe ob spezielle Seiten die volle Höhe brauchen
+  // Hinweis: email-integration ist eine normale scrollbare Einstellungsseite
   const isFullHeightPage =
-    pathname?.includes('/email-integration') ||
-    pathname?.includes('/emails') ||
+    (pathname?.includes('/emails') && !pathname?.includes('/email-integration')) ||
     pathname?.includes('/whatsapp');
 
   // Dynamische Header-Höhe in Pixeln für CSS
@@ -608,6 +609,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         onMarkAllAsSeen={markAllAsSeen}
         onDismissUpdate={dismissUpdate}
       />
+
+      {/* Hilfe-Chatbot */}
+      <HelpChatbot companyId={uid} />
     </SidebarVisibilityProvider>
   );
 }

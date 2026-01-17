@@ -508,6 +508,28 @@ export class EmailService {
     }
   }
 
+  /**
+   * Permanently delete a message from the server (EXPUNGE)
+   * Use this to permanently delete messages from Trash
+   */
+  async permanentlyDeleteMessage(mailboxPath: string, uid: number): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+      
+      // Set \Deleted flag and expunge (permanent delete)
+      await client.messageFlagsAdd(uid.toString(), ['\\Deleted'], { uid: true });
+      await client.messageDelete(uid.toString(), { uid: true });
+
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
   async moveMessage(sourceMailbox: string, uid: number, targetMailbox: string): Promise<void> {
     const client = this.createImapClient();
 

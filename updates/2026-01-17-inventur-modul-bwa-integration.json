@@ -1,0 +1,84 @@
+{
+  "id": "2026-01-17-inventur-modul-bwa-integration",
+  "date": "2026-01-17",
+  "version": "2.7.0",
+  "title": "Inventur-Modul & BWA-Integration",
+  "category": "feature",
+  "priority": "high",
+  "affectedModules": [
+    "Buchhaltung",
+    "Lagerbestand",
+    "BWA"
+  ],
+  "summary": "Vollständiges Inventur-Modul für Jahresabschluss und BWA-Bestandsveränderungen implementiert",
+  "changes": [
+    {
+      "type": "feature",
+      "title": "Inventur-Modul",
+      "description": "Neues Inventur-System für Jahresinventuren und Stichproben-Inventuren mit vollständiger GoBD-Konformität"
+    },
+    {
+      "type": "feature",
+      "title": "Inventur-Übersicht",
+      "description": "Dashboard mit Statistiken (offen, in Bearbeitung, abgeschlossen) und Wertentwicklung"
+    },
+    {
+      "type": "feature",
+      "title": "Inventur erstellen",
+      "description": "Neue Inventur anlegen mit Typen: Vollständig, Stichprobe, Permanent - filterbar nach Kategorie oder Lagerort"
+    },
+    {
+      "type": "feature",
+      "title": "Zähllisten drucken",
+      "description": "Druckoptimierte Zähllisten mit Gruppierung nach Kategorie, Lagerort oder alphabetisch"
+    },
+    {
+      "type": "feature",
+      "title": "Inventur-Protokoll",
+      "description": "Detailliertes Protokoll mit Differenzliste für abgeschlossene Inventuren (GoBD-konform)"
+    },
+    {
+      "type": "enhancement",
+      "title": "BWA-Bestandsveränderung",
+      "description": "BWA-Zeile 2 (Bestandsveränderungen) wird jetzt automatisch aus Inventurdaten berechnet"
+    },
+    {
+      "type": "enhancement",
+      "title": "Sidebar-Navigation",
+      "description": "Lagerbestand enthält jetzt Untermenü mit Übersicht und Inventur"
+    },
+    {
+      "type": "improvement",
+      "title": "Payroll-Integration",
+      "description": "BWA-Personalkosten nutzen jetzt echte Gehaltsabrechnungen statt Schätzungen"
+    },
+    {
+      "type": "improvement",
+      "title": "Löhne vs. Gehälter",
+      "description": "BWA-Zeilen 20+21 trennen jetzt korrekt zwischen Löhnen und Gehältern"
+    }
+  ],
+  "technicalDetails": {
+    "newFiles": [
+      "src/services/inventurService.ts",
+      "src/app/dashboard/company/[uid]/inventory/inventur/page.tsx",
+      "src/app/dashboard/company/[uid]/inventory/inventur/neu/page.tsx",
+      "src/app/dashboard/company/[uid]/inventory/inventur/[inventurId]/page.tsx",
+      "src/app/dashboard/company/[uid]/inventory/inventur/[inventurId]/drucken/page.tsx",
+      "src/app/dashboard/company/[uid]/inventory/inventur/[inventurId]/protokoll/page.tsx"
+    ],
+    "modifiedFiles": [
+      "src/services/taxService.ts",
+      "src/services/inventoryService.ts",
+      "src/components/dashboard/CompanySidebar.tsx"
+    ],
+    "newFeatures": [
+      "InventurService mit vollständiger CRUD-Funktionalität",
+      "Automatische Bestandsveränderungsberechnung für BWA",
+      "Inventur-Workflow: Erstellen → Starten → Zählen → Abschließen"
+    ]
+  },
+  "author": "GitHub Copilot",
+  "testedBy": "TypeScript Compiler",
+  "documentationUpdated": true
+}

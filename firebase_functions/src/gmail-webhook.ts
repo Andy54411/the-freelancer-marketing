@@ -529,9 +529,40 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
     const { companyId, userId } = result;
     logger.info('🔍 DEBUG: Company ID und User ID gefunden:', { companyId, userId });
 
+    // WICHTIG: Prüfe welche E-Mails permanent gelöscht wurden (nicht mehr in Gmail)
+    // Lade alle existierenden E-Mails für diesen User aus dem Cache
+    const existingEmailsSnapshot = await db
+      .collection('companies')
+      .doc(companyId)
+      .collection('emailCache')
+      .where('userId', '==', userId)
+      .where('source', '==', 'gmail')
+      .get();
+
+    const existingEmailIds = new Set(existingEmailsSnapshot.docs.map(doc => doc.id));
+    const gmailEmailIds = new Set(emails.map(email => email.id));
+
+    // Finde E-Mails die permanent gelöscht wurden (im Cache aber nicht mehr in Gmail)
+    const deletedEmailIds = Array.from(existingEmailIds).filter(id => !gmailEmailIds.has(id));
+    
+    if (deletedEmailIds.length > 0) {
+      logger.info(`🗑️ ${deletedEmailIds.length} E-Mails wurden permanent aus Gmail gelöscht`);
+      
+      // Lösche sie aus dem Cache
+      const deleteBatch = db.batch();
+      for (const deletedId of deletedEmailIds) {
+        const emailRef = db.collection('companies').doc(companyId).collection('emailCache').doc(deletedId);
+        deleteBatch.delete(emailRef);
+        logger.info(`🗑️ Entferne permanent gelöschte E-Mail: ${deletedId}`);
+      }
+      await deleteBatch.commit();
+      logger.info(`✅ ${deletedEmailIds.length} permanent gelöschte E-Mails aus Cache entfernt`);
+    }
+
     // Batch-Processing in kleineren Chunks (max 10 pro Batch wegen Payload-Größe)
     const BATCH_SIZE = 10;
     let savedCount = 0;
+    let updatedCount = 0;
 
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const chunk = emails.slice(i, i + BATCH_SIZE);
@@ -545,8 +576,37 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
           
           // Prüfe ob E-Mail bereits existiert
           const existingEmail = await emailRef.get();
+          
           if (existingEmail.exists) {
-            logger.info(`📧 E-Mail bereits vorhanden: ${email.id}`);
+            // E-Mail existiert - prüfe ob Update nötig ist
+            const existingData = existingEmail.data();
+            const existingLabels = existingData?.labels || [];
+            
+            // Prüfe ob E-Mail lokal modifiziert wurde (TRASH/SPAM/ARCHIVED)
+            const hasLocalTrash = existingLabels.includes('TRASH');
+            const hasLocalSpam = existingLabels.includes('SPAM');
+            const hasLocalArchive = existingLabels.includes('ARCHIVED');
+            const isLocallyModified = existingData?.locallyModified === true;
+            
+            // Wenn lokale Label-Änderungen existieren, NICHT mit Gmail überschreiben
+            if (hasLocalTrash || hasLocalSpam || hasLocalArchive || isLocallyModified) {
+              logger.info(`📧 E-Mail ${email.id} hat lokale Änderungen - überspringe Gmail-Update`);
+              continue;
+            }
+            
+            // Keine lokalen Änderungen - prüfe ob Labels sich geändert haben
+            const labelsChanged = JSON.stringify(existingLabels.sort()) !== JSON.stringify((email.labels || []).sort());
+            
+            if (labelsChanged) {
+              batch.update(emailRef, {
+                labels: email.labels ? email.labels.slice(0, 20) : [],
+                read: email.read !== undefined ? email.read : existingData.read,
+                updatedAt: new Date()
+              });
+              batchItemCount++;
+              updatedCount++;
+              logger.info(`📧 E-Mail aktualisiert: ${email.id} - Labels: ${email.labels?.join(', ')}`);
+            }
             continue;
           }
 
@@ -566,11 +626,11 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
             timestamp: email.receivedAt || new Date(),
             body: email.body ? email.body.substring(0, 50000) : '', // Limit 50KB
             htmlBody: email.htmlBody ? email.htmlBody.substring(0, 50000) : '', // Limit 50KB
-            attachments: email.attachments ? email.attachments.slice(0, 10) : [], // Max 10 attachments
-            labels: email.labels ? email.labels.slice(0, 20) : [], // Max 20 labels
-            read: email.read !== undefined ? email.read : false,
-            important: email.important || false,
-            snippet: email.snippet ? email.snippet.substring(0, 500) : '', // Limit 500 chars
+            attachments: email.attachments ? email.attachments.slice(0, 10) : [], // Max 10 attachm/aktualisiert`);
+      }
+    }
+
+    logger.info(`✅ Insgesamt ${savedCount} neue E-Mails gespeichert, ${updatedCount} E-Mails aktualisiert in companies/${companyId}/emailCache
             sizeEstimate: email.sizeEstimate || 0,
             source: 'gmail',
             companyId: companyId,

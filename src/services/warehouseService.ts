@@ -1,3 +1,16 @@
+/**
+ * @deprecated DEPRECATED - Bitte InventoryService und InventurService verwenden!
+ * 
+ * Dieser Service nutzt GLOBALE Collections (warehouse_items, stock_movements),
+ * was gegen die Company-Subcollection-Architektur verstößt.
+ * 
+ * Migration:
+ * - Für Bestandsverwaltung: InventoryService (companies/{id}/inventory)
+ * - Für Inventuren: InventurService (companies/{id}/inventories)
+ * 
+ * Dieser Service wird in einer zukünftigen Version entfernt.
+ */
+
 import { db } from '@/firebase/clients';
 import {
   collection,
@@ -15,6 +28,7 @@ import {
 } from 'firebase/firestore';
 
 // Warehouse Item Interface
+/** @deprecated Verwende InventoryItem aus inventoryService.ts */
 export interface WarehouseItem {
   id: string;
   sku: string; // SKU/Artikelnummer

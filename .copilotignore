@@ -10,9 +10,38 @@ build/
 *.zip
 *.tar.gz
 
+# TypeScript Build Caches (KRITISCH - verursacht 413 Fehler!)
+*.tsbuildinfo
+*.tsbuildinfo.incremental
+.tsbuildinfo*
+src/tsconfig.tsbuildinfo
+
+# Große JSON-Dateien
+content_discovery.json
+firestore.indexes.json
+**/package-lock.json
+
+# Lock-Dateien
+pnpm-lock.yaml
+yarn.lock
+
+# Mobile App (separates Projekt)
+taskoapp/
+
+# Webmail Proxy (separates Deployment)
+webmail-proxy/
+
+# DATEV/ERiC Proxy
+datev-proxy/
+eric-proxy/
+eric-service/
+
+# Firebase Functions (weniger relevant)
+firebase_functions/node_modules/
+functions/
+
 # Generierte Dateien
 dataconnect-generated/
-pnpm-lock.yaml
 
 # Binärdateien
 *.png
@@ -24,6 +53,8 @@ pnpm-lock.yaml
 *.woff2
 *.ttf
 *.eot
+*.mov
+*.mp4
 
 # Logs
 *.log

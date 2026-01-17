@@ -22,11 +22,23 @@ export async function GET(
     
     // Prüfe Gmail-Konfiguration in emailConfigs Subcollection
     // Filter nach userId, um benutzer-spezifische Configs zu finden
-    const emailConfigsSnapshot = await withFirebase(async () =>
+    let emailConfigsSnapshot = await withFirebase(async () =>
       db!.collection('companies').doc(uid).collection('emailConfigs')
         .where('userId', '==', userId)
+        .where('provider', '==', 'gmail')
         .get()
     );
+
+    // Fallback: Wenn keine user-spezifische Config, suche nach beliebiger Gmail-Config
+    if (emailConfigsSnapshot.empty) {
+      console.log('🔍 Keine user-spezifische Gmail-Config gefunden, suche Company-weite Config...');
+      emailConfigsSnapshot = await withFirebase(async () =>
+        db!.collection('companies').doc(uid).collection('emailConfigs')
+          .where('provider', '==', 'gmail')
+          .limit(1)
+          .get()
+      );
+    }
 
     if (emailConfigsSnapshot.empty) {
       return NextResponse.json({ 

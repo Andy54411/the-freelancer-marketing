@@ -295,7 +295,11 @@ const navigationItems: NavigationItem[] = [
     label: 'Lagerbestand',
     icon: FiBoxes,
     value: 'inventory',
-    href: 'finance/inventory',
+    href: 'inventory',
+    subItems: [
+      { label: 'Übersicht', value: 'inventory-overview', href: 'inventory' },
+      { label: 'Inventur', value: 'inventory-inventur', href: 'inventory/inventur' },
+    ],
   },
   {
     label: 'Taskilo Advertising',

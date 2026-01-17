@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DrivePickerModal } from '@/components/webmail/drive/DrivePickerModal';
 import { PhotosPickerModal } from '@/components/webmail/photos/PhotosPickerModal';
-import { GoogleDrivePicker, GooglePhotosPicker, type GoogleDriveFile } from './GoogleDrivePicker';
+import { GoogleDrivePicker, type GoogleDriveFile } from './GoogleDrivePicker';
 
 import {
   DropdownMenu,
@@ -300,7 +300,6 @@ export function EmailCompose({
   // Drive Picker State
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
-  const [showGooglePhotosPicker, setShowGooglePhotosPicker] = useState(false);
   const [showTaskiloPhotosPicker, setShowTaskiloPhotosPicker] = useState(false);
   
   // Signatur State
@@ -445,9 +444,42 @@ export function EmailCompose({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFontDropdown, showSizeDropdown, showColorDropdown, showAlignDropdown, showLinkModal, showEmojiPicker]);
 
-  // Signaturen vom Hetzner-Server laden
+  // Signaturen laden (Webmail vom Hetzner-Server, Gmail direkt von Gmail API)
   useEffect(() => {
     const loadSignatures = async () => {
+      // Gmail-Signaturen laden
+      if (emailProvider === 'gmail' && companyId) {
+        try {
+          const response = await fetch(`/api/company/${companyId}/gmail-signatures`);
+          const data = await response.json();
+          
+          if (data.success && data.signatures?.length > 0) {
+            setSignatures(data.signatures);
+            // Setze Standard-Signatur für neue E-Mails
+            if (!replyTo && !forwardEmail) {
+              const defaultSig = data.signatures.find((s: EmailSignature) => s.id === data.defaultSignatureNewEmail);
+              if (defaultSig?.content) {
+                setActiveSignatureId(defaultSig.id);
+                // Signatur zum Body hinzufügen wenn leer
+                if (!email.body) {
+                  setEmail(prev => ({ ...prev, body: `<br><br>${defaultSig.content}` }));
+                }
+              }
+            } else {
+              // Standard-Signatur für Antworten
+              const replySig = data.signatures.find((s: EmailSignature) => s.id === data.defaultSignatureReply);
+              if (replySig) {
+                setActiveSignatureId(replySig.id);
+              }
+            }
+          }
+        } catch (error) {
+          // Gmail-Signaturen konnten nicht geladen werden
+        }
+        return;
+      }
+      
+      // Webmail-Signaturen vom Hetzner-Server laden
       const webmailCreds = getWebmailCookie();
       if (!webmailCreds?.email) return;
       
@@ -458,10 +490,10 @@ export function EmailCompose({
           // Setze Standard-Signatur für neue E-Mails
           if (!replyTo && !forwardEmail) {
             const defaultSig = settings.signatures.find(s => s.id === settings.defaultSignatureNewEmail);
-            if (defaultSig) {
+            if (defaultSig?.content) {
               setActiveSignatureId(defaultSig.id);
               // Signatur zum Body hinzufügen wenn leer
-              if (!email.body && defaultSig.content) {
+              if (!email.body) {
                 setEmail(prev => ({ ...prev, body: `<br><br>${defaultSig.content}` }));
               }
             }
@@ -481,7 +513,7 @@ export function EmailCompose({
     if (isOpen) {
       loadSignatures();
     }
-  }, [isOpen, replyTo, forwardEmail]);
+  }, [isOpen, replyTo, forwardEmail, emailProvider, companyId]);
 
   // Update email state when replyTo or forwardEmail changes
   useEffect(() => {
@@ -550,59 +582,81 @@ export function EmailCompose({
     }
   }, [isOpen, replyTo, forwardEmail, initialTo]);
 
-  // Kontakte aus Webmail-System laden (Hetzner)
+  // Kontakte laden (Gmail von Google API, Webmail von Hetzner)
   useEffect(() => {
     const loadContacts = async () => {
       if (!isOpen) return;
       
-      const credentials = getWebmailCookie();
-      if (!credentials) return;
+      // Warte bis emailProvider gesetzt ist
+      if (emailProvider === null || emailProvider === undefined) {
+        return;
+      }
       
-      try {
-        const response = await fetch('/api/webmail/contacts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-            limit: 500,
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (data.success && data.contacts) {
-          const contactList = data.contacts.map((c: {
-            uid: string;
-            displayName?: string;
-            firstName?: string;
-            lastName?: string;
-            emails?: { value: string; label: string }[];
-            email?: string;
-            name?: string;
-          }) => {
-            const primaryEmail = c.emails?.[0]?.value || c.email || '';
-            const displayName = c.displayName || c.name || 
-              (c.firstName && c.lastName ? `${c.firstName} ${c.lastName}`.trim() : '') ||
-              c.firstName || c.lastName || primaryEmail.split('@')[0] || 'Unbekannt';
-            
-            return {
-              id: c.uid || primaryEmail,
-              name: displayName,
-              email: primaryEmail,
-            };
-          }).filter((c: { email: string }) => c.email); // Nur Kontakte mit E-Mail
+      // Gmail-Kontakte laden
+      if (emailProvider === 'gmail' && companyId) {
+        try {
+          const response = await fetch(`/api/company/${companyId}/gmail-contacts?limit=500`);
+          const data = await response.json();
           
-          setContacts(contactList);
+          if (data.success && data.contacts) {
+            setContacts(data.contacts);
+          }
+        } catch {
+          // Gmail-Kontakte konnten nicht geladen werden
         }
-      } catch {
-        // Kontakte konnten nicht geladen werden - kein kritischer Fehler
+        return;
+      }
+      
+      // Webmail-Kontakte vom Hetzner-Server laden - NUR wenn Webmail aktiv ist
+      if (emailProvider === 'webmail') {
+        const credentials = getWebmailCookie();
+        if (!credentials) return;
+        
+        try {
+          const response = await fetch('/api/webmail/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+              limit: 500,
+            }),
+          });
+
+          const data = await response.json();
+          
+          if (data.success && data.contacts) {
+            const contactList = data.contacts.map((c: {
+              uid: string;
+              displayName?: string;
+              firstName?: string;
+              lastName?: string;
+              emails?: { value: string; label: string }[];
+              email?: string;
+              name?: string;
+            }) => {
+              const primaryEmail = c.emails?.[0]?.value || c.email || '';
+              const displayName = c.displayName || c.name || 
+                (c.firstName && c.lastName ? `${c.firstName} ${c.lastName}`.trim() : '') ||
+                c.firstName || c.lastName || primaryEmail.split('@')[0] || 'Unbekannt';
+              
+              return {
+                id: c.uid || primaryEmail,
+                name: displayName,
+                email: primaryEmail,
+              };
+            }).filter((c: { email: string }) => c.email); // Nur Kontakte mit E-Mail
+            
+            setContacts(contactList);
+          }
+        } catch {
+          // Kontakte konnten nicht geladen werden - kein kritischer Fehler
+        }
       }
     };
     
     loadContacts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]); // companyId nicht mehr benötigt - Webmail-Credentials aus Cookie
+  }, [isOpen, emailProvider, companyId]); // Provider und CompanyId für dynamisches Laden
 
   // Gefilterte Kontakte für Autovervollständigung
   const filteredContacts = contacts.filter(contact => {
@@ -2269,14 +2323,16 @@ export function EmailCompose({
               >
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.29 7.5h6.57L5.43 11 8.86 5.25 7.71 3.5zm1.14 2l6.57 11.5H8.86l-3.43 6h6.57l6.86-12L12 3.5H7.71l1.14 2z"/></svg>
               </button>
-              {/* Foto Button - Provider-abhängig */}
-              <button 
-                onClick={() => emailProvider === 'gmail' ? setShowGooglePhotosPicker(true) : setShowTaskiloPhotosPicker(true)}
-                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
-                title={emailProvider === 'gmail' ? 'Google Fotos' : 'Taskilo Fotos'}
-              >
-                <ImageIcon className="h-[18px] w-[18px]" />
-              </button>
+              {/* Foto Button - Nur Taskilo Photos */}
+              {emailProvider === 'webmail' && (
+                <button 
+                  onClick={() => setShowTaskiloPhotosPicker(true)}
+                  className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
+                  title="Taskilo Fotos"
+                >
+                  <ImageIcon className="h-[18px] w-[18px]" />
+                </button>
+              )}
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Vertraulich">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               </button>
@@ -2299,8 +2355,13 @@ export function EmailCompose({
                   <DropdownMenuItem 
                     className="text-[13px] text-gray-600"
                     onClick={() => {
-                      // Öffne Settings-Seite in neuem Tab
-                      window.open('/webmail?settings=general', '_blank');
+                      if (emailProvider === 'gmail') {
+                        // Gmail-Signaturen werden direkt in Gmail verwaltet
+                        window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
+                      } else {
+                        // Webmail-Signaturen in Taskilo verwalten
+                        window.open('/webmail?settings=general', '_blank');
+                      }
                     }}
                   >
                     <Settings className="h-4 w-4 mr-2" />
@@ -2316,7 +2377,7 @@ export function EmailCompose({
                       // Entferne aktuelle Signatur aus Body
                       if (activeSignatureId) {
                         const currentSig = signatures.find(s => s.id === activeSignatureId);
-                        if (currentSig && editorRef.current) {
+                        if (currentSig?.content && editorRef.current) {
                           const bodyHtml = editorRef.current.innerHTML;
                           // Versuche die Signatur zu entfernen
                           const sigPattern = new RegExp(`(<br><br>)?${escapeRegExp(currentSig.content)}`, 'gi');
@@ -2342,7 +2403,7 @@ export function EmailCompose({
                         // Entferne alte Signatur falls vorhanden
                         if (activeSignatureId && editorRef.current) {
                           const oldSig = signatures.find(s => s.id === activeSignatureId);
-                          if (oldSig) {
+                          if (oldSig?.content) {
                             const bodyHtml = editorRef.current.innerHTML;
                             const sigPattern = new RegExp(`(<br><br>)?${escapeRegExp(oldSig.content)}`, 'gi');
                             editorRef.current.innerHTML = bodyHtml.replace(sigPattern, '');
@@ -2350,7 +2411,7 @@ export function EmailCompose({
                         }
                         
                         // Füge neue Signatur hinzu
-                        if (editorRef.current) {
+                        if (editorRef.current && sig.content) {
                           const currentHtml = editorRef.current.innerHTML;
                           const newHtml = currentHtml + `<br><br>${sig.content}`;
                           editorRef.current.innerHTML = newHtml;
@@ -2461,35 +2522,51 @@ export function EmailCompose({
         <GoogleDrivePicker
           isOpen={showGoogleDrivePicker}
           onClose={() => setShowGoogleDrivePicker(false)}
-          onSelect={(files: GoogleDriveFile[]) => {
-            // Füge Google Drive Dateien als Attachments hinzu
-            files.forEach(file => {
-              // File-Objekt wird direkt von GoogleDrivePicker zurückgegeben
-              setAttachments(prev => [...prev, file as unknown as File]);
-              toast.success(`${file.name} hinzugefügt`);
-            });
+          onSelect={async (files: GoogleDriveFile[]) => {
+            // Lade Google Drive Dateien herunter und konvertiere zu File-Objekten
+            for (const driveFile of files) {
+              try {
+                // Hole Access Token
+                const authResponse = await fetch(`/api/company/${companyId}/gmail-auth-status`);
+                const authData = await authResponse.json();
+                
+                if (!authData.accessToken) {
+                  toast.error('Gmail-Authentifizierung fehlgeschlagen');
+                  continue;
+                }
+                
+                // Lade Datei von Google Drive
+                const fileResponse = await fetch(
+                  `https://www.googleapis.com/drive/v3/files/${driveFile.id}?alt=media`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${authData.accessToken}`,
+                    },
+                  }
+                );
+                
+                if (!fileResponse.ok) {
+                  throw new Error('Download fehlgeschlagen');
+                }
+                
+                const blob = await fileResponse.blob();
+                const file = new File([blob], driveFile.name, {
+                  type: driveFile.mimeType || 'application/octet-stream',
+                });
+                
+                setAttachments(prev => [...prev, file]);
+                toast.success(`${driveFile.name} hinzugefügt`);
+              } catch (error) {
+                toast.error(`Fehler beim Laden von ${driveFile.name}`);
+              }
+            }
             setShowGoogleDrivePicker(false);
           }}
           companyId={companyId}
         />
       )}
 
-      {/* Google Photos Picker - Nur wenn Gmail verbunden */}
-      {emailProvider === 'gmail' && companyId && (
-        <GooglePhotosPicker
-          isOpen={showGooglePhotosPicker}
-          onClose={() => setShowGooglePhotosPicker(false)}
-          onSelect={(files: GoogleDriveFile[]) => {
-            // Füge Google Photos als Attachments hinzu
-            files.forEach(file => {
-              setAttachments(prev => [...prev, file as unknown as File]);
-              toast.success(`Foto ${file.name} hinzugefügt`);
-            });
-            setShowGooglePhotosPicker(false);
-          }}
-          companyId={companyId}
-        />
-      )}
+
 
       {/* Taskilo Photos Picker - Nur wenn Webmail verbunden */}
       {emailProvider === 'webmail' && userId && (

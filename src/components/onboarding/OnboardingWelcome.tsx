@@ -135,8 +135,8 @@ function OnboardingWelcome({ companyUid: _companyUid, onStartOnboarding }: Onboa
             <div className="bg-white rounded-lg p-8 shadow-sm border">
               <h3 className="text-2xl font-bold mb-4">Bereit für den nächsten Schritt?</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Das Onboarding dauert etwa 45 Minuten und kann jederzeit unterbrochen und später
-                fortgesetzt werden. Ihre Daten werden automatisch gespeichert.
+                Richten Sie Ihr Unternehmen in wenigen Schritten ein. Sie können jederzeit
+                unterbrechen und später fortfahren - Ihre Daten werden automatisch gespeichert.
               </p>
               <Button
                 size="lg"
