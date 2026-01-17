@@ -73,11 +73,17 @@ export async function POST(
     });
 
     if (!kiResponse.ok) {
-      // Fallback: Lokale Antwort bei KI-Fehler
-      return NextResponse.json({
-        success: true,
-        data: generateFallbackResponse(body.message, companyId),
-      });
+      // Fehler bei KI-Anfrage - KEIN Fallback, Fehler sichtbar machen!
+      const errorText = await kiResponse.text();
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'KI-Service nicht erreichbar',
+          details: errorText,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 502 }
+      );
     }
 
     const kiData: ChatResponse = await kiResponse.json();
@@ -88,125 +94,19 @@ export async function POST(
     });
 
   } catch (error) {
-    // Fallback bei Netzwerkfehlern
-    let companyIdFallback = 'unknown';
-    let messageFallback = '';
+    // Echte Fehlerbehandlung - KEIN Fallback!
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     
-    try {
-      const { uid } = await params;
-      companyIdFallback = uid;
-      const body = await request.clone().json();
-      messageFallback = body.message || '';
-    } catch {
-      // Ignorieren
-    }
-    
-    return NextResponse.json({
-      success: true,
-      data: generateFallbackResponse(messageFallback, companyIdFallback),
-    });
-  }
-}
-
-/**
- * Fallback-Antwort wenn die KI nicht erreichbar ist
- */
-function generateFallbackResponse(message: string, companyId: string): ChatResponse {
-  const messageLower = message.toLowerCase();
-  
-  // Einfache Keyword-Erkennung für Fallback
-  const topics: Record<string, { response: string; links: Array<{ title: string; url: string }> }> = {
-    rechnung: {
-      response: `**Rechnungen erstellen**
-
-Sie finden die Rechnungsfunktion unter Buchhaltung → Rechnungen. Dort können Sie:
-- Neue Rechnungen erstellen
-- Bestehende Rechnungen bearbeiten
-- Rechnungen als PDF exportieren
-- E-Rechnungen (XRechnung, ZUGFeRD) generieren
-
-Für Ihre Steuereinstellungen gehen Sie zu Einstellungen → Buchhaltung & Steuer.`,
-      links: [
-        { title: 'Rechnungen', url: `/dashboard/company/${companyId}/finance/invoices` },
-        { title: 'Steuereinstellungen', url: `/dashboard/company/${companyId}/settings?view=tax` },
-      ],
-    },
-    kunde: {
-      response: `**Kunden verwalten**
-
-Unter Geschäftspartner können Sie Ihre Kunden und Lieferanten verwalten:
-- Neue Kunden anlegen
-- Kundendaten bearbeiten
-- Kunden nach Kategorien sortieren
-- Kontakthistorie einsehen`,
-      links: [
-        { title: 'Geschäftspartner', url: `/dashboard/company/${companyId}/partners` },
-      ],
-    },
-    mitarbeiter: {
-      response: `**Personalverwaltung**
-
-Im Bereich Personal können Sie Ihre Mitarbeiter verwalten:
-- Mitarbeiterdaten pflegen
-- Dienstpläne erstellen
-- Urlaubsanträge verwalten
-- Arbeitszeiten erfassen`,
-      links: [
-        { title: 'Personal', url: `/dashboard/company/${companyId}/personal` },
-        { title: 'Dienstplan', url: `/dashboard/company/${companyId}/personal/shift-planning` },
-      ],
-    },
-    inventur: {
-      response: `**Inventur durchführen**
-
-Unter Lagerbestand → Inventuren können Sie GoBD-konforme Inventuren erstellen:
-- Neue Inventur starten
-- Bestände zählen und erfassen
-- Inventurprotokoll mit digitaler Unterschrift
-- Abweichungen dokumentieren`,
-      links: [
-        { title: 'Inventuren', url: `/dashboard/company/${companyId}/inventory/inventur` },
-      ],
-    },
-  };
-
-  // Thema finden
-  for (const [keyword, data] of Object.entries(topics)) {
-    if (messageLower.includes(keyword)) {
-      return {
-        message: data.response,
-        suggestions: [
-          'Was kann ich sonst noch mit Taskilo machen?',
-          'Wie ändere ich meine Einstellungen?',
-        ],
-        related_links: data.links,
-        confidence: 0.7,
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Chat-Anfrage fehlgeschlagen',
+        details: errorMessage,
         timestamp: new Date().toISOString(),
-      };
-    }
+      },
+      { status: 500 }
+    );
   }
-
-  // Standard-Antwort
-  return {
-    message: `**Willkommen beim Taskilo-Hilfe-Chat!**
-
-Ich helfe Ihnen gerne bei Fragen zu Taskilo. Fragen Sie mich zum Beispiel:
-- "Wie erstelle ich eine Rechnung?"
-- "Wo finde ich meine Kunden?"
-- "Wie verwalte ich Mitarbeiter?"
-- "Wie funktioniert die Inventur?"
-
-Was möchten Sie wissen?`,
-    suggestions: [
-      'Wie erstelle ich eine Rechnung?',
-      'Wo sind meine Geschäftspartner?',
-      'Wie starte ich eine Inventur?',
-    ],
-    related_links: [
-      { title: 'Einstellungen', url: `/dashboard/company/${companyId}/settings` },
-      { title: 'Support', url: `/dashboard/company/${companyId}/support` },
-    ],
-    confidence: 0.5,
-    timestamp: new Date().toISOString(),
-  };
 }
+
+// KEINE Fallback-Funktion mehr - Fehler müssen sichtbar sein!

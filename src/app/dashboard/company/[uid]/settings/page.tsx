@@ -333,8 +333,66 @@ export default function SettingsPage() {
 
       const cleanedForm = cleanData(form);
 
+      // MASTER-Felder Synchronisation: step3 ist MASTER für Steuerdaten
+      // Synchronisiere step3 Werte auf Root-Level für Konsistenz
+      const masterSyncFields: Record<string, unknown> = {};
+      
+      // Steuerdaten: step3 ist MASTER
+      if (cleanedForm.step3?.taxNumber) {
+        masterSyncFields.taxNumber = cleanedForm.step3.taxNumber;
+      }
+      if (cleanedForm.step3?.vatId) {
+        masterSyncFields.vatId = cleanedForm.step3.vatId;
+      }
+      
+      // Buchhaltungseinstellungen: step3 ist MASTER
+      if (cleanedForm.step3?.ust) {
+        masterSyncFields.kleinunternehmer = cleanedForm.step3.ust === 'kleinunternehmer' ? 'ja' : 'nein';
+      }
+      if (cleanedForm.step3?.profitMethod) {
+        masterSyncFields.profitMethod = cleanedForm.step3.profitMethod;
+      }
+      if (cleanedForm.step3?.priceInput) {
+        masterSyncFields.priceInput = cleanedForm.step3.priceInput;
+      }
+      if (cleanedForm.step3?.defaultTaxRate) {
+        masterSyncFields.taxRate = cleanedForm.step3.defaultTaxRate;
+      }
+      
+      // Bio: step3 ist MASTER
+      if (cleanedForm.step3?.bio) {
+        masterSyncFields.bio = cleanedForm.step3.bio;
+      }
+      
+      // Portfolio: step3 ist MASTER
+      if (cleanedForm.step3?.portfolio) {
+        masterSyncFields.portfolio = cleanedForm.step3.portfolio;
+      }
+      
+      // FAQs: step3 ist MASTER
+      if (cleanedForm.step3?.faqs) {
+        masterSyncFields.faqs = cleanedForm.step3.faqs;
+      }
+      
+      // Bankdaten: step3.bankDetails ist MASTER
+      if (cleanedForm.step3?.bankDetails) {
+        if (cleanedForm.step3.bankDetails.iban) {
+          masterSyncFields.iban = cleanedForm.step3.bankDetails.iban;
+        }
+        if (cleanedForm.step3.bankDetails.bic) {
+          masterSyncFields.bic = cleanedForm.step3.bankDetails.bic;
+        }
+        if (cleanedForm.step3.bankDetails.bankName) {
+          masterSyncFields.bankName = cleanedForm.step3.bankDetails.bankName;
+        }
+        if (cleanedForm.step3.bankDetails.accountHolder) {
+          masterSyncFields.accountHolder = cleanedForm.step3.bankDetails.accountHolder;
+        }
+      }
+
       await updateDoc(docRef, {
         ...cleanedForm,
+        ...masterSyncFields,
         lastUpdated: serverTimestamp(),
       });
       toast.success('Einstellungen erfolgreich gespeichert!');

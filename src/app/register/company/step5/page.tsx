@@ -1211,6 +1211,16 @@ export default function Step5CompanyPage() {
           skills: selectedSkills || {},
           category: selectedCategory || '',
           subcategory: selectedSubcategory || '',
+          // Steuerdaten - step3 ist MASTER für Settings-Seite
+          vatId: vatId || '',
+          taxNumber: taxNumber || '',
+          // Banking-Daten - step3.bankDetails ist MASTER
+          bankDetails: {
+            iban: iban || '',
+            bic: bic || '',
+            bankName: bankName || '',
+            accountHolder: accountHolder?.trim() || '',
+          },
         };
 
         const step4Data = {
