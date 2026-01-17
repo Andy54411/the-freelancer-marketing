@@ -328,7 +328,7 @@ export default function PublicMarketplacePage() {
       {user ? <UserHeader currentUid={user.uid} /> : <HeroHeader />}
       <main className="min-h-screen bg-gray-50">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900 pt-20 lg:pt-24">
+        <section className="relative overflow-hidden bg-linear-to-br from-teal-600 via-teal-700 to-teal-900 pt-20 lg:pt-24">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{
@@ -406,9 +406,9 @@ export default function PublicMarketplacePage() {
                 className="max-w-2xl mx-auto"
               >
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300" />
+                  <div className="absolute -inset-1 bg-linear-to-r from-teal-400 to-cyan-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300" />
                   <div className="relative flex items-center bg-white rounded-xl shadow-2xl overflow-hidden">
-                    <div className="flex-shrink-0 pl-5 pr-3 flex items-center justify-center">
+                    <div className="shrink-0 pl-5 pr-3 flex items-center justify-center">
                       <Search className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -421,7 +421,7 @@ export default function PublicMarketplacePage() {
                     <Button
                       onClick={() => setShowFilters(!showFilters)}
                       variant="ghost"
-                      className="flex-shrink-0 mr-2 text-gray-500 hover:text-teal-600 relative"
+                      className="shrink-0 mr-2 text-gray-500 hover:text-teal-600 relative"
                     >
                       <Filter className="h-5 w-5" />
                       {activeFiltersCount > 0 && (
@@ -444,7 +444,7 @@ export default function PublicMarketplacePage() {
                   className="mt-6 w-full max-w-[1400px] mx-auto bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-left"
                 >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-3">
+                    <div className="bg-linear-to-r from-teal-500 to-teal-600 px-4 py-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="p-1.5 bg-white/20 rounded-md">
@@ -850,7 +850,7 @@ export default function PublicMarketplacePage() {
 
         {/* CTA Section */}
         {!user && (
-          <section className="py-16 bg-gradient-to-r from-teal-600 to-teal-700">
+          <section className="py-16 bg-linear-to-r from-teal-600 to-teal-700">
             <div className="container mx-auto px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

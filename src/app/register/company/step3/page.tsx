@@ -52,6 +52,43 @@ const germanLegalForms: string[] = [
   'Sonstige',
 ];
 
+// Hilfsfunktion zur Validierung des deutschen Steuernummer-Formats
+const validateGermanTaxNumber = (taxNum: string): boolean => {
+  if (!taxNum) return false;
+  // Deutsche Steuernummer: XXX/XXX/XXXXX (13 Zeichen mit Schrägstrichen)
+  // Oder: XXXXXXXXXXX (11 Ziffern ohne Schrägstriche)
+  const withSlashes = /^\d{2,3}\/\d{3}\/\d{4,5}$/;
+  const withoutSlashes = /^\d{10,11}$/;
+  return withSlashes.test(taxNum.trim()) || withoutSlashes.test(taxNum.trim());
+};
+
+// Hilfsfunktion zur Validierung der USt-IdNr
+const validateVatId = (vat: string, countryCode: string): { valid: boolean; error?: string } => {
+  if (!vat) return { valid: false, error: 'USt-IdNr fehlt' };
+  const trimmedVat = vat.trim().toUpperCase();
+  
+  // Prüfe ob USt-IdNr mit dem Ländercode beginnt
+  if (countryCode === 'DE') {
+    if (!trimmedVat.startsWith('DE')) {
+      return { valid: false, error: 'Deutsche USt-IdNr muss mit "DE" beginnen' };
+    }
+    // DE + 9 Ziffern
+    if (!/^DE\d{9}$/.test(trimmedVat)) {
+      return { valid: false, error: 'Deutsche USt-IdNr: DE + 9 Ziffern (z.B. DE123456789)' };
+    }
+  } else if (countryCode === 'AT') {
+    if (!trimmedVat.startsWith('ATU')) {
+      return { valid: false, error: 'Österreichische USt-IdNr muss mit "ATU" beginnen' };
+    }
+  } else if (countryCode === 'CH') {
+    if (!trimmedVat.startsWith('CHE')) {
+      return { valid: false, error: 'Schweizer USt-IdNr muss mit "CHE" beginnen' };
+    }
+  }
+  
+  return { valid: true };
+};
+
 export default function Step3CompanyPage() {
   const router = useRouter();
   const registration = useRegistration(); // Hook zum Zugriff auf den Kontext
@@ -64,6 +101,7 @@ export default function Step3CompanyPage() {
     companyRegister,
     taxNumber,
     vatId,
+    companyCountry, // Land aus Step2 für Validierung
     setHourlyRate,
     setLegalForm, // Setter für legalForm im Context
     setCompanyRegister,
@@ -354,59 +392,54 @@ export default function Step3CompanyPage() {
   const closeModal = () => setIsModalOpen(false);
 
   // Validierungslogik für steuerliche Identifikation (useCallback für Optimierung)
+  // GoBD-KONFORM: Für deutsche Unternehmen ist Steuernummer PFLICHT!
   const validateTaxId = useCallback((): { isValid: boolean; missingFields: string[] } => {
     const isCapitalCompany =
       legalForm?.includes('GmbH') || legalForm?.includes('UG') || legalForm?.includes('AG');
     const isEK = legalForm?.includes('e.K.');
-    const isUnincorporatedPartnership =
-      legalForm?.includes('GbR') ||
-      legalForm?.includes('OHG') ||
-      legalForm?.includes('KG') ||
-      legalForm?.includes('Partnerschaft');
-    const isIndividual =
-      legalForm?.includes('Einzelunternehmen') || legalForm?.includes('Freiberufler');
+    const isGermanCompany = companyCountry === 'DE';
 
-    let valid = false;
-    let missing: string[] = [];
+    const missing: string[] = [];
 
-    if (isCapitalCompany || isEK) {
-      // HRN ist für Kapitalgesellschaften und e.K. primär
-      if (!companyRegister?.trim()) {
-        missing.push('Handelsregisternummer');
-      } else {
-        valid = true;
+    // === GoBD-PFLICHT FÜR DEUTSCHE UNTERNEHMEN ===
+    if (isGermanCompany) {
+      // Steuernummer ist PFLICHT für deutsche Unternehmen (§14 UStG)
+      if (!taxNumber?.trim()) {
+        missing.push('Steuernummer (Pflicht für deutsche Unternehmen)');
+      } else if (!validateGermanTaxNumber(taxNumber)) {
+        missing.push('Steuernummer im korrekten Format (z.B. 123/456/78901)');
       }
-    }
-
-    if (!valid) {
-      // Wenn HRN nicht valid ist oder nicht primär gefordert
-      if (isCapitalCompany || isUnincorporatedPartnership) {
-        // Für Kapitalges. und Personenges. (ohne HRN)
-        if (!taxNumber?.trim() && !vatId?.trim()) {
-          missing.push('Steuernummer ODER USt-IdNr.');
-        } else {
-          valid = true;
+      
+      // USt-IdNr ist optional, aber wenn angegeben, muss sie mit DE beginnen
+      if (vatId?.trim()) {
+        const vatValidation = validateVatId(vatId, 'DE');
+        if (!vatValidation.valid && vatValidation.error) {
+          missing.push(vatValidation.error);
         }
-      } else if (isIndividual && !isEK) {
-        // Einzelunternehmen / Freiberufler, die kein e.K. sind
-        if (!taxNumber?.trim() && !vatId?.trim()) {
-          missing.push('Steuernummer ODER USt-IdNr.');
-        } else {
-          valid = true;
-        }
-      } else {
-        // Sonstige Rechtsformen oder Fallback, wenn nichts spezifisches zutrifft
-        if (!companyRegister?.trim() && !taxNumber?.trim() && !vatId?.trim()) {
-          missing.push('Handelsregisternummer, Steuernummer ODER USt-IdNr.');
-        } else {
-          valid = true;
+      }
+      
+      // HRN für Kapitalgesellschaften und e.K.
+      if ((isCapitalCompany || isEK) && !companyRegister?.trim()) {
+        missing.push('Handelsregisternummer (Pflicht für Ihre Rechtsform)');
+      }
+    } else {
+      // === NICHT-DEUTSCHE UNTERNEHMEN (AT, CH, etc.) ===
+      // Mindestens eine steuerliche ID erforderlich
+      if (!taxNumber?.trim() && !vatId?.trim() && !companyRegister?.trim()) {
+        missing.push('Steuernummer, USt-IdNr oder Handelsregisternummer');
+      }
+      
+      // USt-IdNr Format prüfen wenn angegeben
+      if (vatId?.trim() && companyCountry) {
+        const vatValidation = validateVatId(vatId, companyCountry);
+        if (!vatValidation.valid && vatValidation.error) {
+          missing.push(vatValidation.error);
         }
       }
     }
 
-    missing = [...new Set(missing)]; // Duplikate entfernen
-    return { isValid: valid, missingFields: missing };
-  }, [legalForm, companyRegister, taxNumber, vatId]);
+    return { isValid: missing.length === 0, missingFields: [...new Set(missing)] };
+  }, [legalForm, companyRegister, taxNumber, vatId, companyCountry]);
 
   // Gesamtvalidierung des Formulars (useCallback für Optimierung)
   const isFormValid = useCallback((): boolean => {
@@ -768,10 +801,18 @@ export default function Step3CompanyPage() {
                   Steuerliche Identifikation*
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  {legalForm && (legalForm.includes('GmbH') || legalForm.includes('UG') || legalForm.includes('AG') || legalForm.includes('e.K.'))
-                    ? 'Handelsregisternummer ist für Ihre Rechtsform erforderlich.'
+                  {companyCountry === 'DE'
+                    ? 'Für deutsche Unternehmen ist die Steuernummer Pflicht (GoBD/§14 UStG). USt-IdNr. optional.'
                     : 'Mindestens eine Angabe (HRN, Steuernr. oder USt-IdNr.) ist erforderlich.'}
                 </p>
+                {companyCountry === 'DE' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-amber-800">
+                      <strong>GoBD-Hinweis:</strong> Deutsche Unternehmen benötigen zwingend eine Steuernummer vom Finanzamt (Format: 123/456/78901). 
+                      Eine deutsche USt-IdNr. (DE + 9 Ziffern) ist optional.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <button
@@ -832,7 +873,7 @@ export default function Step3CompanyPage() {
                 {activeTaxInput === 'taxId' && (
                   <div>
                     <label htmlFor="taxNumberInput" className="block text-sm font-medium text-gray-700 mb-2">
-                      Steuernummer
+                      Steuernummer {companyCountry === 'DE' && <span className="text-red-500">*</span>}
                     </label>
                     <input
                       type="text"
@@ -840,27 +881,55 @@ export default function Step3CompanyPage() {
                       value={taxNumber || ''}
                       onChange={e => setTaxNumber(e.target.value)}
                       onAnimationStart={(e: AnimationEvent<HTMLInputElement>) => handleAutofillSync(e, setTaxNumber)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800"
-                      placeholder="Ihre nationale Steuernummer"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 ${
+                        companyCountry === 'DE' && taxNumber && !validateGermanTaxNumber(taxNumber) 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-200'
+                      }`}
+                      placeholder={companyCountry === 'DE' ? 'z.B. 123/456/78901' : 'Ihre nationale Steuernummer'}
                       disabled={isProcessingImage}
                     />
+                    {companyCountry === 'DE' && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Format: XXX/XXX/XXXXX (vom deutschen Finanzamt vergeben)
+                      </p>
+                    )}
+                    {companyCountry === 'DE' && taxNumber && !validateGermanTaxNumber(taxNumber) && (
+                      <p className="mt-1 text-xs text-red-500">
+                        Bitte geben Sie eine gültige deutsche Steuernummer ein.
+                      </p>
+                    )}
                   </div>
                 )}
                 {activeTaxInput === 'vatId' && (
                   <div>
                     <label htmlFor="vatIdInput" className="block text-sm font-medium text-gray-700 mb-2">
-                      Umsatzsteuer-ID (USt-IdNr.)
+                      Umsatzsteuer-ID (USt-IdNr.) {companyCountry !== 'DE' && <span className="text-gray-400">(optional für DE)</span>}
                     </label>
                     <input
                       type="text"
                       id="vatIdInput"
                       value={vatId || ''}
-                      onChange={e => setVatId(e.target.value)}
+                      onChange={e => setVatId(e.target.value.toUpperCase())}
                       onAnimationStart={(e: AnimationEvent<HTMLInputElement>) => handleAutofillSync(e, setVatId)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800"
-                      placeholder="z.B. DE123456789"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 ${
+                        vatId && companyCountry && !validateVatId(vatId, companyCountry).valid
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-200'
+                      }`}
+                      placeholder={companyCountry === 'DE' ? 'DE123456789' : companyCountry === 'AT' ? 'ATU12345678' : 'CHE-123.456.789'}
                       disabled={isProcessingImage}
                     />
+                    {companyCountry === 'DE' && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Format: DE + 9 Ziffern (z.B. DE123456789). Beim Bundeszentralamt für Steuern beantragen.
+                      </p>
+                    )}
+                    {vatId && companyCountry && !validateVatId(vatId, companyCountry).valid && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {validateVatId(vatId, companyCountry).error}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
