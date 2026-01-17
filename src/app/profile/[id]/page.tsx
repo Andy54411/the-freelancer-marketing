@@ -561,11 +561,9 @@ export default function ProfilePage() {
             userData.step3?.profilePictureURL ||
             '';
 
-          // Extrahiere echte Beschreibung aus DB (nicht den Mock-Text)
+          // Extrahiere echte Beschreibung aus DB - MASTER ist step3.bio!
           const description =
-            userData.publicDescription ||
-            userData.description ||
-            userData.step2?.description ||
+            userData.step3?.bio ||
             'Kein Beschreibungstext verfügbar.';
 
           // Extrahiere Standort-Informationen (basierend auf echten DB-Daten)
