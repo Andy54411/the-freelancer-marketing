@@ -182,7 +182,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           setRecentChats([]);
         }
       );
-      return () => unsubscribe(); // Cleanup-Funktion für den Listener
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      return () => { setTimeout(() => unsubscribe(), 0); };
     },
     []
   );

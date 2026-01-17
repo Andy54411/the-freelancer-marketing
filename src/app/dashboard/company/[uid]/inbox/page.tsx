@@ -127,6 +127,8 @@ export default function CompanyInboxPage() {
       return;
     }
 
+    let isMounted = true; // Flag to prevent state updates after unmount
+
     // Kombiniere beide Chat-Collections
     const loadAllChats = () => {
       setLoadingChats(true);
@@ -153,6 +155,7 @@ export default function CompanyInboxPage() {
       const totalQueries = 2;
 
       const checkCompletion = () => {
+        if (!isMounted) return; // Prevent state updates after unmount
         completedQueries++;
         if (completedQueries === totalQueries) {
           // Sortiere alle Chats nach letztem Update
@@ -170,6 +173,7 @@ export default function CompanyInboxPage() {
       const unsubscribeChats = onSnapshot(
         chatsQuery,
         async snapshot => {
+          if (!isMounted) return; // Prevent processing after unmount
           const normalChatsPromises = snapshot.docs.map(async chatDoc => {
             const chatData = chatDoc.data();
             const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
@@ -225,6 +229,7 @@ export default function CompanyInboxPage() {
           checkCompletion();
         },
         err => {
+          if (!isMounted) return; // Prevent processing after unmount
           checkCompletion();
         }
       );
@@ -233,6 +238,7 @@ export default function CompanyInboxPage() {
       const unsubscribeDirectChats = onSnapshot(
         directChatsQuery,
         async snapshot => {
+          if (!isMounted) return; // Prevent processing after unmount
           const directChatsPromises = snapshot.docs.map(async chatDoc => {
             const chatData = chatDoc.data();
             const otherUserId = chatData.participants.find((id: string) => id !== currentUser.uid);
@@ -284,13 +290,18 @@ export default function CompanyInboxPage() {
           checkCompletion();
         },
         err => {
+          if (!isMounted) return; // Prevent processing after unmount
           checkCompletion();
         }
       );
 
       return () => {
-        unsubscribeChats();
-        unsubscribeDirectChats();
+        isMounted = false; // Set flag before unsubscribing
+        // Use setTimeout to defer unsubscribe calls and avoid Firestore internal assertion errors
+        setTimeout(() => {
+          unsubscribeChats();
+          unsubscribeDirectChats();
+        }, 0);
       };
     };
 

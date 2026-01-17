@@ -84,7 +84,8 @@ export default function TimeTrackingManager({
       }
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [orderId]);
 
   const loadProviderData = async (userId: string) => {

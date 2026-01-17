@@ -38,6 +38,8 @@ export interface RawFirestoreUserData {
   // Tasker Profile fields (Root-Level)
   bio?: string;
   description?: string;
+  profileTitle?: string;
+  searchTags?: string[];
   selectedCategory?: string;
   selectedSubcategory?: string;
   skills?: string[];
@@ -226,12 +228,22 @@ export interface RawFirestoreUserData {
     iban?: string;
     bic?: string;
     bankName?: string;
+    // Service-Bereich & Verfügbarkeit
+    serviceAreas?: string[];
+    availabilityType?: 'flexible' | 'fixed' | 'on-demand';
+    advanceBookingHours?: number;
+    travelCosts?: boolean;
+    travelCostPerKm?: number;
+    maxTravelDistance?: number;
   };
   step5?: {
     termsAccepted?: boolean;
     privacyPolicyAccepted?: boolean;
     marketingConsent?: boolean;
   };
+  // Onboarding step1 Felder (flach für einfacheren Zugriff)
+  businessType?: 'b2b' | 'b2c' | 'hybrid';
+  employees?: string;
   portfolioItems?: any[];
   faqs?: any[];
   portfolio?: any[];
@@ -285,6 +297,8 @@ export interface UserDataForSettings {
   profilePictureURL?: string;
   // Tasker Profile fields (Root-Level access)
   bio?: string;
+  profileTitle?: string;
+  searchTags?: string[];
   selectedCategory?: string;
   selectedSubcategory?: string;
   skills?: string[];
@@ -414,12 +428,22 @@ export interface UserDataForSettings {
     iban?: string;
     bic?: string;
     bankName?: string;
+    // Service-Bereich & Verfügbarkeit
+    serviceAreas?: string[];
+    availabilityType?: 'flexible' | 'fixed' | 'on-demand';
+    advanceBookingHours?: number;
+    travelCosts?: boolean;
+    travelCostPerKm?: number;
+    maxTravelDistance?: number;
   };
   step5?: {
     termsAccepted?: boolean;
     privacyPolicyAccepted?: boolean;
     marketingConsent?: boolean;
   };
+  // Onboarding step1 Felder (flach für einfacheren Zugriff)
+  businessType?: 'b2b' | 'b2c' | 'hybrid';
+  employees?: string;
   portfolioItems?: any[];
   faqs?: any[];
   portfolio?: any[];

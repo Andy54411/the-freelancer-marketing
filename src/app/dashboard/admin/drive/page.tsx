@@ -238,7 +238,7 @@ export default function AdminDrivePage() {
             <TrendingUp className="h-5 w-5" />
             Plan-Verteilung
           </CardTitle>
-          <CardDescription>Uebersicht der aktiven Abonnements</CardDescription>
+          <CardDescription>Übersicht der aktiven Abonnements</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

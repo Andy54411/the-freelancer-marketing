@@ -56,7 +56,8 @@ export function CompanyStorageCard({ companyId }: CompanyStorageCardProps) {
       }
     );
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [companyId]);
 
   const storagePercentage = storageLimit > 0 ? (storageUsed / storageLimit) * 100 : 0;

@@ -116,7 +116,8 @@ function CustomerOrdersTab({ customer, companyId }: CustomerOrdersTabProps) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [companyId, customer.id]);
 
   // Map Quote status to Order status for UI compatibility

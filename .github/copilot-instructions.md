@@ -488,6 +488,54 @@ interface EmployeePermissions {
 
 ---
 
+## SCRIPTS-VERZEICHNIS (WICHTIG!)
+
+**Es existieren bereits 100+ Scripts in `/scripts/`!**
+
+### VOR dem Erstellen eines neuen Scripts:
+1. **IMMER** erst prüfen ob ein ähnliches Script bereits existiert: `ls scripts/ | grep <keyword>`
+2. Existierende Scripts als Vorlage verwenden
+3. **NIEMALS** neue Scripts erstellen wenn ein bestehendes angepasst werden kann
+
+### Firebase Admin SDK in Scripts:
+**IMMER dieses Pattern verwenden** (siehe `scripts/check-bio.js`):
+```javascript
+const { initializeApp, getApps } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+
+if (getApps().length === 0) {
+  initializeApp({ projectId: 'tilvo-f142f' });
+}
+
+const db = getFirestore();
+```
+
+**NIEMALS:**
+- Service Account JSON-Dateien referenzieren (existieren nicht im Repo)
+- GOOGLE_APPLICATION_CREDENTIALS verwenden
+- Eigene Firebase-Initialisierung erfinden
+
+---
+
+## DATENSTRUKTUR - MASTER-FELDER
+
+### Company Beschreibung (bio):
+- **MASTER**: `step3.bio` (einziger Speicherort!)
+- **NIEMALS** auf Root-Level `bio` oder `description` speichern
+- `step1.description` ist nur Onboarding-Input, wird nicht angezeigt
+
+### FAQs:
+- **MASTER**: `step3.faqs`
+- Laden: Prüfe `step3.faqs`
+- Speichern: NUR nach `step3.faqs`
+
+### Portfolio:
+- **MASTER**: `step3.portfolio`
+- Laden: Prüfe `step3.portfolio`
+- Speichern: NUR nach `step3.portfolio`
+
+---
+
 ## VERBOTEN
 - console.log() - Structured logging only
 - Mock-Daten - Fix root causes
@@ -499,6 +547,8 @@ interface EmployeePermissions {
 - DATEIEN LÖSCHEN - NIEMALS ohne explizite Benutzeranfrage
 - UMLAUT-FEHLER - Deutsche Umlaute IMMER korrekt (ä, ö, ü, ß)
 - **FIRESTORE IN KI** - NIEMALS Firebase/Firestore in `taskilo-ki/` verwenden! NUR lokale Dateien auf Hetzner!
+- **NEUE SCRIPTS** - NIEMALS neue Scripts erstellen ohne vorher `/scripts/` zu prüfen!
+- **ROOT-LEVEL BIO/DESCRIPTION** - NIEMALS! NUR `step3.bio` ist Master!
 
 ---
 

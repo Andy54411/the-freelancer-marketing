@@ -257,7 +257,8 @@ export default function ReviewsPage() {
         }
       );
 
-      return () => unsubscribe();
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      return () => { setTimeout(() => unsubscribe(), 0); };
     } catch {
       setError('Fehler beim Laden der Bewertungen');
       setLoading(false);

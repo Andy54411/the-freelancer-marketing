@@ -94,7 +94,8 @@ export const JobfinderSidebar = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [user?.uid]);
 
   const toggleActive = async (id: string, currentActive: boolean) => {

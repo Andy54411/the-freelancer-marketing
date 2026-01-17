@@ -94,6 +94,7 @@ interface CompanyProfile {
   serviceAreas?: string[];
   maxTravelDistance?: number;
   businessType?: string;
+  workMode?: 'vor-ort' | 'remote' | 'hybrid' | string;
   profileBannerImage?: string;
   foundingYear?: string;
 }
@@ -495,7 +496,8 @@ export default function ProfilePage() {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   // User-Profil laden wenn User angemeldet ist
@@ -675,6 +677,7 @@ export default function ProfilePage() {
             serviceAreas: userData.serviceAreas || userData.step4?.serviceAreas || [],
             maxTravelDistance: userData.maxTravelDistance || userData.step4?.maxTravelDistance || userData.radiusKm || undefined,
             businessType: userData.businessType || userData.step1?.businessType || undefined,
+            workMode: userData.workMode || userData.step4?.workMode || undefined,
             profileBannerImage: userData.profileBannerImage || userData.step3?.profileBannerImage || undefined,
             hourlyRate:
               userData.hourlyRate ||
@@ -2056,7 +2059,7 @@ export default function ProfilePage() {
                       )}
 
                       {/* Unternehmensdetails Card - Oeffentliche Informationen */}
-                      {(profile.legalForm || profile.employees || profile.businessType || (profile.serviceAreas && profile.serviceAreas.length > 0) || profile.maxTravelDistance) && (
+                      {(profile.legalForm || profile.employees || profile.businessType || profile.workMode || (profile.serviceAreas && profile.serviceAreas.length > 0) || profile.maxTravelDistance) && (
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
                             Unternehmensdetails
@@ -2070,14 +2073,26 @@ export default function ProfilePage() {
                               </div>
                             )}
                             
-                            {/* Unternehmenstyp */}
+                            {/* Zielgruppe (B2B/B2C) */}
                             {profile.businessType && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Typ:</span>
+                                <span className="text-gray-500">Zielgruppe:</span>
                                 <span className="text-gray-900 font-medium">
-                                  {profile.businessType === 'hybrid' ? 'Vor-Ort & Remote' : 
-                                   profile.businessType === 'onsite' ? 'Vor-Ort' : 
-                                   profile.businessType === 'remote' ? 'Remote' : profile.businessType}
+                                  {profile.businessType === 'b2b' ? 'Geschäftskunden (B2B)' : 
+                                   profile.businessType === 'b2c' ? 'Privatkunden (B2C)' : 
+                                   profile.businessType === 'hybrid' ? 'Privat- & Geschäftskunden' : profile.businessType}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Arbeitsweise (Vor-Ort/Remote) */}
+                            {profile.workMode && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Arbeitsweise:</span>
+                                <span className="text-gray-900 font-medium">
+                                  {profile.workMode === 'vor-ort' ? 'Vor-Ort' : 
+                                   profile.workMode === 'remote' ? 'Remote' : 
+                                   profile.workMode === 'hybrid' ? 'Vor-Ort & Remote' : profile.workMode}
                                 </span>
                               </div>
                             )}

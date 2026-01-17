@@ -121,7 +121,10 @@ export const useUpdateNotifications = () => {
       }
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => {
+      setTimeout(() => unsubscribe(), 0);
+    };
   }, [user?.uid]); // Entferne loadUnseenUpdates aus deps, da wir es nicht mehr brauchen
 
   return {

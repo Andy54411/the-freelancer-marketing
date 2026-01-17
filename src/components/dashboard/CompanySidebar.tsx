@@ -757,9 +757,12 @@ export default function CompanySidebar({
   useEffect(() => {
     if (!uid) return;
 
+    let isMounted = true; // Flag to prevent state updates after unmount
+
     const unsubscribe = onSnapshot(
       doc(db, 'companies', uid),
       (docSnap) => {
+        if (!isMounted) return; // Prevent processing after unmount
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.taskerStatus) {
@@ -773,11 +776,15 @@ export default function CompanySidebar({
         }
       },
       (_error) => {
-        // Silent fail
+        // Silent fail - isMounted check not needed since we don't update state
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false; // Set flag before unsubscribing
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      setTimeout(() => unsubscribe(), 0);
+    };
   }, [uid]);
 
   // Lade Premium-Module Status

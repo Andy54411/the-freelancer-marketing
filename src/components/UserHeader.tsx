@@ -222,7 +222,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     return () => {
       isSubscriptionActive = false;
-      unsubscribe();
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      setTimeout(() => unsubscribe(), 0);
     };
   }, []); // auth und db sind stabile Referenzen und müssen nicht in die deps
 

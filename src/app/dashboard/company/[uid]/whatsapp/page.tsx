@@ -144,7 +144,8 @@ export default function WhatsAppPage() {
       }
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [uid, loadData]);
 
   // Nachrichten-Listener für ausgewählten Chat
@@ -200,7 +201,8 @@ export default function WhatsAppPage() {
       }, 100);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [selectedChat, uid]);
 
   // Chat-Info laden

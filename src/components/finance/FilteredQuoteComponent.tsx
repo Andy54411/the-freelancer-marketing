@@ -68,7 +68,8 @@ export function FilteredQuoteComponent({
       setQuotes(filteredQuotes);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [companyId, statusFilter]);
 
   const formatCurrency = (amount: number) => {

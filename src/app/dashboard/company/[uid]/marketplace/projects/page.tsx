@@ -108,7 +108,8 @@ export default function CompanyMarketplacePage() {
       }
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [uid]);
 
   // Lade verfügbare Projekte basierend auf Unternehmenskategorien
@@ -198,7 +199,8 @@ export default function CompanyMarketplacePage() {
       }
     );
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [uid, user, companyData]);
 
   // Handler-Funktionen

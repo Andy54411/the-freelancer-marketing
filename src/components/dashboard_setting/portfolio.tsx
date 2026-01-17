@@ -220,9 +220,10 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const portfolioData = data?.step3?.portfolio;
+        // Prüfe mehrere mögliche Speicherorte für Portfolio-Daten
+        const portfolioData = data?.step3?.portfolio || data?.portfolio || data?.portfolioItems;
 
-        if (portfolioData && Array.isArray(portfolioData)) {
+        if (portfolioData && Array.isArray(portfolioData) && portfolioData.length > 0) {
           setPortfolioItems(portfolioData);
           // Auch die formData aktualisieren
           handleChange('step3.portfolio', portfolioData);

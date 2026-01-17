@@ -87,7 +87,8 @@ export function ChartExpensesInteractive({ companyUid }: { companyUid: string })
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [user, companyUid]);
 
   // Berechne Zeitfilter

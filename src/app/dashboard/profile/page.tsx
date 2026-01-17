@@ -19,7 +19,8 @@ export default function DashboardProfileRedirect() {
       }
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [router]);
 
   // Zeige einen Loading-Spinner während der Weiterleitung

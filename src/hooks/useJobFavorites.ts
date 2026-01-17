@@ -28,7 +28,8 @@ export function useJobFavorites(jobId: string) {
       }
     );
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [user?.uid, jobId]);
 
   const toggleFavorite = async (e?: React.MouseEvent) => {

@@ -24,7 +24,8 @@ export function DynamicHeader({ className: _className }: DynamicHeaderProps) {
       setCurrentUser(user);
       setIsLoading(false);
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   // Während das Laden läuft, zeige einen Standard-Header an

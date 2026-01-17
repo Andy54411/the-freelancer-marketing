@@ -24,18 +24,32 @@ export default function TaskerSettingsPage() {
   const [loading, setLoading] = useState(true);
 
   const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
+    // Type assertion für Felder die möglicherweise auf Root-Level existieren
+    const rawDataExt = rawData as RawFirestoreUserData & {
+      businessType?: 'b2b' | 'b2c' | 'hybrid';
+      employees?: string;
+      step1?: { businessType?: string; employees?: string };
+    };
+    
     const transformed = {
       uid: rawData.uid,
       companyName: rawData.companyName || rawData.step2?.companyName,
       email: rawData.email,
       displayName: rawData.displayName || rawData.email || '',
-      legalForm: rawData.step2?.legalForm,
+      legalForm: rawData.legalForm || rawData.step2?.legalForm,
+      // Unternehmensdetails - Root-Level oder step1
+      businessType: (rawDataExt.businessType || rawDataExt.step1?.businessType) as 'b2b' | 'b2c' | 'hybrid' | undefined,
+      employees: rawDataExt.employees || rawDataExt.step1?.employees || rawData.step2?.employees,
       // Root-level image URLs
       profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
       profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
-      // Root-level Tasker Profile fields - use double type assertion for optional fields that may exist in Firestore
-      bio: rawData.bio || (rawData as unknown as Record<string, unknown>).description as string || rawData.step3?.bio || '',
-      description: (rawData as unknown as Record<string, unknown>).description as string || rawData.bio,
+      // profileTitle - Root-Level ist MASTER
+      profileTitle: rawData.profileTitle || rawData.step3?.profileTitle || '',
+      // searchTags - Root-Level ist MASTER
+      searchTags: rawData.searchTags || [],
+      // Root-level Tasker Profile fields - NUR step3.bio ist MASTER
+      bio: rawData.step3?.bio || '',
+      description: rawData.step3?.bio || '',
       selectedCategory: rawData.selectedCategory || rawData.step3?.selectedCategory || '',
       selectedSubcategory: rawData.selectedSubcategory || rawData.step3?.selectedSubcategory || '',
       skills: rawData.skills || rawData.step3?.skills,
@@ -60,8 +74,8 @@ export default function TaskerSettingsPage() {
         defaultTaxRate: rawData.defaultTaxRate || rawData.step3?.defaultTaxRate || '19',
         profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
         profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
-        // Tasker Profile fields - check root level first, then step3
-        bio: rawData.bio || rawData.step3?.bio || '',
+        // Tasker Profile fields - NUR step3.bio ist MASTER
+        bio: rawData.step3?.bio || '',
         selectedCategory: rawData.selectedCategory || rawData.step3?.selectedCategory || '',
         selectedSubcategory: rawData.selectedSubcategory || rawData.step3?.selectedSubcategory || '',
         skills: rawData.skills || rawData.step3?.skills || [],
@@ -70,6 +84,13 @@ export default function TaskerSettingsPage() {
         offersVideoConsultation: rawData.offersVideoConsultation ?? rawData.step3?.offersVideoConsultation ?? false,
         level: rawData.level || rawData.step3?.level || 1,
         isTopRated: rawData.isTopRated ?? rawData.step3?.isTopRated ?? false,
+        // FAQs und Portfolio - aus Root-Level ODER step3 laden (Root-Level hat Priorität)
+        faqs: (rawData.faqs && Array.isArray(rawData.faqs) && rawData.faqs.length > 0) 
+          ? rawData.faqs 
+          : (rawData.step3?.faqs || []),
+        portfolio: (rawData.portfolio && Array.isArray(rawData.portfolio) && rawData.portfolio.length > 0) 
+          ? rawData.portfolio 
+          : (rawData.step3?.portfolio || rawData.portfolioItems || []),
         bankDetails: rawData.step3?.bankDetails || {
           bankName: rawData.bankName || '',
           iban: rawData.iban || '',
@@ -77,10 +98,26 @@ export default function TaskerSettingsPage() {
           accountHolder: rawData.accountHolder || '',
         },
       },
-      step4: rawData.step4,
+      // step4 mit Service-Bereich & Verfügbarkeit Feldern
+      step4: rawData.step4 ? {
+        ...rawData.step4,
+        maxTravelDistance: rawData.step4.maxTravelDistance,
+        serviceAreas: rawData.step4.serviceAreas,
+        availabilityType: rawData.step4.availabilityType,
+        advanceBookingHours: rawData.step4.advanceBookingHours,
+        travelCosts: rawData.step4.travelCosts,
+        travelCostPerKm: rawData.step4.travelCostPerKm,
+      } : undefined,
       step5: rawData.step5,
-      portfolioItems: rawData.portfolioItems || [],
-      faqs: rawData.faqs || [],
+      // Root-Level FAQs und Portfolio - mit Priorität für vorhandene Daten
+      portfolioItems: (rawData.portfolio && Array.isArray(rawData.portfolio) && rawData.portfolio.length > 0) 
+        ? rawData.portfolio 
+        : (rawData.portfolioItems && Array.isArray(rawData.portfolioItems) && rawData.portfolioItems.length > 0)
+          ? rawData.portfolioItems
+          : (rawData.step3?.portfolio || []),
+      faqs: (rawData.faqs && Array.isArray(rawData.faqs) && rawData.faqs.length > 0) 
+        ? rawData.faqs 
+        : (rawData.step3?.faqs || []),
       paymentTermsSettings: rawData.paymentTermsSettings || {
         defaultPaymentTerms: rawData.defaultPaymentTerms,
       },
@@ -209,12 +246,107 @@ export default function TaskerSettingsPage() {
         return obj;
       };
 
-      const cleanedForm = cleanData(form);
-
-      await updateDoc(docRef, {
-        ...cleanedForm,
+      // Flatten step3 data to root level - KEINE Duplikate mehr!
+      // Die Daten werden NUR auf Root-Level gespeichert
+      const flattenedData: Record<string, unknown> = {
+        // Root-level Felder direkt übernehmen
+        uid: form.uid,
+        email: form.email,
+        displayName: form.displayName,
+        companyName: form.companyName,
+        
+        // Tasker Profil Felder - KEINE Root-Level bio/description mehr!
+        // step3.bio ist MASTER - wird unten in step3 gespeichert
+        profileTitle: (form as Record<string, unknown>).profileTitle,
+        selectedCategory: form.step3?.selectedCategory || form.selectedCategory,
+        selectedSubcategory: form.step3?.selectedSubcategory || form.selectedSubcategory,
+        skills: form.step3?.skills || form.skills,
+        hourlyRate: form.step3?.hourlyRate || form.hourlyRate,
+        location: form.step3?.location || form.location,
+        offersVideoConsultation: form.step3?.offersVideoConsultation ?? form.offersVideoConsultation,
+        level: form.step3?.level || form.level,
+        isTopRated: form.step3?.isTopRated ?? form.isTopRated,
+        
+        // Bilder - NUR auf Root-Level
+        profilePictureURL: form.profilePictureURL || form.step3?.profilePictureURL,
+        profileBannerImage: form.profileBannerImage || form.step3?.profileBannerImage,
+        
+        // FAQs und Portfolio - NUR auf Root-Level
+        faqs: form.step3?.faqs || form.faqs || [],
+        portfolio: form.step3?.portfolio || form.portfolio || [],
+        
+        // Unternehmensdetails
+        legalForm: form.legalForm,
+        businessType: form.businessType,
+        workMode: (form as Record<string, unknown>).workMode,
+        employees: form.employees,
+        
+        // Search Tags
+        searchTags: (form as Record<string, unknown>).searchTags,
+        
+        // Profile Title - Root-Level ist MASTER
+        profileTitle: (form as Record<string, unknown>).profileTitle,
+        
+        // step4 Felder auf Root-Level
+        maxTravelDistance: form.step4?.maxTravelDistance,
+        serviceAreas: form.step4?.serviceAreas,
+        availabilityType: form.step4?.availabilityType,
+        advanceBookingHours: form.step4?.advanceBookingHours,
+        travelCosts: form.step4?.travelCosts,
+        travelCostPerKm: form.step4?.travelCostPerKm,
+        
+        // step3 OHNE die duplizierten Felder speichern (nur Steuer/Bank-Daten)
+        step3: {
+          // BIO ist MASTER - muss gespeichert werden!
+          bio: form.step3?.bio || form.bio || '',
+          bankDetails: form.step3?.bankDetails,
+          vatId: form.step3?.vatId,
+          taxNumber: form.step3?.taxNumber,
+          districtCourt: form.step3?.districtCourt,
+          companyRegister: form.step3?.companyRegister,
+          ust: form.step3?.ust,
+          profitMethod: form.step3?.profitMethod,
+          priceInput: form.step3?.priceInput,
+          taxMethod: form.step3?.taxMethod,
+          accountingSystem: form.step3?.accountingSystem,
+          defaultTaxRate: form.step3?.defaultTaxRate,
+          // FAQs und Portfolio - step3 ist MASTER
+          faqs: form.step3?.faqs || form.faqs || [],
+          portfolio: form.step3?.portfolio || form.portfolio || [],
+          // Weitere step3 Felder die erhalten bleiben müssen
+          selectedCategory: form.step3?.selectedCategory || form.selectedCategory,
+          selectedSubcategory: form.step3?.selectedSubcategory || form.selectedSubcategory,
+          skills: form.step3?.skills || form.skills || [],
+          hourlyRate: form.step3?.hourlyRate || form.hourlyRate,
+          location: form.step3?.location || form.location,
+          offersVideoConsultation: form.step3?.offersVideoConsultation ?? form.offersVideoConsultation,
+          level: form.step3?.level || form.level,
+          isTopRated: form.step3?.isTopRated ?? form.isTopRated,
+          languages: form.step3?.languages,
+          specialties: form.step3?.specialties,
+          profilePictureURL: form.profilePictureURL || form.step3?.profilePictureURL,
+          profileBannerImage: form.profileBannerImage || form.step3?.profileBannerImage,
+        },
+        
+        // Andere steps beibehalten
+        step1: form.step1,
+        step2: form.step2,
+        step4: form.step4,
+        step5: form.step5,
+        
+        // Weitere Root-Level Felder
+        paymentTermsSettings: form.paymentTermsSettings,
+        logoUrl: form.logoUrl,
+        documentTemplates: form.documentTemplates,
+        stornoSettings: form.stornoSettings,
+        
         lastUpdated: serverTimestamp(),
-      });
+      };
+
+      // Entferne undefined Werte
+      const cleanedData = cleanData(flattenedData);
+
+      await updateDoc(docRef, cleanedData);
       toast.success('Einstellungen erfolgreich gespeichert!');
     } catch {
       toast.error('Fehler beim Speichern der Einstellungen');

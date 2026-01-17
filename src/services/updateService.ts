@@ -286,8 +286,10 @@ export class UpdateService {
     let userStatus: UserUpdateStatus | null = null;
     let updatesUnsubscribe: Unsubscribe | null = null;
     let statusUnsubscribe: Unsubscribe | null = null;
+    let isActive = true; // Flag to prevent processing after unsubscribe
 
     const processUpdates = () => {
+      if (!isActive) return; // Prevent processing after unsubscribe
       if (!allUpdates.length || !userStatus) return;
 
       const unseenUpdates = allUpdates.filter(
@@ -305,6 +307,7 @@ export class UpdateService {
     const updatesQuery = query(updatesRef, orderBy('releaseDate', 'desc'));
 
     updatesUnsubscribe = onSnapshot(updatesQuery, snapshot => {
+      if (!isActive) return; // Prevent processing after unsubscribe
       allUpdates = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -320,6 +323,7 @@ export class UpdateService {
     const statusDocRef = doc(db, 'userUpdateStatus', userId);
 
     statusUnsubscribe = onSnapshot(statusDocRef, async statusDoc => {
+      if (!isActive) return; // Prevent processing after unsubscribe
       if (statusDoc.exists()) {
         const data = statusDoc.data();
         userStatus = {
@@ -354,8 +358,13 @@ export class UpdateService {
 
     // Return combined unsubscribe function
     return () => {
-      if (updatesUnsubscribe) updatesUnsubscribe();
-      if (statusUnsubscribe) statusUnsubscribe();
+      isActive = false; // Set flag before unsubscribing
+      // Use setTimeout to defer unsubscribe calls and avoid Firestore internal assertion errors
+      // This is a workaround for a known bug in Firestore 12.6.0
+      setTimeout(() => {
+        if (updatesUnsubscribe) updatesUnsubscribe();
+        if (statusUnsubscribe) statusUnsubscribe();
+      }, 0);
     };
   }
 

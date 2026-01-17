@@ -50,11 +50,13 @@ export function StorageCardSidebar({ companyId }: StorageCardSidebarProps) {
       return;
     }
 
+    let isMounted = true; // Flag to prevent state updates after unmount
     const companyRef = doc(db, 'companies', companyId);
 
     const unsubscribe = onSnapshot(
       companyRef,
       snapshot => {
+        if (!isMounted) return; // Prevent processing after unmount
         if (snapshot.exists()) {
           const data = snapshot.data();
 
@@ -67,12 +69,15 @@ export function StorageCardSidebar({ companyId }: StorageCardSidebarProps) {
         }
       },
       error => {
+        if (!isMounted) return; // Prevent error handling after unmount
         console.error('[StorageCardSidebar] Error loading usage data:', error);
       }
     );
 
     return () => {
-      unsubscribe();
+      isMounted = false; // Set flag before unsubscribing
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      setTimeout(() => unsubscribe(), 0);
     };
   }, [companyId]);
 

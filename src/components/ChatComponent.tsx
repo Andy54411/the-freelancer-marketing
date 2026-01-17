@@ -256,6 +256,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       return;
     }
 
+    let isMounted = true; // Flag to prevent state updates after unmount
     setChatLoading(true);
     setChatError(null);
 
@@ -268,6 +269,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     const unsubscribe = onSnapshot(
       messagesQuery,
       async querySnapshot => {
+        if (!isMounted) return; // Prevent processing after unmount
         try {
           const fetchedMessages: ChatMessage[] = querySnapshot.docs.map(doc => {
             const data = doc.data() as DocumentData;
@@ -286,14 +288,17 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           const uniqueSenderIds = [...new Set(fetchedMessages.map(msg => msg.senderId))];
           await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
 
+          if (!isMounted) return; // Check again after async operation
           setMessages(fetchedMessages);
           setChatLoading(false);
         } catch {
+          if (!isMounted) return;
           setChatError('Fehler beim Laden der Nachrichten');
           setChatLoading(false);
         }
       },
       () => {
+        if (!isMounted) return; // Prevent error handling after unmount
         setChatError('Fehler beim Laden der Nachrichten');
         setChatLoading(false);
       }
@@ -301,7 +306,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
     // Cleanup function to unsubscribe from the listener
     return () => {
-      unsubscribe();
+      isMounted = false; // Set flag before unsubscribing
+      // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+      setTimeout(() => unsubscribe(), 0);
     };
   }, [currentUser?.uid, orderId]);
 

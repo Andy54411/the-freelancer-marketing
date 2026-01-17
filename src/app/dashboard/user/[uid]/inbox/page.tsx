@@ -115,7 +115,8 @@ export default function UserInboxPage() {
       }
     );
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [currentUser]);
 
   const selectedChat = useMemo(() => {

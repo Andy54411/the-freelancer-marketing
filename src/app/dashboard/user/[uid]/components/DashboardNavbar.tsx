@@ -36,7 +36,8 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   const handleLogout = async () => {

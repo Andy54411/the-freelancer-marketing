@@ -248,7 +248,8 @@ export default function UserDashboardPage() {
         router.replace(`/?redirectTo=/dashboard/user/${pageUid}`);
       }
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [pageUid, router, loadInitialDashboardData]);
 
   // Fetch Job Board Data

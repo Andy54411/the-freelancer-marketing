@@ -439,7 +439,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[1]?.businessType) companyUpdates.businessType = String(stepData[1].businessType);
       if (stepData[1]?.employees) companyUpdates.employees = String(stepData[1].employees);
       if (stepData[1]?.website) companyUpdates.website = String(stepData[1].website);
-      if (stepData[1]?.description) companyUpdates.description = String(stepData[1].description);
+      // description wird nach step3.bio gespeichert (MASTER), NICHT auf Root-Level
+      if (stepData[1]?.description) {
+        companyUpdates['step3.bio'] = String(stepData[1].description);
+      }
 
       // Manager Zusatzdaten
       if (stepData[1]?.managerData?.position) {

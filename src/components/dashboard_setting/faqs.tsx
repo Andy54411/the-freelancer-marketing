@@ -19,8 +19,13 @@ interface FAQ {
 }
 
 const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
-  // Initialize FAQs from formData only once on mount
+  // Initialize FAQs from formData - check Root-Level first, then step3
   const [faqs, setFaqs] = useState<FAQ[]>(() => {
+    // Prüfe Root-Level zuerst, dann step3
+    const rootFaqs = formData.faqs;
+    if (rootFaqs && Array.isArray(rootFaqs) && rootFaqs.length > 0) {
+      return rootFaqs as FAQ[];
+    }
     return formData.step3?.faqs && Array.isArray(formData.step3.faqs) ? formData.step3.faqs : [];
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,6 +40,29 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
 
   // Update formData when FAQs change (use a ref to track if we should update)
   const shouldUpdateFormData = useRef(false);
+  const isInitialMount = useRef(true);
+
+  // Sync FAQs from formData when it changes (e.g., after loading from Firebase)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    // Prüfe Root-Level zuerst, dann step3
+    const rootFaqs = formData.faqs;
+    const newFaqs = (rootFaqs && Array.isArray(rootFaqs) && rootFaqs.length > 0) 
+      ? rootFaqs as FAQ[]
+      : (formData.step3?.faqs && Array.isArray(formData.step3.faqs) ? formData.step3.faqs : []);
+    
+    // Only update if FAQs actually changed (compare by length and content)
+    if (JSON.stringify(newFaqs) !== JSON.stringify(faqs) && newFaqs.length > 0) {
+      shouldUpdateFormData.current = false; // Prevent triggering handleChange
+      setFaqs(newFaqs);
+      // Re-enable updates after state is set
+      setTimeout(() => { shouldUpdateFormData.current = true; }, 0);
+    }
+  }, [formData.step3?.faqs, formData.faqs]);
 
   useEffect(() => {
     // Mark that we should start updating form data after first render
@@ -43,6 +71,8 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
 
   useEffect(() => {
     if (shouldUpdateFormData.current) {
+      // Speichere FAQs auf Root-Level UND in step3 für Kompatibilität
+      handleChange('faqs', faqs);
       handleChange('step3.faqs', faqs);
     }
   }, [faqs]);

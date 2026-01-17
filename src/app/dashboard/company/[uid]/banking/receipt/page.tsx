@@ -70,7 +70,8 @@ export default function ReceiptPage() {
       setUser(currentUser ? { uid: currentUser.uid } : null);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   // Get initial data from URL params (from transaction)

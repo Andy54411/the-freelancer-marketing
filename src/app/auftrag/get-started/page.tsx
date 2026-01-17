@@ -40,7 +40,8 @@ export default function GetStartedPage() {
     const unsubscribe = onAuthStateChanged(auth, (_user: FirebaseUser | null) => {
       // Auth logic if needed
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   const logicalCurrentStep = useMemo(() => {

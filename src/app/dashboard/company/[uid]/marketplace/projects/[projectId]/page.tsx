@@ -198,7 +198,8 @@ export default function ProjectDetailPage() {
       error => {}
     );
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [projectId]);
 
   const formatBudget = (

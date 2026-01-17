@@ -24,6 +24,9 @@ import {
   Video,
   Play,
   Trash2,
+  Building2,
+  Car,
+  Users,
 } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { UserDataForSettings } from '@/types/settings';
@@ -82,6 +85,13 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [offersVideoConsultation, setOffersVideoConsultation] = useState(false);
 
+  // Unternehmensdetails states
+  const [legalForm, setLegalForm] = useState('');
+  const [businessType, setBusinessType] = useState<'b2b' | 'b2c' | 'hybrid' | ''>('');
+  const [workMode, setWorkMode] = useState<'vor-ort' | 'remote' | 'hybrid' | ''>('');
+  const [employees, setEmployees] = useState('');
+  const [maxTravelDistance, setMaxTravelDistance] = useState(0);
+
   // Get profile image URL - check root level first, then step3
   const profileImageUrl = formData.profilePictureURL || formData.step3?.profilePictureURL;
   const bannerImageUrl = formData.profileBannerImage || formData.step3?.profileBannerImage;
@@ -100,12 +110,24 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
     return categoryValue;
   };
 
-  // Initialize state from formData ONLY on mount (not on every formData change)
-  // This prevents the "ping-pong" effect where typing gets reset
-  const initializedRef = useRef(false);
+  // Initialize state from formData
+  // Track if we have valid data to initialize from (not empty formData)
+  const hasInitializedWithData = useRef(false);
+  
   useEffect(() => {
-    if (initializedRef.current) return; // Skip if already initialized
-    initializedRef.current = true;
+    // Check if formData has meaningful data (not just the base structure)
+    const hasData = !!(formData.bio || formData.step3?.bio || 
+                       formData.selectedCategory || formData.step3?.selectedCategory ||
+                       formData.hourlyRate || formData.step3?.hourlyRate ||
+                       formData.legalForm || formData.step2?.legalForm);
+    
+    // Skip if we already initialized with actual data
+    if (hasInitializedWithData.current && hasData) return;
+    
+    // Mark as initialized only when we have actual data
+    if (hasData) {
+      hasInitializedWithData.current = true;
+    }
     
     const rawCategory = formData.selectedCategory || formData.step3?.selectedCategory || '';
     const categoryId = findCategoryId(rawCategory);
@@ -119,13 +141,23 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
     setLocation(formData.location || formData.step3?.location || formData.step2?.companyAddress?.city || '');
     setOffersVideoConsultation(formData.offersVideoConsultation ?? formData.step3?.offersVideoConsultation ?? false);
     
-    // Load profile title - type-safe access
-    const formDataWithTitle = formData as unknown as { profileTitle?: string };
-    setProfileTitle(formDataWithTitle.profileTitle || '');
+    // Load profile title - jetzt direkt aus formData da im Interface definiert
+    setProfileTitle(formData.profileTitle || '');
     
-    // Load search tags - type-safe access
-    const formDataWithTags = formData as unknown as { searchTags?: string[] };
-    setSearchTags(formDataWithTags.searchTags || []);
+    // Load search tags - jetzt direkt aus formData da im Interface definiert
+    setSearchTags(formData.searchTags || []);
+    
+    // Load Unternehmensdetails - check multiple locations (root, step1, step2)
+    // Type assertion für step1 mit businessType und employees
+    const step1Data = formData.step1 as unknown as { businessType?: string; employees?: string } | undefined;
+    // Type assertion für workMode (kann auf Root oder in step4 sein)
+    const formDataExt = formData as unknown as { workMode?: string };
+    
+    setLegalForm(formData.legalForm || formData.step2?.legalForm || '');
+    setBusinessType((formData.businessType || step1Data?.businessType || '') as 'b2b' | 'b2c' | 'hybrid' | '');
+    setWorkMode((formDataExt.workMode || '') as 'vor-ort' | 'remote' | 'hybrid' | '');
+    setEmployees(formData.employees || step1Data?.employees || formData.step2?.employees || '');
+    setMaxTravelDistance(formData.step4?.maxTravelDistance || 0);
     
     // Generate suggested tags based on category
     if (categoryId && subcategory) {
@@ -189,16 +221,14 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
     try {
       const downloadUrl = await uploadImageToStorage(file, 'profile-pictures', userId);
       
-      // Update Firestore
+      // Update Firestore - NUR auf Root-Level speichern
       const docRef = doc(db, 'companies', userId);
       await updateDoc(docRef, {
         profilePictureURL: downloadUrl,
-        'step3.profilePictureURL': downloadUrl,
         lastUpdated: serverTimestamp(),
       });
 
       handleChange('profilePictureURL', downloadUrl);
-      handleChange('step3.profilePictureURL', downloadUrl);
       toast.success('Profilbild erfolgreich hochgeladen');
     } catch {
       toast.error('Fehler beim Hochladen des Profilbildes');
@@ -237,16 +267,14 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
     try {
       const downloadUrl = await uploadImageToStorage(file, 'profile-banners', userId);
       
-      // Update Firestore
+      // Update Firestore - NUR auf Root-Level speichern
       const docRef = doc(db, 'companies', userId);
       await updateDoc(docRef, {
         profileBannerImage: downloadUrl,
-        'step3.profileBannerImage': downloadUrl,
         lastUpdated: serverTimestamp(),
       });
 
       handleChange('profileBannerImage', downloadUrl);
-      handleChange('step3.profileBannerImage', downloadUrl);
       toast.success('Banner erfolgreich hochgeladen');
     } catch {
       toast.error('Fehler beim Hochladen des Banners');
@@ -323,11 +351,10 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
       clearInterval(progressInterval);
       setVideoUploadProgress(100);
       
-      // Update Firestore
+      // Update Firestore - NUR auf Root-Level speichern
       const docRef = doc(db, 'companies', userId);
       await updateDoc(docRef, {
         profileVideoURL: downloadUrl,
-        'step3.profileVideoURL': downloadUrl,
         lastUpdated: serverTimestamp(),
       });
 
@@ -352,7 +379,6 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
       const docRef = doc(db, 'companies', userId);
       await updateDoc(docRef, {
         profileVideoURL: null,
-        'step3.profileVideoURL': null,
         lastUpdated: serverTimestamp(),
       });
       
@@ -372,12 +398,11 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
     }
   };
 
-  // Handle bio change
+  // Handle bio change - speichert NUR nach step3.bio (MASTER)
   const handleBioChange = (value: string) => {
     setBio(value);
+    // NUR step3.bio ist Master - keine Root-Level Felder!
     handleChange('step3.bio', value);
-    // Also save as description for backwards compatibility
-    handleChange('description', value);
   };
 
   // State für Feedback nach KI-Generierung
@@ -534,6 +559,7 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
       ? skills.filter(s => s !== skill)
       : [...skills, skill];
     setSkills(newSkills);
+    handleChange('skills', newSkills);
     handleChange('step3.skills', newSkills);
   };
 
@@ -541,12 +567,14 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
   const handleHourlyRateChange = (value: string) => {
     const rate = parseInt(value) || 0;
     setHourlyRate(rate);
+    handleChange('hourlyRate', rate);
     handleChange('step3.hourlyRate', rate);
   };
 
   // Handle location change
   const handleLocationChange = (value: string) => {
     setLocation(value);
+    handleChange('location', value);
     handleChange('step3.location', value);
   };
 
@@ -554,7 +582,36 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
   const handleVideoConsultationToggle = () => {
     const newValue = !offersVideoConsultation;
     setOffersVideoConsultation(newValue);
+    handleChange('offersVideoConsultation', newValue);
     handleChange('step3.offersVideoConsultation', newValue);
+  };
+
+  // Handler für Unternehmensdetails
+  const handleLegalFormChange = (value: string) => {
+    setLegalForm(value);
+    handleChange('legalForm', value);
+    handleChange('step2.legalForm', value);
+  };
+
+  const handleBusinessTypeChange = (value: 'b2b' | 'b2c' | 'hybrid') => {
+    setBusinessType(value);
+    handleChange('businessType', value);
+  };
+
+  const handleWorkModeChange = (value: 'vor-ort' | 'remote' | 'hybrid') => {
+    setWorkMode(value);
+    handleChange('workMode', value);
+  };
+
+  const handleEmployeesChange = (value: string) => {
+    setEmployees(value);
+    handleChange('employees', value);
+    handleChange('step2.employees', value);
+  };
+
+  const handleMaxTravelDistanceChange = (value: number) => {
+    setMaxTravelDistance(value);
+    handleChange('step4.maxTravelDistance', value);
   };
 
   return (
@@ -1183,6 +1240,126 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Unternehmensdetails Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-teal-600" />
+          Unternehmensdetails
+        </h3>
+        <p className="text-sm text-gray-600">
+          Zusätzliche Angaben zu deinem Unternehmen, die für Kunden relevant sein können.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Rechtsform */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rechtsform
+            </label>
+            <select
+              value={legalForm}
+              onChange={(e) => handleLegalFormChange(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="">Rechtsform wählen...</option>
+              <option value="Einzelunternehmen">Einzelunternehmen</option>
+              <option value="Freiberufler">Freiberufler</option>
+              <option value="GbR">GbR</option>
+              <option value="GmbH">GmbH</option>
+              <option value="UG (haftungsbeschränkt)">UG (haftungsbeschränkt)</option>
+              <option value="OHG">OHG</option>
+              <option value="KG">KG</option>
+              <option value="AG">AG</option>
+              <option value="eG">eG (Genossenschaft)</option>
+              <option value="Sonstige">Sonstige</option>
+            </select>
+          </div>
+          
+          {/* Zielgruppe (B2B/B2C) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Zielgruppe
+            </label>
+            <select
+              value={businessType}
+              onChange={(e) => handleBusinessTypeChange(e.target.value as 'b2b' | 'b2c' | 'hybrid')}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="">Zielgruppe wählen...</option>
+              <option value="b2c">Privatkunden (B2C)</option>
+              <option value="b2b">Geschäftskunden (B2B)</option>
+              <option value="hybrid">Privat- & Geschäftskunden</option>
+            </select>
+          </div>
+          
+          {/* Arbeitsweise (Vor-Ort/Remote) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Arbeitsweise
+            </label>
+            <select
+              value={workMode}
+              onChange={(e) => handleWorkModeChange(e.target.value as 'vor-ort' | 'remote' | 'hybrid')}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="">Arbeitsweise wählen...</option>
+              <option value="vor-ort">Vor-Ort beim Kunden</option>
+              <option value="remote">Remote / Online</option>
+              <option value="hybrid">Vor-Ort & Remote</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Wie erbringst du deine Dienstleistungen?
+            </p>
+          </div>
+          
+          {/* Team / Mitarbeiter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4 text-gray-400" />
+              Team (Mitarbeiter)
+            </label>
+            <select
+              value={employees}
+              onChange={(e) => handleEmployeesChange(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="">Teamgröße wählen...</option>
+              <option value="1">Einzelunternehmer</option>
+              <option value="2-5">Kleines Team (2-5)</option>
+              <option value="6-10">Mittleres Team (6-10)</option>
+              <option value="11-25">Größeres Team (11-25)</option>
+              <option value="26-50">Unternehmen (26-50)</option>
+              <option value="51-100">Großes Unternehmen (51-100)</option>
+              <option value="100+">Konzern (100+)</option>
+            </select>
+          </div>
+          
+          {/* Max. Anfahrt */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Car className="w-4 h-4 text-gray-400" />
+              Max. Anfahrt (km)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={maxTravelDistance || ''}
+                onChange={(e) => handleMaxTravelDistanceChange(Number(e.target.value))}
+                min="0"
+                max="500"
+                step="5"
+                placeholder="z.B. 50"
+                className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">km</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Maximale Entfernung, die du zu Kunden fährst (0 = nur Remote)
+            </p>
           </div>
         </div>
       </div>

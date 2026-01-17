@@ -26,7 +26,8 @@ export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderP
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
     });
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   const _dynamicMenuItems = menuItems.map(item => ({

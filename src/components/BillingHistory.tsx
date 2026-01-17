@@ -41,7 +41,8 @@ export default function BillingHistory({ orderId, customerId, providerId }: Bill
       setUser(currentUser);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, []);
 
   useEffect(() => {

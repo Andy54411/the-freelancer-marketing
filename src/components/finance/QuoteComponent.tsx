@@ -65,7 +65,8 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       setQuotes(quotesData);
     });
 
-    return () => unsubscribe();
+    // Use setTimeout to defer unsubscribe and avoid Firestore internal assertion errors
+    return () => { setTimeout(() => unsubscribe(), 0); };
   }, [companyId]);
 
   const formatCurrency = (amount: number) => {
