@@ -1284,10 +1284,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
       await performAction('delete', uid);
     }
     setSelectedEmails([]);
-    // Refresh beides: Messages UND Mailboxes für Sidebar-Counts
-    await fetchMessages(currentMailbox);
-    await fetchMailboxes();
-  }, [selectedEmails, performAction, fetchMessages, fetchMailboxes, currentMailbox]);
+    // performAction aktualisiert bereits Messages und Mailboxes intern
+  }, [selectedEmails, performAction]);
 
   // Move email to Spam/Junk folder
   const handleMoveToSpam = useCallback(async (uid: number) => {
@@ -1305,10 +1303,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
       setSelectedEmail(null);
     }
     setSelectedEmails(prev => prev.filter(id => id !== uid));
-    // Refresh beides: Messages UND Mailboxes für Sidebar-Counts
-    await fetchMessages(currentMailbox);
-    await fetchMailboxes();
-  }, [mailboxes, performAction, selectedEmail, fetchMessages, fetchMailboxes, currentMailbox]);
+    // performAction aktualisiert bereits Messages und Mailboxes intern
+  }, [mailboxes, performAction, selectedEmail]);
 
   // Move email to specific folder
   const handleMoveToFolder = useCallback(async (uid: number, targetFolder: string) => {
@@ -1318,10 +1314,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
       setSelectedEmail(null);
     }
     setSelectedEmails(prev => prev.filter(id => id !== uid));
-    // Refresh beides: Messages UND Mailboxes für Sidebar-Counts
-    await fetchMessages(currentMailbox);
-    await fetchMailboxes();
-  }, [performAction, selectedEmail, fetchMessages, fetchMailboxes, currentMailbox]);
+    // performAction aktualisiert bereits Messages und Mailboxes intern
+  }, [performAction, selectedEmail]);
 
   const handleSelectEmail = useCallback((uid: number) => {
     setSelectedEmails(prev => 
@@ -1337,10 +1331,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     const isCurrentlyFlagged = message?.flags.includes('\\Flagged') || false;
     
     await performAction('flag', uid, undefined, !isCurrentlyFlagged);
-    // Refresh beides: Messages UND Mailboxes für Sidebar-Counts
-    await fetchMessages(currentMailbox);
-    await fetchMailboxes();
-  }, [messages, performAction, fetchMessages, fetchMailboxes, currentMailbox]);
+    // performAction aktualisiert bereits Messages und Mailboxes intern
+  }, [messages, performAction]);
 
   const handleMarkAsRead = useCallback(async (uid: number) => {
     await performAction('markRead', uid);
