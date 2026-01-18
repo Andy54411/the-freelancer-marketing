@@ -60,7 +60,8 @@ interface CardDAVConfig {
 }
 
 const DEFAULT_CONFIG: CardDAVConfig = {
-  baseUrl: 'https://mail.taskilo.de',
+  // Direkt zur SOGo Docker-IP (umgeht nginx Auth-Probleme)
+  baseUrl: 'http://172.22.1.248:20000',
   principalPath: '/SOGo/dav',
   addressBookPath: '/SOGo/dav/{email}/Contacts/personal',
 };

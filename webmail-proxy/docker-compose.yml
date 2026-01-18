@@ -43,6 +43,7 @@ services:
     networks:
       - webmail-network
       - taskilo-ki-network  # Verbindung zur Taskilo-KI für Foto-Klassifizierung
+      - mailcow-network     # Verbindung zu SOGo für CardDAV Kontakte
 
   redis:
     image: redis:7-alpine
@@ -124,3 +125,6 @@ networks:
   taskilo-ki-network:
     external: true
     name: taskilo-ki_taskilo-network
+  mailcow-network:
+    external: true
+    name: mailcowdockerized_mailcow-network
