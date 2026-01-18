@@ -1237,6 +1237,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
       const data = await response.json();
       if (data.success) {
         toast.success('Entwurf gespeichert');
+        // Sidebar aktualisieren für korrekten Entwürfe-Count
+        await fetchMailboxes();
         // Reload drafts if in multiple inbox view
         if (currentInboxType === 'multiple') {
           setDraftsLoading(true);
@@ -1267,7 +1269,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     if (windowId) {
       setComposeWindows(prev => prev.filter(w => w.id !== windowId));
     }
-  }, [email, password, currentInboxType]);
+  }, [email, password, currentInboxType, fetchMailboxes]);
 
   const handleDelete = useCallback(async (uid: number) => {
     await performAction('delete', uid);
