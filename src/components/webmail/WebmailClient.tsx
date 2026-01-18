@@ -1135,14 +1135,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     // Parse 'to' field - kann kommagetrennt sein oder einzelne Adresse
     const toAddresses = composeData.to.split(',').map(e => e.trim()).filter(Boolean);
     const toValue = toAddresses.length === 1 ? toAddresses[0] : toAddresses;
+    const ccAddresses = composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : [];
+    const bccAddresses = composeData.bcc ? composeData.bcc.split(',').map(e => e.trim()).filter(Boolean) : [];
     
     const apiData = {
       to: toValue,
       subject: composeData.subject,
       text: composeData.body,
       html: composeData.body, // TODO: Implement rich text
-      cc: composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
-      bcc: composeData.bcc ? composeData.bcc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+      cc: ccAddresses.length > 0 ? ccAddresses : undefined,
+      bcc: bccAddresses.length > 0 ? bccAddresses : undefined,
       attachments: composeData.attachments,
     };
     
@@ -1154,6 +1156,32 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
         setComposeWindows(prev => prev.filter(w => w.id !== windowId));
       }
       fetchMessages(currentMailbox);
+      
+      // Auto-create Kontakte für alle Empfänger (im Hintergrund)
+      const allRecipients = [...toAddresses, ...ccAddresses, ...bccAddresses]
+        .filter(Boolean)
+        .map(addr => {
+          // Parse "Name <email>" Format
+          const match = addr.match(/^(.+?)\s*<(.+?)>$/);
+          if (match) {
+            return { email: match[2].trim(), name: match[1].trim() };
+          }
+          return { email: addr.trim() };
+        });
+      
+      if (allRecipients.length > 0 && email && password) {
+        fetch('/api/webmail/contacts/auto-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            recipients: allRecipients,
+          }),
+        }).catch(() => {
+          // Fehler beim Auto-Create ignorieren - nicht kritisch
+        });
+      }
     } else {
       // Zeige Fehlermeldung an - prüfe auf Authentifizierungsfehler
       const errorMessage = result.error || 'Fehler beim Senden der E-Mail';

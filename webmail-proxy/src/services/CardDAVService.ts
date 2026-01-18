@@ -106,19 +106,33 @@ class CardDAVService {
       headers['Content-Length'] = Buffer.byteLength(body).toString();
     }
 
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body || undefined,
-    });
+    // AbortController für Timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 Sekunden Timeout
 
-    const responseBody = await response.text();
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body || undefined,
+        signal: controller.signal,
+      });
 
-    return {
-      status: response.status,
-      body: responseBody,
-      headers: response.headers,
-    };
+      clearTimeout(timeoutId);
+      const responseBody = await response.text();
+
+      return {
+        status: response.status,
+        body: responseBody,
+        headers: response.headers,
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('CardDAV request timeout after 30 seconds');
+      }
+      throw error;
+    }
   }
 
   // Contact zu vCard konvertieren

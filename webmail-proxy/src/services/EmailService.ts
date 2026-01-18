@@ -385,7 +385,10 @@ export class EmailService {
 
     // Copy sent email to Sent folder via IMAP APPEND
     try {
-      await this.appendToSentFolder(mailOptions);
+      await this.appendToSentFolder({
+        ...mailOptions,
+        attachments: validated.attachments,
+      });
     } catch (appendError) {
       // Log but don't fail - email was sent successfully
       console.error('Failed to append to Sent folder:', appendError);
@@ -408,6 +411,7 @@ export class EmailService {
     replyTo?: string;
     inReplyTo?: string;
     references?: string;
+    attachments?: Array<{ filename: string; content: string; contentType?: string }>;
   }): Promise<void> {
     const client = this.createImapClient();
 
@@ -419,6 +423,7 @@ export class EmailService {
       const ccLine = mailOptions.cc?.length ? `Cc: ${mailOptions.cc.join(', ')}\r\n` : '';
       const date = new Date().toUTCString();
       const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2)}@taskilo.de>`;
+      const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
       
       let rawMessage = `From: ${mailOptions.from}\r\n`;
       rawMessage += `To: ${toAddresses}\r\n`;
@@ -428,14 +433,55 @@ export class EmailService {
       rawMessage += `Message-ID: ${messageId}\r\n`;
       rawMessage += `MIME-Version: 1.0\r\n`;
       
-      if (mailOptions.html) {
-        rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+      // Check if we have attachments
+      if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+        // Multipart message with attachments
+        rawMessage += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n`;
         rawMessage += `\r\n`;
-        rawMessage += mailOptions.html;
+        rawMessage += `--${boundary}\r\n`;
+        
+        // Body part
+        if (mailOptions.html) {
+          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+          rawMessage += `Content-Transfer-Encoding: quoted-printable\r\n`;
+          rawMessage += `\r\n`;
+          rawMessage += mailOptions.html;
+        } else {
+          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+          rawMessage += `Content-Transfer-Encoding: quoted-printable\r\n`;
+          rawMessage += `\r\n`;
+          rawMessage += mailOptions.text || '';
+        }
+        rawMessage += `\r\n`;
+        
+        // Attachment parts
+        for (const att of mailOptions.attachments) {
+          rawMessage += `--${boundary}\r\n`;
+          rawMessage += `Content-Type: ${att.contentType || 'application/octet-stream'}; name="${att.filename}"\r\n`;
+          rawMessage += `Content-Disposition: attachment; filename="${att.filename}"\r\n`;
+          rawMessage += `Content-Transfer-Encoding: base64\r\n`;
+          rawMessage += `\r\n`;
+          
+          // Split base64 content into 76-character lines (RFC 2045)
+          const base64Content = att.content;
+          for (let i = 0; i < base64Content.length; i += 76) {
+            rawMessage += base64Content.substring(i, i + 76) + '\r\n';
+          }
+        }
+        
+        // End boundary
+        rawMessage += `--${boundary}--\r\n`;
       } else {
-        rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
-        rawMessage += `\r\n`;
-        rawMessage += mailOptions.text || '';
+        // Simple message without attachments
+        if (mailOptions.html) {
+          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+          rawMessage += `\r\n`;
+          rawMessage += mailOptions.html;
+        } else {
+          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+          rawMessage += `\r\n`;
+          rawMessage += mailOptions.text || '';
+        }
       }
 
       // Append to Sent folder with \Seen flag
