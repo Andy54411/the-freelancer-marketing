@@ -302,6 +302,9 @@ export function EmailCompose({
   const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
   const [showTaskiloPhotosPicker, setShowTaskiloPhotosPicker] = useState(false);
   
+  // UserId für Webmail (aus Cookie)
+  const userId = emailProvider === 'webmail' ? getWebmailCookie()?.email : undefined;
+  
   // Signatur State
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
   const [activeSignatureId, setActiveSignatureId] = useState<string | null>(null);
