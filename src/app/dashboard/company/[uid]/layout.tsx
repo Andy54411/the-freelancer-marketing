@@ -294,6 +294,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // Bestimme den aktuellen View für die Navigation
   const getCurrentView = useCallback(() => {
+    if (pathname?.includes('/projects')) return 'projects-module';
+    if (pathname?.includes('/project-tasks')) return 'project-tasks';
+    if (pathname?.includes('/scheduling')) return 'scheduling';
     if (pathname?.includes('/banking')) return 'banking';
     if (
       pathname?.includes('/finance/invoices') ||
@@ -480,7 +483,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Hinweis: email-integration ist eine normale scrollbare Einstellungsseite
   const isFullHeightPage =
     (pathname?.includes('/emails') && !pathname?.includes('/email-integration')) ||
-    pathname?.includes('/whatsapp');
+    pathname?.includes('/whatsapp') ||
+    pathname?.includes('/projects') ||
+    pathname?.includes('/project-tasks') ||
+    pathname?.includes('/scheduling');
 
   // Dynamische Header-Höhe in Pixeln für CSS
   const headerHeightPx = `${headerHeight}px`;

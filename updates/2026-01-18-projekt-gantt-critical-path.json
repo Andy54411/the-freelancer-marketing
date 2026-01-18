@@ -1,0 +1,38 @@
+{
+  "version": "2.14.0",
+  "date": "2026-01-18",
+  "title": "Projektmanagement mit Critical Path & Ressourcenplanung",
+  "type": "feature",
+  "description": "Neues Projektmanagement-Modul mit Gantt-Diagramm, Critical Path Method (CPM) und Ressourcenmanagement für professionelle Projektplanung.",
+  "features": [
+    {
+      "title": "Gantt-Diagramm",
+      "description": "Interaktives Gantt-Diagramm mit Drag & Drop, Zoom-Levels (Tag/Woche/Monat) und visueller Aufgabenplanung"
+    },
+    {
+      "title": "Critical Path Method (CPM)",
+      "description": "Automatische Berechnung des kritischen Pfads - identifiziert Aufgaben ohne Zeitpuffer, deren Verzögerung das Projektende beeinflussen"
+    },
+    {
+      "title": "Ressourcenmanagement",
+      "description": "Kapazitätsplanung mit Histogramm-Ansicht, Auslastungsübersicht und Überlastungswarnungen"
+    },
+    {
+      "title": "Abhängigkeiten",
+      "description": "Definieren Sie Vorgänger-Beziehungen zwischen Aufgaben mit verschiedenen Typen (Finish-to-Start, Start-to-Start, etc.)"
+    },
+    {
+      "title": "Disposition",
+      "description": "Team-Zuweisungsübersicht mit Wochenansicht und automatischer Erkennung von Kapazitätsengpässen"
+    }
+  ],
+  "technical": [
+    "Neue Komponente: GanttChart.tsx mit gantt-task-react Bibliothek",
+    "Neue Komponente: ResourceHistogram.tsx für Auslastungsvisualisierung",
+    "Neuer Service: ProjectService.ts mit CriticalPathCalculator und ResourceManager Klassen",
+    "Neue Routen: /projects, /projects/gantt, /projects/disposition",
+    "Integration in CompanySidebar mit eigenem Projekte-Bereich"
+  ],
+  "author": "Taskilo Team",
+  "breaking": false
+}

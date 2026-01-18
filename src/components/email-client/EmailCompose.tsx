@@ -775,17 +775,17 @@ export function EmailCompose({
 
   const handleSend = async () => {
     if (!email.to?.trim()) {
-      alert('Bitte geben Sie mindestens einen Empfänger ein.');
+      toast.error('Bitte geben Sie mindestens einen Empfänger ein.');
       return;
     }
 
     if (!email.subject?.trim()) {
-      alert('Bitte geben Sie einen Betreff ein.');
+      toast.error('Bitte geben Sie einen Betreff ein.');
       return;
     }
 
     if (!email.body?.trim()) {
-      alert('Bitte geben Sie eine Nachricht ein.');
+      toast.error('Bitte geben Sie eine Nachricht ein.');
       return;
     }
 
@@ -795,8 +795,8 @@ export function EmailCompose({
         ...email,
         attachments,
       });
-      onClose();
-      // Reset form
+      // NICHT onClose() rufen - das macht der Parent (WebmailClient) basierend auf Erfolg/Fehler
+      // Reset form nach erfolgreichem Senden
       setEmail({
         to: '',
         cc: '',
@@ -807,8 +807,11 @@ export function EmailCompose({
       });
       setAttachments([]);
     } catch (error) {
-      console.error('Fehler beim Senden der E-Mail:', error);
-      alert('Fehler beim Senden der E-Mail. Bitte versuchen Sie es erneut.');
+      // Fehler wird vom Parent behandelt (WebmailClient zeigt Toast)
+      // Hier nur loggen für Debugging
+      if (error instanceof Error && error.message) {
+        toast.error(`Fehler beim Senden: ${error.message}`);
+      }
     } finally {
       setIsSending(false);
     }

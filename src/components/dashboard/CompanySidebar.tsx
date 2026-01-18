@@ -32,12 +32,14 @@ import {
   CheckCircle as FiCheckCircle,
   Lock as FiLock,
   Sparkles as FiSparkles,
+  GanttChart as FiGanttChart,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
 import { CurrentPlanCard } from './CurrentPlanCard';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { type PremiumModuleId } from '@/lib/moduleConfig';
+import { FiCheckSquare } from 'react-icons/fi';
 
 interface NavigationItem {
   label: string;
@@ -383,6 +385,42 @@ const navigationItems: NavigationItem[] = [
       { label: 'Stellenanzeigen', value: 'recruiting-jobs', href: 'recruiting' },
       { label: 'Neue Anzeige', value: 'recruiting-create', href: 'recruiting/create' },
       { label: 'Bewerbungen', value: 'recruiting-applications', href: 'recruiting/applications' },
+    ],
+  },
+  {
+    label: 'Projekte',
+    icon: FiGanttChart,
+    value: 'projects',
+    href: 'projects',
+    premiumModule: 'workspace',
+    subItems: [
+      { label: 'Übersicht', value: 'projects-overview', href: 'projects' },
+      { label: 'Status-Ansicht', value: 'projects-status', href: 'projects/status' },
+      { label: 'Gantt', value: 'projects-gantt', href: 'projects/gantt' },
+      { label: 'Disposition', value: 'projects-disposition', href: 'projects/disposition' },
+    ],
+  },
+  {
+    label: 'Projekt-Aufgaben',
+    icon: FiCheckSquare,
+    value: 'project-tasks',
+    href: 'project-tasks',
+    premiumModule: 'workspace',
+    subItems: [
+      { label: 'Alle Aufgaben', value: 'project-tasks-all', href: 'project-tasks' },
+      { label: 'Meine Aufgaben', value: 'project-tasks-mine', href: 'project-tasks/mine' },
+    ],
+  },
+  {
+    label: 'Einsatzplanung',
+    icon: FiCalendar,
+    value: 'scheduling',
+    href: 'scheduling',
+    premiumModule: 'workspace',
+    subItems: [
+      { label: 'Wochenansicht', value: 'scheduling-week', href: 'scheduling' },
+      { label: 'Monatsansicht', value: 'scheduling-month', href: 'scheduling/month' },
+      { label: 'Ressourcen', value: 'scheduling-resources', href: 'scheduling/resources' },
     ],
   },
   {

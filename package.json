@@ -157,6 +157,7 @@
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
     "framer-motion": "^12.23.12",
+    "gantt-task-react": "^0.3.9",
     "geofire-common": "^6.0.0",
     "google-ads-api": "^21.0.0",
     "google-auth-library": "^10.4.0",

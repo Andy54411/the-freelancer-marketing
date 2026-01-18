@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { auth, db } from '@/firebase/clients';
 import { doc, getDoc, collection, getDocs, query, limit } from 'firebase/firestore';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -348,17 +349,17 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
     >
       {/* Header */}
       <div 
-        className="flex items-center justify-between px-4 py-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-t-2xl cursor-pointer"
+        className="flex items-center justify-between px-5 py-4 bg-linear-to-r from-[#14ad9f] via-teal-500 to-teal-600 rounded-t-2xl cursor-pointer shadow-sm"
         onClick={() => setIsMinimized(!isMinimized)}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Taskilo Hilfe</h3>
+            <h3 className="text-base font-bold text-white tracking-tight">Taskilo Hilfe</h3>
             {!isMinimized && (
-              <p className="text-xs text-white/80">Powered by Taskilo-KI</p>
+              <p className="text-xs text-white/70 font-medium">Powered by Taskilo-KI</p>
             )}
           </div>
         </div>
@@ -388,17 +389,17 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
       {!isMinimized && (
         <>
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 h-96">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 h-96 bg-linear-to-b from-white to-gray-50/50">
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in-0 slide-in-from-bottom-2 duration-300`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+                  className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-sm ${
                     message.role === 'user'
-                      ? 'bg-[#14ad9f] text-white rounded-br-sm'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                      ? 'bg-linear-to-br from-[#14ad9f] to-teal-600 text-white rounded-br-md'
+                      : 'bg-white border border-gray-100 text-gray-800 rounded-bl-md'
                   }`}
                 >
                   {/* Source Indicator für Assistant-Nachrichten */}
@@ -431,7 +432,40 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
                     </div>
                   )}
                   
-                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                  {message.role === 'user' ? (
+                    <div className="text-[15px] leading-relaxed text-white">
+                      {message.content}
+                    </div>
+                  ) : (
+                  <div className="text-[15px] leading-relaxed prose prose-sm max-w-none prose-p:my-1.5 prose-ul:my-2 prose-li:my-0.5 prose-headings:font-bold prose-headings:text-gray-900">
+                    <ReactMarkdown
+                      components={{
+                        a: ({ href, children }) => (
+                          <a 
+                            href={href} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-teal-600 font-medium underline decoration-teal-400/50 underline-offset-2 hover:text-teal-700 hover:decoration-teal-600 transition-colors"
+                          >
+                            {children}
+                          </a>
+                        ),
+                        p: ({ children }) => <p className="mb-2.5 text-gray-700 leading-relaxed">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-gray-700 leading-relaxed">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                        em: ({ children }) => <em className="text-gray-500 not-italic text-sm">{children}</em>,
+                        hr: () => <hr className="my-3 border-gray-200" />,
+                        h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-bold text-gray-800 mb-1.5">{children}</h3>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                  )}
                   
                   {/* Links */}
                   {message.links && message.links.length > 0 && (
@@ -484,11 +518,14 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
             
             {/* Loading Indicator */}
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#14ad9f]" />
-                    <span className="text-sm text-gray-500">Denke nach...</span>
+              <div className="flex justify-start animate-in fade-in-0 slide-in-from-bottom-2">
+                <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md px-5 py-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Loader2 className="w-5 h-5 animate-spin text-[#14ad9f]" />
+                      <div className="absolute inset-0 w-5 h-5 bg-teal-400/20 rounded-full animate-ping" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-600">Taskilo-KI denkt nach...</span>
                   </div>
                 </div>
               </div>
@@ -499,14 +536,15 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
 
           {/* Suggestions */}
           {suggestions.length > 0 && messages.length < 3 && (
-            <div className="px-4 pb-2">
-              <div className="flex flex-wrap gap-1.5">
+            <div className="px-5 pb-3">
+              <p className="text-xs text-gray-400 mb-2 font-medium">Vorschläge:</p>
+              <div className="flex flex-wrap gap-2">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => sendMessage(suggestion)}
                     disabled={isLoading}
-                    className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors disabled:opacity-50"
+                    className="text-xs px-3 py-1.5 bg-linear-to-r from-gray-50 to-gray-100 hover:from-teal-50 hover:to-teal-100 text-gray-700 hover:text-teal-700 rounded-full transition-all duration-200 disabled:opacity-50 border border-gray-200 hover:border-teal-200 font-medium shadow-sm"
                   >
                     {suggestion}
                   </button>
@@ -516,8 +554,8 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
           )}
 
           {/* Input */}
-          <div className="p-3 border-t border-gray-100">
-            <div className="flex items-center gap-2">
+          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="flex items-center gap-3">
               <input
                 ref={inputRef}
                 type="text"
@@ -526,14 +564,14 @@ export function HelpChatbot({ companyId }: HelpChatbotProps) {
                 onKeyDown={handleKeyDown}
                 placeholder="Stellen Sie eine Frage..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] disabled:opacity-50"
+                className="flex-1 px-4 py-3 text-[15px] bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/30 focus:border-[#14ad9f] disabled:opacity-50 placeholder:text-gray-400 shadow-sm transition-all"
               />
               <button
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || isLoading}
-                className="p-2.5 bg-[#14ad9f] text-white rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-3 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </button>
             </div>
           </div>

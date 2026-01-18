@@ -137,7 +137,7 @@ setShowDropdown(value.length > 0);
       <div className="min-h-screen bg-white">
         
         {/* Hero Section - Unverändert */}
-        <section className="bg-gradient-to-br from-teal-50 via-white to-teal-50 pt-32 pb-16">
+        <section className="bg-linear-to-br from-teal-50 via-white to-teal-50 pt-32 pb-16">
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Left Content */}
@@ -319,7 +319,7 @@ setShowDropdown(value.length > 0);
                 <Link
                   key={index}
                   href={`/services/${normalizeToSlug(category.title)}`}
-                  className="group flex-shrink-0"
+                  className="group shrink-0"
                 >
                   <div 
                     className="w-48 h-60 rounded-2xl border border-gray-200/50 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-2 relative flex flex-col justify-between p-4"
@@ -660,7 +660,7 @@ setShowDropdown(value.length > 0);
                   <Link
                     key={index}
                     href={`/services/${normalizeToSlug(service.category)}/${normalizeToSlug(service.name)}`}
-                    className="flex-shrink-0 group"
+                    className="shrink-0 group"
                   >
                     <div className="w-56 h-44 bg-gray-50 rounded-2xl border border-gray-100 p-6 flex flex-col items-center justify-center gap-4 transition-all hover:shadow-lg hover:border-gray-200">
                       <div className="relative w-20 h-20">

@@ -140,9 +140,9 @@ function PricingCards({
             key={plan.id}
             className={`relative flex flex-col rounded-2xl transition-all duration-300 hover:-translate-y-2 ${
               isEnterprise 
-                ? 'bg-gradient-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl' 
+                ? 'bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl' 
                 : isPopular 
-                  ? 'bg-gradient-to-br from-teal-50 to-[#14ad9f]/10 border-2 border-[#14ad9f] shadow-xl' 
+                  ? 'bg-linear-to-br from-teal-50 to-[#14ad9f]/10 border-2 border-[#14ad9f] shadow-xl' 
                   : 'bg-white border border-gray-200 shadow-lg hover:shadow-xl'
             }`}
           >
@@ -258,7 +258,7 @@ function PricingCards({
               <ul className="space-y-2 sm:space-y-3">
                 {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-1.5 sm:gap-2">
-                    <Check className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0 ${
+                    <Check className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 shrink-0 ${
                       isEnterprise ? 'text-amber-300' : 'text-[#14ad9f]'
                     }`} />
                     <span className={`text-xs sm:text-sm ${
@@ -382,12 +382,12 @@ function ModuleCard({ module, isActive, isTrialing, onSubscribe, loading }: Modu
       ) : (
         <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">{module.name}</h3>
       )}
-      <p className="text-gray-600 text-sm mb-3 sm:mb-4 min-h-[40px] sm:min-h-[48px]">{module.description}</p>
+      <p className="text-gray-600 text-sm mb-3 sm:mb-4 min-h-10 sm:min-h-12">{module.description}</p>
 
-      <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
+      <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 grow">
         {module.features.slice(0, 4).map((feature, idx) => (
           <li key={idx} className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#14ad9f] mt-0.5 shrink-0" />
             <span>{feature}</span>
           </li>
         ))}
@@ -585,10 +585,10 @@ function ComparisonTable({
             <button
               key={plan.id}
               onClick={() => setSelectedPlanIndex(idx)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
                 selectedPlanIndex === idx
                   ? plan.enterprise
-                    ? 'bg-gradient-to-r from-[#14ad9f] to-teal-700 text-white shadow-lg'
+                    ? 'bg-linear-to-r from-[#14ad9f] to-teal-700 text-white shadow-lg'
                     : 'bg-[#14ad9f] text-white shadow-lg'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -604,7 +604,7 @@ function ComparisonTable({
         {/* Selected Plan Card */}
         <div className={`rounded-2xl border-2 overflow-hidden ${
           plans[selectedPlanIndex].enterprise 
-            ? 'border-[#14ad9f] bg-gradient-to-br from-[#14ad9f] to-teal-700' 
+            ? 'border-[#14ad9f] bg-linear-to-br from-[#14ad9f] to-teal-700' 
             : plans[selectedPlanIndex].highlight
               ? 'border-[#14ad9f] bg-white'
               : 'border-gray-200 bg-white'
@@ -711,7 +711,7 @@ function ComparisonTable({
               key={plan.id}
               className={`p-4 text-center ${
                 plan.enterprise 
-                  ? 'bg-gradient-to-br from-[#14ad9f] to-teal-700 text-white' 
+                  ? 'bg-linear-to-br from-[#14ad9f] to-teal-700 text-white' 
                   : plan.highlight 
                     ? 'bg-teal-50' 
                     : 'bg-white'
@@ -1120,12 +1120,12 @@ export default function BusinessPricingPage() {
       <HeroHeader />
       
       {/* Hero Section - Taskilo Style mit Gradient Background */}
-      <section className="relative bg-gradient-to-br from-[#14ad9f] via-teal-600 to-teal-800 pt-12 sm:pt-16 pb-20 sm:pb-24 px-4 sm:px-6 overflow-hidden">
+      <section className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 pt-12 sm:pt-16 pb-20 sm:pb-24 px-4 sm:px-6 overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-white/5 to-transparent rounded-full" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-linear-to-r from-white/5 to-transparent rounded-full" />
         </div>
         
         <div className="relative max-w-5xl mx-auto text-center">
@@ -1247,7 +1247,7 @@ export default function BusinessPricingPage() {
         )}
 
         {/* Enterprise CTA Section - Sanftes Teal */}
-        <section className="mb-10 sm:mb-16 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-50 via-teal-100 to-[#14ad9f]/20">
+        <section className="mb-10 sm:mb-16 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-linear-to-br from-teal-50 via-teal-100 to-[#14ad9f]/20">
           {/* Decorative curved line */}
           <svg className="absolute left-0 top-0 h-full w-1/2 opacity-40 hidden sm:block" viewBox="0 0 400 600" fill="none">
             <path d="M-100 600 Q 200 400, 100 200 T 300 -100" stroke="url(#gradientEnterprise)" strokeWidth="2" fill="none"/>
@@ -1337,7 +1337,7 @@ export default function BusinessPricingPage() {
           {/* Interactive Dashboard Preview - Detailgetreue Nachbildung */}
           <div className="relative px-6 sm:px-10 lg:px-16 pb-6 sm:pb-10 lg:pb-16 -mt-4 hidden md:block">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
-              <div className="absolute inset-0 bg-gradient-to-t from-teal-50/80 via-transparent to-transparent z-10 pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-t from-teal-50/80 via-transparent to-transparent z-10 pointer-events-none" />
               
               {/* Interactive Dashboard Mockup */}
               <div className="p-1">
@@ -1532,7 +1532,7 @@ export default function BusinessPricingPage() {
                           {/* Profile Dropdown */}
                           <div className="flex items-center gap-2 pl-3 border-l border-gray-200 cursor-pointer hover:bg-gray-50 rounded-lg p-1.5 -m-1.5">
                             {/* Avatar */}
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#14ad9f] to-teal-600 flex items-center justify-center overflow-hidden">
+                            <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#14ad9f] to-teal-600 flex items-center justify-center overflow-hidden">
                               <span className="text-white font-semibold text-sm">MF</span>
                             </div>
                             <svg className="w-4 h-4 text-gray-400 hidden md:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">

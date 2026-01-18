@@ -250,9 +250,10 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
       }
       return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send email');
+      const errorMessage = err instanceof Error ? err.message : 'Fehler beim Senden der E-Mail';
+      setError(errorMessage);
       setLoading(false);
-      return { success: false };
+      return { success: false, error: errorMessage };
     }
   }, [email, password]);
 

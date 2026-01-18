@@ -1148,13 +1148,31 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     
     const result = await sendEmail(apiData);
     if (result.success) {
+      toast.success('E-Mail wurde erfolgreich gesendet');
       // Compose-Fenster schließen
       if (windowId) {
         setComposeWindows(prev => prev.filter(w => w.id !== windowId));
       }
       fetchMessages(currentMailbox);
+    } else {
+      // Zeige Fehlermeldung an - prüfe auf Authentifizierungsfehler
+      const errorMessage = result.error || 'Fehler beim Senden der E-Mail';
+      if (errorMessage.toLowerCase().includes('authentication') || 
+          errorMessage.toLowerCase().includes('auth') ||
+          errorMessage.toLowerCase().includes('sasl') ||
+          errorMessage.toLowerCase().includes('login')) {
+        toast.error('Anmeldefehler: Bitte melden Sie sich erneut an. Das Passwort ist möglicherweise nicht mehr gültig.', {
+          duration: 10000,
+          action: {
+            label: 'Abmelden',
+            onClick: () => onLogout?.(),
+          },
+        });
+      } else {
+        toast.error(`Fehler beim Senden: ${errorMessage}`, { duration: 8000 });
+      }
     }
-  }, [sendEmail, fetchMessages, currentMailbox]);
+  }, [sendEmail, fetchMessages, currentMailbox, onLogout]);
 
   // Save draft functionality
   const handleSaveDraft = useCallback(async (composeData: EmailComposeType, windowId?: string) => {

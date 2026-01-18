@@ -1,6 +1,54 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Gantt Task React Styles */
+.gantt-container {
+  font-family: inherit;
+}
+
+._2dZTy {
+  fill: #14ad9f !important;
+}
+
+._2dZTy._2cBuk {
+  fill: #0d8a7f !important;
+}
+
+._3zRJQ {
+  stroke: #e5e7eb !important;
+}
+
+._nI1Xw {
+  fill: #f9fafb !important;
+}
+
+._1nBOt,
+._2q1Kt,
+._3zRJQ,
+.gantt-calendar-bottom,
+.gantt-calendar-top {
+  font-family: inherit !important;
+  font-size: 0.75rem !important;
+}
+
+._RuwuK {
+  fill: transparent;
+}
+
+._3_ygE {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+._2B2zv {
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+._3lLk3 {
+  stroke: #d1d5db !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
