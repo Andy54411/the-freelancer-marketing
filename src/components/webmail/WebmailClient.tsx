@@ -1063,10 +1063,12 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
       } 
     : {};
 
+  // Initial load - nur einmal beim Mounten ausführen
   useEffect(() => {
     fetchMailboxes();
     fetchMessages('INBOX');
-  }, [fetchMailboxes, fetchMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Öffne Compose-Dialog wenn initialComposeTo übergeben wurde
   useEffect(() => {
