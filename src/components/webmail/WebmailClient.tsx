@@ -1097,14 +1097,12 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     setSelectedEmail(msg);
     
     // Automatisch als gelesen markieren, wenn ungelesen
+    // performAction aktualisiert jetzt automatisch Messages und Mailboxes
     const isUnread = !msg.flags.includes('\\Seen');
     if (isUnread) {
-      performAction('markRead', msg.uid).then(() => {
-        // Aktualisiere die Nachrichten-Liste um das UI zu aktualisieren
-        fetchMessages(currentMailbox);
-      });
+      performAction('markRead', msg.uid);
     }
-  }, [fetchMessage, currentMailbox, performAction, fetchMessages]);
+  }, [fetchMessage, currentMailbox, performAction]);
 
   const handleCloseEmail = useCallback(() => {
     setSelectedEmail(null);

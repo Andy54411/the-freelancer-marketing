@@ -281,13 +281,21 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
       if (result.success) {
         // Refresh messages after action
         await fetchMessages(state.currentMailbox, state.page);
+        // Also refresh mailboxes to update unread counts in sidebar
+        await fetchMailboxes();
+        // Dispatch custom event for other components to react
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('webmail-action', { 
+            detail: { action, uid, targetMailbox } 
+          }));
+        }
       }
       return result;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
       return { success: false };
     }
-  }, [email, password, state.currentMailbox, state.page, fetchMessages]);
+  }, [email, password, state.currentMailbox, state.page, fetchMessages, fetchMailboxes]);
 
   const clearCurrentMessage = useCallback(() => {
     setState(prev => ({ ...prev, currentMessage: null, messageError: null }));
