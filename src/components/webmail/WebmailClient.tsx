@@ -2246,6 +2246,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
           onSaveDraft={(emailData) => handleSaveDraft(emailData, window.id)}
           replyTo={window.replyTo ? convertWebmailToEmailClientMessage(window.replyTo) : undefined}
           initialTo={window.initialTo}
+          emailProvider="webmail"
         />
       ))}
 
