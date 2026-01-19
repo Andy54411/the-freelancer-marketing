@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const HETZNER_WEBMAIL_API = process.env.HETZNER_WEBMAIL_API || 'https://mail.taskilo.de/webmail-api';
+const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY || '';
 
 /**
  * POST /api/webmail/chat/keys/batch
@@ -12,7 +13,10 @@ export async function POST(request: NextRequest) {
     
     const response = await fetch(`${HETZNER_WEBMAIL_API}/api/chat/keys/batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-API-Key': WEBMAIL_API_KEY,
+      },
       body: JSON.stringify(body),
     });
 
