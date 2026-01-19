@@ -261,21 +261,21 @@ export function MailHeader({
   if (isPhotosStyle) {
     return (
       <header className={cn(
-        "h-16 flex items-center justify-between px-4 shrink-0",
+        "h-14 md:h-16 flex items-center justify-between px-2 sm:px-4 shrink-0",
         isDark ? "bg-[#202124]" : "bg-white"
       )}>
         {/* Links: Hamburger + Logo */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Hamburger Menu */}
           <button
             onClick={onMenuToggle}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-1.5 sm:p-2 rounded-full transition-colors",
               isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
             )}
             aria-label="Hauptmenü"
           >
-            <Menu className={cn("w-6 h-6", isDark ? "text-gray-300" : "text-gray-700")} />
+            <Menu className={cn("w-5 h-5 sm:w-6 sm:h-6", isDark ? "text-gray-300" : "text-gray-700")} />
           </button>
           
           <Link href={appHomeUrl || '/webmail/photos'} className="flex items-center">
@@ -284,18 +284,18 @@ export function MailHeader({
               alt="Taskilo" 
               width={120} 
               height={34} 
-              className="h-8 w-auto"
-              style={{ maxWidth: '120px', maxHeight: '32px' }}
+              className="h-5 sm:h-6 md:h-8 w-auto"
+              style={{ maxWidth: '100px', maxHeight: '32px' }}
               priority
             />
           </Link>
         </div>
         
         {/* Mitte: Breites Suchfeld */}
-        <div className="flex-1 max-w-2xl mx-8">
+        <div className="flex-1 max-w-2xl mx-2 sm:mx-4 md:mx-8">
           <div className="relative">
             <Search className={cn(
-              "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5",
+              "absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5",
               isDark ? "text-gray-500" : "text-gray-400"
             )} />
             <input
@@ -307,7 +307,7 @@ export function MailHeader({
                 onPhotosSearch?.(e.target.value);
               }}
               className={cn(
-                "w-full pl-12 pr-4 py-3 rounded-lg text-base border-0 focus:outline-none focus:ring-2 focus:ring-teal-500",
+                "w-full pl-9 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base border-0 focus:outline-none focus:ring-2 focus:ring-teal-500",
                 isDark 
                   ? "bg-[#303134] text-gray-200 placeholder-gray-500" 
                   : "bg-gray-100 text-gray-900 placeholder-gray-500"
@@ -317,38 +317,38 @@ export function MailHeader({
         </div>
         
         {/* Rechts: Icons */}
-        <div className="flex items-center gap-1 shrink-0">
-          {/* Hochladen Button */}
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+          {/* Hochladen Button - immer sichtbar */}
           <button
             onClick={onUploadClick}
             className={cn(
-              "p-2.5 rounded-full transition-colors",
+              "p-1.5 sm:p-2 md:p-2.5 rounded-full transition-colors",
               isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
             )}
             title="Hochladen"
           >
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
             </svg>
           </button>
           
-          {/* Hilfe */}
+          {/* Hilfe - Tablet und Desktop */}
           <button className={cn(
-            "p-2.5 rounded-full transition-colors",
+            "p-1.5 sm:p-2 md:p-2.5 rounded-full transition-colors hidden sm:flex",
             isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
           )}>
-            <HelpCircle className="w-5 h-5" />
+            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           
-          {/* Einstellungen */}
+          {/* Einstellungen - Tablet und Desktop */}
           <button 
             onClick={onSettingsClick}
             className={cn(
-              "p-2.5 rounded-full transition-colors",
+              "p-1.5 sm:p-2 md:p-2.5 rounded-full transition-colors hidden sm:flex",
               isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600"
             )}
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           
           {/* Apps Grid */}
@@ -357,7 +357,7 @@ export function MailHeader({
           {/* Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="ml-2 w-9 h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
+              <button className="ml-1 sm:ml-2 w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
                 {profileImage ? (
                   <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
@@ -389,16 +389,16 @@ export function MailHeader({
   if (isMeetStyle) {
     return (
       <header className={cn(
-        "h-16 flex items-center justify-between px-4 md:px-6 border-b shrink-0",
+        "h-14 md:h-16 flex items-center justify-between px-2 sm:px-4 md:px-6 border-b shrink-0",
         isDark ? "border-gray-700 bg-[#202124]" : "border-gray-200 bg-white"
       )}>
         {/* Links: Hamburger + Logo */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
           {/* Hamburger Menu */}
           <button
             onClick={onMenuToggle}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-1.5 sm:p-2 rounded-full transition-colors",
               isDark ? "hover:bg-white/20" : "hover:bg-gray-100"
             )}
             aria-label="Hauptmenue"
@@ -407,21 +407,21 @@ export function MailHeader({
           </button>
           
           <a href={getAppUrl(appHomeUrl || '/webmail')} className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className={cn("text-xl font-normal hidden md:inline", isDark ? "text-white" : "text-gray-700")}>
+            <span className={cn("text-lg sm:text-xl font-normal hidden sm:inline", isDark ? "text-white" : "text-gray-700")}>
               Taskilo <span className={isDark ? "text-gray-400" : "text-gray-500"}>{appName || 'Meet'}</span>
             </span>
           </a>
         </div>
         
         {/* Rechts: Datum, Icons, Avatar */}
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* Datum */}
-          <span className={cn("text-sm hidden md:block", isDark ? "text-gray-400" : "text-gray-600")}>
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+          {/* Datum - nur Desktop */}
+          <span className={cn("text-xs sm:text-sm hidden lg:block", isDark ? "text-gray-400" : "text-gray-600")}>
             {new Date().toLocaleDateString('de-DE', { 
               hour: '2-digit',
               minute: '2-digit',
@@ -431,20 +431,20 @@ export function MailHeader({
             })}
           </span>
           
-          {/* Hilfe */}
-          <button className={cn("p-2 rounded-full", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
+          {/* Hilfe - Tablet und Desktop */}
+          <button className={cn("p-1.5 sm:p-2 rounded-full hidden sm:flex", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
             <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           
           {/* Feedback - nur Desktop */}
-          <button className={cn("p-2 rounded-full hidden md:flex", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
+          <button className={cn("p-1.5 sm:p-2 rounded-full hidden lg:flex", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}>
             <Mail className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           
-          {/* Einstellungen */}
+          {/* Einstellungen - Tablet und Desktop */}
           <button 
             onClick={onSettingsClick}
-            className={cn("p-2 rounded-full", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}
+            className={cn("p-1.5 sm:p-2 rounded-full hidden sm:flex", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-600")}
           >
             <Settings className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -455,7 +455,7 @@ export function MailHeader({
           {/* Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
+              <button className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
                 {profileImage ? (
                   <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
@@ -489,7 +489,7 @@ export function MailHeader({
       isDark ? "bg-[#202124]" : "bg-[#f6f8fc]"
     )}>
       {/* Left Section - Menu Button & Logo */}
-      <div className="flex items-center gap-2 md:gap-4 md:min-w-[200px]">
+      <div className="flex items-center gap-1 md:gap-4 shrink-0">
         {/* Hamburger Menu - No circle/ring like Gmail */}
         <button
           onClick={onMenuToggle}
@@ -502,20 +502,20 @@ export function MailHeader({
           <Menu className={cn("h-5 w-5 md:h-6 md:w-6", isDark ? "text-white" : "text-[#5f6368]")} />
         </button>
 
-        {/* Logo - Taskilo Logo - smaller on mobile */}
+        {/* Logo - Taskilo Logo - smaller on mobile, hidden text on small screens */}
         <a href={getAppUrl(appHomeUrl || '/webmail')} className="flex items-center gap-2">
           <Image
             src={isDark ? "/images/taskilo-logo-white.png" : "/images/taskilo-logo-transparent.png"}
             alt="Taskilo"
             width={120}
             height={34}
-            className="h-6 md:h-8 w-auto"
-            style={{ maxWidth: '120px', maxHeight: '32px' }}
+            className="h-5 sm:h-6 md:h-8 w-auto"
+            style={{ maxWidth: '100px', maxHeight: '32px' }}
             priority
           />
           {appName && (
             <span className={cn(
-              "text-lg md:text-xl font-normal hidden sm:inline",
+              "text-lg md:text-xl font-normal hidden md:inline",
               isDark ? "text-white" : "text-gray-600"
             )}>
               {appName}
@@ -530,10 +530,10 @@ export function MailHeader({
           {toolbarContent}
         </div>
       ) : !hideSearch ? (
-        <div className="flex-1 max-w-[720px] mx-auto relative" ref={searchContainerRef}>
+        <div className="flex-1 max-w-[720px] mx-2 md:mx-auto relative" ref={searchContainerRef}>
           <div
             className={cn(
-              'flex items-center h-10 md:h-12 rounded-full transition-all duration-200',
+              'flex items-center h-9 md:h-12 rounded-full transition-all duration-200',
               isSearchFocused || showAdvancedSearch
                 ? isDark ? 'bg-[#303134] shadow-lg' : 'bg-white shadow-lg' 
                 : isDark ? 'bg-[#303134] hover:shadow-md' : 'bg-[#eaf1fb] hover:shadow-md'
@@ -542,33 +542,33 @@ export function MailHeader({
             {/* Search Icon */}
             <button
               onClick={handleSearch}
-              className="pl-4 pr-3 h-full flex items-center"
+              className="pl-3 md:pl-4 pr-2 md:pr-3 h-full flex items-center"
               aria-label={searchPlaceholder}
             >
-              <Search className={cn("h-5 w-5", isDark ? "text-white" : "text-[#5f6368]")} />
+              <Search className={cn("h-4 w-4 md:h-5 md:w-5", isDark ? "text-white" : "text-[#5f6368]")} />
             </button>
 
             {/* Search Input */}
             <input
               type="text"
-              placeholder={searchPlaceholder}
+              placeholder={isSearchFocused ? searchPlaceholder : ''}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 100)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className={cn(
-                "flex-1 h-full bg-transparent border-0 outline-none text-[16px]",
+                "flex-1 h-full bg-transparent border-0 outline-none text-sm md:text-[16px] min-w-0",
                 isDark ? "text-white placeholder:text-white" : "text-[#202124] placeholder:text-[#5f6368]"
               )}
             />
 
-            {/* Advanced Search Button - nur wenn aktiviert */}
+            {/* Advanced Search Button - versteckt auf sehr kleinen Bildschirmen */}
             {showAdvancedSearchButton && (
               <button
                 onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
                 className={cn(
-                  'px-3 h-full flex items-center rounded-r-full transition-colors',
+                  'px-2 md:px-3 h-full hidden sm:flex items-center rounded-r-full transition-colors',
                   isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200/40',
                   showAdvancedSearch && (isDark ? 'bg-white/20' : 'bg-gray-200/60')
                 )}
@@ -661,41 +661,43 @@ export function MailHeader({
       )}
 
       {/* Right Section - Actions & Profile - pushed to end */}
-      <div className="flex items-center gap-1 md:gap-1 ml-auto pr-1 md:pr-2 shrink-0">
-        {/* App-spezifische rechte Inhalte (z.B. Calendar/Tasks Switch) */}
-        {rightContent}
+      <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 ml-auto pr-1 md:pr-2 shrink-0">
+        {/* App-spezifische rechte Inhalte (z.B. Calendar/Tasks Switch) - auf Mobile versteckt */}
+        <div className="hidden sm:contents">
+          {rightContent}
+        </div>
 
-        {/* Theme Toggle Button - Im Dashboard ausgeblendet */}
+        {/* Theme Toggle Button - Nur Desktop */}
         {!isDashboard && (
           <button
             onClick={toggleTheme}
             className={cn(
-              "hidden md:flex p-3 rounded-full transition-colors",
+              "hidden lg:flex p-2 md:p-3 rounded-full transition-colors",
               isDark ? "hover:bg-white/20" : "hover:bg-gray-100"
             )}
             aria-label={isDark ? "Zum Light Mode wechseln" : "Zum Dark Mode wechseln"}
             title={isDark ? "Light Mode" : "Dark Mode"}
           >
             {isDark ? (
-              <Sun className="h-6 w-6 text-white" />
+              <Sun className="h-5 w-5 md:h-6 md:w-6 text-white" />
             ) : (
-              <Moon className="h-6 w-6 text-[#5f6368]" />
+              <Moon className="h-5 w-5 md:h-6 md:w-6 text-[#5f6368]" />
             )}
           </button>
         )}
 
-        {/* Help Button - Im Dashboard ausgeblendet */}
+        {/* Help Button - Tablet und Desktop */}
         {!isDashboard && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "hidden md:flex p-3 rounded-full transition-colors",
+                  "hidden sm:flex p-2 md:p-3 rounded-full transition-colors",
                   isDark ? "hover:bg-white/20" : "hover:bg-gray-100"
                 )}
                 aria-label="Support"
               >
-                <HelpCircle className={cn("h-6 w-6", isDark ? "text-white" : "text-[#5f6368]")} />
+                <HelpCircle className={cn("h-5 w-5 md:h-6 md:w-6", isDark ? "text-white" : "text-[#5f6368]")} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -712,82 +714,79 @@ export function MailHeader({
           </DropdownMenu>
         )}
 
-        {/* Settings Button - Im Dashboard ausgeblendet */}
+        {/* Settings Button - Tablet und Desktop */}
         {!isDashboard && (
           <button
             onClick={onSettingsClick}
             className={cn(
-              "hidden md:flex p-3 rounded-full transition-colors",
+              "hidden sm:flex p-2 md:p-3 rounded-full transition-colors",
               isDark ? "hover:bg-white/20" : "hover:bg-gray-200/60"
             )}
             aria-label="Einstellungen"
           >
-            <Settings className={cn("h-6 w-6", isDark ? "text-white" : "text-[#5f6368]")} />
+            <Settings className={cn("h-5 w-5 md:h-6 md:w-6", isDark ? "text-white" : "text-[#5f6368]")} />
           </button>
         )}
 
-        {/* Gemini/AI Button - Im Dashboard ausgeblendet */}
+        {/* Gemini/AI Button - Nur Desktop */}
         {!isDashboard && (
           <button
             className={cn(
-              "hidden md:flex p-3 rounded-full transition-colors",
+              "hidden lg:flex p-2 md:p-3 rounded-full transition-colors",
               isDark ? "hover:bg-white/20" : "hover:bg-gray-200/60"
             )}
             aria-label="AI Assistent"
           >
-            <Sparkles className={cn("h-6 w-6", isDark ? "text-white" : "text-[#5f6368]")} />
+            <Sparkles className={cn("h-5 w-5 md:h-6 md:w-6", isDark ? "text-white" : "text-[#5f6368]")} />
           </button>
         )}
 
         {/* Dashboard-spezifische Icons - Nur wenn isDashboard true ist */}
         {isDashboard && companyId && (
           <>
-            {/* Benachrichtigungen (Glocke) */}
+            {/* Benachrichtigungen (Glocke) - Tablet und Desktop */}
             <Link
               href={`/dashboard/company/${companyId}`}
-              className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors hidden sm:flex"
               aria-label="Benachrichtigungen"
             >
-              <Bell className="h-5 w-5 text-[#5f6368]" />
+              <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-[#5f6368]" />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-xs font-medium">
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full min-w-4 sm:min-w-[18px] h-4 sm:h-[18px] flex items-center justify-center text-[10px] sm:text-xs font-medium">
                   {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
                 </span>
               )}
             </Link>
 
-            {/* E-Mail Badge - Zeigt nur Anzahl ungelesener E-Mails an */}
+            {/* E-Mail Badge - Zeigt nur Anzahl ungelesener E-Mails an - Tablet und Desktop */}
             <div
-              className="relative p-2 rounded-full"
+              className="relative p-1.5 sm:p-2 rounded-full hidden sm:flex"
               aria-label="Ungelesene E-Mails"
             >
-              <Mail className="h-5 w-5 text-[#5f6368]" />
+              <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-[#5f6368]" />
               {unreadEmailsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-teal-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-xs font-medium">
+                <span className="absolute -top-0.5 -right-0.5 bg-teal-500 text-white rounded-full min-w-4 sm:min-w-[18px] h-4 sm:h-[18px] flex items-center justify-center text-[10px] sm:text-xs font-medium">
                   {unreadEmailsCount > 99 ? '99+' : unreadEmailsCount}
                 </span>
               )}
             </div>
 
-            {/* Hilfe (Fragezeichen) */}
+            {/* Hilfe (Fragezeichen) - Nur Desktop */}
             <button
               onClick={() => {
                 // Trigger Chatbot öffnen
                 window.dispatchEvent(new CustomEvent('openHelpChatbot'));
               }}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors hidden lg:flex"
               aria-label="Hilfe & Support"
             >
-              <HelpCircle className="h-5 w-5 text-[#5f6368]" />
+              <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[#5f6368]" />
             </button>
           </>
         )}
 
-        {/* Apps Grid Button - Auf Mobile und Desktop sichtbar */}
+        {/* Apps Grid Button - Auf allen Bildschirmen sichtbar */}
         <AppLauncher hasTheme={isDark} companyId={companyId} isDarkMode={isDark} />
-
-        {/* Debug log */}
-        {console.log('[MailHeader] Rendering avatar, profileImage:', profileImage ? 'Set (' + profileImage.substring(0, 50) + '...)' : 'Not set')}
 
         {/* User Profile - Gmail Style Ring - IMMER sichtbar */}
         <DropdownMenu>
@@ -796,18 +795,18 @@ export function MailHeader({
               className="p-0.5 rounded-full hover:bg-gray-200/60 transition-colors shrink-0"
               aria-label={`Konto: ${userEmail}`}
             >
-              <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all overflow-hidden">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all overflow-hidden">
                 {profileImage ? (
                   <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-white font-medium text-sm">
+                  <span className="text-white font-medium text-xs sm:text-sm">
                     {userInitial || userEmail.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuContent align="end" className="w-64 sm:w-72">
             <div className="px-4 py-3 border-b">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">

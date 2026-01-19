@@ -2,7 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install build dependencies for native modules (better-sqlite3, bcrypt, canvas, ffi-napi for ERiC) and ffmpeg for video thumbnails
+# Install build dependencies for native modules (bcrypt, canvas, ffi-napi for ERiC) and ffmpeg for video thumbnails
+# Note: SQLite removed - all data now in MongoDB
 RUN apk add --no-cache \
     python3 \
     make \

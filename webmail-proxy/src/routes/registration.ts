@@ -11,11 +11,13 @@
  * 4. Passwort erstellen
  * 5. Telefonnummer bestätigen (SMS)
  * 6. Nutzungsbedingungen akzeptieren
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import profileService from '../services/ProfileService';
+import profileService from '../services/ProfileServiceMongo';
 
 const router = Router();
 

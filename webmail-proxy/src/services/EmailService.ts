@@ -590,6 +590,63 @@ export class EmailService {
     }
   }
 
+  /**
+   * Bulk delete multiple messages at once (move to Trash)
+   * Much more efficient than deleting one by one
+   */
+  async bulkDeleteMessages(mailboxPath: string, uids: number[]): Promise<{ deleted: number }> {
+    if (uids.length === 0) return { deleted: 0 };
+    
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+
+      // IMAP unterstützt UID-Ranges: "1,2,3,4,5" oder "1:5"
+      const uidRange = uids.join(',');
+      
+      try {
+        // Versuche alle auf einmal in den Papierkorb zu verschieben
+        await client.messageMove(uidRange, 'Trash', { uid: true });
+      } catch {
+        // Fallback: Alle als gelöscht markieren und löschen
+        await client.messageFlagsAdd(uidRange, ['\\Deleted'], { uid: true });
+        await client.messageDelete(uidRange, { uid: true });
+      }
+
+      await client.logout();
+      return { deleted: uids.length };
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk permanently delete multiple messages (from Trash)
+   */
+  async bulkPermanentlyDeleteMessages(mailboxPath: string, uids: number[]): Promise<{ deleted: number }> {
+    if (uids.length === 0) return { deleted: 0 };
+    
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+
+      const uidRange = uids.join(',');
+      await client.messageFlagsAdd(uidRange, ['\\Deleted'], { uid: true });
+      await client.messageDelete(uidRange, { uid: true });
+
+      await client.logout();
+      return { deleted: uids.length };
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
   async createMailbox(name: string): Promise<{ success: boolean; path: string }> {
     const client = this.createImapClient();
 

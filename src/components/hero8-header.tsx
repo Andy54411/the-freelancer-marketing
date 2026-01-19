@@ -233,17 +233,17 @@ export const HeroHeader = () => {
         data-state={menuState && 'active'}
         className="bg-[#14ad9f]/95 relative z-50 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
       >
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-wrap items-center justify-between py-3">
+        <div className="mx-auto max-w-7xl px-2 sm:px-4">
+          <div className="flex flex-wrap items-center justify-between py-2 sm:py-3">
             {/* Left Section */}
-            <div className="flex items-center justify-between w-full lg:w-auto gap-8">
+            <div className="flex items-center justify-between w-full lg:w-auto gap-4 lg:gap-8">
               <Link href="/" className="flex items-center" aria-label="Taskilo Home">
                 <Image
                   src="/images/taskilo-logo-white.png"
                   alt="Taskilo"
                   width={150}
                   height={42}
-                  className="h-10 w-auto"
+                  className="h-8 sm:h-9 lg:h-10 w-auto"
                   priority
                 />
               </Link>
@@ -252,17 +252,17 @@ export const HeroHeader = () => {
               <button
                 onClick={() => setMenuState(!menuState)}
                 aria-label={menuState ? 'Menü schließen' : 'Menü öffnen'}
-                className="relative z-20 block p-2 lg:hidden"
+                className="relative z-20 block p-1.5 sm:p-2 lg:hidden"
               >
                 <Menu
                   className={cn(
-                    'size-6 text-white transition-all duration-200',
+                    'size-5 sm:size-6 text-white transition-all duration-200',
                     menuState && 'rotate-180 scale-0 opacity-0'
                   )}
                 />
                 <X
                   className={cn(
-                    'size-6 text-white absolute inset-0 m-auto rotate-180 scale-0 opacity-0 transition-all duration-200',
+                    'size-5 sm:size-6 text-white absolute inset-0 m-auto rotate-180 scale-0 opacity-0 transition-all duration-200',
                     menuState && 'rotate-0 scale-100 opacity-100'
                   )}
                 />
@@ -361,7 +361,7 @@ export const HeroHeader = () => {
             {/* Right Section - Desktop only */}
             <div
               className={cn(
-                'hidden lg:flex w-fit flex-row items-center justify-end gap-6'
+                'hidden lg:flex w-fit flex-row items-center justify-end gap-3 xl:gap-6'
               )}
             >
               {!isLoading &&
@@ -429,8 +429,8 @@ export const HeroHeader = () => {
 
             {/* Mobile Navigation */}
             {menuState && (
-              <div className="lg:hidden absolute top-full left-0 w-full bg-background z-10 border-t shadow-xl">
-                <ul className="px-6 py-4 space-y-4 text-base">
+              <div className="lg:hidden absolute top-full left-0 w-full bg-background z-10 border-t shadow-xl max-h-[80vh] overflow-y-auto">
+                <ul className="px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 text-sm sm:text-base">
                   {menuItems.slice(0, 1).map((item, i) => (
                     <li key={i}>
                       <Link
@@ -489,7 +489,7 @@ export const HeroHeader = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="px-6 pb-6 flex flex-col gap-3">
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-col gap-2 sm:gap-3">
                   {!isLoading &&
                     (user ? (
                       // Authenticated user - mobile

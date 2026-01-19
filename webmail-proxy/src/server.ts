@@ -23,6 +23,7 @@ import profileRouter from './routes/profile';
 import phoneVerificationRouter from './routes/phone-verification';
 import newsletterRouter from './routes/newsletter';
 import settingsRouter from './routes/settings';
+import tasksRouter from './routes/tasks';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
@@ -38,7 +39,8 @@ import {
 } from './security/SecurityMiddleware';
 import { wsService } from './services/WebSocketService';
 import { meetingWsService } from './services/MeetingWebSocketService';
-import { cacheService } from './services/CacheService';
+import { chatWsService } from './services/ChatWebSocketService';
+import { cacheService } from './services/CacheServiceMongo';
 import { imapPool } from './services/ConnectionPool';
 
 const app = express();
@@ -180,12 +182,13 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'taskilo-webmail-proxy',
-    version: '2.0.0',
+    version: '2.2.0',
     timestamp: new Date().toISOString(),
     stats: {
       pool: imapPool.getStats(),
       cache: cacheService.getStats(),
       websocket: wsService.getStats(),
+      chatWebsocket: chatWsService.getStats(),
       meetingWebsocket: meetingWsService.getStats(),
     },
   });
@@ -210,6 +213,7 @@ app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/photos/storage', storageRouter);
+app.use('/api/tasks', tasksRouter);
 
 // API Routes - Payment (Revolut Escrow System)
 app.use('/api/payment', paymentRouter);
@@ -269,6 +273,7 @@ app.use((req, res, next) => {
 // WebSocket initialisieren mit noServer: true für korrektes Routing
 meetingWsService.initialize(httpServer);
 wsService.initialize(httpServer);
+chatWsService.initialize(httpServer);
 
 // Manuelles Routing für WebSocket Upgrade-Requests
 httpServer.on('upgrade', (request, socket, head) => {
@@ -278,6 +283,9 @@ httpServer.on('upgrade', (request, socket, head) => {
   if (pathname === '/ws/meeting') {
     console.log('[WS UPGRADE] Routing to Meeting WebSocket');
     meetingWsService.handleUpgrade(request, socket, head);
+  } else if (pathname === '/ws/chat') {
+    console.log('[WS UPGRADE] Routing to Chat WebSocket');
+    chatWsService.handleUpgrade(request, socket, head);
   } else if (pathname === '/ws') {
     console.log('[WS UPGRADE] Routing to General WebSocket');
     wsService.handleUpgrade(request, socket, head);
@@ -331,6 +339,7 @@ httpServer.listen(PORT, () => {
 |   - POST /api/eric/upload-certificate  Zertifikat-Upload  |
 |                                                           |
 |   WebSocket: /ws                                          |
+|   Chat WebSocket: /ws/chat                                |
 |   Meeting WebSocket: /ws/meeting                          |
 |                                                           |
 |   Security: Rate Limiting, IP-Blocking, Audit-Logging     |
@@ -344,6 +353,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`\n[${signal}] Shutting down gracefully...`);
   
   wsService.shutdown();
+  chatWsService.shutdown();
   meetingWsService.shutdown();
   await imapPool.destroy();
   await cacheService.disconnect();

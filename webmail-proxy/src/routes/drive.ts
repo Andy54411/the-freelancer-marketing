@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const multer = require('multer');
-import { driveService } from '../services/DriveService';
+import driveService from '../services/DriveServiceMongo';
 import { ThumbnailService } from '../services/ThumbnailService';
 
 const router: Router = Router();

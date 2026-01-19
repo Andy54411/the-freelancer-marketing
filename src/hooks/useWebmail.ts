@@ -261,7 +261,8 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     action: 'markRead' | 'markUnread' | 'delete' | 'move' | 'flag',
     uid: number,
     targetMailbox?: string,
-    flagged?: boolean
+    flagged?: boolean,
+    skipRefresh?: boolean
   ) => {
     try {
       const response = await fetch(getAbsoluteApiUrl('/api/webmail/actions'), {
@@ -278,8 +279,8 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
         }),
       });
       const result = await response.json();
-      if (result.success) {
-        // Refresh messages after action
+      if (result.success && !skipRefresh) {
+        // Refresh messages after action (skip bei Bulk-Operationen)
         await fetchMessages(state.currentMailbox, state.page);
         // Also refresh mailboxes to update unread counts in sidebar
         await fetchMailboxes();
@@ -293,6 +294,37 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
       return result;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
+      return { success: false };
+    }
+  }, [email, password, state.currentMailbox, state.page, fetchMessages, fetchMailboxes]);
+
+  /**
+   * Bulk-Löschung: Alle UIDs in einem einzigen API-Aufruf löschen
+   */
+  const performBulkDelete = useCallback(async (uids: number[]) => {
+    if (uids.length === 0) return { success: true, deleted: 0 };
+    
+    try {
+      const response = await fetch(getAbsoluteApiUrl('/api/webmail/actions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          mailbox: state.currentMailbox,
+          action: 'bulkDelete',
+          uids,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        // Refresh nach Bulk-Operation
+        await fetchMessages(state.currentMailbox, state.page);
+        await fetchMailboxes();
+      }
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Bulk delete failed');
       return { success: false };
     }
   }, [email, password, state.currentMailbox, state.page, fetchMessages, fetchMailboxes]);
@@ -312,6 +344,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     fetchMessage,
     sendEmail,
     performAction,
+    performBulkDelete,
     clearCurrentMessage,
     clearMessageError,
   };

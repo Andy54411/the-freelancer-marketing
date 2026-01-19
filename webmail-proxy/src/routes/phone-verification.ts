@@ -3,11 +3,13 @@
  * 
  * Ermöglicht es existierenden Webmail-Nutzern ihre Telefonnummer nachträglich zu verifizieren.
  * Für Accounts die vor der ProfileService-Implementierung erstellt wurden.
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import profileService from '../services/ProfileService';
+import profileService from '../services/ProfileServiceMongo';
 import { ImapFlow } from 'imapflow';
 
 const router = Router();
@@ -196,7 +198,7 @@ router.get('/status', async (req: Request, res: Response) => {
       });
     }
 
-    const profile = profileService.getProfile(email);
+    const profile = await profileService.getProfile(email);
 
     res.json({
       success: true,
@@ -350,15 +352,15 @@ router.post('/verify', async (req: Request, res: Response) => {
     }
 
     // Profil erstellen oder aktualisieren
-    const existingProfile = profileService.getProfile(session.email);
+    const existingProfile = await profileService.getProfile(session.email);
     
     if (existingProfile) {
       // Bestehendes Profil aktualisieren - nur Telefonnummer
-      profileService.updatePhone(session.email, session.phone, true);
+      await profileService.updatePhone(session.email, session.phone, true);
       console.log(`[PHONE-VERIFY] Updated existing profile for ${session.email}`);
     } else {
       // Neues Profil erstellen
-      profileService.createProfile({
+      await profileService.createProfile({
         email: session.email,
         firstName: session.email.split('@')[0], // Fallback: E-Mail-Prefix als Name
         phone: session.phone,

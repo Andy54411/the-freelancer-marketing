@@ -3,11 +3,13 @@
  * 
  * REST API für den Fotos-Speicher.
  * Separater Bereich von Drive - nur für Bilder.
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
 import { Router, Request, Response } from 'express';
 import multer, { FileFilterCallback } from 'multer';
-import { photosService, Photo } from '../services/PhotosService';
+import { photosServiceMongo as photosService, Photo } from '../services/PhotosServiceMongo';
 import { ExifService } from '../services/ExifService';
 import { wsService } from '../services/WebSocketService';
 

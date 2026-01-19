@@ -7,11 +7,13 @@ services:
       - "3100:3100"
     environment:
       - NODE_ENV=production
+      - DOCKER=true
       - PORT=3100
       - WEBMAIL_API_KEY=${WEBMAIL_API_KEY}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # MongoDB - Verbindung zur zentralen Taskilo-KI MongoDB
+      # "mongo" ist der Service-Name im taskilo-ki Netzwerk
+      - MONGODB_URL=mongodb://taskilo-mongo:27017
+      - MONGODB_DB=taskilo_webmail
       - TURN_SECRET=${TURN_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - RECORDING_PATH=/data/recordings
@@ -27,8 +29,7 @@ services:
       - eric-plugins:/opt/taskilo/eric/plugins:ro
       - eric-certificates:/opt/taskilo/eric/certificates
       - eric-logs:/opt/taskilo/logs/eric
-    depends_on:
-      - redis
+    depends_on: []
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/health"]
       interval: 30s
@@ -42,29 +43,10 @@ services:
         max-file: "3"
     networks:
       - webmail-network
-      - taskilo-ki-network  # Verbindung zur Taskilo-KI für Foto-Klassifizierung
+      - taskilo-ki-network  # Verbindung zur Taskilo-KI für Foto-Klassifizierung und MongoDB/Redis
       - mailcow-network     # Verbindung zu SOGo für CardDAV Kontakte
 
-  redis:
-    image: redis:7-alpine
-    container_name: taskilo-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - webmail-network
-
+  # COTURN bleibt - Wird für Video-Calls benötigt
   coturn:
     image: coturn/coturn:latest
     container_name: taskilo-coturn
@@ -89,8 +71,6 @@ services:
 
 volumes:
   recordings:
-    driver: local
-  redis-data:
     driver: local
   drive-data:
     driver: local

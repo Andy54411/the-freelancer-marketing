@@ -1,5 +1,5 @@
 /**
- * Newsletter Routes - Hetzner SQLite Backend
+ * Newsletter Routes - Hetzner MongoDB Backend
  * 
  * Alle Newsletter-Endpunkte:
  * - POST /newsletter/subscribe - Neue Anmeldung
@@ -25,10 +25,12 @@
  * - PATCH /newsletter/settings - Aktualisieren
  * - POST /newsletter/track/open - Öffnung tracken
  * - POST /newsletter/track/click - Klick tracken
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
 import { Router, Request, Response } from 'express';
-import { newsletterService } from '../services/NewsletterService';
+import { newsletterServiceMongo as newsletterService } from '../services/NewsletterServiceMongo';
 
 const router = Router();
 
@@ -100,7 +102,7 @@ router.get('/confirm', async (req: Request, res: Response) => {
     }
 
     if (email && token) {
-      const subscriber = newsletterService.getSubscriberByEmail(email as string);
+      const subscriber = await newsletterService.getSubscriberByEmail(email as string);
       if (subscriber) {
         const result = await newsletterService.confirmSubscription(subscriber.id, token as string);
         if (result.success) {
@@ -131,7 +133,7 @@ router.post('/confirm', async (req: Request, res: Response) => {
     }
 
     if (email && token) {
-      const subscriber = newsletterService.getSubscriberByEmail(email);
+      const subscriber = await newsletterService.getSubscriberByEmail(email);
       if (!subscriber) {
         return res.status(404).json({ success: false, error: 'Abonnent nicht gefunden' });
       }
@@ -199,18 +201,18 @@ router.get('/unsubscribe', async (req: Request, res: Response) => {
  * GET /newsletter/subscribers
  * Liste aller Subscribers
  */
-router.get('/subscribers', (req: Request, res: Response) => {
+router.get('/subscribers', async (req: Request, res: Response) => {
   try {
     const { status, search, limit, offset } = req.query;
 
-    const subscribers = newsletterService.getSubscribers({
+    const subscribers = await newsletterService.getSubscribers({
       status: status as string,
       search: search as string,
       limit: limit ? parseInt(limit as string) : undefined,
       offset: offset ? parseInt(offset as string) : undefined,
     });
 
-    const counts = newsletterService.getSubscriberCount();
+    const counts = await newsletterService.getSubscriberCount();
 
     res.json({
       success: true,
@@ -255,12 +257,12 @@ router.post('/subscribers', async (req: Request, res: Response) => {
  * PATCH /newsletter/subscribers/:id
  * Subscriber aktualisieren
  */
-router.patch('/subscribers/:id', (req: Request, res: Response) => {
+router.patch('/subscribers/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { firstName, lastName, tags, status } = req.body;
 
-    newsletterService.updateSubscriber(id, { firstName, lastName, tags, status });
+    await newsletterService.updateSubscriber(id, { firstName, lastName, tags, status });
 
     res.json({ success: true, message: 'Abonnent aktualisiert' });
   } catch (error) {
@@ -273,11 +275,11 @@ router.patch('/subscribers/:id', (req: Request, res: Response) => {
  * DELETE /newsletter/subscribers/:id
  * Subscriber löschen (DSGVO)
  */
-router.delete('/subscribers/:id', (req: Request, res: Response) => {
+router.delete('/subscribers/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    newsletterService.deleteSubscriber(id);
+    await newsletterService.deleteSubscriber(id);
 
     res.json({ success: true, message: 'Abonnent gelöscht (DSGVO-konform)' });
   } catch (error) {
@@ -294,10 +296,10 @@ router.delete('/subscribers/:id', (req: Request, res: Response) => {
  * GET /newsletter/campaigns
  * Liste aller Kampagnen
  */
-router.get('/campaigns', (req: Request, res: Response) => {
+router.get('/campaigns', async (req: Request, res: Response) => {
   try {
     const { status } = req.query;
-    const campaigns = newsletterService.getCampaigns(status as string);
+    const campaigns = await newsletterService.getCampaigns(status as string);
 
     res.json({ success: true, campaigns });
   } catch (error) {
@@ -310,7 +312,7 @@ router.get('/campaigns', (req: Request, res: Response) => {
  * POST /newsletter/campaigns
  * Neue Kampagne erstellen
  */
-router.post('/campaigns', (req: Request, res: Response) => {
+router.post('/campaigns', async (req: Request, res: Response) => {
   try {
     const {
       name, subject, previewText, fromName, fromEmail, replyTo,
@@ -321,7 +323,7 @@ router.post('/campaigns', (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Pflichtfelder fehlen' });
     }
 
-    const id = newsletterService.createCampaign({
+    const id = await newsletterService.createCampaign({
       name, subject, previewText, fromName, fromEmail, replyTo,
       htmlContent, textContent, templateId, recipientType, recipientTags,
     });
@@ -337,10 +339,10 @@ router.post('/campaigns', (req: Request, res: Response) => {
  * GET /newsletter/campaigns/:id
  * Kampagne Details
  */
-router.get('/campaigns/:id', (req: Request, res: Response) => {
+router.get('/campaigns/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const campaign = newsletterService.getCampaignById(id);
+    const campaign = await newsletterService.getCampaignById(id);
 
     if (!campaign) {
       return res.status(404).json({ success: false, error: 'Kampagne nicht gefunden' });
@@ -357,11 +359,11 @@ router.get('/campaigns/:id', (req: Request, res: Response) => {
  * PATCH /newsletter/campaigns/:id
  * Kampagne aktualisieren
  */
-router.patch('/campaigns/:id', (req: Request, res: Response) => {
+router.patch('/campaigns/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    newsletterService.updateCampaign(id, req.body);
+    await newsletterService.updateCampaign(id, req.body);
 
     res.json({ success: true, message: 'Kampagne aktualisiert' });
   } catch (error) {
@@ -374,11 +376,11 @@ router.patch('/campaigns/:id', (req: Request, res: Response) => {
  * DELETE /newsletter/campaigns/:id
  * Kampagne löschen
  */
-router.delete('/campaigns/:id', (req: Request, res: Response) => {
+router.delete('/campaigns/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    newsletterService.deleteCampaign(id);
+    await newsletterService.deleteCampaign(id);
 
     res.json({ success: true, message: 'Kampagne gelöscht' });
   } catch (error) {
@@ -412,10 +414,10 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
  * GET /newsletter/templates
  * Liste aller Templates
  */
-router.get('/templates', (req: Request, res: Response) => {
+router.get('/templates', async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
-    const templates = newsletterService.getTemplates(category as string);
+    const templates = await newsletterService.getTemplates(category as string);
 
     res.json({ success: true, templates });
   } catch (error) {
@@ -428,7 +430,7 @@ router.get('/templates', (req: Request, res: Response) => {
  * POST /newsletter/templates
  * Neues Template erstellen
  */
-router.post('/templates', (req: Request, res: Response) => {
+router.post('/templates', async (req: Request, res: Response) => {
   try {
     const { name, description, category, htmlContent, textContent, isDefault } = req.body;
 
@@ -436,7 +438,7 @@ router.post('/templates', (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Name und HTML-Inhalt erforderlich' });
     }
 
-    const id = newsletterService.createTemplate({
+    const id = await newsletterService.createTemplate({
       name, description, category, htmlContent, textContent, isDefault,
     });
 
@@ -451,10 +453,10 @@ router.post('/templates', (req: Request, res: Response) => {
  * GET /newsletter/templates/:id
  * Template Details
  */
-router.get('/templates/:id', (req: Request, res: Response) => {
+router.get('/templates/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const template = newsletterService.getTemplateById(id);
+    const template = await newsletterService.getTemplateById(id);
 
     if (!template) {
       return res.status(404).json({ success: false, error: 'Template nicht gefunden' });
@@ -471,17 +473,17 @@ router.get('/templates/:id', (req: Request, res: Response) => {
  * PUT /newsletter/templates/:id
  * Template aktualisieren
  */
-router.put('/templates/:id', (req: Request, res: Response) => {
+router.put('/templates/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, description, category, htmlContent, textContent, isDefault } = req.body;
 
-    const existingTemplate = newsletterService.getTemplateById(id);
+    const existingTemplate = await newsletterService.getTemplateById(id);
     if (!existingTemplate) {
       return res.status(404).json({ success: false, error: 'Template nicht gefunden' });
     }
 
-    newsletterService.updateTemplate(id, {
+    await newsletterService.updateTemplate(id, {
       name,
       description,
       category,
@@ -501,11 +503,11 @@ router.put('/templates/:id', (req: Request, res: Response) => {
  * DELETE /newsletter/templates/:id
  * Template löschen
  */
-router.delete('/templates/:id', (req: Request, res: Response) => {
+router.delete('/templates/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    newsletterService.deleteTemplate(id);
+    await newsletterService.deleteTemplate(id);
 
     res.json({ success: true, message: 'Template gelöscht' });
   } catch (error) {
@@ -522,10 +524,10 @@ router.delete('/templates/:id', (req: Request, res: Response) => {
  * GET /newsletter/analytics
  * Statistiken abrufen
  */
-router.get('/analytics', (req: Request, res: Response) => {
+router.get('/analytics', async (req: Request, res: Response) => {
   try {
     const { campaignId } = req.query;
-    const analytics = newsletterService.getAnalytics(campaignId as string);
+    const analytics = await newsletterService.getAnalytics(campaignId as string);
 
     res.json({ success: true, analytics });
   } catch (error) {
@@ -538,9 +540,9 @@ router.get('/analytics', (req: Request, res: Response) => {
  * GET /newsletter/settings
  * Einstellungen abrufen
  */
-router.get('/settings', (req: Request, res: Response) => {
+router.get('/settings', async (req: Request, res: Response) => {
   try {
-    const settings = newsletterService.getSettings();
+    const settings = await newsletterService.getSettings();
 
     res.json({ success: true, settings });
   } catch (error) {
@@ -553,9 +555,9 @@ router.get('/settings', (req: Request, res: Response) => {
  * PATCH /newsletter/settings
  * Einstellungen aktualisieren
  */
-router.patch('/settings', (req: Request, res: Response) => {
+router.patch('/settings', async (req: Request, res: Response) => {
   try {
-    newsletterService.updateSettings(req.body);
+    await newsletterService.updateSettings(req.body);
 
     res.json({ success: true, message: 'Einstellungen aktualisiert' });
   } catch (error) {
@@ -572,11 +574,11 @@ router.patch('/settings', (req: Request, res: Response) => {
  * GET /newsletter/track/open/:campaignId/:subscriberId
  * Öffnung tracken (Tracking-Pixel)
  */
-router.get('/track/open/:campaignId/:subscriberId', (req: Request, res: Response) => {
+router.get('/track/open/:campaignId/:subscriberId', async (req: Request, res: Response) => {
   try {
     const { campaignId, subscriberId } = req.params;
 
-    newsletterService.trackOpen(
+    await newsletterService.trackOpen(
       campaignId,
       subscriberId,
       req.ip || req.headers['x-forwarded-for'] as string,
@@ -601,7 +603,7 @@ router.get('/track/open/:campaignId/:subscriberId', (req: Request, res: Response
  * GET /newsletter/track/click/:campaignId/:subscriberId
  * Klick tracken und weiterleiten
  */
-router.get('/track/click/:campaignId/:subscriberId', (req: Request, res: Response) => {
+router.get('/track/click/:campaignId/:subscriberId', async (req: Request, res: Response) => {
   try {
     const { campaignId, subscriberId } = req.params;
     const { url } = req.query;
@@ -610,7 +612,7 @@ router.get('/track/click/:campaignId/:subscriberId', (req: Request, res: Respons
       return res.status(400).json({ error: 'URL fehlt' });
     }
 
-    newsletterService.trackClick(
+    await newsletterService.trackClick(
       campaignId,
       subscriberId,
       url as string,
@@ -638,10 +640,10 @@ router.get('/track/click/:campaignId/:subscriberId', (req: Request, res: Respons
  * POST /newsletter/cleanup
  * Abgelaufene pending Subscriptions löschen
  */
-router.post('/cleanup', (req: Request, res: Response) => {
+router.post('/cleanup', async (req: Request, res: Response) => {
   try {
     const { hoursOld } = req.body;
-    const deleted = newsletterService.cleanupExpiredPending(hoursOld || 48);
+    const deleted = await newsletterService.cleanupExpiredPending(hoursOld || 48);
 
     res.json({ success: true, deletedCount: deleted });
   } catch (error) {

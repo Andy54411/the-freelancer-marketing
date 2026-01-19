@@ -7,10 +7,10 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 
-// Rate Limiting pro IP
+// Rate Limiting pro IP - erhöht für legitime Bulk-Operationen
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 Minuten
-  max: 100, // Max 100 Requests pro IP pro 15 Minuten
+  max: 500, // Max 500 Requests pro IP pro 15 Minuten (für Bulk-Löschungen etc.)
   message: {
     success: false,
     error: 'Too many requests. Please try again later.',

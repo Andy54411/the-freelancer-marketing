@@ -4,7 +4,7 @@
  */
 
 import { imapPool } from './ConnectionPool';
-import { cacheService } from './CacheService';
+import { cacheService } from './CacheServiceMongo';
 
 interface SearchQuery {
   text?: string;         // Volltext-Suche

@@ -38,6 +38,16 @@ const DeleteSchema = BaseSchema.extend({
   uid: z.number(),
 });
 
+const BulkDeleteSchema = BaseSchema.extend({
+  action: z.literal('bulkDelete'),
+  uids: z.array(z.number()).min(1),
+});
+
+const BulkPermanentDeleteSchema = BaseSchema.extend({
+  action: z.literal('bulkPermanentDelete'),
+  uids: z.array(z.number()).min(1),
+});
+
 const PermanentDeleteSchema = BaseSchema.extend({
   action: z.literal('permanentDelete'),
   uid: z.number(),
@@ -126,6 +136,8 @@ const ActionSchema = z.discriminatedUnion('action', [
   MarkUnreadSchema,
   FlagSchema,
   DeleteSchema,
+  BulkDeleteSchema,
+  BulkPermanentDeleteSchema,
   PermanentDeleteSchema,
   MoveSchema,
   CreateMailboxSchema,
@@ -166,6 +178,16 @@ router.post('/', async (req, res) => {
       case 'delete':
         await emailService.deleteMessage(data.mailbox, data.uid);
         break;
+        
+      case 'bulkDelete':
+        console.log('[ACTIONS] Bulk deleting', data.uids.length, 'messages');
+        const bulkResult = await emailService.bulkDeleteMessages(data.mailbox, data.uids);
+        return res.json({ success: true, deleted: bulkResult.deleted });
+        
+      case 'bulkPermanentDelete':
+        console.log('[ACTIONS] Bulk permanently deleting', data.uids.length, 'messages');
+        const bulkPermResult = await emailService.bulkPermanentlyDeleteMessages(data.mailbox, data.uids);
+        return res.json({ success: true, deleted: bulkPermResult.deleted });
         
       case 'permanentDelete':
         console.log('[ACTIONS] Permanently deleting message:', data.uid);

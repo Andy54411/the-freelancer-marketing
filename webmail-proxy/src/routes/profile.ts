@@ -1,13 +1,15 @@
 /**
  * Profile Routes - API für Webmail-Profilverwaltung
  * 
+ * MONGODB-VERSION - Ersetzt SQLite-basierte Version
+ * 
  * Endpoints:
  * GET  /api/profile/:email     - Profil abrufen
  * POST /api/profile/sync       - Company-Daten synchronisieren, Telefon zurückgeben
  */
 
 import { Router, Request, Response } from 'express';
-import profileService from '../services/ProfileService';
+import profileService from '../services/ProfileServiceMongo';
 
 const router = Router();
 
@@ -26,7 +28,7 @@ router.get('/:email', async (req: Request, res: Response) => {
       });
     }
 
-    const profile = profileService.getProfile(email);
+    const profile = await profileService.getProfile(email);
 
     if (!profile) {
       return res.status(404).json({
@@ -111,7 +113,7 @@ router.post('/sync', async (req: Request, res: Response) => {
     }
 
     // Synchronisation durchführen
-    const result = profileService.syncCompanyData({
+    const result = await profileService.syncCompanyData({
       email,
       companyId,
       companyData: companyData || {},
@@ -170,7 +172,7 @@ router.get('/by-company/:companyId', async (req: Request, res: Response) => {
       });
     }
 
-    const profile = profileService.getProfileByCompanyId(companyId);
+    const profile = await profileService.getProfileByCompanyId(companyId);
 
     if (!profile) {
       return res.status(404).json({
@@ -201,7 +203,6 @@ router.get('/by-company/:companyId', async (req: Request, res: Response) => {
         companyIndustry: profile.companyIndustry,
         companyLegalForm: profile.companyLegalForm,
         companySyncedAt: profile.companySyncedAt,
-        // Account Status
         accountStatus: profile.accountStatus,
         suspended: profile.suspended,
         blocked: profile.blocked,

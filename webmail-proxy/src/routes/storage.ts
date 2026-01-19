@@ -6,10 +6,12 @@
  * - Kategorien-Details
  * - Speicherplatz freigeben
  * - Plan-Upgrades
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
 import { Router, Request, Response } from 'express';
-import { photosStorageService, STORAGE_PLANS } from '../services/PhotosStorageService';
+import { photosStorageServiceMongo as photosStorageService, STORAGE_PLANS } from '../services/PhotosStorageServiceMongo';
 
 const router: Router = Router();
 

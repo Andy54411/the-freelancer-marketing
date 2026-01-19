@@ -1,6 +1,8 @@
 /**
  * Settings Routes - API-Endpoints für Webmail-Einstellungen
  * 
+ * MONGODB-VERSION - Ersetzt SQLite-basierte Version
+ * 
  * Endpoints:
  * GET  /api/settings/:email          - Einstellungen abrufen
  * PUT  /api/settings/:email          - Einstellungen speichern
@@ -13,7 +15,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import settingsService, { UserSettings } from '../services/SettingsService';
+import settingsService from '../services/SettingsServiceMongo';
+import type { WebmailSettings } from '../services/MongoDBService';
 
 const router = Router();
 
@@ -21,7 +24,7 @@ const router = Router();
  * GET /api/settings/:email
  * Einstellungen für einen Benutzer abrufen
  */
-router.get('/:email', (req: Request, res: Response) => {
+router.get('/:email', async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
     
@@ -32,7 +35,7 @@ router.get('/:email', (req: Request, res: Response) => {
       });
     }
     
-    const settings = settingsService.getSettings(email);
+    const settings = await settingsService.getSettings(email);
     
     if (!settings) {
       // Neue Einstellungen mit Defaults zurückgeben
@@ -71,7 +74,7 @@ router.get('/:email', (req: Request, res: Response) => {
 router.put('/:email', async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
-    const settingsUpdate: Partial<UserSettings> = req.body;
+    const settingsUpdate: Partial<WebmailSettings> = req.body;
     
     if (!email) {
       return res.status(400).json({
@@ -121,7 +124,7 @@ router.post('/:email/reset', async (req: Request, res: Response) => {
     }
     
     // Alte Einstellungen löschen
-    settingsService.deleteSettings(email);
+    await settingsService.deleteSettings(email);
     
     // Neue Defaults speichern
     const defaults = settingsService.getDefaultSettings();

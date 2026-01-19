@@ -1,12 +1,14 @@
 /**
  * Taskilo Meeting WebSocket Service
  * WebSocket-basierte Signalisierung für Video-Meetings
+ * MIT MongoDB-Logging für Meeting-Historie und Analytics
  */
 
 import { WebSocketServer, WebSocket, RawData } from 'ws';
 import { Server, IncomingMessage } from 'http';
 import crypto from 'crypto';
 import { meetingRoomService } from './MeetingRoomService';
+import { meetingLoggingService } from './MeetingLoggingService';
 
 interface MeetingClient {
   ws: WebSocket;
@@ -382,6 +384,45 @@ class MeetingWebSocketService {
       }, participantId);
 
       console.log(`[Meeting WS] ${payload.userName} (${participantId}) joined room ${payload.roomCode}`);
+
+      // ===== MONGODB LOGGING =====
+      try {
+        // Prüfe ob bereits ein aktives Meeting für diesen Raum existiert
+        let activeMeeting = await meetingLoggingService.getActiveMeeting(payload.roomCode);
+        
+        const isHost = participantsList.find(p => p.id === participantId)?.role === 'host';
+        
+        if (!activeMeeting && isHost) {
+          // Erstes Beitreten als Host -> Meeting starten
+          activeMeeting = await meetingLoggingService.startMeeting(
+            payload.roomCode,
+            payload.userId || '',
+            payload.userName || 'Host',
+            undefined,
+            undefined,
+            undefined
+          );
+        } else if (activeMeeting) {
+          // Teilnehmer-Beitritt loggen
+          await meetingLoggingService.logParticipantJoin(activeMeeting.meetingId, {
+            participantId,
+            email: payload.userId,
+            name: payload.userName || 'Gast',
+            role: isHost ? 'host' : 'participant',
+          });
+          
+          // Meeting-Statistik aktualisieren
+          await meetingLoggingService.updateMeetingParticipants(
+            payload.roomCode,
+            payload.userId || '',
+            this.roomClients.get(payload.roomCode)?.size || 1
+          );
+        }
+      } catch (logError) {
+        console.error('[Meeting WS] Failed to log join:', logError);
+        // Logging-Fehler sollten Meeting nicht unterbrechen
+      }
+      // ===== END MONGODB LOGGING =====
     } catch (error) {
       console.error(`[Meeting WS] Join error:`, error);
       this.sendToClient(participantId, {
@@ -420,6 +461,22 @@ class MeetingWebSocketService {
     client.roomCode = null;
 
     console.log(`[Meeting WS] ${client.userName} (${participantId}) left room ${roomCode}`);
+
+    // ===== MONGODB LOGGING =====
+    try {
+      const activeMeeting = await meetingLoggingService.getActiveMeeting(roomCode);
+      if (activeMeeting) {
+        await meetingLoggingService.logParticipantLeave(activeMeeting.meetingId, participantId);
+        
+        // Wenn letzter Teilnehmer, Meeting beenden
+        if (!this.roomClients.has(roomCode) || this.roomClients.get(roomCode)?.size === 0) {
+          await meetingLoggingService.endMeeting(roomCode, client.userName, 'all_left');
+        }
+      }
+    } catch (logError) {
+      console.error('[Meeting WS] Failed to log leave:', logError);
+    }
+    // ===== END MONGODB LOGGING =====
   }
 
   private async handleSignaling(participantId: string, message: MeetingWSMessage): Promise<void> {
@@ -495,6 +552,33 @@ class MeetingWebSocketService {
       },
       timestamp: new Date().toISOString(),
     });
+
+    // ===== MONGODB LOGGING =====
+    try {
+      const activeMeeting = await meetingLoggingService.getActiveMeeting(client.roomCode);
+      if (activeMeeting) {
+        const actionMap: Record<string, 'mute' | 'unmute' | 'video_on' | 'video_off' | 'screen_share'> = {
+          'mute': 'mute',
+          'unmute': 'unmute',
+          'video-on': 'video_on',
+          'video-off': 'video_off',
+          'screen-share-start': 'screen_share',
+          'screen-share-stop': 'screen_share',
+        };
+        const action = actionMap[message.type];
+        if (action) {
+          await meetingLoggingService.logParticipantAction(
+            activeMeeting.meetingId,
+            participantId,
+            action,
+            message.type
+          );
+        }
+      }
+    } catch (logError) {
+      console.error('[Meeting WS] Failed to log media state:', logError);
+    }
+    // ===== END MONGODB LOGGING =====
   }
 
   private async handleChatMessage(participantId: string, message?: string): Promise<void> {
@@ -751,6 +835,14 @@ class MeetingWebSocketService {
     this.roomClients.delete(roomCode);
 
     console.log(`[Meeting WS] Meeting ${roomCode} ended by host ${participantId} (${client.userName})`);
+
+    // ===== MONGODB LOGGING =====
+    try {
+      await meetingLoggingService.endMeeting(roomCode, client.userName, 'host_ended');
+    } catch (logError) {
+      console.error('[Meeting WS] Failed to log meeting end:', logError);
+    }
+    // ===== END MONGODB LOGGING =====
   }
 
   // ==================== Screen Share Permission Handlers ====================

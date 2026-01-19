@@ -949,6 +949,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     fetchMessage,
     sendEmail,
     performAction,
+    performBulkDelete,
     clearCurrentMessage,
     clearMessageError,
   } = useWebmail({ email, password });
@@ -1280,12 +1281,12 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
   }, [performAction, selectedEmail]);
 
   const handleBulkDelete = useCallback(async () => {
-    for (const uid of selectedEmails) {
-      await performAction('delete', uid);
-    }
+    if (selectedEmails.length === 0) return;
+    
+    // Alle in einem einzigen API-Aufruf löschen (server-seitig optimiert)
+    await performBulkDelete(selectedEmails);
     setSelectedEmails([]);
-    // performAction aktualisiert bereits Messages und Mailboxes intern
-  }, [selectedEmails, performAction]);
+  }, [selectedEmails, performBulkDelete]);
 
   // Move email to Spam/Junk folder
   const handleMoveToSpam = useCallback(async (uid: number) => {

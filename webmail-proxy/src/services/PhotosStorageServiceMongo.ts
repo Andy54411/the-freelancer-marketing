@@ -1,16 +1,14 @@
 /**
- * Taskilo Photos Storage Service
+ * Taskilo Photos Storage Service - MongoDB Version
  * 
  * Separater Service für Speicheranalyse und -verwaltung.
  * Ermöglicht detaillierte Einblicke in die Speichernutzung.
+ * 
+ * MIGRATION: Nutzt MongoDB statt SQLite
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Database = require('better-sqlite3');
-import * as path from 'path';
-
-const DATA_DIR = process.env.PHOTOS_DATA_DIR || '/opt/taskilo/webmail-proxy/data';
-const DB_PATH = path.join(DATA_DIR, 'photos.db');
+import * as fs from 'fs';
+import { mongoDBService, Photo, PhotoUser } from './MongoDBService';
 
 // Storage Limits in Bytes
 const PHOTO_STORAGE_LIMITS = {
@@ -77,15 +75,7 @@ export interface StoragePlan {
   isCurrent: boolean;
 }
 
-class PhotosStorageService {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private db: any;
-
-  constructor() {
-    this.db = new Database(DB_PATH);
-    this.db.pragma('journal_mode = WAL');
-  }
-
+class PhotosStorageServiceMongo {
   private formatBytes(bytes: number): string {
     if (bytes >= 1024 * 1024 * 1024) {
       return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -100,37 +90,31 @@ class PhotosStorageService {
    * Detaillierte Speicheranalyse für die Speicherverwaltung
    */
   async getStorageAnalysis(userId: string): Promise<StorageAnalysis> {
-    // Basis-Speicherinfo
-    const userInfo = this.db.prepare('SELECT * FROM photo_users WHERE id = ?').get(userId) as {
-      storage_used: number;
-      storage_limit: number;
-      photo_count: number;
-      created_at: number;
-      plan: string;
-    } | undefined;
+    const userCollection = mongoDBService.getPhotoUsersCollection();
+    const photosCollection = mongoDBService.getPhotosCollection();
     
-    const totalUsed = userInfo?.storage_used || 0;
-    const totalLimit = userInfo?.storage_limit || PHOTO_STORAGE_LIMITS.free;
-    const photoCount = userInfo?.photo_count || 0;
-    const plan = userInfo?.plan || 'free';
+    const user = await userCollection.findOne({ id: userId });
     
-    // Speicher nach Kategorien
-    const categoryStats = this.db.prepare(`
-      SELECT 
-        COALESCE(primary_category, 'other') as category,
-        COALESCE(primary_category_display, 'Sonstige') as display,
-        SUM(size) as total_size,
-        COUNT(*) as count
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 0
-      GROUP BY category
-      ORDER BY total_size DESC
-    `).all(userId) as Array<{
-      category: string;
-      display: string;
-      total_size: number;
-      count: number;
-    }>;
+    const totalUsed = user?.storageUsed || 0;
+    const totalLimit = user?.storageLimit || PHOTO_STORAGE_LIMITS.free;
+    const photoCount = user?.photoCount || 0;
+    const plan = user?.plan || 'free';
+    
+    // Speicher nach Kategorien aggregieren
+    const categoryStats = await photosCollection.aggregate([
+      {
+        $match: { userId, isDeleted: false },
+      },
+      {
+        $group: {
+          _id: { $ifNull: ['$primaryCategory', 'other'] },
+          display: { $first: { $ifNull: ['$primaryCategoryDisplay', 'Sonstige'] } },
+          total_size: { $sum: '$size' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { total_size: -1 } },
+    ]).toArray();
     
     const categoryIcons: Record<string, string> = {
       screenshot: 'monitor',
@@ -153,43 +137,67 @@ class PhotosStorageService {
     };
     
     const categories = categoryStats.map(cat => ({
-      key: cat.category,
-      name: cat.display,
-      size: cat.total_size,
-      count: cat.count,
-      icon: categoryIcons[cat.category.toLowerCase()] || 'image',
+      key: cat._id as string,
+      name: cat.display as string,
+      size: cat.total_size as number,
+      count: cat.count as number,
+      icon: categoryIcons[(cat._id as string).toLowerCase()] || 'image',
     }));
     
     // Große Dateien (> 5MB)
-    const largeFiles = this.db.prepare(`
-      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath, taken_at as takenAt
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 0 AND size > 5242880
-      ORDER BY size DESC
-      LIMIT 50
-    `).all(userId) as LargeFile[];
+    const largeFilesRaw = await photosCollection
+      .find({ userId, isDeleted: false, size: { $gt: 5242880 } })
+      .sort({ size: -1 })
+      .limit(50)
+      .toArray();
+    
+    const largeFiles: LargeFile[] = largeFilesRaw.map((f: Photo) => ({
+      id: f.id,
+      filename: f.originalFilename,
+      size: f.size,
+      thumbnailPath: f.thumbnailPath,
+      takenAt: f.takenAt,
+    }));
     
     // Screenshots separat
-    const screenshots = this.db.prepare(`
-      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath, taken_at as takenAt
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 0 AND primary_category = 'screenshot'
-      ORDER BY size DESC
-      LIMIT 50
-    `).all(userId) as LargeFile[];
+    const screenshotsRaw = await photosCollection
+      .find({ userId, isDeleted: false, primaryCategory: 'screenshot' })
+      .sort({ size: -1 })
+      .limit(50)
+      .toArray();
+    
+    const screenshots: LargeFile[] = screenshotsRaw.map((f: Photo) => ({
+      id: f.id,
+      filename: f.originalFilename,
+      size: f.size,
+      thumbnailPath: f.thumbnailPath,
+      takenAt: f.takenAt,
+    }));
     
     // Unscharfe/kleine Fotos
-    const blurryPhotos = this.db.prepare(`
-      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 0 
-      AND (width < 500 OR height < 500 OR (primary_confidence IS NOT NULL AND primary_confidence < 0.3))
-      ORDER BY size DESC
-      LIMIT 20
-    `).all(userId) as BlurryPhoto[];
+    const blurryPhotosRaw = await photosCollection
+      .find({
+        userId,
+        isDeleted: false,
+        $or: [
+          { width: { $lt: 500 } },
+          { height: { $lt: 500 } },
+          { primaryConfidence: { $lt: 0.3, $ne: null } },
+        ],
+      })
+      .sort({ size: -1 })
+      .limit(20)
+      .toArray();
+    
+    const blurryPhotos: BlurryPhoto[] = blurryPhotosRaw.map((f: Photo) => ({
+      id: f.id,
+      filename: f.originalFilename,
+      size: f.size,
+      thumbnailPath: f.thumbnailPath,
+    }));
     
     // Upload-Rate berechnen
-    const createdAt = userInfo?.created_at || Date.now();
+    const createdAt = user?.createdAt || Date.now();
     const accountAgeMonths = Math.max(1, (Date.now() - createdAt) / (30 * 24 * 60 * 60 * 1000));
     const uploadRatePerMonth = totalUsed / accountAgeMonths;
     
@@ -221,8 +229,8 @@ class PhotosStorageService {
    * Verfügbare Speicherpläne abrufen
    */
   async getAvailablePlans(userId: string): Promise<StoragePlan[]> {
-    const userInfo = this.db.prepare('SELECT plan FROM photo_users WHERE id = ?').get(userId) as { plan: string } | undefined;
-    const currentPlan = userInfo?.plan || 'free';
+    const user = await mongoDBService.getPhotoUsersCollection().findOne({ id: userId });
+    const currentPlan = user?.plan || 'free';
     
     return Object.entries(STORAGE_PLANS).map(([id, plan]) => ({
       id,
@@ -242,14 +250,20 @@ class PhotosStorageService {
     count: number;
     photos: LargeFile[];
   }> {
-    const photos = this.db.prepare(`
-      SELECT id, original_filename as filename, size, thumbnail_path as thumbnailPath, taken_at as takenAt
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 0 AND primary_category = ?
-      ORDER BY size DESC
-    `).all(userId, category) as LargeFile[];
+    const photosRaw = await mongoDBService.getPhotosCollection()
+      .find({ userId, isDeleted: false, primaryCategory: category })
+      .sort({ size: -1 })
+      .toArray();
     
-    const totalSize = photos.reduce((sum, p) => sum + p.size, 0);
+    const photos: LargeFile[] = photosRaw.map((f: Photo) => ({
+      id: f.id,
+      filename: f.originalFilename,
+      size: f.size,
+      thumbnailPath: f.thumbnailPath,
+      takenAt: f.takenAt,
+    }));
+    
+    const totalSize = photos.reduce((sum: number, p: LargeFile) => sum + p.size, 0);
     
     return {
       totalSize,
@@ -269,25 +283,24 @@ class PhotosStorageService {
     let deletedCount = 0;
     
     const now = Date.now();
+    const photosCollection = mongoDBService.getPhotosCollection();
+    const usersCollection = mongoDBService.getPhotoUsersCollection();
     
     for (const photoId of photoIds) {
-      const photo = this.db.prepare(`
-        SELECT size FROM photos WHERE user_id = ? AND id = ? AND is_deleted = 0
-      `).get(userId, photoId) as { size: number } | undefined;
+      const photo = await photosCollection.findOne({ userId, id: photoId, isDeleted: false });
       
       if (photo) {
         // Soft delete
-        this.db.prepare(`
-          UPDATE photos SET is_deleted = 1, deleted_at = ?, updated_at = ?
-          WHERE user_id = ? AND id = ?
-        `).run(now, now, userId, photoId);
+        await photosCollection.updateOne(
+          { id: photoId, userId },
+          { $set: { isDeleted: true, deletedAt: now, updatedAt: now } }
+        );
         
         // Speicher aktualisieren
-        this.db.prepare(`
-          UPDATE photo_users 
-          SET storage_used = storage_used - ?, photo_count = photo_count - 1, updated_at = ?
-          WHERE id = ?
-        `).run(photo.size, now, userId);
+        await usersCollection.updateOne(
+          { id: userId },
+          { $inc: { storageUsed: -photo.size, photoCount: -1 }, $set: { updatedAt: now } }
+        );
         
         freedSpace += photo.size;
         deletedCount++;
@@ -304,10 +317,10 @@ class PhotosStorageService {
     deletedCount: number;
     freedSpace: number;
   }> {
-    const photos = this.db.prepare(`
-      SELECT id, size FROM photos 
-      WHERE user_id = ? AND primary_category = ? AND is_deleted = 0
-    `).all(userId, category) as Array<{ id: string; size: number }>;
+    const photos = await mongoDBService.getPhotosCollection()
+      .find({ userId, primaryCategory: category, isDeleted: false })
+      .project({ id: 1, size: 1 })
+      .toArray();
     
     const photoIds = photos.map(p => p.id);
     return this.deletePhotosAndFreeSpace(userId, photoIds);
@@ -320,34 +333,25 @@ class PhotosStorageService {
     deletedCount: number;
     freedSpace: number;
   }> {
-    const trashedPhotos = this.db.prepare(`
-      SELECT id, size, storage_path, thumbnail_path 
-      FROM photos 
-      WHERE user_id = ? AND is_deleted = 1
-    `).all(userId) as Array<{
-      id: string;
-      size: number;
-      storage_path: string;
-      thumbnail_path: string | null;
-    }>;
+    const trashedPhotos = await mongoDBService.getPhotosCollection()
+      .find({ userId, isDeleted: true })
+      .toArray();
     
     let freedSpace = 0;
     let deletedCount = 0;
     
-    const fs = await import('fs');
-    
     for (const photo of trashedPhotos) {
       try {
         // Dateien löschen
-        if (photo.storage_path && fs.existsSync(photo.storage_path)) {
-          fs.unlinkSync(photo.storage_path);
+        if (photo.storagePath && fs.existsSync(photo.storagePath)) {
+          fs.unlinkSync(photo.storagePath);
         }
-        if (photo.thumbnail_path && fs.existsSync(photo.thumbnail_path)) {
-          fs.unlinkSync(photo.thumbnail_path);
+        if (photo.thumbnailPath && fs.existsSync(photo.thumbnailPath)) {
+          fs.unlinkSync(photo.thumbnailPath);
         }
         
         // DB-Eintrag löschen
-        this.db.prepare('DELETE FROM photos WHERE id = ?').run(photo.id);
+        await mongoDBService.getPhotosCollection().deleteOne({ id: photo.id });
         
         freedSpace += photo.size;
         deletedCount++;
@@ -362,7 +366,7 @@ class PhotosStorageService {
   /**
    * Plan-Upgrade durchführen
    */
-  async upgradePlan(userId: string, newPlan: keyof typeof STORAGE_PLANS): Promise<{
+  async upgradePlan(userId: string, newPlan: 'free' | 'plus' | 'pro' | 'business'): Promise<{
     success: boolean;
     newLimit: number;
     formattedLimit: string;
@@ -374,11 +378,10 @@ class PhotosStorageService {
     
     const now = Date.now();
     
-    this.db.prepare(`
-      UPDATE photo_users 
-      SET plan = ?, storage_limit = ?, updated_at = ?
-      WHERE id = ?
-    `).run(newPlan, plan.storage, now, userId);
+    await mongoDBService.getPhotoUsersCollection().updateOne(
+      { id: userId },
+      { $set: { plan: newPlan, storageLimit: plan.storage, updatedAt: now } }
+    );
     
     return {
       success: true,
@@ -389,4 +392,4 @@ class PhotosStorageService {
 }
 
 // Singleton exportieren
-export const photosStorageService = new PhotosStorageService();
+export const photosStorageServiceMongo = new PhotosStorageServiceMongo();
