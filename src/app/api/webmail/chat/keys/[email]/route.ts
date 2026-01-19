@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const HETZNER_WEBMAIL_API = process.env.HETZNER_WEBMAIL_API || 'https://mail.taskilo.de/webmail-api';
+const WEBMAIL_PROXY_URL = process.env.WEBMAIL_PROXY_URL || 'https://mail.taskilo.de/webmail-api';
 const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY || '';
 
 /**
@@ -14,7 +14,7 @@ export async function GET(
   const { email } = await params;
   
   try {
-    const response = await fetch(`${HETZNER_WEBMAIL_API}/api/chat/keys/${encodeURIComponent(email)}`, {
+    const response = await fetch(`${WEBMAIL_PROXY_URL}/api/chat/keys/${encodeURIComponent(email)}`, {
       method: 'GET',
       headers: { 
         'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ export async function DELETE(
   const { email } = await params;
   
   try {
-    const response = await fetch(`${HETZNER_WEBMAIL_API}/api/chat/keys/${encodeURIComponent(email)}`, {
+    const response = await fetch(`${WEBMAIL_PROXY_URL}/api/chat/keys/${encodeURIComponent(email)}`, {
       method: 'DELETE',
       headers: { 
         'Content-Type': 'application/json',
