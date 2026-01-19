@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   ArrowLeft,
   Search,
@@ -16,13 +16,18 @@ import {
   Upload,
   Mic,
   Send,
-  MoreHorizontal,
   CheckSquare,
   Pin,
   Users,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { useE2EEncryption } from '@/hooks/useE2EEncryption';
+import { EncryptedMessage } from '@/lib/crypto';
 
 interface Space {
   id: string;
@@ -32,8 +37,20 @@ interface Space {
   createdAt: Date;
 }
 
+interface ChatMessage {
+  id: string;
+  spaceId: string;
+  senderEmail: string;
+  senderName: string;
+  content: string;
+  encrypted?: EncryptedMessage;
+  isEncrypted: boolean;
+  createdAt: Date;
+}
+
 interface SpaceViewProps {
   space: Space;
+  userEmail?: string;
   onBack: () => void;
   onAddMembers?: () => void;
   onShareFile?: () => void;
@@ -59,15 +76,9 @@ const WelcomeIllustration = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Mock empfohlene Apps
-const recommendedApps = [
-  { id: 'translator', name: 'Abang Translator', icon: '🌐' },
-  { id: 'poll', name: 'Able Poll', icon: '📊' },
-  { id: 'absolute', name: 'Absolute Poll', icon: '📈' },
-];
-
 export function SpaceView({
   space,
+  userEmail,
   onBack,
   onAddMembers,
   onShareFile,
@@ -75,11 +86,127 @@ export function SpaceView({
 }: SpaceViewProps) {
   const { isDark } = useWebmailTheme();
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // E2E-Verschlüsselung Hook
+  const e2e = useE2EEncryption({ 
+    email: userEmail || '', 
+    enabled: !!userEmail,
+  });
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      // TODO: Implementiere Nachrichtenversand
-      setMessage('');
+  // Nachrichten laden
+  const loadMessages = useCallback(async () => {
+    if (!userEmail) return;
+    
+    try {
+      setIsLoadingMessages(true);
+      const response = await fetch(`/api/webmail/chat/spaces/${space.id}/messages`);
+      const data = await response.json();
+      
+      if (data.success && data.messages) {
+        const loadedMessages: ChatMessage[] = [];
+        
+        for (const msg of data.messages) {
+          let content = msg.content;
+          
+          // Wenn Nachricht verschlüsselt ist, versuche zu entschlüsseln
+          if (msg.isEncrypted && msg.encrypted && e2e.isReady) {
+            try {
+              const decrypted = await e2e.decrypt(msg.encrypted);
+              content = decrypted || '[Entschlüsselung fehlgeschlagen]';
+            } catch {
+              content = '[Verschlüsselte Nachricht]';
+            }
+          }
+          
+          loadedMessages.push({
+            id: msg.id,
+            spaceId: msg.spaceId,
+            senderEmail: msg.senderEmail,
+            senderName: msg.senderName || msg.senderEmail.split('@')[0],
+            content,
+            isEncrypted: msg.isEncrypted,
+            createdAt: new Date(msg.createdAt),
+          });
+        }
+        
+        setMessages(loadedMessages);
+      }
+    } catch {
+      // Fehler stillschweigend ignorieren
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, [space.id, userEmail, e2e]);
+
+  // Nachrichten beim Laden abrufen
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  // Auto-Scroll zum Ende bei neuen Nachrichten
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !userEmail || isSending) return;
+    
+    setIsSending(true);
+    
+    try {
+      let encryptedData: EncryptedMessage | undefined;
+      let plainContent = message.trim();
+      
+      // Versuche Nachricht zu verschlüsseln wenn E2E bereit ist
+      // Für Gruppenchats würden wir encryptForSpace verwenden
+      // Hier erstmal einfache Implementierung ohne echte Empfänger-Keys
+      const isEncrypted = e2e.isReady;
+      
+      if (isEncrypted && e2e.myPublicKey) {
+        // Für Demo: Verschlüssele mit eigenem Schlüssel
+        // In Produktion: Für jeden Empfänger separat verschlüsseln
+        const encrypted = await e2e.encrypt(e2e.myPublicKey, plainContent);
+        if (encrypted) {
+          encryptedData = encrypted;
+        }
+      }
+      
+      const response = await fetch(`/api/webmail/chat/spaces/${space.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderEmail: userEmail,
+          senderName: userEmail.split('@')[0],
+          content: isEncrypted ? '[E2E Verschlüsselt]' : plainContent,
+          encrypted: encryptedData,
+          isEncrypted,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.message) {
+        const newMessage: ChatMessage = {
+          id: data.message.id,
+          spaceId: space.id,
+          senderEmail: userEmail,
+          senderName: userEmail.split('@')[0],
+          content: plainContent, // Lokale Anzeige mit Klartext
+          isEncrypted,
+          createdAt: new Date(),
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        setMessage('');
+      }
+    } catch {
+      // Fehler stillschweigend ignorieren
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -196,120 +323,179 @@ export function SpaceView({
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          {/* Welcome Illustration */}
-          <div className="flex justify-center mb-6">
-            <WelcomeIllustration className="w-48 h-32" />
-          </div>
-
-          {/* Date Divider */}
-          <div className="flex items-center justify-center mb-6">
-            <span className={cn(
-              "text-xs px-3 py-1 rounded-full",
-              isDark ? "bg-[#3c4043] text-gray-400" : "bg-gray-100 text-gray-500"
+          {/* E2E Encryption Status Banner */}
+          {e2e.isSupported && (
+            <div className={cn(
+              "flex items-center justify-center gap-2 py-2 px-4 mb-4 rounded-lg text-xs",
+              e2e.isReady
+                ? isDark ? "bg-green-900/30 text-green-400" : "bg-green-50 text-green-700"
+                : isDark ? "bg-yellow-900/30 text-yellow-400" : "bg-yellow-50 text-yellow-700"
             )}>
-              {formatDate(space.createdAt)}
-            </span>
-          </div>
-
-          {/* Welcome Message */}
-          <div className={cn(
-            "rounded-2xl p-6 mb-6",
-            isDark ? "bg-[#292a2d]" : "bg-gray-50"
-          )}>
-            <p className={cn(
-              "text-center text-lg mb-6",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              <span className="font-medium">{space.name}</span>, willkommen in Ihrem neuen Gruppenbereich für die Zusammenarbeit!<br />
-              <span className="font-medium">Los gehts!</span>
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
-              <button
-                onClick={onAddMembers}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
-                  isDark 
-                    ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
-                    : "bg-teal-50 text-teal-700 hover:bg-teal-100"
-                )}
-              >
-                <UserPlus className="h-4 w-4" />
-                Mitglieder hinzufüg...
-              </button>
-              <button
-                onClick={onShareFile}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
-                  isDark 
-                    ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
-                    : "bg-teal-50 text-teal-700 hover:bg-teal-100"
-                )}
-              >
-                <FileUp className="h-4 w-4" />
-                Datei teil...
-              </button>
-              <button
-                onClick={onAssignTask}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
-                  isDark 
-                    ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
-                    : "bg-teal-50 text-teal-700 hover:bg-teal-100"
-                )}
-              >
-                <Sparkles className="h-4 w-4" />
-                Aufgaben zuweis...
-              </button>
+              {e2e.isReady ? (
+                <>
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Ende-zu-Ende-Verschlüsselung aktiv</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-4 w-4" />
+                  <span>E2E-Verschlüsselung wird initialisiert...</span>
+                </>
+              )}
             </div>
+          )}
 
-            {/* Recommended Apps */}
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <span className={cn(
-                "text-sm",
-                isDark ? "text-gray-400" : "text-gray-600"
+          {/* Welcome Illustration - nur anzeigen wenn keine Nachrichten */}
+          {messages.length === 0 && !isLoadingMessages && (
+            <>
+              <div className="flex justify-center mb-6">
+                <WelcomeIllustration className="w-48 h-32" />
+              </div>
+
+              {/* Date Divider */}
+              <div className="flex items-center justify-center mb-6">
+                <span className={cn(
+                  "text-xs px-3 py-1 rounded-full",
+                  isDark ? "bg-[#3c4043] text-gray-400" : "bg-gray-100 text-gray-500"
+                )}>
+                  {formatDate(space.createdAt)}
+                </span>
+              </div>
+
+              {/* Welcome Message */}
+              <div className={cn(
+                "rounded-2xl p-6 mb-6",
+                isDark ? "bg-[#292a2d]" : "bg-gray-50"
               )}>
-                Empfohlene Apps für<br />Ihren Gruppenbereich
-              </span>
-              {recommendedApps.map((app) => (
-                <button
-                  key={app.id}
-                  className={cn(
-                    "flex flex-col items-center gap-1 p-3 rounded-lg transition-colors",
-                    isDark ? "hover:bg-white/5" : "hover:bg-gray-100"
-                  )}
-                >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center text-xl",
-                    isDark ? "bg-[#3c4043]" : "bg-white border border-gray-200"
-                  )}>
-                    {app.icon}
+                <p className={cn(
+                  "text-center text-lg mb-6",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  <span className="font-medium">{space.name}</span>, willkommen in Ihrem neuen Gruppenbereich für die Zusammenarbeit!<br />
+                  <span className="font-medium">Los gehts!</span>
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+                  <button
+                    onClick={onAddMembers}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
+                      isDark 
+                        ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
+                        : "bg-teal-50 text-teal-700 hover:bg-teal-100"
+                    )}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Mitglieder hinzufügen
+                  </button>
+                  <button
+                    onClick={onShareFile}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
+                      isDark 
+                        ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
+                        : "bg-teal-50 text-teal-700 hover:bg-teal-100"
+                    )}
+                  >
+                    <FileUp className="h-4 w-4" />
+                    Datei teilen
+                  </button>
+                  <button
+                    onClick={onAssignTask}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors",
+                      isDark 
+                        ? "bg-[#394457] text-[#8ab4f8] hover:bg-[#3d4a5c]" 
+                        : "bg-teal-50 text-teal-700 hover:bg-teal-100"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Aufgaben zuweisen
+                  </button>
+                </div>
+              </div>
+
+              {/* Created Info */}
+              <p className={cn(
+                "text-center text-sm",
+                isDark ? "text-gray-500" : "text-gray-400"
+              )}>
+                Sie haben diesen Gruppenbereich heute erstellt
+              </p>
+            </>
+          )}
+
+          {/* Loading State */}
+          {isLoadingMessages && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500" />
+            </div>
+          )}
+
+          {/* Messages List */}
+          {messages.length > 0 && (
+            <div className="space-y-4">
+              {messages.map((msg, index) => {
+                const isOwnMessage = msg.senderEmail === userEmail;
+                const showDate = index === 0 || 
+                  messages[index - 1].createdAt.toDateString() !== msg.createdAt.toDateString();
+                
+                return (
+                  <div key={msg.id}>
+                    {showDate && (
+                      <div className="flex items-center justify-center my-4">
+                        <span className={cn(
+                          "text-xs px-3 py-1 rounded-full",
+                          isDark ? "bg-[#3c4043] text-gray-400" : "bg-gray-100 text-gray-500"
+                        )}>
+                          {formatDate(msg.createdAt)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className={cn(
+                      "flex",
+                      isOwnMessage ? "justify-end" : "justify-start"
+                    )}>
+                      <div className={cn(
+                        "max-w-[70%] rounded-2xl px-4 py-2",
+                        isOwnMessage
+                          ? isDark ? "bg-[#8ab4f8] text-[#202124]" : "bg-teal-600 text-white"
+                          : isDark ? "bg-[#3c4043] text-white" : "bg-gray-100 text-gray-900"
+                      )}>
+                        {!isOwnMessage && (
+                          <p className={cn(
+                            "text-xs font-medium mb-1",
+                            isDark ? "text-gray-300" : "text-gray-600"
+                          )}>
+                            {msg.senderName}
+                          </p>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <div className={cn(
+                          "flex items-center justify-end gap-1 mt-1",
+                          isOwnMessage
+                            ? isDark ? "text-[#202124]/60" : "text-white/70"
+                            : isDark ? "text-gray-400" : "text-gray-500"
+                        )}>
+                          <span className="text-xs">
+                            {msg.createdAt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {msg.isEncrypted && (
+                            <span title="Ende-zu-Ende verschlüsselt">
+                              <Lock className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className={cn(
-                    "text-xs text-center max-w-[70px] truncate",
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  )}>
-                    {app.name}
-                  </span>
-                </button>
-              ))}
-              <button className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                isDark ? "bg-[#3c4043] hover:bg-[#4a4d50]" : "bg-gray-100 hover:bg-gray-200"
-              )}>
-                <MoreHorizontal className={cn("h-5 w-5", isDark ? "text-gray-400" : "text-gray-500")} />
-              </button>
+                );
+              })}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
-
-          {/* Created Info */}
-          <p className={cn(
-            "text-center text-sm",
-            isDark ? "text-gray-500" : "text-gray-400"
-          )}>
-            Sie haben diesen Gruppenbereich heute erstellt
-          </p>
+          )}
         </div>
       </div>
 
@@ -391,10 +577,10 @@ export function SpaceView({
           {/* Send Button */}
           <button
             onClick={handleSendMessage}
-            disabled={!message.trim()}
+            disabled={!message.trim() || isSending}
             className={cn(
               "p-2 rounded-full transition-colors shrink-0",
-              message.trim()
+              message.trim() && !isSending
                 ? isDark
                   ? "bg-[#8ab4f8] text-[#202124] hover:bg-[#aecbfa]"
                   : "bg-teal-600 text-white hover:bg-teal-700"
@@ -403,7 +589,11 @@ export function SpaceView({
                   : "text-gray-400"
             )}
           >
-            <Send className="h-5 w-5" />
+            {isSending ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
           </button>
         </div>
       </div>

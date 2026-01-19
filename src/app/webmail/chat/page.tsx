@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Menu, 
   Search, 
@@ -18,6 +18,7 @@ import { ChatSidebar } from '@/components/webmail/chat/ChatSidebar';
 import { ChatHome } from '@/components/webmail/chat/ChatHome';
 import { CreateSpaceModal } from '@/components/webmail/chat/CreateSpaceModal';
 import { SpaceView } from '@/components/webmail/chat/SpaceView';
+import { AddMembersModal } from '@/components/webmail/chat/AddMembersModal';
 import { useWebmailSession } from '@/app/webmail/layout';
 
 interface Space {
@@ -35,9 +36,11 @@ export default function ChatPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
   const [showCompanionApps] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Modal States
   const [isCreateSpaceModalOpen, setIsCreateSpaceModalOpen] = useState(false);
+  const [isAddMembersModalOpen, setIsAddMembersModalOpen] = useState(false);
   
   // Spaces State
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -45,6 +48,37 @@ export default function ChatPage() {
 
   // Benutzername aus E-Mail extrahieren
   const userName = session?.email?.split('@')[0] || 'Benutzer';
+  const userEmail = session?.email;
+
+  // Spaces aus der API laden
+  const loadSpaces = useCallback(async () => {
+    if (!userEmail) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/webmail/chat/spaces?email=${encodeURIComponent(userEmail)}`);
+      const data = await response.json();
+      
+      if (data.success && data.spaces) {
+        setSpaces(data.spaces.map((s: { id: string; name: string; emoji: string; memberCount: number; createdAt: string }) => ({
+          id: s.id,
+          name: s.name,
+          emoji: s.emoji,
+          memberCount: s.memberCount,
+          createdAt: new Date(s.createdAt),
+        })));
+      }
+    } catch (error) {
+      // Fehler stillschweigend ignorieren
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userEmail]);
+
+  // Spaces beim Laden der Seite abrufen
+  useEffect(() => {
+    loadSpaces();
+  }, [loadSpaces]);
 
   // Companion Apps (rechte Seitenleiste)
   const companionApps = [
@@ -66,17 +100,33 @@ export default function ChatPage() {
     setActiveSection('discover-apps');
   };
 
-  const handleCreateSpace = (name: string, emoji: string) => {
-    const newSpace: Space = {
-      id: `space-${Date.now()}`,
-      name,
-      emoji,
-      memberCount: 1,
-      createdAt: new Date(),
-    };
-    setSpaces(prev => [...prev, newSpace]);
-    setActiveSpace(newSpace);
-    setActiveSection(`space-${newSpace.id}`);
+  const handleCreateSpace = async (name: string, emoji: string) => {
+    if (!userEmail) return;
+    
+    try {
+      const response = await fetch('/api/webmail/chat/spaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, name, emoji }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.space) {
+        const newSpace: Space = {
+          id: data.space.id,
+          name: data.space.name,
+          emoji: data.space.emoji,
+          memberCount: data.space.memberCount,
+          createdAt: new Date(data.space.createdAt),
+        };
+        setSpaces(prev => [...prev, newSpace]);
+        setActiveSpace(newSpace);
+        setActiveSection(`space-${newSpace.id}`);
+      }
+    } catch (error) {
+      // Fehler stillschweigend ignorieren
+    }
   };
 
   const handleSpaceClick = (spaceId: string) => {
@@ -242,8 +292,9 @@ export default function ChatPage() {
           {activeSpace ? (
             <SpaceView
               space={activeSpace}
+              userEmail={userEmail}
               onBack={handleBackFromSpace}
-              onAddMembers={() => {}}
+              onAddMembers={() => setIsAddMembersModalOpen(true)}
               onShareFile={() => {}}
               onAssignTask={() => {}}
             />
@@ -323,6 +374,16 @@ export default function ChatPage() {
         isOpen={isCreateSpaceModalOpen}
         onClose={() => setIsCreateSpaceModalOpen(false)}
         onCreateSpace={handleCreateSpace}
+      />
+
+      {/* Add Members Modal */}
+      <AddMembersModal
+        isOpen={isAddMembersModalOpen}
+        onClose={() => setIsAddMembersModalOpen(false)}
+        spaceName={activeSpace?.name}
+        onAddMembers={(members) => {
+          // TODO: Mitglieder zum Space hinzufügen
+        }}
       />
     </div>
   );

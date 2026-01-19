@@ -24,6 +24,8 @@ import phoneVerificationRouter from './routes/phone-verification';
 import newsletterRouter from './routes/newsletter';
 import settingsRouter from './routes/settings';
 import tasksRouter from './routes/tasks';
+import chatRouter from './routes/chat';
+import keysRouter from './routes/keys';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
@@ -214,6 +216,8 @@ app.use('/api/drive', driveRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/photos/storage', storageRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/chat/keys', keysRouter);
 
 // API Routes - Payment (Revolut Escrow System)
 app.use('/api/payment', paymentRouter);
