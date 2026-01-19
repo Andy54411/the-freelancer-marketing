@@ -261,11 +261,21 @@ export interface SpaceMember {
   joinedAt: Date;
 }
 
+export interface EncryptedMessage {
+  ciphertext: string;
+  iv: string;
+  salt: string;
+  senderPublicKey: string;
+}
+
 export interface SpaceMessage {
   _id?: ObjectId;
   spaceId: string;
   senderEmail: string;
+  senderName?: string;
   content: string;
+  encrypted?: EncryptedMessage;
+  isEncrypted: boolean;
   attachments: MessageAttachment[];
   reactions: MessageReaction[];
   threadId: string | null;

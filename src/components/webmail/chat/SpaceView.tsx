@@ -97,13 +97,13 @@ export function SpaceView({
     enabled: !!userEmail,
   });
 
-  // Nachrichten laden
-  const loadMessages = useCallback(async () => {
+  // Nachrichten laden - ohne e2e als Abhängigkeit um Endlosschleife zu vermeiden
+  const loadMessages = useCallback(async (decryptFn?: (encrypted: EncryptedMessage) => Promise<string | null>) => {
     if (!userEmail) return;
     
     try {
       setIsLoadingMessages(true);
-      const response = await fetch(`/api/webmail/chat/spaces/${space.id}/messages`);
+      const response = await fetch(`/api/webmail/chat/spaces/${space.id}/messages?email=${encodeURIComponent(userEmail)}`);
       const data = await response.json();
       
       if (data.success && data.messages) {
@@ -113,9 +113,9 @@ export function SpaceView({
           let content = msg.content;
           
           // Wenn Nachricht verschlüsselt ist, versuche zu entschlüsseln
-          if (msg.isEncrypted && msg.encrypted && e2e.isReady) {
+          if (msg.isEncrypted && msg.encrypted && decryptFn) {
             try {
-              const decrypted = await e2e.decrypt(msg.encrypted);
+              const decrypted = await decryptFn(msg.encrypted);
               content = decrypted || '[Entschlüsselung fehlgeschlagen]';
             } catch {
               content = '[Verschlüsselte Nachricht]';
@@ -140,12 +140,18 @@ export function SpaceView({
     } finally {
       setIsLoadingMessages(false);
     }
-  }, [space.id, userEmail, e2e]);
+  }, [space.id, userEmail]);
 
-  // Nachrichten beim Laden abrufen
+  // Nachrichten beim Laden abrufen - einmalig wenn space.id sich ändert
   useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
+    // Warte kurz auf E2E-Initialisierung, dann lade
+    const timer = setTimeout(() => {
+      loadMessages(e2e.isReady ? e2e.decrypt : undefined);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [space.id, userEmail]);
 
   // Auto-Scroll zum Ende bei neuen Nachrichten
   useEffect(() => {

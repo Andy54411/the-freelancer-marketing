@@ -537,7 +537,10 @@ router.get('/spaces/:spaceId/messages', async (req: Request, res: Response) => {
         id: msg._id?.toString(),
         spaceId: msg.spaceId,
         senderEmail: msg.senderEmail,
+        senderName: msg.senderName || msg.senderEmail.split('@')[0],
         content: msg.content,
+        encrypted: msg.encrypted,
+        isEncrypted: msg.isEncrypted || false,
         attachments: msg.attachments,
         reactions: msg.reactions,
         threadId: msg.threadId,
@@ -564,7 +567,7 @@ router.post('/spaces/:spaceId/messages', async (req: Request, res: Response) => 
   try {
     const email = getUserEmail(req);
     const { spaceId } = req.params;
-    const { content, attachments, threadId } = req.body;
+    const { content, senderName, encrypted, isEncrypted, attachments, threadId } = req.body;
 
     if (!ObjectId.isValid(spaceId)) {
       return res.status(400).json({
@@ -600,7 +603,10 @@ router.post('/spaces/:spaceId/messages', async (req: Request, res: Response) => 
     const message: SpaceMessage = {
       spaceId,
       senderEmail: email,
+      senderName: senderName || email.split('@')[0],
       content: content.trim(),
+      encrypted: encrypted || undefined,
+      isEncrypted: isEncrypted || false,
       attachments: attachments || [],
       reactions: [],
       threadId: threadId || null,
@@ -623,7 +629,10 @@ router.post('/spaces/:spaceId/messages', async (req: Request, res: Response) => 
         id: result.insertedId.toString(),
         spaceId: message.spaceId,
         senderEmail: message.senderEmail,
+        senderName: message.senderName,
         content: message.content,
+        encrypted: message.encrypted,
+        isEncrypted: message.isEncrypted,
         attachments: message.attachments,
         reactions: message.reactions,
         threadId: message.threadId,

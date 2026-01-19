@@ -11,9 +11,19 @@ import { z } from 'zod';
 const WEBMAIL_PROXY_URL = process.env.WEBMAIL_PROXY_URL || 'https://mail.taskilo.de/webmail-api';
 const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY || '';
 
+const EncryptedMessageSchema = z.object({
+  ciphertext: z.string(),
+  iv: z.string(),
+  salt: z.string(),
+  senderPublicKey: z.string(),
+}).optional();
+
 const SendMessageSchema = z.object({
-  email: z.string().email(),
+  senderEmail: z.string().email(),
+  senderName: z.string().optional(),
   content: z.string().min(1),
+  encrypted: EncryptedMessageSchema,
+  isEncrypted: z.boolean().optional().default(false),
   attachments: z.array(z.object({
     id: z.string(),
     name: z.string(),
@@ -86,16 +96,23 @@ export async function POST(
   try {
     const { spaceId } = await params;
     const body = await request.json();
-    const { email, content, attachments, threadId } = SendMessageSchema.parse(body);
+    const { senderEmail, senderName, content, encrypted, isEncrypted, attachments, threadId } = SendMessageSchema.parse(body);
 
     const response = await fetch(`${WEBMAIL_PROXY_URL}/api/chat/spaces/${spaceId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': WEBMAIL_API_KEY,
-        'X-User-Email': email,
+        'X-User-Email': senderEmail,
       },
-      body: JSON.stringify({ content, attachments, threadId }),
+      body: JSON.stringify({ 
+        content, 
+        senderName,
+        encrypted,
+        isEncrypted,
+        attachments, 
+        threadId 
+      }),
     });
 
     const data = await response.json();
