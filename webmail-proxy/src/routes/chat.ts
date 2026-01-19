@@ -21,6 +21,7 @@
 import { Router, Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import mongoService, { Space, SpaceMember, SpaceMessage } from '../services/MongoDBService';
+import chatInvitationService from '../services/ChatInvitationService';
 
 const router = Router();
 
@@ -377,6 +378,31 @@ router.post('/spaces/:spaceId/members', async (req: Request, res: Response) => {
           $set: { updatedAt: new Date() },
         }
       );
+
+      // Einladungs-E-Mails versenden
+      const invitations = newMembers.map(member => ({
+        recipientEmail: member.email,
+        recipientName: (members.find((m: { email: string; name?: string }) => 
+          m.email.toLowerCase() === member.email) as { name?: string })?.name,
+        spaceName: space.name,
+        spaceEmoji: space.emoji,
+        inviterEmail: email,
+        spaceId,
+      }));
+
+      // E-Mails im Hintergrund versenden (nicht blockierend)
+      chatInvitationService.sendBulkInvitations(invitations)
+        .then(result => {
+          if (result.sent > 0) {
+            console.log(`[Chat] ${result.sent} Einladungs-E-Mails für Space "${space.name}" versendet`);
+          }
+          if (result.failed > 0) {
+            console.warn(`[Chat] ${result.failed} Einladungs-E-Mails fehlgeschlagen:`, result.errors);
+          }
+        })
+        .catch(err => {
+          console.error('[Chat] Fehler beim Versenden der Einladungs-E-Mails:', err);
+        });
     }
 
     const updatedSpace = await mongoService.spaces.findOne({

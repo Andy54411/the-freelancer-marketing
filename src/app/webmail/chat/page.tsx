@@ -383,8 +383,40 @@ export default function ChatPage() {
         spaceName={activeSpace?.name}
         userEmail={session?.email}
         userPassword={session?.password}
-        onAddMembers={(members) => {
-          // TODO: Mitglieder zum Space hinzufügen
+        onAddMembers={async (members) => {
+          if (!activeSpace || !userEmail) return;
+          
+          try {
+            const response = await fetch(`/api/webmail/chat/spaces/${activeSpace.id}/members`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: userEmail,
+                members: members.map(m => ({
+                  email: m.email,
+                  name: m.name,
+                  role: 'member',
+                })),
+              }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              // Space aktualisieren mit neuer Mitgliederzahl
+              setSpaces(prev => prev.map(s => 
+                s.id === activeSpace.id 
+                  ? { ...s, memberCount: data.memberCount } 
+                  : s
+              ));
+              
+              if (activeSpace) {
+                setActiveSpace({ ...activeSpace, memberCount: data.memberCount });
+              }
+            }
+          } catch (error) {
+            // Fehler stillschweigend ignorieren
+          }
         }}
       />
     </div>
