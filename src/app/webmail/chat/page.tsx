@@ -381,6 +381,8 @@ export default function ChatPage() {
         isOpen={isAddMembersModalOpen}
         onClose={() => setIsAddMembersModalOpen(false)}
         spaceName={activeSpace?.name}
+        userEmail={session?.email}
+        userPassword={session?.password}
         onAddMembers={(members) => {
           // TODO: Mitglieder zum Space hinzufügen
         }}

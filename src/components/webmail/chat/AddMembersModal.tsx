@@ -25,6 +25,8 @@ interface AddMembersModalProps {
   onAddMembers?: (members: Contact[]) => void;
   spaceName?: string;
   existingMemberIds?: string[];
+  userEmail?: string;
+  userPassword?: string;
 }
 
 // Leeres Array außerhalb der Komponente für stabile Referenz
@@ -36,6 +38,8 @@ export function AddMembersModal({
   onAddMembers,
   spaceName = 'Gruppenbereich',
   existingMemberIds,
+  userEmail,
+  userPassword,
 }: AddMembersModalProps) {
   const { isDark } = useWebmailTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,22 +62,32 @@ export function AddMembersModal({
     if (!isOpen) return;
     
     const loadContacts = async () => {
+      if (!userEmail || !userPassword) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
-        const response = await fetch('/api/webmail/contacts');
+        const response = await fetch('/api/webmail/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: userEmail, 
+            password: userPassword,
+            source: 'all',
+          }),
+        });
         if (response.ok) {
           const data = await response.json();
           const loadedContacts: Contact[] = (data.contacts || []).map((c: { 
-            id?: string; 
-            resourceName?: string; 
-            names?: Array<{ displayName?: string }>; 
-            emailAddresses?: Array<{ value?: string }>; 
-            photos?: Array<{ url?: string }>;
+            uid?: string;
+            displayName?: string; 
+            emails?: Array<{ value?: string }>; 
           }) => ({
-            id: c.id || c.resourceName || '',
-            name: c.names?.[0]?.displayName || '',
-            email: c.emailAddresses?.[0]?.value || '',
-            avatar: c.photos?.[0]?.url,
+            id: c.uid || '',
+            name: c.displayName || '',
+            email: c.emails?.[0]?.value || '',
           })).filter((c: Contact) => c.email && !stableExistingMemberIds.includes(c.id));
           setContacts(loadedContacts);
           setFilteredContacts(loadedContacts);
@@ -88,7 +102,7 @@ export function AddMembersModal({
     loadContacts();
     setSearchQuery('');
     setSelectedContacts([]);
-  }, [isOpen, stableExistingMemberIds]);
+  }, [isOpen, stableExistingMemberIds, userEmail, userPassword]);
 
   // Fokus auf Input setzen wenn Modal öffnet
   useEffect(() => {
