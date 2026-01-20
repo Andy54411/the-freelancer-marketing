@@ -1090,7 +1090,7 @@ class DriveServiceMongo {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://taskilo.de/logo-dark.png" alt="Taskilo" style="height: 40px;" />
+      <img src="https://taskilo.de/images/taskilo-logo-transparent.png" alt="Taskilo" style="height: 40px;" />
     </div>
     
     <h1 style="color: #14ad9f; font-size: 24px; margin-bottom: 16px; text-align: center;">
@@ -1164,27 +1164,29 @@ Diese E-Mail wurde automatisch von Taskilo Drive versendet.
 taskilo.de
 `;
 
-    // Nutze System-E-Mail über Mailcow
-    const transport = nodemailer.createTransport({
-      host: 'mail.taskilo.de',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'noreply@taskilo.de',
-        pass: process.env.NOREPLY_EMAIL_PASSWORD || '',
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
+    // Sende E-Mail über lokalen Postfix (vertrauenswürdiges Netzwerk, keine Auth nötig)
+    // Die E-Mail wird vom Account des Eigentümers gesendet
+    try {
+      const transport = nodemailer.createTransport({
+        host: '172.22.1.253', // Mailcow Postfix Container im Docker-Netzwerk
+        port: 25,
+        secure: false,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
 
-    await transport.sendMail({
-      from: '"Taskilo Drive" <noreply@taskilo.de>',
-      to: params.targetEmail,
-      subject: `Freigabe-Anfrage: ${params.itemName}`,
-      text: textContent,
-      html: htmlContent,
-    });
+      await transport.sendMail({
+        from: `"${params.ownerEmail.split('@')[0]}" <${params.ownerEmail}>`,
+        to: params.targetEmail,
+        subject: `Freigabe-Anfrage: ${params.itemName}`,
+        text: textContent,
+        html: htmlContent,
+      });
+    } catch (emailError) {
+      // Log error but don't fail the share creation
+      console.error('Failed to send share notification email:', emailError);
+    }
   }
 
   /**
