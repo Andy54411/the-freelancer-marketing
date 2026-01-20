@@ -42,7 +42,16 @@ export default function ShareConfirmPage() {
           return;
         }
         
-        setShareInfo(data.share);
+        // Kombiniere share-Daten mit itemName und ownerEmail
+        setShareInfo({
+          id: data.share.id,
+          ownerEmail: data.ownerEmail,
+          itemName: data.itemName,
+          itemType: data.share.folderId ? 'folder' : 'file',
+          permission: data.share.permission,
+          message: data.share.message,
+          status: data.share.status,
+        });
       } catch {
         setError('Fehler beim Laden der Freigabe-Details');
       } finally {
