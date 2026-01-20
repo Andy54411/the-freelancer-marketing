@@ -698,7 +698,7 @@ export function TasksList({
             </div>
             <p className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-800'} mb-2`}>Noch keine Aufgaben</p>
             <p className={`text-sm ${isDark ? 'text-white' : 'text-gray-500'} max-w-xs`}>
-              Hier können Sie Ihre To-dos hinzufügen und in allen Google Workspace-Produkten im Auge behalten
+              Hier können Sie Ihre To-dos hinzufügen und in allen Taskilo-Produkten im Auge behalten
             </p>
           </div>
         ) : (
