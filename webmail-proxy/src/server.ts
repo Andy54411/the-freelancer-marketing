@@ -29,6 +29,7 @@ import keysRouter from './routes/keys';
 import { revolutProxyRouter } from './routes/revolut-proxy';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
+import { combinedStorageRouter } from './routes/combined-storage';
 import { ericRouter } from './routes/eric';
 import { 
   apiRateLimiter, 
@@ -157,8 +158,8 @@ app.use('/api/settings', settingsRouter);
 
 // API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
-  // Registration-, Profile-, Phone-Verification-, Newsletter-, Settings- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
-  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/settings') || req.path.startsWith('/mobileconfig')) {
+  // Registration-, Profile-, Phone-Verification-, Newsletter-, Settings-, Combined-Storage- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/settings') || req.path.startsWith('/combined-storage') || req.path.startsWith('/mobileconfig')) {
     return next();
   }
   
@@ -215,6 +216,7 @@ app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/photos/storage', storageRouter);
+app.use('/api/combined-storage', combinedStorageRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/chat/keys', keysRouter);

@@ -207,6 +207,23 @@ export interface DriveFile {
   updatedAt: Date;
 }
 
+// Freigaben für Dateien/Ordner
+export interface DriveShare {
+  _id?: ObjectId;
+  ownerId: string;          // E-Mail des Besitzers
+  targetEmail: string;      // E-Mail des Empfängers
+  fileId: string | null;    // Freigegebene Datei (oder null wenn Ordner)
+  folderId: string | null;  // Freigegebener Ordner (oder null wenn Datei)
+  permission: 'view' | 'edit';
+  status: 'pending' | 'accepted' | 'rejected';
+  token: string;            // Einmaliger Token für E-Mail-Bestätigung
+  message?: string;         // Optionale Nachricht vom Besitzer
+  acceptedAt: Date | null;
+  rejectedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Task {
   _id?: ObjectId;
   userId: string;
@@ -515,6 +532,7 @@ class MongoDBService {
   private _driveUsers: Collection<DriveUser> | null = null;
   private _driveFolders: Collection<DriveFolder> | null = null;
   private _driveFiles: Collection<DriveFile> | null = null;
+  private _driveShares: Collection<DriveShare> | null = null;
   private _tasks: Collection<Task> | null = null;
   private _taskLists: Collection<TaskList> | null = null;
   private _spaces: Collection<Space> | null = null;
@@ -655,6 +673,7 @@ class MongoDBService {
       this._driveUsers = this.db.collection('webmail_drive_users');
       this._driveFolders = this.db.collection('webmail_drive_folders');
       this._driveFiles = this.db.collection('webmail_drive_files');
+      this._driveShares = this.db.collection('webmail_drive_shares');
       this._tasks = this.db.collection('webmail_tasks');
       this._taskLists = this.db.collection('webmail_task_lists');
       this._spaces = this.db.collection('webmail_spaces');
@@ -709,6 +728,12 @@ class MongoDBService {
       await this._driveFiles?.createIndex({ userId: 1 });
       await this._driveFiles?.createIndex({ folderId: 1 });
       await this._driveFiles?.createIndex({ userId: 1, folderId: 1 });
+
+      // Drive Shares
+      await this._driveShares?.createIndex({ ownerId: 1 });
+      await this._driveShares?.createIndex({ targetEmail: 1 });
+      await this._driveShares?.createIndex({ targetEmail: 1, status: 1 });
+      await this._driveShares?.createIndex({ token: 1 }, { unique: true });
 
       // Tasks
       await this._tasks?.createIndex({ userId: 1 });
@@ -836,6 +861,11 @@ class MongoDBService {
   get driveFiles(): Collection<DriveFile> {
     if (!this._driveFiles) throw new Error('MongoDB nicht verbunden');
     return this._driveFiles;
+  }
+
+  get driveShares(): Collection<DriveShare> {
+    if (!this._driveShares) throw new Error('MongoDB nicht verbunden');
+    return this._driveShares;
   }
 
   get tasks(): Collection<Task> {

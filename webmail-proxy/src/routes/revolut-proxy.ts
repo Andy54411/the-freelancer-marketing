@@ -31,7 +31,10 @@ const router = Router();
 
 // Revolut API Konfiguration
 const REVOLUT_BASE_URL = 'https://b2b.revolut.com/api';
+const REVOLUT_MERCHANT_URL = 'https://merchant.revolut.com/api';
 const REVOLUT_CLIENT_ID = process.env.REVOLUT_CLIENT_ID || 'tIWziunOHZ6vbF4ygxxAT43mrVe4Fh-c7FIdM78TSmU';
+const REVOLUT_MERCHANT_API_KEY = process.env.REVOLUT_MERCHANT_API_KEY || '';
+const REVOLUT_MERCHANT_PUBLIC_KEY = process.env.REVOLUT_MERCHANT_PUBLIC_KEY || '';
 
 // Token Storage Pfad (persistent) - gemountet als Docker Volume
 const TOKEN_STORAGE_PATH = process.env.TOKEN_STORAGE_PATH || '/opt/taskilo/webmail-proxy/data/revolut-tokens.json';
@@ -322,6 +325,134 @@ router.post('/token-exchange', async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Revolut] Error:', message);
+    return res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+});
+
+/**
+ * POST /merchant/orders
+ * Erstelle eine Payment Order ueber die Revolut Merchant API
+ * Verwendet API-Key statt OAuth
+ */
+router.post('/merchant/orders', async (req: Request, res: Response) => {
+  try {
+    const { amount, currency, description, merchant_order_ext_ref, customer_email, redirect_url, cancel_url } = req.body;
+    
+    if (!amount || !currency) {
+      return res.status(400).json({
+        success: false,
+        error: 'amount und currency sind erforderlich',
+      });
+    }
+    
+    if (!REVOLUT_MERCHANT_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Revolut Merchant API Key nicht konfiguriert',
+      });
+    }
+    
+    // Betrag in Minor Units (Cent) umrechnen - Revolut erwartet kleinste Waehrungseinheit
+    const amountInMinorUnits = Math.round(amount);
+    
+    const orderData = {
+      amount: amountInMinorUnits,
+      currency: currency.toUpperCase(),
+      description: description || 'Taskilo Speicher-Upgrade',
+      merchant_order_ext_ref: merchant_order_ext_ref || `order-${Date.now()}`,
+      customer_email: customer_email,
+      redirect_url: redirect_url,
+      cancel_url: cancel_url,
+    };
+    
+    console.log('[Revolut Merchant] Creating order:', orderData);
+    
+    const response = await fetch(`${REVOLUT_MERCHANT_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${REVOLUT_MERCHANT_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Revolut-Api-Version': '2024-09-01',
+      },
+      body: JSON.stringify(orderData),
+    });
+    
+    const data = await response.json() as { id?: string; checkout_url?: string };
+    
+    if (!response.ok) {
+      console.error('[Revolut Merchant] Order creation failed:', data);
+      return res.status(response.status).json({
+        success: false,
+        error: 'Order creation failed',
+        details: data,
+      });
+    }
+    
+    console.log('[Revolut Merchant] Order created:', data.id);
+    
+    return res.json({
+      success: true,
+      data: data,
+      orderId: data.id,
+      checkoutUrl: data.checkout_url,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Revolut Merchant] Error:', message);
+    return res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+});
+
+/**
+ * GET /merchant/orders/:orderId
+ * Hole Order-Status ueber die Revolut Merchant API
+ */
+router.get('/merchant/orders/:orderId', async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    
+    if (!REVOLUT_MERCHANT_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Revolut Merchant API Key nicht konfiguriert',
+      });
+    }
+    
+    const response = await fetch(`${REVOLUT_MERCHANT_URL}/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${REVOLUT_MERCHANT_API_KEY}`,
+        'Accept': 'application/json',
+        'Revolut-Api-Version': '2024-09-01',
+      },
+    });
+    
+    const data = await response.json() as { state?: string };
+    
+    if (!response.ok) {
+      console.error('[Revolut Merchant] Get order failed:', data);
+      return res.status(response.status).json({
+        success: false,
+        error: 'Get order failed',
+        details: data,
+      });
+    }
+    
+    return res.json({
+      success: true,
+      data: data,
+      state: data.state,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Revolut Merchant] Error:', message);
     return res.status(500).json({
       success: false,
       error: message,

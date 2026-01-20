@@ -32,7 +32,6 @@ import {
 import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 import { MobileSetupModal } from './MobileSetupModal';
-import { getSettings } from '@/lib/webmail-settings-api';
 
 // Debug-Logging für Hydration
 const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
@@ -133,7 +132,7 @@ export function MailHeader({
   // Profilbild aus Settings laden
   const [profileImage, setProfileImage] = useState<string | undefined>(propProfileImage);
   
-  // Lade Profilbild vom Hetzner-Server wenn nicht über Props übergeben
+  // Lade Avatar vom Hetzner-Server wenn nicht über Props übergeben
   useEffect(() => {
     if (propProfileImage) {
       setProfileImage(propProfileImage);
@@ -142,21 +141,37 @@ export function MailHeader({
     
     if (!userEmail) return;
     
-    const loadProfileImage = async () => {
+    const loadAvatar = async () => {
       try {
-        console.log('[MailHeader] Loading profile image for:', userEmail);
-        const settings = await getSettings(userEmail);
-        console.log('[MailHeader] Settings loaded:', settings?.profileImage ? 'Has image' : 'No image');
-        if (settings?.profileImage) {
-          setProfileImage(settings.profileImage);
+        const response = await fetch(`https://mail.taskilo.de/api/profile/avatar/${encodeURIComponent(userEmail)}`);
+        if (response.status === 200) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setProfileImage((prev) => {
+            // Revoke alte URL wenn vorhanden
+            if (prev && prev.startsWith('blob:')) {
+              URL.revokeObjectURL(prev);
+            }
+            return url;
+          });
+        } else {
+          setProfileImage(undefined);
         }
-      } catch (err) {
-        console.error('[MailHeader] Error loading profile image:', err);
-        // Fehler ignorieren - Fallback auf Initial
+      } catch {
+        // Kein Avatar vorhanden - Fallback auf Initial
       }
     };
     
-    loadProfileImage();
+    loadAvatar();
+    
+    // Event-Listener für Avatar-Updates (z.B. wenn in Settings geändert)
+    const handleAvatarUpdate = () => loadAvatar();
+    window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    };
   }, [userEmail, propProfileImage]);
 
   // Fetch unread counts wenn im Dashboard
@@ -662,10 +677,8 @@ export function MailHeader({
 
       {/* Right Section - Actions & Profile - pushed to end */}
       <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 ml-auto pr-1 md:pr-2 shrink-0">
-        {/* App-spezifische rechte Inhalte (z.B. Calendar/Tasks Switch) - auf Mobile versteckt */}
-        <div className="hidden sm:contents">
-          {rightContent}
-        </div>
+        {/* App-spezifische rechte Inhalte (z.B. Calendar/Tasks Switch, Chat Status) */}
+        {rightContent}
 
         {/* Theme Toggle Button - Nur Desktop */}
         {!isDashboard && (

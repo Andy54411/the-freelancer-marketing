@@ -387,7 +387,7 @@ export function PhotosSidebar({
             </p>
           </div>
           <Link
-            href="/webmail/photos/storage"
+            href="/webmail/settings?section=abos"
             className={`block w-full text-center py-2 px-4 border rounded-full text-sm font-medium transition-colors ${
               isDark 
                 ? 'border-gray-600 text-gray-300 hover:bg-white/10' 

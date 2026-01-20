@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { useChatSettings } from '@/hooks/useChatSettings';
 import { NewChatModal } from './NewChatModal';
 
 interface Space {
@@ -38,6 +39,7 @@ interface ChatSidebarProps {
   onStartChat?: (recipients: string[]) => void;
   spaces?: Space[];
   onSpaceClick?: (spaceId: string) => void;
+  userEmail?: string;
 }
 
 // Verknüpfungen (Shortcuts) Section
@@ -78,8 +80,10 @@ export function ChatSidebar({
   onSearchApps,
   onMessageRequests,
   onStartChat,
+  userEmail,
 }: ChatSidebarProps) {
   const { isDark } = useWebmailTheme();
+  const chatSettings = useChatSettings({ email: userEmail, enabled: !!userEmail });
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const newChatButtonRef = useRef<HTMLButtonElement>(null);
   const [expandedSections, setExpandedSections] = useState({
@@ -409,6 +413,7 @@ export function ChatSidebar({
                 <>
                   {spaces.map((space) => {
                     const isActive = activeSection === `space-${space.id}`;
+                    const isCompact = chatSettings.settings.compactMode;
                     return (
                       <button
                         key={space.id}
@@ -419,7 +424,8 @@ export function ChatSidebar({
                           handleSectionClick(`space-${space.id}`);
                         }}
                         className={cn(
-                          'w-full flex items-center pl-6 pr-4 py-2 rounded-r-full transition-colors text-[14px]',
+                          'w-full flex items-center pl-6 pr-4 rounded-r-full transition-colors',
+                          isCompact ? 'py-1 text-[13px]' : 'py-2 text-[14px]',
                           isActive
                             ? isDark ? 'bg-[#394457] text-[#8ab4f8]' : 'bg-teal-50 text-teal-700 font-medium'
                             : isDark ? 'hover:bg-white/5 text-white' : 'hover:bg-gray-50 text-gray-700'
@@ -427,7 +433,8 @@ export function ChatSidebar({
                         style={{ marginRight: '8px' }}
                       >
                         <div className={cn(
-                          "h-8 w-8 rounded-lg mr-3 flex items-center justify-center text-lg",
+                          "rounded-lg mr-3 flex items-center justify-center",
+                          isCompact ? "h-6 w-6 text-base" : "h-8 w-8 text-lg",
                           isDark ? "bg-[#3c4043]" : "bg-gray-100"
                         )}>
                           {space.emoji}

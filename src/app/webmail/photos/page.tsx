@@ -57,6 +57,11 @@ export default function PhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [storageInfo, setStorageInfo] = useState<PhotoStorageInfo | null>(null);
+  // Gemeinsamer Speicher für alle Apps
+  const [combinedStorage, setCombinedStorage] = useState<{ used: number; limit: number }>({
+    used: 0,
+    limit: 15 * 1024 * 1024 * 1024, // 15 GB default
+  });
   const [loading, setLoading] = useState(true);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable');
@@ -146,14 +151,26 @@ export default function PhotosPage() {
         getPhotosOptions.category = activeDynamicCategory;
       }
       
-      const [photosData, storage, memoriesData] = await Promise.all([
+      const [photosData, storage, memoriesData, combinedStorageRes] = await Promise.all([
         PhotosApiService.getPhotos(getPhotosOptions),
         PhotosApiService.getStorageInfo(),
         PhotosApiService.getMemories(),
+        // GEMEINSAMER Speicher für alle Apps (Drive + Fotos + E-Mails)
+        fetch('https://mail.taskilo.de/webmail-api/api/combined-storage/simple', {
+          headers: { 'x-user-id': userEmail },
+        }).then(res => res.json()).catch(() => null),
       ]);
       setPhotos(photosData.photos);
       setStorageInfo(storage);
       setMemories(memoriesData.memories);
+      
+      // Combined Storage setzen (für Sidebar-Anzeige)
+      if (combinedStorageRes?.success) {
+        setCombinedStorage({
+          used: combinedStorageRes.totalUsed,
+          limit: combinedStorageRes.totalLimit,
+        });
+      }
     } catch {
       // Error handling
     } finally {
@@ -435,8 +452,8 @@ export default function PhotosPage() {
         <PhotosSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
-          storageUsed={storageInfo?.used || 0}
-          storageLimit={storageInfo?.limit || 5 * 1024 * 1024 * 1024}
+          storageUsed={combinedStorage.used}
+          storageLimit={combinedStorage.limit}
           isCollapsed={sidebarCollapsed}
           activeDocumentCategory={activeDocumentCategory}
           onDocumentCategoryChange={setActiveDocumentCategory}

@@ -1,25 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
-  Menu, 
-  Search, 
-  HelpCircle, 
-  Settings, 
   ChevronDown,
   Calendar,
   StickyNote,
   CheckSquare,
   Users,
+  Circle,
+  Clock,
+  MinusCircle,
+  Moon,
+  Search,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { MailHeader } from '@/components/webmail/MailHeader';
 import { ChatSidebar } from '@/components/webmail/chat/ChatSidebar';
 import { ChatHome } from '@/components/webmail/chat/ChatHome';
 import { CreateSpaceModal } from '@/components/webmail/chat/CreateSpaceModal';
 import { SpaceView } from '@/components/webmail/chat/SpaceView';
 import { AddMembersModal } from '@/components/webmail/chat/AddMembersModal';
+import { ChatSettingsModal } from '@/components/webmail/chat/ChatSettingsModal';
 import { useWebmailSession } from '@/app/webmail/layout';
+import { getAppUrl } from '@/lib/webmail-urls';
 
 interface Space {
   id: string;
@@ -41,6 +46,16 @@ export default function ChatPage() {
   // Modal States
   const [isCreateSpaceModalOpen, setIsCreateSpaceModalOpen] = useState(false);
   const [isAddMembersModalOpen, setIsAddMembersModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  
+  // Status State
+  const [userStatus, setUserStatus] = useState<'online' | 'away' | 'dnd' | 'offline'>('online');
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSpaces, setFilteredSpaces] = useState<Space[]>([]);
   
   // Spaces State
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -142,129 +157,123 @@ export default function ChatPage() {
     setActiveSection('overview');
   };
 
+  // Status-Optionen
+  const statusOptions = [
+    { id: 'online' as const, label: 'Aktiv', color: 'bg-green-500', icon: Circle },
+    { id: 'away' as const, label: 'Abwesend', color: 'bg-yellow-500', icon: Clock },
+    { id: 'dnd' as const, label: 'Nicht stören', color: 'bg-red-500', icon: MinusCircle },
+    { id: 'offline' as const, label: 'Offline', color: 'bg-gray-400', icon: Moon },
+  ];
+
+  const currentStatus = statusOptions.find(s => s.id === userStatus) || statusOptions[0];
+
+  // Klick außerhalb schließt Dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Status Indicator Component für Toolbar (dezent, neben Icons)
+  const StatusIndicator = () => (
+    <div className="relative" ref={statusDropdownRef}>
+      <button
+        onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+        className={cn(
+          "flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors",
+          isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
+        )}
+        title={currentStatus.label}
+      >
+        <div className={cn("h-2 w-2 rounded-full", currentStatus.color)} />
+        <span className={cn(
+          "text-sm",
+          isDark ? "text-gray-300" : "text-gray-600"
+        )}>
+          {currentStatus.label}
+        </span>
+        <ChevronDown className={cn(
+          "h-3.5 w-3.5 transition-transform",
+          showStatusDropdown && "rotate-180",
+          isDark ? "text-gray-400" : "text-gray-500"
+        )} />
+      </button>
+      
+      {/* Dropdown */}
+      {showStatusDropdown && (
+        <div className={cn(
+          "absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg border z-50",
+          isDark ? "bg-[#2d2e31] border-white/10" : "bg-white border-gray-200"
+        )}>
+          <div className="py-1">
+            {statusOptions.map((status) => {
+              const Icon = status.icon;
+              return (
+                <button
+                  key={status.id}
+                  onClick={() => {
+                    setUserStatus(status.id);
+                    setShowStatusDropdown(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors",
+                    userStatus === status.id
+                      ? isDark ? "bg-white/10" : "bg-gray-100"
+                      : isDark ? "hover:bg-white/5" : "hover:bg-gray-50",
+                    isDark ? "text-gray-200" : "text-gray-700"
+                  )}
+                >
+                  <div className={cn("h-2.5 w-2.5 rounded-full", status.color)} />
+                  <span>{status.label}</span>
+                  {userStatus === status.id && (
+                    <span className="ml-auto text-[#14ad9f]">✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className={cn(
       "h-screen flex flex-col overflow-hidden",
       isDark ? "bg-[#202124]" : "bg-[#f6f8fc]"
     )}>
-      {/* Header */}
-      <header className={cn(
-        "flex items-center gap-2 px-4 py-2 border-b shrink-0",
-        isDark ? "bg-[#202124] border-white/10" : "bg-white border-gray-200"
-      )}>
-        {/* Hamburger Menu (Mobile) */}
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className={cn(
-            "p-2 rounded-full md:hidden",
-            isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-          )}
-          aria-label="Menü öffnen"
-        >
-          <Menu className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
-        </button>
-
-        {/* Sidebar Toggle (Desktop) */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className={cn(
-            "p-2 rounded-full hidden md:flex",
-            isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-          )}
-          aria-label="Sidebar umschalten"
-        >
-          <Menu className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
-        </button>
-
-        {/* Logo / App Name */}
-        <div className="flex items-center gap-2">
-          <div className={cn(
-            "flex items-center gap-2 px-2 py-1",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            <svg 
-              className="h-8 w-8" 
-              viewBox="0 0 48 48" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                d="M40 16H8V8H40V16Z" 
-                fill="#00897B" 
-              />
-              <path 
-                d="M40 40H8V16H40V40Z" 
-                fill="#00BFA5" 
-              />
-              <path 
-                d="M32 24H16V20H32V24Z" 
-                fill="white" 
-              />
-              <path 
-                d="M32 32H16V28H32V32Z" 
-                fill="white" 
-              />
-            </svg>
-            <span className="text-xl font-medium">Chat</span>
-          </div>
-        </div>
-
-        {/* Suchleiste */}
-        <div className="flex-1 max-w-2xl mx-4">
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full",
-            isDark 
-              ? "bg-[#3c4043] hover:bg-[#4a4d50]" 
-              : "bg-gray-100 hover:bg-gray-200",
-            "transition-colors cursor-pointer"
-          )}>
-            <Search className={cn("h-5 w-5", isDark ? "text-gray-400" : "text-gray-500")} />
-            <span className={cn(
-              "text-sm flex-1",
-              isDark ? "text-gray-400" : "text-gray-500"
-            )}>
-              In Chat suchen
-            </span>
-          </div>
-        </div>
-
-        {/* Status Indicator */}
-        <div className={cn(
-          "hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer",
-          isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-        )}>
-          <div className="h-3 w-3 rounded-full bg-green-500" />
-          <span className={cn(
-            "text-sm",
-            isDark ? "text-white" : "text-gray-700"
-          )}>
-            Aktiv
-          </span>
-          <ChevronDown className={cn("h-4 w-4", isDark ? "text-gray-400" : "text-gray-500")} />
-        </div>
-
-        {/* Rechte Icons */}
-        <div className="flex items-center gap-1">
-          <button
-            className={cn(
-              "p-2 rounded-full",
-              isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-            )}
-            title="Hilfe"
-          >
-            <HelpCircle className={cn("h-5 w-5", isDark ? "text-gray-400" : "text-gray-500")} />
-          </button>
-          <button
-            className={cn(
-              "p-2 rounded-full",
-              isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-            )}
-            title="Einstellungen"
-          >
-            <Settings className={cn("h-5 w-5", isDark ? "text-gray-400" : "text-gray-500")} />
-          </button>
-        </div>
-      </header>
+      {/* Einheitlicher MailHeader */}
+      <MailHeader
+        userEmail={session?.email || ''}
+        onLogout={() => window.location.href = getAppUrl('/webmail')}
+        onMenuToggle={() => {
+          setSidebarCollapsed(!sidebarCollapsed);
+          setMobileMenuOpen(true);
+        }}
+        appName="Chat"
+        appHomeUrl="/webmail/chat"
+        searchPlaceholder="In Chats suchen"
+        onSearch={(query) => {
+          setSearchQuery(query);
+          if (query.trim()) {
+            const filtered = spaces.filter(space => 
+              space.name.toLowerCase().includes(query.toLowerCase()) ||
+              space.emoji.includes(query)
+            );
+            setFilteredSpaces(filtered);
+            setActiveSection('search-results');
+          } else {
+            setFilteredSpaces([]);
+            setActiveSection('overview');
+          }
+        }}
+        onSettingsClick={() => setIsSettingsModalOpen(true)}
+        rightContent={<StatusIndicator />}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -285,6 +294,7 @@ export default function ChatPage() {
           onSearchSpaces={handleSearchSpaces}
           spaces={spaces}
           onSpaceClick={handleSpaceClick}
+          userEmail={userEmail}
         />
 
         {/* Main Content */}
@@ -305,6 +315,68 @@ export default function ChatPage() {
               onSearchSpaces={handleSearchSpaces}
               onDiscoverApps={handleDiscoverApps}
             />
+          ) : activeSection === 'search-results' ? (
+            <div className={cn(
+              "flex-1 overflow-y-auto p-6",
+              isDark ? "bg-[#202124]" : "bg-[#f6f8fc]"
+            )}>
+              <div className="max-w-3xl mx-auto">
+                <div className="flex items-center gap-3 mb-6">
+                  <Search className={cn("h-5 w-5", isDark ? "text-gray-400" : "text-gray-500")} />
+                  <h2 className={cn(
+                    "text-lg font-medium",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    Suchergebnisse für "{searchQuery}"
+                  </h2>
+                </div>
+                
+                {filteredSpaces.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredSpaces.map((space) => (
+                      <button
+                        key={space.id}
+                        onClick={() => handleSpaceClick(space.id)}
+                        className={cn(
+                          "w-full flex items-center gap-4 p-4 rounded-xl transition-colors text-left",
+                          isDark 
+                            ? "bg-[#2d2e31] hover:bg-[#3c4043]" 
+                            : "bg-white hover:bg-gray-50 border border-gray-200"
+                        )}
+                      >
+                        <div className="text-2xl">{space.emoji}</div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className={cn(
+                            "font-medium truncate",
+                            isDark ? "text-white" : "text-gray-900"
+                          )}>
+                            {space.name}
+                          </h3>
+                          <p className={cn(
+                            "text-sm",
+                            isDark ? "text-gray-400" : "text-gray-500"
+                          )}>
+                            {space.memberCount} Mitglieder
+                          </p>
+                        </div>
+                        <MessageSquare className={cn(
+                          "h-5 w-5",
+                          isDark ? "text-gray-500" : "text-gray-400"
+                        )} />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "text-center py-12",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Keine Chats gefunden für "{searchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
           ) : activeSection === 'new-chat' ? (
             <div className={cn(
               "flex-1 flex items-center justify-center",
@@ -418,6 +490,13 @@ export default function ChatPage() {
             // Fehler stillschweigend ignorieren
           }
         }}
+      />
+
+      {/* Settings Modal */}
+      <ChatSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        userEmail={session?.email}
       />
     </div>
   );

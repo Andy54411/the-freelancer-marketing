@@ -21,13 +21,15 @@ import {
   Users,
   Shield,
   ShieldCheck,
-  ShieldAlert,
   Lock,
+  Check,
+  CheckCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { useE2EEncryption } from '@/hooks/useE2EEncryption';
-import { EncryptedMessage } from '@/lib/crypto';
+import { useChatSettings } from '@/hooks/useChatSettings';
+import { EncryptedMessage } from '@/lib/crypto/E2ECryptoService';
 
 interface Space {
   id: string;
@@ -89,11 +91,20 @@ export function SpaceView({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // E2E-Verschlüsselung Hook
   const e2e = useE2EEncryption({ 
     email: userEmail || '', 
+    enabled: !!userEmail,
+  });
+  
+  // Chat-Einstellungen Hook
+  const chatSettings = useChatSettings({
+    email: userEmail,
     enabled: !!userEmail,
   });
 
@@ -158,28 +169,141 @@ export function SpaceView({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || !userEmail || isSending) return;
+  // Tipp-Indikator senden
+  const sendTypingIndicator = useCallback(async (typing: boolean) => {
+    if (!userEmail || !chatSettings.shouldShowTypingIndicator()) return;
     
+    try {
+      await fetch('/api/webmail/chat/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          spaceId: space.id,
+          isTyping: typing,
+        }),
+      });
+    } catch {
+      // Ignorieren
+    }
+  }, [userEmail, space.id, chatSettings]);
+
+  // Tipp-Status von anderen Usern abrufen
+  useEffect(() => {
+    if (!userEmail) return;
+    
+    const fetchTypingStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/webmail/chat/typing?spaceId=${encodeURIComponent(space.id)}&email=${encodeURIComponent(userEmail)}`
+        );
+        const data = await response.json();
+        
+        if (data.success && data.typing) {
+          setTypingUsers(
+            data.typing
+              .filter((t: { email: string }) => t.email !== userEmail)
+              .map((t: { email: string }) => t.email.split('@')[0])
+          );
+        }
+      } catch {
+        // Ignorieren
+      }
+    };
+    
+    // Initial und dann alle 3 Sekunden
+    fetchTypingStatus();
+    const interval = setInterval(fetchTypingStatus, 3000);
+    
+    return () => clearInterval(interval);
+  }, [space.id, userEmail]);
+
+  // Lesebestätigung senden wenn Space geöffnet wird
+  useEffect(() => {
+    if (!userEmail || !chatSettings.shouldSendReadReceipts()) return;
+    
+    const sendReadReceipt = async () => {
+      try {
+        await fetch('/api/webmail/chat/read-receipts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userEmail,
+            spaceId: space.id,
+          }),
+        });
+      } catch {
+        // Ignorieren
+      }
+    };
+    
+    sendReadReceipt();
+  }, [space.id, userEmail, chatSettings]);
+
+  // Bei Texteingabe Typing-Indikator senden
+  const handleMessageChange = useCallback((value: string) => {
+    setMessage(value);
+    
+    // Typing-Indikator senden
+    if (value.length > 0 && !isTyping) {
+      setIsTyping(true);
+      sendTypingIndicator(true);
+    }
+    
+    // Timeout für Typing-Stop
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTyping) {
+        setIsTyping(false);
+        sendTypingIndicator(false);
+      }
+    }, 3000);
+  }, [isTyping, sendTypingIndicator]);
+
+  const handleSendMessage = async () => {
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG] handleSendMessage aufgerufen', { message, userEmail, isSending });
+    
+    if (!message.trim() || !userEmail || isSending) {
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG] Early return:', { messageTrim: message.trim(), userEmail, isSending });
+      return;
+    }
+    
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG] Sende Nachricht...');
     setIsSending(true);
     
     try {
       let encryptedData: EncryptedMessage | undefined;
       let plainContent = message.trim();
+      let isEncrypted = false;
       
       // Versuche Nachricht zu verschlüsseln wenn E2E bereit ist
       // Für Gruppenchats würden wir encryptForSpace verwenden
       // Hier erstmal einfache Implementierung ohne echte Empfänger-Keys
-      const isEncrypted = e2e.isReady;
-      
-      if (isEncrypted && e2e.myPublicKey) {
-        // Für Demo: Verschlüssele mit eigenem Schlüssel
-        // In Produktion: Für jeden Empfänger separat verschlüsseln
-        const encrypted = await e2e.encrypt(e2e.myPublicKey, plainContent);
-        if (encrypted) {
-          encryptedData = encrypted;
+      if (e2e.isReady && e2e.myPublicKey) {
+        try {
+          // Für Demo: Verschlüssele mit eigenem Schlüssel
+          // In Produktion: Für jeden Empfänger separat verschlüsseln
+          const encrypted = await e2e.encrypt(e2e.myPublicKey, plainContent);
+          if (encrypted && encrypted.ciphertext && encrypted.iv && encrypted.senderPublicKey) {
+            encryptedData = encrypted;
+            isEncrypted = true;
+          }
+        } catch (encryptErr) {
+          // eslint-disable-next-line no-console
+          console.log('[DEBUG] Verschlüsselung fehlgeschlagen, sende unverschlüsselt:', encryptErr);
         }
       }
+      
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG] API URL:', `/api/webmail/chat/spaces/${space.id}/messages`);
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG] isEncrypted:', isEncrypted, 'encryptedData:', encryptedData ? 'vorhanden' : 'nicht vorhanden');
       
       const response = await fetch(`/api/webmail/chat/spaces/${space.id}/messages`, {
         method: 'POST',
@@ -188,14 +312,24 @@ export function SpaceView({
           senderEmail: userEmail,
           senderName: userEmail.split('@')[0],
           content: isEncrypted ? '[E2E Verschlüsselt]' : plainContent,
-          encrypted: encryptedData,
+          // Nur encrypted senden wenn wirklich verschlüsselt
+          ...(isEncrypted && encryptedData ? { encrypted: encryptedData } : {}),
           isEncrypted,
         }),
       });
       
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG] Response Status:', response.status, response.statusText);
+      
       const data = await response.json();
       
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG] API Response:', data);
+      
       if (data.success && data.message) {
+        // eslint-disable-next-line no-console
+        console.log('[DEBUG] Nachricht erfolgreich, füge zur Liste hinzu');
+        
         const newMessage: ChatMessage = {
           id: data.message.id,
           spaceId: space.id,
@@ -208,9 +342,17 @@ export function SpaceView({
         
         setMessages(prev => [...prev, newMessage]);
         setMessage('');
+        
+        // Typing-Indikator stoppen
+        setIsTyping(false);
+        sendTypingIndicator(false);
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[DEBUG] Kein Erfolg oder keine Nachricht in Response:', { success: data.success, hasMessage: !!data.message });
       }
-    } catch {
-      // Fehler stillschweigend ignorieren
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[DEBUG] Fehler beim Senden:', err)
     } finally {
       setIsSending(false);
     }
@@ -441,7 +583,9 @@ export function SpaceView({
 
           {/* Messages List */}
           {messages.length > 0 && (
-            <div className="space-y-4">
+            <div className={cn(
+              chatSettings.settings.compactMode ? "space-y-1" : "space-y-4"
+            )}>
               {messages.map((msg, index) => {
                 const isOwnMessage = msg.senderEmail === userEmail;
                 const showDate = index === 0 || 
@@ -450,7 +594,10 @@ export function SpaceView({
                 return (
                   <div key={msg.id}>
                     {showDate && (
-                      <div className="flex items-center justify-center my-4">
+                      <div className={cn(
+                        "flex items-center justify-center",
+                        chatSettings.settings.compactMode ? "my-2" : "my-4"
+                      )}>
                         <span className={cn(
                           "text-xs px-3 py-1 rounded-full",
                           isDark ? "bg-[#3c4043] text-gray-400" : "bg-gray-100 text-gray-500"
@@ -461,16 +608,28 @@ export function SpaceView({
                     )}
                     
                     <div className={cn(
-                      "flex",
+                      "flex gap-2",
                       isOwnMessage ? "justify-end" : "justify-start"
                     )}>
+                      {/* Avatar - bei anderen Nachrichten links, bei eigenen rechts (nach der Bubble) */}
+                      {!isOwnMessage && chatSettings.settings.showAvatars && (
+                        <div className={cn(
+                          "shrink-0 rounded-full flex items-center justify-center font-medium uppercase",
+                          chatSettings.settings.compactMode ? "w-6 h-6 text-xs" : "w-8 h-8 text-sm",
+                          isDark ? "bg-[#5f6368] text-white" : "bg-gray-300 text-gray-700"
+                        )}>
+                          {msg.senderName.charAt(0)}
+                        </div>
+                      )}
+                      
                       <div className={cn(
-                        "max-w-[70%] rounded-2xl px-4 py-2",
+                        "max-w-[70%] rounded-2xl",
+                        chatSettings.settings.compactMode ? "px-3 py-1" : "px-4 py-2",
                         isOwnMessage
                           ? isDark ? "bg-[#8ab4f8] text-[#202124]" : "bg-teal-600 text-white"
                           : isDark ? "bg-[#3c4043] text-white" : "bg-gray-100 text-gray-900"
                       )}>
-                        {!isOwnMessage && (
+                        {!isOwnMessage && !chatSettings.settings.compactMode && (
                           <p className={cn(
                             "text-xs font-medium mb-1",
                             isDark ? "text-gray-300" : "text-gray-600"
@@ -478,9 +637,10 @@ export function SpaceView({
                             {msg.senderName}
                           </p>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <p className={cn("whitespace-pre-wrap", chatSettings.getFontSizeClass())}>{msg.content}</p>
                         <div className={cn(
-                          "flex items-center justify-end gap-1 mt-1",
+                          "flex items-center justify-end gap-1",
+                          chatSettings.settings.compactMode ? "" : "mt-1",
                           isOwnMessage
                             ? isDark ? "text-[#202124]/60" : "text-white/70"
                             : isDark ? "text-gray-400" : "text-gray-500"
@@ -493,8 +653,24 @@ export function SpaceView({
                               <Lock className="h-3 w-3" />
                             </span>
                           )}
+                          {isOwnMessage && chatSettings.settings.readReceipts && (
+                            <span title="Gesendet">
+                              <CheckCheck className="h-3 w-3" />
+                            </span>
+                          )}
                         </div>
                       </div>
+                      
+                      {/* Avatar für eigene Nachrichten - rechts nach der Bubble */}
+                      {isOwnMessage && chatSettings.settings.showAvatars && (
+                        <div className={cn(
+                          "shrink-0 rounded-full flex items-center justify-center font-medium uppercase",
+                          chatSettings.settings.compactMode ? "w-6 h-6 text-xs" : "w-8 h-8 text-sm",
+                          isDark ? "bg-teal-600 text-white" : "bg-teal-500 text-white"
+                        )}>
+                          {msg.senderName.charAt(0)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -504,6 +680,28 @@ export function SpaceView({
           )}
         </div>
       </div>
+
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className={cn(
+          "px-4 py-2 border-t",
+          isDark ? "border-white/10" : "border-gray-200"
+        )}>
+          <div className="max-w-3xl mx-auto">
+            <p className={cn(
+              "text-xs animate-pulse",
+              isDark ? "text-gray-400" : "text-gray-500"
+            )}>
+              {typingUsers.length === 1 
+                ? `${typingUsers[0]} tippt...`
+                : typingUsers.length === 2
+                  ? `${typingUsers[0]} und ${typingUsers[1]} tippen...`
+                  : `${typingUsers.length} Personen tippen...`
+              }
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Message Input */}
       <div className={cn(
@@ -532,13 +730,26 @@ export function SpaceView({
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onInput={(e) => {
+                // Typing-Indikator bei Eingabe
+                const value = (e.target as HTMLInputElement).value;
+                if (value.length > 0 && !isTyping) {
+                  setIsTyping(true);
+                  sendTypingIndicator(true);
+                }
+              }}
               placeholder="Verlauf ist aktiviert"
               className={cn(
-                "flex-1 bg-transparent text-sm outline-none",
+                "flex-1 bg-transparent outline-none",
+                chatSettings?.getFontSizeClass?.() || 'text-sm',
                 isDark ? "text-white placeholder:text-gray-500" : "text-gray-900 placeholder:text-gray-400"
               )}
               onKeyDown={(e) => {
+                // eslint-disable-next-line no-console
+                console.log('[DEBUG] onKeyDown:', e.key);
                 if (e.key === 'Enter' && !e.shiftKey) {
+                  // eslint-disable-next-line no-console
+                  console.log('[DEBUG] Enter gedrückt, rufe handleSendMessage auf');
                   e.preventDefault();
                   handleSendMessage();
                 }

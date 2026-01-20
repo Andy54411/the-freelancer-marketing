@@ -20,6 +20,11 @@ import {
   LayoutGrid,
   LayoutList,
   Loader2,
+  Star,
+  Clock,
+  Users,
+  Monitor,
+  Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +52,7 @@ import { PdfThumbnail } from '@/components/webmail/drive/PdfThumbnail';
 import { TextThumbnail } from '@/components/webmail/drive/TextThumbnail';
 import { VideoThumbnail } from '@/components/webmail/drive/VideoThumbnail';
 import { HeicThumbnail } from '@/components/webmail/drive/HeicThumbnail';
+import { ShareModal } from '@/components/webmail/drive/ShareModal';
 import { cn } from '@/lib/utils';
 import { getAppUrl } from '@/lib/webmail-urls';
 import { DriveApiService, type DriveFile } from '@/services/drive/DriveApiService';
@@ -113,8 +119,8 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Folder ID kommt aus der URL (via props von der dynamischen Route)
-  const currentFolderId = initialFolderId || null;
+  // Folder ID als State (kann via Section-Wechsel zurückgesetzt werden)
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(initialFolderId || null);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: '', name: 'Meine Ablage' }]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,9 +136,11 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [renameValue, setRenameValue] = useState('');
   const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
+  const [shareItem, setShareItem] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [previewFile, setPreviewFile] = useState<DriveFile | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -144,13 +152,18 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
     }
   }, [session?.email]);
 
-  // Speicherinfo laden
+  // Speicherinfo laden (GEMEINSAMER Speicher für alle Apps)
   const loadStorage = useCallback(async () => {
     if (!session?.email) return;
     try {
-      const storage = await DriveApiService.getStorageInfo();
-      setStorageUsed(storage.used);
-      setStorageTotal(storage.limit);
+      const response = await fetch('https://mail.taskilo.de/webmail-api/api/combined-storage/simple', {
+        headers: { 'x-user-id': session.email },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStorageUsed(data.totalUsed);
+        setStorageTotal(data.totalLimit);
+      }
     } catch {
       // Silently fail - Storage info ist nicht kritisch
     }
@@ -162,15 +175,66 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
     
     setIsLoading(true);
     try {
-      const result = await DriveApiService.getFolderContents(currentFolderId);
-      setFiles(result.files);
-      setBreadcrumbs(result.breadcrumbs);
+      if (currentSection === 'my-drive') {
+        // Meine Ablage - normale Ordner-Inhalte
+        const result = await DriveApiService.getFolderContents(currentFolderId);
+        setFiles(result.files);
+        setBreadcrumbs(result.breadcrumbs);
+      } else if (currentSection === 'shared') {
+        // Für mich freigegeben - Daten vom API laden
+        const response = await fetch('/api/webmail/drive/shares?type=shared-with-me', {
+          headers: { 'x-user-id': session.email },
+        });
+        const data = await response.json();
+        if (data.success && data.files) {
+          // Shared files in das DriveFile-Format konvertieren
+          const sharedFiles = data.files.map((sf: {
+            id: string;
+            name: string;
+            mimeType: string;
+            size: number;
+            isFolder?: boolean;
+            sharedBy: string;
+            sharePermission: 'view' | 'edit';
+            shareId: string;
+            createdAt: number;
+            updatedAt: number;
+          }) => ({
+            id: sf.id,
+            name: sf.name,
+            type: sf.isFolder ? 'folder' : 'file',
+            mimeType: sf.mimeType,
+            size: sf.size,
+            sharedBy: sf.sharedBy,
+            sharePermission: sf.sharePermission,
+            shareId: sf.shareId,
+            createdAt: sf.createdAt,
+            updatedAt: sf.updatedAt,
+          }));
+          setFiles(sharedFiles);
+        } else {
+          setFiles([]);
+        }
+        setBreadcrumbs([{ id: '', name: 'Für mich freigegeben' }]);
+      } else {
+        // Andere Sektionen noch nicht implementiert - leere Liste
+        setFiles([]);
+        const sectionNames: Record<DriveSection, string> = {
+          'my-drive': 'Meine Ablage',
+          'computers': 'Computer',
+          'shared': 'Für mich freigegeben',
+          'recent': 'Zuletzt verwendet',
+          'starred': 'Markiert',
+          'trash': 'Papierkorb',
+        };
+        setBreadcrumbs([{ id: '', name: sectionNames[currentSection] }]);
+      }
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
       setIsLoading(false);
     }
-  }, [session?.email, currentFolderId]);
+  }, [session?.email, currentFolderId, currentSection]);
 
   // Session wird bereits vom Layout geprueft - hier nur Dateien laden
   useEffect(() => {
@@ -380,7 +444,7 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
             currentSection={currentSection}
             onSectionChange={(section) => {
               setCurrentSection(section);
-              router.push('/webmail/drive');
+              setCurrentFolderId(null);
             }}
             onNewFolder={() => setShowNewFolderModal(true)}
             onUploadFile={() => fileInputRef.current?.click()}
@@ -406,7 +470,7 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                 currentSection={currentSection}
                 onSectionChange={(section) => {
                   setCurrentSection(section);
-                  router.push('/webmail/drive');
+                  setCurrentFolderId(null);
                   setIsMobileSidebarOpen(false);
                 }}
                 onNewFolder={() => {
@@ -522,6 +586,47 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            </div>
+          ) : currentSection !== 'my-drive' ? (
+            <div className={cn(
+              "flex flex-col items-center justify-center min-h-[400px] rounded-2xl border-2 border-dashed",
+              isDark ? "border-[#5f6368] text-gray-400" : "border-gray-200 text-gray-500"
+            )}>
+              {currentSection === 'trash' && (
+                <>
+                  <Trash2 className="h-16 w-16 mb-4 text-gray-400" />
+                  <p className={cn("text-lg font-medium", isDark ? "text-white" : "text-gray-700")}>Papierkorb ist leer</p>
+                  <p className="text-sm mt-2">Gelöschte Dateien werden hier angezeigt</p>
+                </>
+              )}
+              {currentSection === 'starred' && (
+                <>
+                  <Star className="h-16 w-16 mb-4 text-gray-400" />
+                  <p className={cn("text-lg font-medium", isDark ? "text-white" : "text-gray-700")}>Keine markierten Dateien</p>
+                  <p className="text-sm mt-2">Markiere Dateien mit dem Stern-Symbol um sie hier zu sehen</p>
+                </>
+              )}
+              {currentSection === 'recent' && (
+                <>
+                  <Clock className="h-16 w-16 mb-4 text-gray-400" />
+                  <p className={cn("text-lg font-medium", isDark ? "text-white" : "text-gray-700")}>Keine zuletzt verwendeten Dateien</p>
+                  <p className="text-sm mt-2">Hier werden deine kürzlich geöffneten Dateien angezeigt</p>
+                </>
+              )}
+              {currentSection === 'shared' && (
+                <>
+                  <Users className="h-16 w-16 mb-4 text-gray-400" />
+                  <p className={cn("text-lg font-medium", isDark ? "text-white" : "text-gray-700")}>Keine freigegebenen Dateien</p>
+                  <p className="text-sm mt-2">Dateien, die andere mit dir geteilt haben, erscheinen hier</p>
+                </>
+              )}
+              {currentSection === 'computers' && (
+                <>
+                  <Monitor className="h-16 w-16 mb-4 text-gray-400" />
+                  <p className={cn("text-lg font-medium", isDark ? "text-white" : "text-gray-700")}>Keine Computer verbunden</p>
+                  <p className="text-sm mt-2">Verbinde deinen Computer um Dateien zu synchronisieren</p>
+                </>
+              )}
             </div>
           ) : filteredFiles.length === 0 ? (
             <div 
@@ -722,6 +827,23 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                        {currentSection === 'my-drive' && (
+                          <>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              setShareItem({
+                                id: file.id,
+                                name: file.name,
+                                type: file.type === 'folder' ? 'folder' : 'file',
+                              });
+                              setShowShareModal(true);
+                            }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
+                              <Share2 className="h-4 w-4 mr-2" />
+                              Freigeben
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
+                          </>
+                        )}
                         {file.type === 'file' && (
                           <>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDownload(file); }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
@@ -731,23 +853,27 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                             <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
                           </>
                         )}
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFile(file);
-                          setRenameValue(file.name);
-                          setShowRenameModal(true);
-                        }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Umbenennen
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
-                        <DropdownMenuItem 
-                          className={cn("text-red-600", isDark && "focus:bg-[#3c4043] focus:text-red-400")}
-                          onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Löschen
-                        </DropdownMenuItem>
+                        {currentSection === 'my-drive' && (
+                          <>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFile(file);
+                              setRenameValue(file.name);
+                              setShowRenameModal(true);
+                            }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Umbenennen
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
+                            <DropdownMenuItem 
+                              className={cn("text-red-600", isDark && "focus:bg-[#3c4043] focus:text-red-400")}
+                              onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Löschen
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -811,6 +937,23 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                              {currentSection === 'my-drive' && (
+                                <>
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShareItem({
+                                      id: file.id,
+                                      name: file.name,
+                                      type: file.type === 'folder' ? 'folder' : 'file',
+                                    });
+                                    setShowShareModal(true);
+                                  }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
+                                    <Share2 className="h-4 w-4 mr-2" />
+                                    Freigeben
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
+                                </>
+                              )}
                               {file.type === 'file' && (
                                 <>
                                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDownload(file); }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
@@ -820,23 +963,27 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                                   <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
                                 </>
                               )}
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedFile(file);
-                                setRenameValue(file.name);
-                                setShowRenameModal(true);
-                              }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Umbenennen
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
-                              <DropdownMenuItem 
-                                className={cn("text-red-600", isDark && "focus:bg-[#3c4043] focus:text-red-400")}
-                                onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Löschen
-                              </DropdownMenuItem>
+                              {currentSection === 'my-drive' && (
+                                <>
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedFile(file);
+                                    setRenameValue(file.name);
+                                    setShowRenameModal(true);
+                                  }} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Umbenennen
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
+                                  <DropdownMenuItem 
+                                    className={cn("text-red-600", isDark && "focus:bg-[#3c4043] focus:text-red-400")}
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Löschen
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -941,6 +1088,19 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Share Modal */}
+      {shareItem && session?.email && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            setShareItem(null);
+          }}
+          item={shareItem}
+          userEmail={session.email}
+        />
+      )}
     </div>
   );
 }

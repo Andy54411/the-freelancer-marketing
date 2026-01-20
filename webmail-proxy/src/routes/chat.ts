@@ -677,4 +677,464 @@ router.post('/spaces/:spaceId/messages', async (req: Request, res: Response) => 
   }
 });
 
+// ==================== SETTINGS ====================
+
+interface ChatSettingsDoc {
+  email: string;
+  settings: Record<string, unknown>;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * GET /chat/settings
+ * Chat-Einstellungen für den User abrufen
+ */
+router.get('/settings', async (req: Request, res: Response) => {
+  try {
+    const email = getUserEmail(req);
+    
+    // Einstellungen aus MongoDB laden
+    const chatSettings = mongoService.getCollection<ChatSettingsDoc>('chat_settings');
+    const settingsDoc = await chatSettings.findOne({ email });
+
+    res.json({
+      success: true,
+      settings: settingsDoc?.settings || null,
+    });
+  } catch (error) {
+    console.error('[Chat] Error getting settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen der Einstellungen',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+/**
+ * POST /chat/settings
+ * Chat-Einstellungen speichern
+ */
+router.post('/settings', async (req: Request, res: Response) => {
+  try {
+    const email = getUserEmail(req);
+    const { settings } = req.body;
+
+    if (!settings) {
+      return res.status(400).json({
+        success: false,
+        error: 'Einstellungen sind erforderlich',
+      });
+    }
+
+    // Einstellungen in MongoDB speichern (upsert)
+    const chatSettings = mongoService.getCollection<ChatSettingsDoc>('chat_settings');
+    await chatSettings.updateOne(
+      { email },
+      { 
+        $set: { 
+          email,
+          settings,
+          updatedAt: new Date(),
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        }
+      },
+      { upsert: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Einstellungen gespeichert',
+    });
+  } catch (error) {
+    console.error('[Chat] Error saving settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Speichern der Einstellungen',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+// ==================== PRESENCE ====================
+
+interface PresenceDoc {
+  email: string;
+  status: 'online' | 'away' | 'dnd' | 'offline';
+  customMessage?: string;
+  lastSeen: Date;
+  updatedAt: Date;
+}
+
+/**
+ * GET /chat/presence
+ * Online-Status abrufen
+ */
+router.get('/presence', async (req: Request, res: Response) => {
+  try {
+    const { email, emails } = req.query;
+    
+    const presenceCollection = mongoService.getCollection<PresenceDoc>('chat_presence');
+    
+    if (emails) {
+      // Bulk-Abfrage für mehrere E-Mails
+      const emailList = (emails as string).split(',').map(e => e.trim().toLowerCase());
+      const presences = await presenceCollection
+        .find({ email: { $in: emailList } })
+        .toArray();
+      
+      // Map für schnellen Zugriff
+      const presenceMap: Record<string, PresenceDoc> = {};
+      presences.forEach(p => {
+        presenceMap[p.email] = p;
+      });
+      
+      res.json({
+        success: true,
+        presences: presenceMap,
+      });
+    } else if (email) {
+      // Einzelne E-Mail
+      const presence = await presenceCollection.findOne({ 
+        email: (email as string).toLowerCase() 
+      });
+      
+      res.json({
+        success: true,
+        presence: presence ? {
+          email: presence.email,
+          status: presence.status,
+          customMessage: presence.customMessage,
+          lastSeen: presence.lastSeen,
+        } : null,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'E-Mail ist erforderlich',
+      });
+    }
+  } catch (error) {
+    console.error('[Chat] Error getting presence:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen des Online-Status',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+/**
+ * POST /chat/presence
+ * Online-Status aktualisieren
+ */
+router.post('/presence', async (req: Request, res: Response) => {
+  try {
+    const email = getUserEmail(req);
+    const { status, customMessage } = req.body;
+    
+    if (!status || !['online', 'away', 'dnd', 'offline'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültiger Status',
+      });
+    }
+    
+    const presenceCollection = mongoService.getCollection<PresenceDoc>('chat_presence');
+    
+    await presenceCollection.updateOne(
+      { email },
+      { 
+        $set: { 
+          email,
+          status,
+          customMessage: customMessage || null,
+          lastSeen: new Date(),
+          updatedAt: new Date(),
+        }
+      },
+      { upsert: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Status aktualisiert',
+    });
+  } catch (error) {
+    console.error('[Chat] Error updating presence:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Aktualisieren des Online-Status',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+// ==================== TYPING ====================
+
+interface TypingDoc {
+  spaceId: string;
+  email: string;
+  isTyping: boolean;
+  updatedAt: Date;
+}
+
+/**
+ * GET /chat/typing
+ * Tipp-Status für einen Space abrufen
+ */
+router.get('/typing', async (req: Request, res: Response) => {
+  try {
+    const { spaceId } = req.query;
+    
+    if (!spaceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Space-ID ist erforderlich',
+      });
+    }
+    
+    const typingCollection = mongoService.getCollection<TypingDoc>('chat_typing');
+    
+    // Nur aktive Typing-Einträge (nicht älter als 10 Sekunden)
+    const tenSecondsAgo = new Date(Date.now() - 10000);
+    const typingUsers = await typingCollection
+      .find({ 
+        spaceId: spaceId as string, 
+        isTyping: true,
+        updatedAt: { $gte: tenSecondsAgo }
+      })
+      .toArray();
+    
+    res.json({
+      success: true,
+      typing: typingUsers.map(t => ({
+        email: t.email,
+        updatedAt: t.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('[Chat] Error getting typing status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen des Tipp-Status',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+/**
+ * POST /chat/typing
+ * Tipp-Status senden
+ */
+router.post('/typing', async (req: Request, res: Response) => {
+  try {
+    const email = getUserEmail(req);
+    const { spaceId, isTyping } = req.body;
+    
+    if (!spaceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Space-ID ist erforderlich',
+      });
+    }
+    
+    const typingCollection = mongoService.getCollection<TypingDoc>('chat_typing');
+    
+    await typingCollection.updateOne(
+      { spaceId, email },
+      { 
+        $set: { 
+          spaceId,
+          email,
+          isTyping: isTyping !== false,
+          updatedAt: new Date(),
+        }
+      },
+      { upsert: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Tipp-Status aktualisiert',
+    });
+  } catch (error) {
+    console.error('[Chat] Error updating typing status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Senden des Tipp-Status',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+// ==================== READ RECEIPTS ====================
+
+interface ReadReceiptDoc {
+  spaceId: string;
+  email: string;
+  messageIds: string[];
+  lastReadAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * GET /chat/read-receipts
+ * Lesebestätigungen abrufen
+ */
+router.get('/read-receipts', async (req: Request, res: Response) => {
+  try {
+    const { spaceId, messageId } = req.query;
+    
+    if (!spaceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Space-ID ist erforderlich',
+      });
+    }
+    
+    const readReceiptsCollection = mongoService.getCollection<ReadReceiptDoc>('chat_read_receipts');
+    
+    if (messageId) {
+      // Lesebestätigungen für eine bestimmte Nachricht
+      const receipts = await readReceiptsCollection
+        .find({ 
+          spaceId: spaceId as string,
+          messageIds: messageId as string,
+        })
+        .toArray();
+      
+      res.json({
+        success: true,
+        readBy: receipts.map(r => ({
+          email: r.email,
+          readAt: r.updatedAt,
+        })),
+      });
+    } else {
+      // Alle Lesebestätigungen für den Space
+      const receipts = await readReceiptsCollection
+        .find({ spaceId: spaceId as string })
+        .toArray();
+      
+      res.json({
+        success: true,
+        receipts: receipts.map(r => ({
+          email: r.email,
+          lastReadAt: r.lastReadAt,
+          messageCount: r.messageIds.length,
+        })),
+      });
+    }
+  } catch (error) {
+    console.error('[Chat] Error getting read receipts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen der Lesebestätigungen',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+/**
+ * POST /chat/read-receipts
+ * Lesebestätigung senden
+ */
+router.post('/read-receipts', async (req: Request, res: Response) => {
+  try {
+    const email = getUserEmail(req);
+    const { spaceId, messageIds, lastReadAt } = req.body;
+    
+    if (!spaceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Space-ID ist erforderlich',
+      });
+    }
+    
+    const readReceiptsCollection = mongoService.getCollection<ReadReceiptDoc>('chat_read_receipts');
+    
+    await readReceiptsCollection.updateOne(
+      { spaceId, email },
+      { 
+        $set: { 
+          spaceId,
+          email,
+          lastReadAt: lastReadAt ? new Date(lastReadAt) : new Date(),
+          updatedAt: new Date(),
+        },
+        $addToSet: messageIds?.length 
+          ? { messageIds: { $each: messageIds } }
+          : {},
+      },
+      { upsert: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Lesebestätigung gespeichert',
+    });
+  } catch (error) {
+    console.error('[Chat] Error saving read receipt:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Speichern der Lesebestätigung',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
+// ==================== EMAIL NOTIFICATIONS ====================
+
+/**
+ * POST /chat/notifications/email
+ * E-Mail-Benachrichtigung für ungelesene Nachrichten senden
+ */
+router.post('/notifications/email', async (req: Request, res: Response) => {
+  try {
+    const { recipientEmail, senderName, spaceName, messagePreview, unreadCount } = req.body;
+    
+    if (!recipientEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Empfänger-E-Mail ist erforderlich',
+      });
+    }
+    
+    // E-Mail über SMTP senden
+    // Hier würde normalerweise der E-Mail-Service verwendet
+    // Für jetzt nur Logging
+    console.log('[Chat] E-Mail-Benachrichtigung würde gesendet:', {
+      to: recipientEmail,
+      subject: spaceName 
+        ? `Neue Nachricht in ${spaceName}` 
+        : `Neue Nachricht von ${senderName}`,
+      preview: messagePreview,
+      unreadCount,
+    });
+    
+    // TODO: Integration mit bestehendem E-Mail-Service
+    // await emailService.sendNotification({
+    //   to: recipientEmail,
+    //   template: 'chat-notification',
+    //   data: { senderName, spaceName, messagePreview, unreadCount },
+    // });
+    
+    res.json({
+      success: true,
+      message: 'E-Mail-Benachrichtigung verarbeitet',
+    });
+  } catch (error) {
+    console.error('[Chat] Error sending email notification:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Senden der E-Mail-Benachrichtigung',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
 export default router;

@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { useRouter } from 'next/navigation';
 
 export type DriveSection = 'my-drive' | 'computers' | 'shared' | 'recent' | 'starred' | 'trash';
 
@@ -200,10 +201,16 @@ export function DriveSidebar({
 
       {/* Storage Info */}
       <div className={cn("p-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
-        <button className={cn(
-          "w-full flex items-center gap-3 px-2 py-2 text-sm rounded-lg",
-          isDark ? "text-white hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
-        )}>
+        <button 
+          onClick={() => {
+            // Navigate to settings abos section
+            window.location.href = '/webmail/settings?section=abos';
+          }}
+          className={cn(
+            "w-full flex items-center gap-3 px-2 py-2 text-sm rounded-lg",
+            isDark ? "text-white hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
+          )}
+        >
           <Cloud className="h-5 w-5" />
           <span>Speicherplatz kaufen</span>
         </button>

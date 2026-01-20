@@ -4,14 +4,27 @@
  * MONGODB-VERSION - Ersetzt SQLite-basierte Version
  * 
  * Endpoints:
- * GET  /api/profile/:email     - Profil abrufen
- * POST /api/profile/sync       - Company-Daten synchronisieren, Telefon zurückgeben
+ * GET  /api/profile/:email         - Profil abrufen
+ * POST /api/profile/sync           - Company-Daten synchronisieren, Telefon zurückgeben
+ * POST /api/profile/avatar         - Avatar-Bild hochladen
+ * GET  /api/profile/avatar/:email  - Avatar-Bild abrufen
  */
 
 import { Router, Request, Response } from 'express';
 import profileService from '../services/ProfileServiceMongo';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = Router();
+
+// Avatar-Verzeichnis auf Hetzner
+const AVATAR_DIR = '/opt/taskilo/avatars';
+
+// Verzeichnis erstellen falls nicht vorhanden
+if (!fs.existsSync(AVATAR_DIR)) {
+  fs.mkdirSync(AVATAR_DIR, { recursive: true });
+  console.log('[Profile] Avatar-Verzeichnis erstellt:', AVATAR_DIR);
+}
 
 /**
  * GET /profile/:email
@@ -213,6 +226,199 @@ router.get('/by-company/:companyId', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Fehler beim Abrufen des Profils',
+    });
+  }
+});
+
+/**
+ * POST /profile/avatar
+ * Avatar-Bild hochladen (Base64)
+ * 
+ * Body:
+ * {
+ *   email: "user@taskilo.de",
+ *   image: "data:image/jpeg;base64,/9j/4AAQ..."
+ * }
+ */
+router.post('/avatar', async (req: Request, res: Response) => {
+  try {
+    const { email, image } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    if (!image || !image.startsWith('data:image/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültiges Bildformat. Bitte Base64-kodiertes Bild senden.',
+      });
+    }
+
+    // Base64-Daten extrahieren
+    const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültiges Base64-Format',
+      });
+    }
+
+    const extension = matches[1]; // jpeg, png, webp, etc.
+    const base64Data = matches[2];
+    
+    // Nur erlaubte Formate
+    const allowedFormats = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+    if (!allowedFormats.includes(extension.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nicht unterstütztes Bildformat. Erlaubt: JPEG, PNG, WebP, GIF',
+      });
+    }
+
+    // Maximale Größe prüfen (5 MB)
+    const sizeInBytes = Buffer.byteLength(base64Data, 'base64');
+    const maxSize = 5 * 1024 * 1024; // 5 MB
+    if (sizeInBytes > maxSize) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bild zu groß. Maximale Größe: 5 MB',
+      });
+    }
+
+    // Dateiname: email-hash.extension
+    const emailHash = Buffer.from(email.toLowerCase()).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${emailHash}.${extension}`;
+    const filepath = path.join(AVATAR_DIR, filename);
+
+    // Altes Bild löschen (falls anderes Format)
+    const existingFiles = fs.readdirSync(AVATAR_DIR).filter(f => f.startsWith(emailHash));
+    for (const file of existingFiles) {
+      fs.unlinkSync(path.join(AVATAR_DIR, file));
+    }
+
+    // Neues Bild speichern
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filepath, buffer);
+
+    // Avatar-URL im Profil speichern
+    const avatarUrl = `/api/profile/avatar/${encodeURIComponent(email.toLowerCase())}`;
+    await profileService.updateProfile(email, { avatarUrl });
+
+    console.log(`[Profile] Avatar gespeichert für ${email}: ${filename} (${Math.round(sizeInBytes / 1024)} KB)`);
+
+    res.json({
+      success: true,
+      avatarUrl,
+      size: sizeInBytes,
+    });
+  } catch (error) {
+    console.error('[Profile] Error uploading avatar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Hochladen des Avatars',
+    });
+  }
+});
+
+/**
+ * GET /profile/avatar/:email
+ * Avatar-Bild abrufen
+ */
+router.get('/avatar/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    // Datei suchen (mit beliebiger Extension)
+    const emailHash = Buffer.from(email.toLowerCase()).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+    const files = fs.readdirSync(AVATAR_DIR).filter(f => f.startsWith(emailHash));
+
+    if (files.length === 0) {
+      // Kein Avatar vorhanden - 204 No Content
+      return res.status(204).send();
+    }
+
+    const filename = files[0];
+    const filepath = path.join(AVATAR_DIR, filename);
+    const extension = path.extname(filename).slice(1).toLowerCase();
+
+    // MIME-Type bestimmen
+    const mimeTypes: Record<string, string> = {
+      'jpeg': 'image/jpeg',
+      'jpg': 'image/jpeg',
+      'png': 'image/png',
+      'webp': 'image/webp',
+      'gif': 'image/gif',
+    };
+
+    const mimeType = mimeTypes[extension] || 'image/jpeg';
+
+    // Caching-Header setzen (1 Tag)
+    res.set({
+      'Content-Type': mimeType,
+      'Cache-Control': 'public, max-age=86400',
+      'ETag': `"${emailHash}"`,
+    });
+
+    // Bild senden
+    const imageBuffer = fs.readFileSync(filepath);
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('[Profile] Error fetching avatar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen des Avatars',
+    });
+  }
+});
+
+/**
+ * DELETE /profile/avatar/:email
+ * Avatar-Bild löschen
+ */
+router.delete('/avatar/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    // Datei suchen und löschen
+    const emailHash = Buffer.from(email.toLowerCase()).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+    const files = fs.readdirSync(AVATAR_DIR).filter(f => f.startsWith(emailHash));
+
+    for (const file of files) {
+      fs.unlinkSync(path.join(AVATAR_DIR, file));
+    }
+
+    // Avatar-URL im Profil löschen
+    await profileService.updateProfile(email, { avatarUrl: '' });
+
+    console.log(`[Profile] Avatar gelöscht für ${email}`);
+
+    res.json({
+      success: true,
+      message: 'Avatar wurde gelöscht',
+    });
+  } catch (error) {
+    console.error('[Profile] Error deleting avatar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Löschen des Avatars',
     });
   }
 });

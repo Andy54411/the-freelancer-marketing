@@ -9,10 +9,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as nodemailer from 'nodemailer';
 import mongoDBService, { 
   DriveUser, 
   DriveFolder, 
-  DriveFile, 
+  DriveFile,
+  DriveShare,
   ObjectId 
 } from './MongoDBService';
 
@@ -94,6 +96,41 @@ export interface StorageInfo {
   formattedUsed: string;
   formattedLimit: string;
   maxUploadSize: number;
+}
+
+// Share-Interfaces
+export interface CreateShareParams {
+  targetEmail: string;
+  fileId: string | null;
+  folderId: string | null;
+  permission: 'view' | 'edit';
+  message?: string;
+}
+
+export interface DriveShareResponse {
+  id: string;
+  ownerId: string;
+  ownerName?: string;
+  targetEmail: string;
+  fileId: string | null;
+  folderId: string | null;
+  fileName?: string;
+  folderName?: string;
+  permission: 'view' | 'edit';
+  status: 'pending' | 'accepted' | 'rejected';
+  message?: string;
+  acceptedAt: number | null;
+  rejectedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SharedFileResponse extends DriveFileResponse {
+  sharedBy: string;
+  sharedByName?: string;
+  sharePermission: 'view' | 'edit';
+  shareId: string;
+  isFolder?: boolean;
 }
 
 class DriveServiceMongo {
@@ -912,6 +949,527 @@ class DriveServiceMongo {
       deletedAt: file.deletedAt?.getTime() || null,
       createdAt: file.createdAt.getTime(),
       updatedAt: file.updatedAt.getTime(),
+    };
+  }
+
+  private mapShareToResponse(share: DriveShare): DriveShareResponse {
+    return {
+      id: share._id!.toString(),
+      ownerId: share.ownerId,
+      targetEmail: share.targetEmail,
+      fileId: share.fileId,
+      folderId: share.folderId,
+      permission: share.permission,
+      status: share.status,
+      message: share.message,
+      acceptedAt: share.acceptedAt?.getTime() || null,
+      rejectedAt: share.rejectedAt?.getTime() || null,
+      createdAt: share.createdAt.getTime(),
+      updatedAt: share.updatedAt.getTime(),
+    };
+  }
+
+  // ============================================
+  // SHARE METHODS - Dateifreigaben
+  // ============================================
+
+  /**
+   * Erstellt eine neue Freigabe
+   */
+  async createShare(ownerId: string, params: CreateShareParams): Promise<DriveShareResponse> {
+    await mongoDBService.connect();
+    const now = new Date();
+
+    // Generiere eindeutigen Token für E-Mail-Bestätigung
+    const token = `share_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    // Hole Name des freigegebenen Elements
+    let itemName = 'Element';
+    let itemType = 'Element';
+    
+    // Prüfe ob Datei/Ordner existiert und dem User gehört
+    if (params.fileId) {
+      const file = await mongoDBService.driveFiles.findOne({
+        _id: new ObjectId(params.fileId),
+        userId: ownerId,
+        isDeleted: false,
+      });
+      if (!file) {
+        throw new Error('Datei nicht gefunden oder keine Berechtigung');
+      }
+      itemName = file.name;
+      itemType = 'Datei';
+    } else if (params.folderId) {
+      const folder = await mongoDBService.driveFolders.findOne({
+        _id: new ObjectId(params.folderId),
+        userId: ownerId,
+        isDeleted: false,
+      });
+      if (!folder) {
+        throw new Error('Ordner nicht gefunden oder keine Berechtigung');
+      }
+      itemName = folder.name;
+      itemType = 'Ordner';
+    } else {
+      throw new Error('Entweder fileId oder folderId muss angegeben werden');
+    }
+
+    // Prüfe ob bereits eine Freigabe existiert
+    const existingShare = await mongoDBService.driveShares.findOne({
+      ownerId,
+      targetEmail: params.targetEmail.toLowerCase(),
+      fileId: params.fileId || null,
+      folderId: params.folderId || null,
+      status: { $in: ['pending', 'accepted'] },
+    });
+
+    if (existingShare) {
+      throw new Error('Diese Freigabe existiert bereits');
+    }
+
+    const share: DriveShare = {
+      ownerId,
+      targetEmail: params.targetEmail.toLowerCase(),
+      fileId: params.fileId || null,
+      folderId: params.folderId || null,
+      permission: params.permission,
+      status: 'pending',
+      token,
+      message: params.message,
+      acceptedAt: null,
+      rejectedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await mongoDBService.driveShares.insertOne(share);
+    share._id = result.insertedId;
+
+    // Sende E-Mail-Benachrichtigung
+    try {
+      await this.sendShareNotificationEmail({
+        targetEmail: params.targetEmail.toLowerCase(),
+        ownerEmail: ownerId,
+        itemName,
+        itemType,
+        permission: params.permission,
+        message: params.message,
+        token,
+      });
+    } catch (emailError) {
+      // E-Mail-Fehler nicht als kritisch behandeln
+      // Die Freigabe wurde erstellt, User kann sie im Dashboard sehen
+    }
+
+    return this.mapShareToResponse(share);
+  }
+
+  /**
+   * Sendet E-Mail-Benachrichtigung über neue Freigabe
+   */
+  private async sendShareNotificationEmail(params: {
+    targetEmail: string;
+    ownerEmail: string;
+    itemName: string;
+    itemType: string;
+    permission: 'view' | 'edit';
+    message?: string;
+    token: string;
+  }): Promise<void> {
+    const confirmUrl = `https://taskilo.de/webmail/drive/share-confirm?token=${params.token}`;
+    const permissionText = params.permission === 'edit' ? 'Bearbeiten' : 'Anzeigen';
+    
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freigabe-Anfrage - Taskilo Drive</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <img src="https://taskilo.de/logo-dark.png" alt="Taskilo" style="height: 40px;" />
+    </div>
+    
+    <h1 style="color: #14ad9f; font-size: 24px; margin-bottom: 16px; text-align: center;">
+      Neue Freigabe-Anfrage
+    </h1>
+    
+    <p style="font-size: 16px; margin-bottom: 24px;">
+      <strong>${params.ownerEmail}</strong> möchte ${params.itemType === 'Ordner' ? 'einen Ordner' : 'eine Datei'} mit Ihnen teilen:
+    </p>
+    
+    <div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">
+        ${params.itemType}: ${params.itemName}
+      </p>
+      <p style="margin: 8px 0 0; color: #15803d;">
+        Berechtigung: ${permissionText}
+      </p>
+    </div>
+    
+    ${params.message ? `
+    <div style="background-color: #f9fafb; border-left: 4px solid #14ad9f; padding: 12px 16px; margin-bottom: 24px;">
+      <p style="margin: 0; font-style: italic; color: #6b7280;">
+        "${params.message}"
+      </p>
+    </div>
+    ` : ''}
+    
+    <p style="font-size: 15px; color: #6b7280; margin-bottom: 24px;">
+      Um auf ${params.itemType === 'Ordner' ? 'den Ordner' : 'die Datei'} zugreifen zu können, bestätigen Sie bitte die Freigabe:
+    </p>
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+      <a href="${confirmUrl}" style="display: inline-block; background-color: #14ad9f; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Freigabe bestätigen
+      </a>
+    </div>
+    
+    <p style="font-size: 13px; color: #9ca3af; text-align: center;">
+      Falls Sie diese Anfrage nicht erwartet haben oder die Freigabe ablehnen möchten,<br>
+      können Sie dies auf der Bestätigungsseite tun.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+    
+    <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+      Diese E-Mail wurde automatisch von Taskilo Drive versendet.<br>
+      <a href="https://taskilo.de" style="color: #14ad9f;">taskilo.de</a>
+    </p>
+  </div>
+</body>
+</html>`;
+
+    const textContent = `
+Neue Freigabe-Anfrage - Taskilo Drive
+
+${params.ownerEmail} möchte ${params.itemType === 'Ordner' ? 'einen Ordner' : 'eine Datei'} mit Ihnen teilen:
+
+${params.itemType}: ${params.itemName}
+Berechtigung: ${permissionText}
+
+${params.message ? `Nachricht: "${params.message}"` : ''}
+
+Um auf ${params.itemType === 'Ordner' ? 'den Ordner' : 'die Datei'} zugreifen zu können, bestätigen Sie bitte die Freigabe:
+
+${confirmUrl}
+
+Falls Sie diese Anfrage nicht erwartet haben, können Sie sie auf der Bestätigungsseite ablehnen.
+
+---
+Diese E-Mail wurde automatisch von Taskilo Drive versendet.
+taskilo.de
+`;
+
+    // Nutze System-E-Mail über Mailcow
+    const transport = nodemailer.createTransport({
+      host: 'mail.taskilo.de',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'noreply@taskilo.de',
+        pass: process.env.NOREPLY_EMAIL_PASSWORD || '',
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    await transport.sendMail({
+      from: '"Taskilo Drive" <noreply@taskilo.de>',
+      to: params.targetEmail,
+      subject: `Freigabe-Anfrage: ${params.itemName}`,
+      text: textContent,
+      html: htmlContent,
+    });
+  }
+
+  /**
+   * Holt ausstehende Freigabe-Anfragen für einen User
+   */
+  async getPendingShares(userEmail: string): Promise<DriveShareResponse[]> {
+    await mongoDBService.connect();
+
+    const shares = await mongoDBService.driveShares
+      .find({
+        targetEmail: userEmail.toLowerCase(),
+        status: 'pending',
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return shares.map((s: DriveShare) => this.mapShareToResponse(s));
+  }
+
+  /**
+   * Holt alle für den User freigegebenen Dateien/Ordner (akzeptierte Freigaben)
+   */
+  async getSharedWithMe(userEmail: string): Promise<SharedFileResponse[]> {
+    await mongoDBService.connect();
+
+    // Hole alle akzeptierten Freigaben
+    const shares = await mongoDBService.driveShares
+      .find({
+        targetEmail: userEmail.toLowerCase(),
+        status: 'accepted',
+      })
+      .sort({ acceptedAt: -1 })
+      .toArray();
+
+    const results: SharedFileResponse[] = [];
+
+    for (const share of shares) {
+      if (share.fileId) {
+        // Es ist eine Datei-Freigabe
+        const file = await mongoDBService.driveFiles.findOne({
+          _id: new ObjectId(share.fileId),
+          isDeleted: false,
+        });
+
+        if (file) {
+          const baseResponse = this.mapFileToResponse(file);
+          results.push({
+            ...baseResponse,
+            sharedBy: share.ownerId,
+            sharePermission: share.permission,
+            shareId: share._id!.toString(),
+            isFolder: false,
+          });
+        }
+      } else if (share.folderId) {
+        // Es ist eine Ordner-Freigabe
+        const folder = await mongoDBService.driveFolders.findOne({
+          _id: new ObjectId(share.folderId),
+          isDeleted: false,
+        });
+
+        if (folder) {
+          const folderResponse = this.mapFolderToResponse(folder);
+          results.push({
+            id: folderResponse.id,
+            userId: folderResponse.userId,
+            folderId: null,
+            name: folderResponse.name,
+            mimeType: 'folder',
+            size: 0,
+            storagePath: '',
+            isDeleted: folderResponse.isDeleted,
+            deletedAt: folderResponse.deletedAt,
+            createdAt: folderResponse.createdAt,
+            updatedAt: folderResponse.updatedAt,
+            sharedBy: share.ownerId,
+            sharePermission: share.permission,
+            shareId: share._id!.toString(),
+            isFolder: true,
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Holt alle Freigaben die der User erstellt hat
+   */
+  async getMyShares(ownerId: string): Promise<DriveShareResponse[]> {
+    await mongoDBService.connect();
+
+    const shares = await mongoDBService.driveShares
+      .find({ ownerId })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return shares.map((s: DriveShare) => this.mapShareToResponse(s));
+  }
+
+  /**
+   * Akzeptiert eine Freigabe-Anfrage
+   */
+  async acceptShare(userEmail: string, shareId: string): Promise<DriveShareResponse> {
+    await mongoDBService.connect();
+
+    const share = await mongoDBService.driveShares.findOne({
+      _id: new ObjectId(shareId),
+      targetEmail: userEmail.toLowerCase(),
+      status: 'pending',
+    });
+
+    if (!share) {
+      throw new Error('Freigabe nicht gefunden oder bereits verarbeitet');
+    }
+
+    const now = new Date();
+    await mongoDBService.driveShares.updateOne(
+      { _id: new ObjectId(shareId) },
+      {
+        $set: {
+          status: 'accepted',
+          acceptedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    share.status = 'accepted';
+    share.acceptedAt = now;
+    share.updatedAt = now;
+
+    return this.mapShareToResponse(share);
+  }
+
+  /**
+   * Lehnt eine Freigabe-Anfrage ab
+   */
+  async rejectShare(userEmail: string, shareId: string): Promise<DriveShareResponse> {
+    await mongoDBService.connect();
+
+    const share = await mongoDBService.driveShares.findOne({
+      _id: new ObjectId(shareId),
+      targetEmail: userEmail.toLowerCase(),
+      status: 'pending',
+    });
+
+    if (!share) {
+      throw new Error('Freigabe nicht gefunden oder bereits verarbeitet');
+    }
+
+    const now = new Date();
+    await mongoDBService.driveShares.updateOne(
+      { _id: new ObjectId(shareId) },
+      {
+        $set: {
+          status: 'rejected',
+          rejectedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    share.status = 'rejected';
+    share.rejectedAt = now;
+    share.updatedAt = now;
+
+    return this.mapShareToResponse(share);
+  }
+
+  /**
+   * Akzeptiert eine Freigabe über Token (aus E-Mail-Link)
+   */
+  async acceptShareByToken(token: string): Promise<DriveShareResponse> {
+    await mongoDBService.connect();
+
+    const share = await mongoDBService.driveShares.findOne({
+      token,
+      status: 'pending',
+    });
+
+    if (!share) {
+      throw new Error('Freigabe nicht gefunden oder bereits verarbeitet');
+    }
+
+    const now = new Date();
+    await mongoDBService.driveShares.updateOne(
+      { _id: share._id },
+      {
+        $set: {
+          status: 'accepted',
+          acceptedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    share.status = 'accepted';
+    share.acceptedAt = now;
+    share.updatedAt = now;
+
+    return this.mapShareToResponse(share);
+  }
+
+  /**
+   * Lehnt eine Freigabe über Token ab (aus E-Mail-Link)
+   */
+  async rejectShareByToken(token: string): Promise<DriveShareResponse> {
+    await mongoDBService.connect();
+
+    const share = await mongoDBService.driveShares.findOne({
+      token,
+      status: 'pending',
+    });
+
+    if (!share) {
+      throw new Error('Freigabe nicht gefunden oder bereits verarbeitet');
+    }
+
+    const now = new Date();
+    await mongoDBService.driveShares.updateOne(
+      { _id: share._id },
+      {
+        $set: {
+          status: 'rejected',
+          rejectedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    share.status = 'rejected';
+    share.rejectedAt = now;
+    share.updatedAt = now;
+
+    return this.mapShareToResponse(share);
+  }
+
+  /**
+   * Löscht eine Freigabe (nur Owner kann löschen)
+   */
+  async deleteShare(ownerId: string, shareId: string): Promise<void> {
+    await mongoDBService.connect();
+
+    const result = await mongoDBService.driveShares.deleteOne({
+      _id: new ObjectId(shareId),
+      ownerId,
+    });
+
+    if (result.deletedCount === 0) {
+      throw new Error('Freigabe nicht gefunden oder keine Berechtigung');
+    }
+  }
+
+  /**
+   * Holt Freigabe-Informationen über Token (für Bestätigungsseite)
+   */
+  async getShareByToken(token: string): Promise<{ share: DriveShareResponse; itemName: string; ownerEmail: string } | null> {
+    await mongoDBService.connect();
+
+    const share = await mongoDBService.driveShares.findOne({ token });
+
+    if (!share) {
+      return null;
+    }
+
+    // Hole den Namen des freigegebenen Elements
+    let itemName = 'Unbekannt';
+    if (share.fileId) {
+      const file = await mongoDBService.driveFiles.findOne({ _id: new ObjectId(share.fileId) });
+      if (file) itemName = file.name;
+    } else if (share.folderId) {
+      const folder = await mongoDBService.driveFolders.findOne({ _id: new ObjectId(share.folderId) });
+      if (folder) itemName = folder.name;
+    }
+
+    // Hole Owner-E-Mail aus der Drive-User-Collection
+    const owner = await mongoDBService.driveUsers.findOne({ email: share.ownerId });
+    const ownerEmail = owner?.email || share.ownerId;
+
+    return {
+      share: this.mapShareToResponse(share),
+      itemName,
+      ownerEmail,
     };
   }
 }

@@ -373,4 +373,131 @@ router.post('/admin/cleanup', async (req: Request, res: Response) => {
   }
 });
 
+// ==================== SHARES (Freigaben) ====================
+
+// POST /drive/shares - Datei/Ordner freigeben
+router.post('/shares', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { targetEmail, fileId, folderId, permission } = req.body;
+    
+    if (!targetEmail) {
+      return res.status(400).json({ success: false, error: 'targetEmail required' });
+    }
+    if (!fileId && !folderId) {
+      return res.status(400).json({ success: false, error: 'fileId or folderId required' });
+    }
+    
+    const share = await driveService.createShare(userId, {
+      targetEmail,
+      fileId: fileId || null,
+      folderId: folderId || null,
+      permission: permission || 'view', // 'view' | 'edit'
+    });
+    
+    res.json({ success: true, share });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// GET /drive/shares/pending - Ausstehende Freigabe-Anfragen fuer mich
+router.get('/shares/pending', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const shares = await driveService.getPendingShares(userId);
+    res.json({ success: true, shares });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// GET /drive/shares/shared-with-me - Akzeptierte Freigaben (fuer "Fuer mich freigegeben")
+router.get('/shares/shared-with-me', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const files = await driveService.getSharedWithMe(userId);
+    res.json({ success: true, files });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// GET /drive/shares/my-shares - Von mir freigegebene Dateien
+router.get('/shares/my-shares', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const shares = await driveService.getMyShares(userId);
+    res.json({ success: true, shares });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// POST /drive/shares/:id/accept - Freigabe akzeptieren
+router.post('/shares/:id/accept', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const share = await driveService.acceptShare(userId, req.params.id);
+    res.json({ success: true, share });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// POST /drive/shares/:id/reject - Freigabe ablehnen
+router.post('/shares/:id/reject', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    await driveService.rejectShare(userId, req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// DELETE /drive/shares/:id - Freigabe entfernen (vom Ersteller)
+router.delete('/shares/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    await driveService.deleteShare(userId, req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// GET /drive/shares/token/:token - Freigabe-Info über Token (für Bestätigungsseite)
+router.get('/shares/token/:token', async (req: Request, res: Response) => {
+  try {
+    const result = await driveService.getShareByToken(req.params.token);
+    if (!result) {
+      return res.status(404).json({ success: false, error: 'Freigabe nicht gefunden' });
+    }
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// POST /drive/shares/token/:token/accept - Freigabe über Token akzeptieren
+router.post('/shares/token/:token/accept', async (req: Request, res: Response) => {
+  try {
+    const share = await driveService.acceptShareByToken(req.params.token);
+    res.json({ success: true, share });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
+// POST /drive/shares/token/:token/reject - Freigabe über Token ablehnen
+router.post('/shares/token/:token/reject', async (req: Request, res: Response) => {
+  try {
+    const share = await driveService.rejectShareByToken(req.params.token);
+    res.json({ success: true, share });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as Error).message });
+  }
+});
+
 export const driveRouter = router;

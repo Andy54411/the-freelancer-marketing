@@ -1,15 +1,66 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// PDF.js Worker aus public-Ordner laden
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface PdfThumbnailProps {
   fileId: string;
   fileName?: string;
   className?: string;
+}
+
+// PDF.js Typen
+interface PDFDocumentProxy {
+  getPage: (num: number) => Promise<PDFPageProxy>;
+}
+
+interface PDFPageProxy {
+  getViewport: (params: { scale: number }) => PDFViewport;
+  render: (params: { canvasContext: CanvasRenderingContext2D; viewport: PDFViewport }) => { promise: Promise<void> };
+}
+
+interface PDFViewport {
+  width: number;
+  height: number;
+}
+
+interface PDFJSLib {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument: (params: { data: ArrayBuffer }) => { promise: Promise<PDFDocumentProxy> };
+}
+
+declare global {
+  interface Window {
+    pdfjsLib?: PDFJSLib;
+  }
+}
+
+// PDF.js von CDN laden
+function loadPdfJs(): Promise<PDFJSLib> {
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) {
+      resolve(window.pdfjsLib);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs';
+    script.type = 'module';
+    script.onload = () => {
+      // Warten bis pdfjsLib verfügbar ist
+      const checkLib = () => {
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+          resolve(window.pdfjsLib);
+        } else {
+          setTimeout(checkLib, 50);
+        }
+      };
+      checkLib();
+    };
+    script.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(script);
+  });
 }
 
 export function PdfThumbnail({ fileId, className }: PdfThumbnailProps) {
@@ -18,12 +69,19 @@ export function PdfThumbnail({ fileId, className }: PdfThumbnailProps) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
+    // Nur im Browser ausfuehren
+    if (typeof window === 'undefined') return;
+    
+    let cancelled = false;
 
     const renderPdf = async () => {
       if (!canvasRef.current) return;
 
       try {
+        const pdfjsLib = await loadPdfJs();
+        
+        if (cancelled) return;
+
         // PDF von API laden
         const response = await fetch(`/api/webmail/drive/files/${fileId}`);
         if (!response.ok) throw new Error('Failed to load PDF');
@@ -31,7 +89,7 @@ export function PdfThumbnail({ fileId, className }: PdfThumbnailProps) {
         const arrayBuffer = await response.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         
-        if (!isMounted) return;
+        if (cancelled) return;
 
         // Erste Seite rendern
         const page = await pdf.getPage(1);
@@ -53,19 +111,17 @@ export function PdfThumbnail({ fileId, className }: PdfThumbnailProps) {
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         // PDF rendern
-        const renderContext = {
+        await page.render({
           canvasContext: context,
           viewport: scaledViewport,
-        };
-        // @ts-expect-error - pdfjs-dist types are incorrect
-        await page.render(renderContext).promise;
+        }).promise;
 
-        if (isMounted) {
+        if (!cancelled) {
           setIsLoading(false);
         }
       } catch (err) {
         console.error('PDF render error:', err);
-        if (isMounted) {
+        if (!cancelled) {
           setError(true);
           setIsLoading(false);
         }
@@ -75,12 +131,12 @@ export function PdfThumbnail({ fileId, className }: PdfThumbnailProps) {
     renderPdf();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
   }, [fileId]);
 
   if (error) {
-    return null; // Fallback to icon
+    return null;
   }
 
   return (

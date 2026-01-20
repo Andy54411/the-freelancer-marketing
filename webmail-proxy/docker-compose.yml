@@ -21,10 +21,35 @@ services:
       - ERIC_LIB_PATH=/opt/taskilo/eric/lib
       - ERIC_PLUGIN_PATH=/opt/taskilo/eric/plugins
       - ERIC_LOG_PATH=/opt/taskilo/logs/eric
+      # Revolut Business API
+      - REVOLUT_CLIENT_ID=${REVOLUT_CLIENT_ID}
+      - REVOLUT_ENVIRONMENT=${REVOLUT_ENVIRONMENT}
+      - REVOLUT_PRIVATE_KEY_PATH=/app/certs/revolut/private.key
+      - REVOLUT_TRANSPORT_CERT_PATH=/app/certs/revolut/transport.pem
+      - REVOLUT_SIGNING_CERT_PATH=/app/certs/revolut/signing.pem
+      - REVOLUT_MERCHANT_API_KEY=${REVOLUT_MERCHANT_API_KEY}
+      - REVOLUT_MERCHANT_PUBLIC_KEY=${REVOLUT_MERCHANT_PUBLIC_KEY}
+      - REVOLUT_MERCHANT_ID=${REVOLUT_MERCHANT_ID}
+      - REVOLUT_WEBHOOK_SECRET=${REVOLUT_WEBHOOK_SECRET}
+      - REVOLUT_ACCESS_TOKEN=${REVOLUT_ACCESS_TOKEN}
+      - REVOLUT_REFRESH_TOKEN=${REVOLUT_REFRESH_TOKEN}
+      - REVOLUT_BUSINESS_WEBHOOK_SECRET=${REVOLUT_BUSINESS_WEBHOOK_SECRET}
+      - REVOLUT_MAIN_ACCOUNT_ID=${REVOLUT_MAIN_ACCOUNT_ID}
+      # Mailcow und SMTP
+      - MAILCOW_API_URL=${MAILCOW_API_URL}
+      - MAILCOW_API_KEY=${MAILCOW_API_KEY}
+      - DOVECOT_MASTER_USER=${DOVECOT_MASTER_USER}
+      - DOVECOT_MASTER_PASSWORD=${DOVECOT_MASTER_PASSWORD}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
     volumes:
       - recordings:/data/recordings
       - drive-data:/opt/taskilo/webmail-proxy/data
+      - avatars:/opt/taskilo/avatars
       - /opt/mailcow-dockerized/data/assets/ssl:/certs:ro
+      - ./certs/revolut:/app/certs/revolut:ro
       - eric-lib:/opt/taskilo/eric/lib:ro
       - eric-plugins:/opt/taskilo/eric/plugins:ro
       - eric-certificates:/opt/taskilo/eric/certificates
@@ -74,6 +99,12 @@ volumes:
     driver: local
   drive-data:
     driver: local
+  avatars:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/taskilo/avatars
   eric-lib:
     driver: local
     driver_opts:

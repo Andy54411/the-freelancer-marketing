@@ -1,0 +1,74 @@
+{
+  "date": "2026-01-18",
+  "version": "2.8.0",
+  "title": "Taskilo Drive: Dateifreigaben mit E-Mail-Bestätigung",
+  "category": "feature",
+  "priority": "high",
+  "tags": ["drive", "shares", "collaboration", "email"],
+  "summary": "Neue Funktion zum Teilen von Dateien und Ordnern mit anderen Taskilo-Nutzern. Empfänger erhalten eine E-Mail zur Bestätigung der Freigabe.",
+  "changes": [
+    {
+      "type": "feature",
+      "component": "Taskilo Drive",
+      "description": "Datei- und Ordnerfreigaben mit anderen Taskilo-Nutzern",
+      "details": [
+        "Share-Modal zum Freigeben von Dateien/Ordnern via E-Mail-Adresse",
+        "Berechtigungsstufen: Anzeigen oder Bearbeiten",
+        "Optionale persönliche Nachricht an den Empfänger",
+        "E-Mail-Benachrichtigung mit Bestätigungslink",
+        "Bestätigungsseite zum Akzeptieren oder Ablehnen der Freigabe",
+        "'Für mich freigegeben'-Sektion zeigt akzeptierte Freigaben"
+      ]
+    },
+    {
+      "type": "backend",
+      "component": "Hetzner Webmail-Proxy",
+      "description": "MongoDB-Collection für Freigaben",
+      "details": [
+        "Neue DriveShare-Collection mit Indexes",
+        "API-Endpunkte für CRUD-Operationen",
+        "Token-basierte Akzeptierung/Ablehnung",
+        "E-Mail-Versand über Mailcow"
+      ]
+    },
+    {
+      "type": "api",
+      "component": "Drive Shares API",
+      "description": "Neue API-Endpunkte auf Hetzner und Vercel",
+      "details": [
+        "POST /drive/shares - Neue Freigabe erstellen",
+        "GET /drive/shares/pending - Ausstehende Anfragen",
+        "GET /drive/shares/shared-with-me - Akzeptierte Freigaben",
+        "GET /drive/shares/my-shares - Eigene Freigaben",
+        "POST /drive/shares/:id/accept - Freigabe akzeptieren",
+        "POST /drive/shares/:id/reject - Freigabe ablehnen",
+        "DELETE /drive/shares/:id - Freigabe löschen",
+        "GET/POST /drive/shares/token/:token - Token-basierte Operationen"
+      ]
+    }
+  ],
+  "affectedFiles": [
+    "webmail-proxy/src/services/MongoDBService.ts",
+    "webmail-proxy/src/services/DriveServiceMongo.ts",
+    "webmail-proxy/src/routes/drive.ts",
+    "src/components/webmail/drive/ShareModal.tsx",
+    "src/app/webmail/drive/share-confirm/page.tsx",
+    "src/app/webmail/drive/page.tsx",
+    "src/app/api/webmail/drive/shares/route.ts",
+    "src/app/api/webmail/drive/shares/token/[token]/route.ts",
+    "src/app/api/webmail/drive/shares/token/[token]/accept/route.ts",
+    "src/app/api/webmail/drive/shares/token/[token]/reject/route.ts"
+  ],
+  "deployment": {
+    "vercel": true,
+    "hetzner": true,
+    "hetznerCommands": [
+      "scp webmail-proxy/src/services/MongoDBService.ts root@mail.taskilo.de:/opt/taskilo/webmail-proxy/src/services/",
+      "scp webmail-proxy/src/services/DriveServiceMongo.ts root@mail.taskilo.de:/opt/taskilo/webmail-proxy/src/services/",
+      "scp webmail-proxy/src/routes/drive.ts root@mail.taskilo.de:/opt/taskilo/webmail-proxy/src/routes/",
+      "ssh root@mail.taskilo.de \"cd /opt/taskilo/webmail-proxy && docker compose up -d --build\""
+    ]
+  },
+  "author": "GitHub Copilot",
+  "reviewedBy": null
+}
