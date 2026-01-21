@@ -32,6 +32,7 @@ out/
 # Env-Dateien
 .env
 .env.* # schließt .env.local, .env.production etc. ein
+!.env.example # .env.example MUSS im Repository sein!
 
 # Certificates & Private Keys
 certs/
@@ -60,12 +61,7 @@ yarn-debug.log*
 yarn-error.log*
 /Users/andystaudinger/Tasko/firebase-emulator-data
 .vercel
-.env.local
-.env.production
-.env.local
 firebase_functions/.env.tilvo-f142f
-.env.local
-.env.example
 
 # GTM API Konfiguration
 .env.gtm
