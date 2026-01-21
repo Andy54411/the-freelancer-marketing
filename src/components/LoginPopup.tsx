@@ -110,15 +110,21 @@ export default function LoginPopup({
           }
         } else {
           // Anmelde-Fehler
-          if (
-            firebaseError.code === 'auth/user-not-found' ||
+          if (firebaseError.code === 'auth/user-not-found') {
+            setError('Kein Konto mit dieser E-Mail-Adresse gefunden. Bitte registrieren Sie sich.');
+          } else if (
             firebaseError.code === 'auth/wrong-password' ||
-            firebaseError.code === 'auth/invalid-credential' ||
-            firebaseError.code === 'auth/invalid-email'
+            firebaseError.code === 'auth/invalid-credential'
           ) {
-            setError('Ungueltige E-Mail-Adresse oder falsches Passwort.');
+            setError('Falsches Passwort. Bitte überprüfen Sie Ihre Eingabe oder nutzen Sie "Passwort vergessen".');
+          } else if (firebaseError.code === 'auth/invalid-email') {
+            setError('Ungültige E-Mail-Adresse.');
+          } else if (firebaseError.code === 'auth/too-many-requests') {
+            setError('Zu viele fehlgeschlagene Anmeldeversuche. Bitte warten Sie einige Minuten.');
+          } else if (firebaseError.code === 'auth/user-disabled') {
+            setError('Dieses Konto wurde deaktiviert. Bitte kontaktieren Sie den Support.');
           } else {
-            setError('Login fehlgeschlagen. Bitte versuchen Sie es spaeter erneut.');
+            setError(`Login fehlgeschlagen: ${firebaseError.code}`);
           }
         }
       } else {

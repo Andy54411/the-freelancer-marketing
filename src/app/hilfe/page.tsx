@@ -79,7 +79,7 @@ export default function HilfePage() {
       <HeroHeader />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-teal-50 via-white to-teal-50 pt-32 pb-16">
+      <section className="bg-linear-to-br from-teal-50 via-white to-teal-50 pt-32 pb-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Wie können wir dir helfen?
