@@ -29,10 +29,17 @@ yarn.lock
 .next/
 out/
 
-# Env-Dateien
+# Env-Dateien (ALLE Secret-Dateien blockieren!)
 .env
-.env.* # schließt .env.local, .env.production etc. ein
-!.env.example # .env.example MUSS im Repository sein!
+.env.*
+!.env.example
+.env.local
+.env.production
+.env.development
+.env.vercel*
+**/.env
+**/.env.*
+!**/.env.example
 
 # Certificates & Private Keys
 certs/
