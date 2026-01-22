@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Taskilo Primary Color -->
+    <color name="taskilo_primary">#14ad9f</color>
+    <color name="taskilo_dark">#0d8a7f</color>
+	<color name="ic_launcher_background">#FFFFFF</color>
+</resources>
