@@ -1,57 +1,172 @@
-# 🚀 Google Ads OAuth Setup - Anleitung
+# Google Ads OAuth Setup - Taskilo Integration
 
-## ❌ AKTUELLER FEHLER:
+## 🔧 Google Cloud Console Konfiguration
+
+### 1. OAuth Client Konfiguration
+- **Projekt**: TASKO (tilvo-f142f)
+- **Client ID**: `1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com`
+- **Client Type**: Web Application
+
+### 2. Autorisierte Redirect URIs
+Fügen Sie diese URIs in der Google Cloud Console hinzu:
+
+**Development:**
 ```
-Error 401: invalid_client
-The OAuth client was not found.
-```
-
-## 🔧 LÖSUNG: Google Cloud Console Setup
-
-### Schritt 1: Google Cloud Console
-1. Gehen Sie zu: https://console.cloud.google.com/
-2. Wählen Sie Ihr Projekt aus oder erstellen Sie ein neues
-3. Aktivieren Sie die **Google Ads API**
-
-### Schritt 2: OAuth 2.0 Client erstellen
-1. Gehen Sie zu: **APIs & Services > Credentials**
-2. Klicken Sie **+ CREATE CREDENTIALS > OAuth client ID**
-3. Wählen Sie **Web application**
-4. Konfigurieren Sie:
-
-```
-Name: Taskilo Google Ads Integration
-Authorized JavaScript origins:
-- http://localhost:3000
-- https://taskilo.de
-- https://your-vercel-domain.vercel.app
-
-Authorized redirect URIs:
-- http://localhost:3000/api/multi-platform-advertising/auth/google-ads/callback
-- https://taskilo.de/api/multi-platform-advertising/auth/google-ads/callback
-- https://your-vercel-domain.vercel.app/api/multi-platform-advertising/auth/google-ads/callback
+http://localhost:3000/api/google-ads/callback
 ```
 
-### Schritt 3: Environment Variables setzen
+**Production:**
+```
+https://taskilo.de/api/google-ads/callback
+```
+
+### 3. OAuth Scopes
+Die folgenden Scopes werden angefordert:
+- `https://www.googleapis.com/auth/adwords` (Google Ads API Zugriff)
+- `https://www.googleapis.com/auth/userinfo.profile` (Benutzer-Informationen)
+
+## 🔐 Environment Variables
+
+Fügen Sie diese zu Ihrer `.env.local` hinzu:
+
 ```bash
-# .env.local
-GOOGLE_ADS_CLIENT_ID="1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com"
-GOOGLE_ADS_CLIENT_SECRET="GOCSPX-your-client-secret"
-GOOGLE_ADS_DEVELOPER_TOKEN="your-developer-token"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# Google OAuth (bereits vorhanden)
+GOOGLE_CLIENT_ID=1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-[Ihr-Secret]
+
+# Google Ads API (neu)
+GOOGLE_ADS_DEVELOPER_TOKEN=[Ihr-Developer-Token]
+GOOGLE_ADS_LOGIN_CUSTOMER_ID=[Ihr-Manager-Account-ID]
+
+# 🆕 Manager Account Integration (für automatische Verknüpfung)
+# Der Refresh Token vom Taskilo Manager Account (655-923-8498)
+# Wird verwendet, um automatisch Einladungen an Kunden-Accounts zu senden
+GOOGLE_ADS_MANAGER_REFRESH_TOKEN=[Manager-Refresh-Token]
+
+# Base URLs
+NEXT_PUBLIC_BASE_URL=https://taskilo.de
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### Schritt 4: Google Ads API Developer Token
-1. Gehen Sie zu: https://developers.google.com/google-ads
-2. Beantragen Sie einen **Developer Token**
-3. Warten Sie auf Genehmigung (kann einige Tage dauern)
+## 🚀 OAuth Flow
 
-## 🚨 WICHTIG:
-- Ohne diese Konfiguration funktioniert der OAuth-Flow nicht
-- Der Developer Token ist für Produktions-API-Zugriff erforderlich
-- Test-Token sind für Entwicklung verfügbar
+### 1. Initiierung
+```
+GET /api/multi-platform-advertising/auth/google-ads?companyId={companyId}
+```
+**Weiterleitung zu:** Google OAuth mit Scopes `adwords` und `userinfo.profile`
 
-## 📞 SUPPORT:
-Bei Problemen mit der Google Cloud Console:
-- Google Ads API Support: https://developers.google.com/google-ads/api/support
-- Google Cloud Console Hilfe: https://cloud.google.com/support
+### 2. Callback
+```
+GET /api/multi-platform-advertising/auth/google-ads/callback?code={code}&state={companyId}
+```
+**Verarbeitung:**
+- Token Exchange
+- Google Ads Account-Informationen abrufen
+- Verbindung in Firestore speichern
+- Weiterleitung zurück zur App
+
+### 3. Erfolg
+```
+GET /dashboard/company/{companyId}/taskilo-advertising/google-ads?success=connected&account={customerId}
+```
+
+## 🛠️ Google Ads API Setup
+
+### Developer Token beantragen
+1. Google Ads Account erstellen/verwenden
+2. In Google Ads → Tools → API Center
+3. Developer Token beantragen
+4. **Wichtig**: Für Tests `TEST_TOKEN` verwenden
+
+### Manager Account (Optional)
+- Nicht zwingend erforderlich für OAuth
+- Nur für erweiterte Account-Verwaltung
+- Login Customer ID setzen wenn vorhanden
+
+### 🆕 Manager Refresh Token Setup
+
+**Damit Taskilo automatisch Verknüpfungsanfragen senden kann:**
+
+1. **Refresh Token vom Manager Account erhalten**:
+   - Als Manager Account einloggen (andy.staudinger@taskilo.de)
+   - OAuth Flow in Taskilo durchlaufen
+   - Refresh Token aus Firestore kopieren
+   
+2. **Token in Environment setzen**:
+   ```bash
+   GOOGLE_ADS_MANAGER_REFRESH_TOKEN=1//0g...
+   ```
+
+3. **Vorteil**: Kunde muss nur noch Einladung akzeptieren (keine manuelle Domain-Freigabe!)
+
+## 🧪 Testing
+
+### Development Test
+```bash
+# Server starten
+pnpm dev
+
+# Browser öffnen
+http://localhost:3000/dashboard/company/[uid]/taskilo-advertising/google-ads
+
+# "Connect Google Ads" klicken
+# OAuth Flow durchlaufen
+# Erfolgreiche Verbindung prüfen
+```
+
+### Debug Console Logs
+- ✅ OAuth initiation logs
+- 🔄 Token exchange logs  
+- 📊 Google Ads API logs
+- 💾 Firestore save logs
+
+## 🔍 Troubleshooting
+
+### Häufige Probleme
+
+**1. Redirect URI Error**
+```
+Error: redirect_uri_mismatch
+```
+**Lösung**: URI in Google Cloud Console hinzufügen
+
+**2. Invalid Client Error**
+```
+Error: invalid_client
+```
+**Lösung**: Client ID/Secret prüfen
+
+**3. Access Denied**
+```
+Error: access_denied
+```
+**Lösung**: User hat OAuth abgelehnt (normal)
+
+**4. Developer Token Error**
+```
+Error: UNAUTHENTICATED
+```
+**Lösung**: Developer Token korrekt setzen
+
+### Debugging Commands
+```bash
+# Environment Variables prüfen
+echo $GOOGLE_CLIENT_ID
+echo $GOOGLE_CLIENT_SECRET
+
+# Logs verfolgen
+tail -f .next/server.js.log
+```
+
+## 📝 Next Steps
+
+1. **Google Cloud Console**: Redirect URIs hinzufügen
+2. **Developer Token**: Bei Google Ads beantragen  
+3. **Environment Variables**: Korrekt setzen
+4. **Testing**: OAuth Flow durchführen
+5. **Production**: Live-Test auf taskilo.de
+
+---
+
+**Statusupdate**: OAuth Flow implementiert mit bestehender Google Cloud Konfiguration. Redirect URIs müssen in Console hinzugefügt werden.

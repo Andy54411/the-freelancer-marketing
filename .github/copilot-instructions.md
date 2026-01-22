@@ -13,6 +13,7 @@
 - [ ] TypeScript fehlerfrei (get_errors)?
 - [ ] Zod-Validierung für Inputs?
 - [ ] @/ Pfade statt relative Imports?
+- [ ] Moderne Best Practices recherchiert? (fetch_webpage bei Unsicherheit!)
 
 ---
 
@@ -31,6 +32,7 @@
 9. **DEUTSCHE UMLAUTE PFLICHT**: IMMER ä, ö, ü, ß korrekt schreiben! NIEMALS ae/oe/ue/ss als Ersatz!
 10. **KEINE console.log()**: Strukturiertes Logging oder entfernen
 11. **DATEIEN LÖSCHEN**: NIEMALS Dateien löschen ohne explizite Benutzeranfrage
+12. **NUR ENTERPRISE-LEVEL LÖSUNGEN**: Bei Unsicherheit IMMER im Internet nach Best Practices recherchieren. Keine einfachen/unprofessionellen Wege - nur hochmoderne, professionelle Lösungen!
 
 ---
 
@@ -91,6 +93,101 @@
 | **Token Storage** | `/opt/taskilo/webmail-proxy/data/revolut-tokens.json` auf Hetzner |
 | **Firestore** | `escrows` Collection für Treuhand-Transaktionen |
 
+### 5. MOBILE APPS (Flutter) - iOS & Android
+
+#### 5.1 TASKILO APP (`taskoapp/`)
+**Hauptprodukt** - Vollständige Business-Management Mobile App
+| Was | Details |
+|-----|---------|
+| **Framework** | Flutter 3.8.1+ |
+| **Plattformen** | iOS, Android, Web, Windows, macOS, Linux |
+| **State Management** | GetX + Provider |
+| **Backend** | Firebase (Auth, Firestore, Storage, Messaging, Functions) |
+| **Features** | Service-Marktplatz, Video-Konferenz (WebRTC), Push-Benachrichtigungen, Google Maps, Standort |
+| **Zahlungen** | Revolut API via Next.js Backend (NICHT direkt in App!) |
+| **Verzeichnis** | `/Users/andystaudinger/Tasko/taskoapp/` |
+| **Version** | 1.0.0+3 |
+
+**Wichtige Abhängigkeiten:**
+- `firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_storage`, `firebase_messaging`
+- `flutter_webrtc` (Video-Calls)
+- `google_maps_flutter`, `geolocator` (Standort & Maps)
+- `socket_io_client` (Realtime)
+- `flutter_local_notifications` (Push)
+- `get` (Navigation & State - LEGACY)
+- `provider` (State Management - LEGACY)
+
+**Build & Deploy:**
+```bash
+cd taskoapp/
+flutter pub get
+flutter build apk --release  # Android
+flutter build ios --release  # iOS (macOS erforderlich)
+flutter build web            # Web-Version
+```
+
+**Firebase-Integration:**
+- Nutzt DIESELBE Firebase-Instanz wie Next.js (`tilvo-f142f`)
+- Firestore Company-Subcollections MÜSSEN beachtet werden
+- Authentifizierung synchronisiert mit Web-App
+
+#### 5.2 TASKILO WEBMAIL APP (`taskilo_webmail_app/`)
+**Fokussierte App** - E-Mail, Drive, Fotos, Aufgaben & mehr
+| Was | Details |
+|-----|---------|
+| **Framework** | Flutter 3.10.3+ |
+| **Plattformen** | iOS, Android, Web, Windows, macOS, Linux |
+| **State Management** | **Riverpod** (GetX wird migriert!) + GoRouter |
+| **Backend** | **KEIN Firebase!** Direktverbindung zu Hetzner Webmail-Proxy |
+| **Features** | E-Mail-Client (IMAP/SMTP), HTML-Editor, PDF-Viewer, Socket.IO Realtime |
+| **Verzeichnis** | `/Users/andystaudinger/Tasko/taskilo_webmail_app/` |
+| **Deployment** | Hetzner Server via `deploy-to-hetzner.sh` |
+| **Version** | 1.0.0+3 |
+
+**Wichtige Abhängigkeiten:**
+- **KEINE Firebase Dependencies!**
+- `flutter_riverpod` (State Management - Modern)
+- `go_router` (Navigation)
+- `html_editor_enhanced`, `flutter_quill` (Rich Text Editor)
+- `syncfusion_flutter_pdfviewer` (PDF)
+- `socket_io_client` (Realtime zu Hetzner)
+- `dio`, `http` (API-Kommunikation)
+- `cached_network_image`, `image_picker`, `file_picker` (Medien)
+
+**Build & Deploy:**
+```bash
+cd taskilo_webmail_app/
+
+# Quick Deployment (Web)
+./deploy-quick.sh
+
+# Full Deployment zu Hetzner
+./deploy-to-hetzner.sh
+
+# Lokale Builds
+flutter build apk --release  # Android
+flutter build ios --release  # iOS
+flutter build web --release  # Web für Hetzner
+```
+
+**KRITISCH - Unterschied zu Taskilo App:**
+- **KEINE Firestore-Verbindung!** Alle Daten via Hetzner Webmail-Proxy APIs
+- Authentifizierung über Hetzner (NICHT Firebase Auth)
+- E-Mail-Daten kommen von Mailcow IMAP/SMTP
+- Deployment auf Hetzner Server (nicht App Stores)
+- Läuft als PWA: `mail.taskilo.de/app/`
+
+**Migration GetX → Riverpod:**
+- GetX ist DEPRECATED (Stand 2026)
+- Aktive Migration zu `flutter_riverpod`
+- Provider wird durch Riverpod ersetzt
+- NEUE Features NUR mit Riverpod implementieren
+
+**Deployment-Konfiguration:**
+- Nginx Config: `nginx-webmail-app.conf`
+- Server-Pfad: `/opt/taskilo/webmail-app/`
+- URL: `mail.taskilo.de/app/`
+
 **WICHTIG: Warum Hetzner-Proxy?**
 - Revolut Business API erlaubt nur IP-Whitelist-Zugriff
 - Vercel hat KEINE feste IP (ändert sich dynamisch)
@@ -129,10 +226,13 @@
 
 ```
 Datei geändert in:
-├── src/components/webmail/*.tsx ──────► Vercel (automatisch via git push)
-├── src/app/api/webmail/*.ts ──────────► Vercel (automatisch via git push)  
-├── webmail-proxy/src/*.ts ────────────► HETZNER (manuell SCP + Docker!)
-└── Alle anderen src/ Dateien ─────────► Vercel (automatisch via git push)
+├── src/components/webmail/*.tsx ──────────► Vercel (automatisch via git push)
+├── src/app/api/webmail/*.ts ──────────────► Vercel (automatisch via git push)  
+├── webmail-proxy/src/*.ts ────────────────► HETZNER (manuell SCP + Docker!)
+├── taskilo-ki/**/*.py ────────────────────► HETZNER (manuell SCP + Docker!)
+├── taskoapp/**/*.dart ────────────────────► FLUTTER BUILD (iOS/Android/Web)
+├── taskilo_webmail_app/**/*.dart ─────────► HETZNER (deploy-to-hetzner.sh)
+└── Alle anderen src/ Dateien ─────────────► Vercel (automatisch via git push)
 ```
 
 ### Webmail-Proxy Deployment (NUR wenn webmail-proxy/ geändert wurde!)
@@ -142,6 +242,44 @@ scp webmail-proxy/src/services/EmailService.ts root@mail.taskilo.de:/opt/taskilo
 
 # 2. Docker Container neu bauen und starten
 ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d --build"
+```
+
+### Taskilo-KI Deployment (NUR wenn taskilo-ki/ geändert wurde!)
+```bash
+# 1. Dateien per SCP hochladen
+scp -r taskilo-ki/* root@mail.taskilo.de:/opt/taskilo/taskilo-ki/
+
+# 2. Docker Container neu bauen
+ssh root@mail.taskilo.de "cd /opt/taskilo/taskilo-ki && docker compose up -d --build"
+```
+
+### Flutter App Deployment
+
+**Taskilo App (taskoapp/) - App Stores:**
+```bash
+cd taskoapp/
+flutter pub get
+
+# Android Release
+flutter build apk --release
+# Upload zu Google Play Console
+
+# iOS Release (NUR auf macOS!)
+flutter build ios --release
+# Upload zu App Store Connect via Xcode
+```
+
+**Taskilo Webmail App (taskilo_webmail_app/) - Hetzner PWA:**
+```bash
+cd taskilo_webmail_app/
+
+# Automatisches Deployment zu Hetzner
+./deploy-to-hetzner.sh
+
+# Oder manuell:
+flutter build web --release
+scp -r build/web/* root@mail.taskilo.de:/opt/taskilo/webmail-app/
+ssh root@mail.taskilo.de "systemctl reload nginx"
 ```
 
 ---
@@ -227,6 +365,20 @@ Kleinunternehmer: only `taxNumber`, never `vatId`.
 ---
 
 ## DEVELOPMENT WORKFLOW
+
+### Research & Best Practices
+**IMMER Internet-Recherche bei:**
+- Neuen Features oder unbekannten Anforderungen
+- Auswahl zwischen mehreren Lösungsansätzen
+- Performance-kritischen Implementierungen
+- Sicherheitsrelevanten Entscheidungen
+- State Management Patterns
+- API-Design & Architektur
+
+**Tools nutzen:**
+- `fetch_webpage` für aktuelle Dokumentation (React, Next.js, Firebase, Flutter)
+- Best Practices von offiziellen Docs recherchieren
+- NIEMALS veraltete oder "Quick-Fix" Lösungen verwenden
 
 ### Essential Build Commands
 ```bash
@@ -547,8 +699,62 @@ const db = getFirestore();
 - DATEIEN LÖSCHEN - NIEMALS ohne explizite Benutzeranfrage
 - UMLAUT-FEHLER - Deutsche Umlaute IMMER korrekt (ä, ö, ü, ß)
 - **FIRESTORE IN KI** - NIEMALS Firebase/Firestore in `taskilo-ki/` verwenden! NUR lokale Dateien auf Hetzner!
+- **FIRESTORE IN WEBMAIL APP** - NIEMALS Firebase in `taskilo_webmail_app/` verwenden! NUR Hetzner APIs!
 - **NEUE SCRIPTS** - NIEMALS neue Scripts erstellen ohne vorher `/scripts/` zu prüfen!
 - **ROOT-LEVEL BIO/DESCRIPTION** - NIEMALS! NUR `step3.bio` ist Master!
+- **GetX IN WEBMAIL APP** - KEINE neuen GetX-Features! NUR Riverpod für neue Features!
+
+---
+
+## FLUTTER-SPEZIFISCHE REGELN
+
+### State Management
+**Taskilo App (taskoapp/):**
+- GetX + Provider (LEGACY - wird weiter genutzt)
+- Neue Features können GetX verwenden (noch nicht migriert)
+
+**Taskilo Webmail App (taskilo_webmail_app/):**
+- **NUR Riverpod** für neue Features!
+- GetX ist DEPRECATED - aktive Migration läuft
+- Provider wird durch Riverpod ersetzt
+- NIEMALS neue GetX-Controller erstellen!
+
+### Backend-Verbindungen
+**Taskilo App:**
+- Firebase Client SDK (Auth, Firestore, Storage, Messaging)
+- DIESELBE Firebase-Instanz wie Next.js (`tilvo-f142f`)
+- Company-Subcollections MÜSSEN beachtet werden
+- Revolut-Zahlungen NUR via Next.js API (nicht direkt!)
+
+**Taskilo Webmail App:**
+- KEINE Firebase-Dependencies!
+- Alle APIs über Hetzner Webmail-Proxy
+- Authentifizierung über Hetzner (nicht Firebase)
+- Socket.IO für Realtime-Features
+
+### Build-Probleme
+```bash
+# Flutter Pub Cache löschen (bei Dependency-Problemen)
+flutter pub cache repair
+
+# iOS-spezifische Probleme
+cd ios/ && pod install && cd ..
+
+# Android-spezifische Probleme
+cd android/ && ./gradlew clean && cd ..
+```
+
+### Testing
+```bash
+# Unit Tests
+flutter test
+
+# Integration Tests
+flutter test integration_test/
+
+# Analyzer
+flutter analyze
+```
 
 ---
 
