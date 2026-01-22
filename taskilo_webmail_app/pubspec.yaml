@@ -2,7 +2,7 @@ name: taskilo_webmail
 description: 'Taskilo Webmail - E-Mail, Drive, Fotos, Aufgaben & mehr'
 publish_to: 'none'
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.3

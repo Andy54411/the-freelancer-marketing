@@ -51,5 +51,11 @@
 	<string>Taskilo Webmail benötigt Zugriff auf Ihr Mikrofon für Videoanrufe und Sprachnachrichten.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Taskilo Webmail benötigt Zugriff auf Ihre Kamera für Videoanrufe und Fotos in E-Mails.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Taskilo Webmail benötigt Zugriff auf Ihren Kalender, um Termine und Besprechungen zu verwalten.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Taskilo Webmail kann Ihren Standort nutzen, um standortbezogene Informationen in E-Mails einzufügen.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Taskilo Webmail kann Ihren Standort nutzen, um standortbezogene Informationen in E-Mails einzufügen.</string>
 </dict>
 </plist>
