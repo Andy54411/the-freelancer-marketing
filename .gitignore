@@ -100,9 +100,6 @@ public/Video/*.mp4
 # Taskilo-KI (separat auf Hetzner deployt)
 taskilo-ki/
 
-# Taskilo Webmail App (Flutter - separates Deployment)
-taskilo_webmail_app/
-
 # Screenshots & Demos
 public/webmailer app/
 Bildschirmfoto*.png
