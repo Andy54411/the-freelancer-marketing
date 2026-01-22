@@ -47,6 +47,14 @@
 	<string>Wir benötigen Zugriff auf Ihre Kamera für Video-Calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Wir benötigen Zugriff auf Ihr Mikrofon für Video-Calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Taskilo benötigt Zugriff auf Ihre Fotos, um Bilder zu Aufträgen und Dokumenten hinzuzufügen.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Taskilo benötigt Zugriff auf Ihren Kalender, um Termine und Aufgaben zu verwalten.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Taskilo benötigt Zugriff auf Ihren Standort, um standortbezogene Aufträge anzuzeigen.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Taskilo benötigt Zugriff auf Ihren Standort, um standortbezogene Aufträge anzuzeigen.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
