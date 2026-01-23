@@ -37,10 +37,32 @@ const emailTransformer = z.string().transform((val) => {
   return extracted;
 });
 
+// Helper to handle both string and array inputs for cc/bcc
+const emailArrayTransformer = z.union([
+  z.string().transform((val) => {
+    if (!val || val.trim() === '') return undefined;
+    // Split comma-separated string into array
+    return val.split(',').map(e => {
+      const trimmed = e.trim();
+      const extracted = extractEmail(trimmed);
+      const parsed = z.string().email().safeParse(extracted);
+      if (!parsed.success) {
+        throw new Error(`Invalid email: ${trimmed}`);
+      }
+      return extracted;
+    });
+  }),
+  z.array(emailTransformer),
+]).optional().transform((val) => {
+  // Filter out undefined/empty values
+  if (!val || (Array.isArray(val) && val.length === 0)) return undefined;
+  return val;
+});
+
 export const SendEmailSchema = z.object({
   to: z.union([emailTransformer, z.array(emailTransformer)]),
-  cc: z.array(emailTransformer).optional(),
-  bcc: z.array(emailTransformer).optional(),
+  cc: emailArrayTransformer,
+  bcc: emailArrayTransformer,
   subject: z.string(),
   text: z.string().nullable().optional().transform((val) => val ?? undefined),
   html: z.string().nullable().optional().transform((val) => val ?? undefined),

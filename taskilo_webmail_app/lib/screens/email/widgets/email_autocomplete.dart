@@ -164,13 +164,19 @@ class _EmailAutocompleteState extends ConsumerState<EmailAutocomplete> {
   void _showOverlay() {
     _removeOverlay();
 
+    // Berechne die Position des TextField
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    final double fieldHeight = renderBox?.size.height ?? 48;
+
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         width: MediaQuery.of(context).size.width - 32,
         child: CompositedTransformFollower(
           link: _layerLink,
           showWhenUnlinked: false,
-          offset: const Offset(0, 56),
+          offset: Offset(0, fieldHeight + 8), // Dynamischer Offset basierend auf Feldgröße
+          targetAnchor: Alignment.bottomLeft,
+          followerAnchor: Alignment.topLeft,
           child: Material(
             elevation: 8,
             borderRadius: BorderRadius.circular(12),

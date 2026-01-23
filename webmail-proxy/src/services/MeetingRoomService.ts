@@ -205,8 +205,8 @@ class MeetingRoomService {
    * Meeting-URL generieren
    */
   getMeetingUrl(room: MeetingRoom): string {
-    const baseUrl = process.env.MEETING_BASE_URL || 'https://meet.taskilo.de';
-    return `${baseUrl}/${room.code}`;
+    const baseUrl = process.env.MEETING_BASE_URL || 'https://taskilo.de/webmail/meet';
+    return `${baseUrl}?room=${room.code}`;
   }
 
   /**

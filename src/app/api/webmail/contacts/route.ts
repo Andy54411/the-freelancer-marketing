@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
     const allContacts: Contact[] = [];
     const seenEmails = new Set<string>();
 
-    // 1. CardDAV-Kontakte laden (gespeicherte Kontakte)
+    // 1. Kontakte aus MongoDB laden
     if (source === 'all' || source === 'carddav') {
       try {
-        const carddavResponse = await fetch(`${WEBMAIL_PROXY_URL}/api/contacts`, {
+        const mongoResponse = await fetch(`${WEBMAIL_PROXY_URL}/api/contacts`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({ email, password }),
         });
 
-        if (carddavResponse.ok) {
-          const carddavData = await carddavResponse.json();
-          for (const contact of carddavData.contacts || []) {
+        if (mongoResponse.ok) {
+          const mongoData = await mongoResponse.json();
+          for (const contact of mongoData.contacts || []) {
             const c: Contact = {
               uid: contact.uid,
               firstName: contact.firstName,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
               displayName: contact.displayName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
               emails: contact.emails || [],
               phones: contact.phones || [],
-              source: 'carddav',
+              source: 'carddav', // Behalte für Kompatibilität
             };
             allContacts.push(c);
             // Track emails to avoid duplicates
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch {
-        // CardDAV errors should not break the entire request
+        // Kontakt-Fehler sollten die gesamte Anfrage nicht blockieren
       }
     }
 

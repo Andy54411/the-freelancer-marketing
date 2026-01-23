@@ -733,7 +733,7 @@ export function EmailCompose({
     return colors[hash % colors.length];
   };
 
-  // Kontakt zu CardDAV hinzufügen
+  // Kontakt zu MongoDB hinzufügen
   const addToContacts = async (recipient: { name: string; email: string }) => {
     const credentials = getWebmailCookie();
     if (!credentials) {

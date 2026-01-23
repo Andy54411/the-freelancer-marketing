@@ -1508,6 +1508,12 @@ $processedHtml
   }
 
   Widget _buildBottomBar() {
+    // Bei Entwürfen zeige "Bearbeiten" statt "Antworten/Weiterleiten"
+    final isDraft =
+        widget.mailbox.toLowerCase() == 'drafts' ||
+        widget.mailbox.toLowerCase() == 'entwürfe' ||
+        widget.mailbox.toLowerCase().contains('draft');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1522,53 +1528,99 @@ $processedHtml
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => EmailComposeScreen.show(
-                    context,
-                    replyTo: _message,
-                    mode: ComposeMode.reply,
-                  ),
-                  icon: const Icon(Icons.reply, size: 18),
-                  label: const Text('Antworten'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => EmailComposeScreen.show(
-                    context,
-                    replyTo: _message,
-                    mode: ComposeMode.forward,
-                  ),
-                  icon: const Icon(Icons.forward, size: 18),
-                  label: const Text('Weiterleiten'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  Icons.emoji_emotions_outlined,
-                  color: Colors.grey.shade600,
-                ),
-                onPressed: () {},
-              ),
-            ],
-          ),
+          child: isDraft ? _buildDraftBottomBar() : _buildNormalBottomBar(),
         ),
       ),
+    );
+  }
+
+  Widget _buildDraftBottomBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              // Öffne Entwurf im Compose-Screen zum Bearbeiten
+              final result = await EmailComposeScreen.show(
+                context,
+                draftMessage: _message,
+                draftUid: widget.uid,
+                mode: ComposeMode.draft,
+              );
+              // Wenn der Entwurf gesendet oder gelöscht wurde, zurück zur Liste
+              if (result == true && mounted) {
+                Navigator.pop(context, {'deleted': true, 'uid': widget.uid});
+              }
+            },
+            icon: const Icon(Icons.edit, size: 18),
+            label: const Text('Bearbeiten'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF14ad9f),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        OutlinedButton.icon(
+          onPressed: _deleteMessage,
+          icon: const Icon(Icons.delete_outline, size: 18),
+          label: const Text('Löschen'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.red,
+            side: const BorderSide(color: Colors.red),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNormalBottomBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => EmailComposeScreen.show(
+              context,
+              replyTo: _message,
+              mode: ComposeMode.reply,
+            ),
+            icon: const Icon(Icons.reply, size: 18),
+            label: const Text('Antworten'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black87,
+              side: BorderSide(color: Colors.grey.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => EmailComposeScreen.show(
+              context,
+              replyTo: _message,
+              mode: ComposeMode.forward,
+            ),
+            icon: const Icon(Icons.forward, size: 18),
+            label: const Text('Weiterleiten'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black87,
+              side: BorderSide(color: Colors.grey.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: Icon(
+            Icons.emoji_emotions_outlined,
+            color: Colors.grey.shade600,
+          ),
+          onPressed: () {},
+        ),
+      ],
     );
   }
 
@@ -1641,10 +1693,12 @@ $processedHtml
     if (mimeType.startsWith('video/')) return Icons.video_file;
     if (mimeType.startsWith('audio/')) return Icons.audio_file;
     if (mimeType.contains('pdf')) return Icons.picture_as_pdf;
-    if (mimeType.contains('word') || mimeType.contains('document'))
+    if (mimeType.contains('word') || mimeType.contains('document')) {
       return Icons.description;
-    if (mimeType.contains('sheet') || mimeType.contains('excel'))
+    }
+    if (mimeType.contains('sheet') || mimeType.contains('excel')) {
       return Icons.table_chart;
+    }
     return Icons.attach_file;
   }
 }

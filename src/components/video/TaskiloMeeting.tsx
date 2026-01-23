@@ -23,6 +23,8 @@ import {
   Volume2,
   VolumeX,
   Star,
+  Search,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +40,17 @@ export interface ChatMessage {
   message: string;
   timestamp: string;
   isOwn?: boolean;
+}
+
+// ============== CONTACT INTERFACE ==============
+
+export interface MeetingContact {
+  id: string;
+  email: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
 }
 
 // ============== SCREEN SHARE REQUEST ==============
@@ -93,6 +106,9 @@ export interface TaskiloMeetingProps {
   userEmail?: string;
   userAvatarUrl?: string;
   
+  // E-Mail-Einladung Credentials (für Webmail)
+  senderPassword?: string;        // SMTP-Passwort für E-Mail-Einladungen
+  
   // Host/Lobby-bezogen
   isHost?: boolean;               // Ist dieser User der Host des Meetings?
   
@@ -133,6 +149,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   userName,
   userEmail,
   userAvatarUrl,
+  senderPassword,
   isHost = false,
   onMeetingCreated,
   onMeetingJoined,
@@ -152,6 +169,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const [room, setRoom] = useState<MeetingRoom | null>(null);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Meeting Ready Modal (wie Google Meet "Ihre Besprechung ist bereit")
+  const [showMeetingReadyModal, setShowMeetingReadyModal] = useState(false);
   
   // Media State
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -184,9 +204,20 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   
+  // Contacts State
+  const [contacts, setContacts] = useState<MeetingContact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+  
   // WebRTC State
   const [_iceServers, setIceServers] = useState<RTCIceServer[]>([]);
   const [wsUrl, setWsUrl] = useState<string | null>(null);
+  
+  // Reconnect State
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 3;
+  const lastRoomCodeRef = useRef<string | null>(null);
   
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -200,6 +231,9 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasJoinedRef = useRef(false);
   const myParticipantIdRef = useRef<string | null>(null);
+  
+  // Ref für joinMeeting-Funktion (um zirkuläre Referenzen zu vermeiden)
+  const joinMeetingRef = useRef<((code: string) => Promise<void>) | null>(null);
   
   // API Base URL
   const API_BASE = process.env.NEXT_PUBLIC_MEETING_API_URL || 'https://mail.taskilo.de/api/meeting';
@@ -441,26 +475,40 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   const joinAbortControllerRef = useRef<AbortController | null>(null);
   const isJoiningRef = useRef(false);
 
+  // DEBUG: Logging-Funktion für Meeting-Debugging (TODO: Nach Debug entfernen)
+  const logMeeting = useCallback((message: string, data?: unknown) => {
+    const timestamp = new Date().toISOString().slice(11, 23);
+    if (data) {
+      console.log(`[MEET ${timestamp}] ${message}`, data);
+    } else {
+      console.log(`[MEET ${timestamp}] ${message}`);
+    }
+  }, []);
+
   const joinMeetingInternal = useCallback(async (
     code: string, 
     servers: RTCIceServer[], 
     websocketUrl?: string
   ) => {
+    logMeeting(`joinMeetingInternal START`, { code, websocketUrl, servers: servers.length });
 
     // Verhindere doppelte Verbindungen
     if (wsRef.current) {
       const state = wsRef.current.readyState;
       if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) {
+        logMeeting('Aborted: WebSocket already connected', { state });
         return;
       }
     }
 
     // Verhindere parallele Join-Versuche
     if (isJoiningRef.current) {
+      logMeeting('Aborted: Already joining');
       return;
     }
 
     isJoiningRef.current = true;
+    logMeeting('Starting join process...');
 
     // Abbrechen eines vorherigen Join-Vorgangs
     if (joinAbortControllerRef.current) {
@@ -470,10 +518,12 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     const signal = joinAbortControllerRef.current.signal;
 
     try {
+      logMeeting('Requesting getUserMedia...', { video: videoEnabled, audio: audioEnabled });
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoEnabled,
         audio: audioEnabled,
       });
+      logMeeting('getUserMedia SUCCESS', { tracks: stream.getTracks().map(t => ({ kind: t.kind, label: t.label })) });
 
       // Check ob aborted während getUserMedia
       if (signal.aborted) {
@@ -491,6 +541,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       }
 
       const wsEndpoint = websocketUrl || wsUrl || 'wss://mail.taskilo.de/ws/meeting';
+      logMeeting('Creating WebSocket connection...', { wsEndpoint });
       
       const ws = new WebSocket(wsEndpoint);
       wsRef.current = ws;
@@ -499,10 +550,13 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       let pingIntervalId: NodeJS.Timeout | null = null;
 
       ws.onopen = () => {
+        logMeeting('WebSocket OPEN');
         if (signal.aborted) {
+          logMeeting('Aborted after WS open, closing...');
           ws.close();
           return;
         }
+        logMeeting('Sending join message...', { roomCode: code, userId, userName });
         ws.send(JSON.stringify({
           type: 'join',
           payload: {
@@ -522,17 +576,43 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
       ws.onmessage = (event) => {
         if (signal.aborted) return;
-        handleSignalingMessage(JSON.parse(event.data));
+        const msg = JSON.parse(event.data);
+        logMeeting('WebSocket MESSAGE', { type: msg.type });
+        handleSignalingMessage(msg);
       };
 
-      ws.onerror = (_wsError) => {
+      ws.onerror = (wsError) => {
+        logMeeting('WebSocket ERROR', wsError);
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
       };
 
-      ws.onclose = (_closeEvent) => {
+      ws.onclose = (closeEvent) => {
+        logMeeting('WebSocket CLOSE', { code: closeEvent.code, reason: closeEvent.reason, wasClean: closeEvent.wasClean });
         isJoiningRef.current = false;
         if (pingIntervalId) clearInterval(pingIntervalId);
+        
+        // Prüfe ob wir reconnecten sollten (außer bei normalem Beenden)
+        const wasInMeeting = meetingState === 'in-meeting';
+        const isNormalClose = closeEvent.code === 1000 || closeEvent.code === 1001;
+        logMeeting('Close analysis', { wasInMeeting, isNormalClose, reconnectAttempts: reconnectAttemptsRef.current });
+        
+        if (wasInMeeting && !isNormalClose && !signal.aborted && reconnectAttemptsRef.current < maxReconnectAttempts) {
+          // Versuche Reconnect
+          logMeeting('Attempting reconnect...');
+          setIsReconnecting(true);
+          reconnectAttemptsRef.current++;
+          
+          setTimeout(() => {
+            if (lastRoomCodeRef.current && !signal.aborted && joinMeetingRef.current) {
+              joinMeetingRef.current(lastRoomCodeRef.current);
+            }
+          }, 2000 * reconnectAttemptsRef.current); // Exponential backoff
+        } else if (!isNormalClose && !signal.aborted) {
+          // Zeige benutzerfreundlichen Fehler
+          setError('Verbindung unterbrochen. Bitte aktualisieren Sie die Seite.');
+          setMeetingState('error');
+        }
       };
 
       // Check ob aborted während WebSocket-Setup
@@ -582,16 +662,33 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       
     } catch (err) {
       isJoiningRef.current = false;
-      const message = err instanceof Error ? err.message : 'Failed to setup media';
-      setError(message);
+      const originalMessage = err instanceof Error ? err.message : 'Failed to setup media';
+      
+      // Benutzerfreundliche Fehlermeldungen für häufige Probleme
+      let germanMessage = originalMessage;
+      if (originalMessage.includes('shutdown') || originalMessage.includes('AbortError')) {
+        germanMessage = 'Medienverbindung wurde unterbrochen. Bitte erteilen Sie die Kamera-/Mikrofon-Berechtigung und versuchen Sie es erneut.';
+      } else if (originalMessage.includes('NotAllowedError') || originalMessage.includes('Permission')) {
+        germanMessage = 'Kamera-/Mikrofon-Zugriff wurde verweigert. Bitte erteilen Sie die Berechtigung in den Browser-Einstellungen.';
+      } else if (originalMessage.includes('NotFoundError') || originalMessage.includes('not found')) {
+        germanMessage = 'Keine Kamera oder Mikrofon gefunden. Bitte schließen Sie ein Gerät an.';
+      } else if (originalMessage.includes('NotReadableError') || originalMessage.includes('in use')) {
+        germanMessage = 'Kamera/Mikrofon wird bereits von einer anderen App verwendet. Bitte schließen Sie andere Apps.';
+      } else if (originalMessage.includes('OverconstrainedError')) {
+        germanMessage = 'Die angeforderte Kameraauflösung wird nicht unterstützt.';
+      }
+      
+      logMeeting('joinMeetingInternal ERROR', { original: originalMessage, german: germanMessage });
+      setError(germanMessage);
       setMeetingState('error');
-      onError?.(message);
+      onError?.(originalMessage);
     }
-  }, [userId, userName, videoEnabled, audioEnabled, wsUrl, handleSignalingMessage, onError]);
+  }, [userId, userName, videoEnabled, audioEnabled, wsUrl, handleSignalingMessage, logMeeting, onError, meetingState, maxReconnectAttempts]);
 
   // ============== API CALLS ==============
 
   const createMeeting = useCallback(async () => {
+    logMeeting('createMeeting START');
     setMeetingState('creating');
     setError(null);
 
@@ -629,13 +726,16 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       setMeetingState('error');
       onError?.(message);
     }
-  }, [userId, orderId, companyId, source, API_BASE, API_KEY, joinMeetingInternal, onMeetingCreated, onError]);
+  }, [userId, orderId, companyId, source, API_BASE, API_KEY, joinMeetingInternal, logMeeting, onMeetingCreated, onError]);
 
   const joinMeeting = useCallback(async (code: string) => {
+    logMeeting('joinMeeting START', { code });
     setMeetingState('joining');
     setError(null);
+    lastRoomCodeRef.current = code; // Speichere für Reconnect
 
     try {
+      logMeeting('Calling join API...', { url: `${API_BASE}/${code}/join` });
       const response = await fetch(`${API_BASE}/${code}/join`, {
         method: 'POST',
         headers: {
@@ -651,11 +751,13 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       });
 
       const data = await response.json();
+      logMeeting('Join API response', { success: data.success, hasRoom: !!data.room, hasConnection: !!data.connection });
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to join meeting');
       }
 
+      logMeeting('Setting room data...', { roomCode: data.room.code, wsUrl: data.connection.wsUrl });
       setRoom(data.room);
       setParticipants(data.room.participants);
       setIceServers(data.connection.iceServers);
@@ -663,15 +765,41 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       
       await joinMeetingInternal(code, data.connection.iceServers, data.connection.wsUrl);
       
+      // Reconnect erfolgreich - Reset
+      setIsReconnecting(false);
+      reconnectAttemptsRef.current = 0;
+      
+      // Zeige "Meeting bereit" Modal für Host
+      if (isHost) {
+        setShowMeetingReadyModal(true);
+      }
+      
+      logMeeting('joinMeeting SUCCESS');
       onMeetingJoined?.(data.room);
       
     } catch (err) {
+      logMeeting('joinMeeting ERROR', err);
       const message = err instanceof Error ? err.message : 'Failed to join meeting';
-      setError(message);
+      // Bessere Fehlermeldungen auf Deutsch
+      let germanMessage = message;
+      if (message.includes('shutdown') || message.includes('closed')) {
+        germanMessage = 'Verbindung unterbrochen. Bitte aktualisieren Sie die Seite.';
+      } else if (message.includes('Failed to join')) {
+        germanMessage = 'Beitritt fehlgeschlagen. Bitte versuchen Sie es erneut.';
+      } else if (message.includes('network') || message.includes('fetch')) {
+        germanMessage = 'Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.';
+      }
+      setError(germanMessage);
       setMeetingState('error');
+      setIsReconnecting(false);
       onError?.(message);
     }
-  }, [userId, userName, userEmail, userAvatarUrl, API_BASE, API_KEY, joinMeetingInternal, onMeetingJoined, onError]);
+  }, [userId, userName, userEmail, userAvatarUrl, API_BASE, API_KEY, joinMeetingInternal, isHost, logMeeting, onMeetingJoined, onError]);
+
+  // Ref für Reconnect-Logik aktualisieren
+  useEffect(() => {
+    joinMeetingRef.current = joinMeeting;
+  }, [joinMeeting]);
 
   const endMeeting = useCallback(() => {
     // Sende end-meeting an Server (nur Host kann Meeting beenden)
@@ -787,9 +915,16 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
 
   const copyMeetingLink = useCallback(() => {
     if (room?.url) {
-      navigator.clipboard.writeText(room.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard.writeText(room.url)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(() => {
+          setError('Link konnte nicht kopiert werden');
+        });
+    } else {
+      setError('Kein Meeting-Link verfügbar');
     }
   }, [room]);
 
@@ -825,25 +960,6 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   }, [showChatPanel]);
 
   // ============== SCREEN SHARE FUNCTIONS ==============
-
-  const requestScreenShare = useCallback(() => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    
-    // Host braucht keine Genehmigung
-    if (isHost) {
-      setIsScreenShareApproved(true);
-      startScreenShare();
-      return;
-    }
-    
-    // Teilnehmer fragen Host um Erlaubnis
-    wsRef.current.send(JSON.stringify({
-      type: 'screen-share-request',
-      payload: {},
-    }));
-  }, [isHost]);
 
   const startScreenShare = useCallback(async () => {
     try {
@@ -908,6 +1024,25 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       }
     }
   }, []);
+
+  const requestScreenShare = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    // Host braucht keine Genehmigung
+    if (isHost) {
+      setIsScreenShareApproved(true);
+      startScreenShare();
+      return;
+    }
+    
+    // Teilnehmer fragen Host um Erlaubnis
+    wsRef.current.send(JSON.stringify({
+      type: 'screen-share-request',
+      payload: {},
+    }));
+  }, [isHost, startScreenShare]);
 
   const stopScreenShare = useCallback(async () => {
     // Screen-Stream stoppen
@@ -1055,10 +1190,84 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     setSpotlightParticipantId(null);
   }, [isHost]);
 
+  // ============== CONTACTS FUNCTIONS ==============
+
+  // Kontakte laden wenn Modal geöffnet wird
+  const loadContacts = useCallback(async () => {
+    if (!userEmail || !senderPassword) {
+      return;
+    }
+    
+    setContactsLoading(true);
+    try {
+      const response = await fetch('/api/webmail/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: senderPassword,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.contacts) {
+        // Kontakte transformieren
+        const mappedContacts: MeetingContact[] = data.contacts.map((c: { id?: string; email: string; displayName?: string; firstName?: string; lastName?: string; company?: string }) => ({
+          id: c.id || c.email,
+          email: c.email,
+          displayName: c.displayName,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          company: c.company,
+        }));
+        setContacts(mappedContacts);
+      }
+    } catch {
+      // Kontakte konnten nicht geladen werden - kein kritischer Fehler
+    } finally {
+      setContactsLoading(false);
+    }
+  }, [userEmail, senderPassword]);
+
+  // Kontakt auswählen
+  const selectContact = useCallback((contact: MeetingContact) => {
+    setInviteEmail(contact.email);
+    setContactSearchQuery('');
+  }, []);
+
+  // Gefilterte Kontakte basierend auf Suche
+  const filteredContacts = contacts.filter((contact) => {
+    if (!contactSearchQuery.trim()) return true;
+    const query = contactSearchQuery.toLowerCase();
+    return (
+      contact.email.toLowerCase().includes(query) ||
+      (contact.displayName?.toLowerCase().includes(query)) ||
+      (contact.firstName?.toLowerCase().includes(query)) ||
+      (contact.lastName?.toLowerCase().includes(query)) ||
+      (contact.company?.toLowerCase().includes(query))
+    );
+  });
+
+  // Kontakte laden wenn Modal geöffnet wird
+  useEffect(() => {
+    if (showInviteModal && contacts.length === 0) {
+      loadContacts();
+    }
+  }, [showInviteModal, contacts.length, loadContacts]);
+
   // ============== MAIL INVITE FUNCTIONS ==============
 
   const sendMailInvite = useCallback(async () => {
     if (!inviteEmail.trim() || !room?.url) {
+      return;
+    }
+    
+    // Prüfe ob Credentials vorhanden sind (für Webmail)
+    if (!userEmail || !senderPassword) {
+      setError('E-Mail-Einladung nicht verfügbar. Bitte kopieren Sie den Link stattdessen.');
       return;
     }
     
@@ -1072,6 +1281,10 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Authentifizierung
+          email: userEmail,
+          password: senderPassword,
+          // E-Mail-Daten
           to: inviteEmail.trim(),
           subject: `Einladung zum Taskilo Meeting: ${room.name || room.code}`,
           html: `
@@ -1094,20 +1307,23 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         }),
       });
       
-      if (!response.ok) {
-        throw new Error('Einladung konnte nicht gesendet werden');
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Einladung konnte nicht gesendet werden');
       }
       
       setInviteSuccess(`Einladung an ${inviteEmail} gesendet`);
       setInviteEmail('');
       setTimeout(() => setInviteSuccess(null), 3000);
       
-    } catch {
-      setError('E-Mail-Einladung konnte nicht gesendet werden.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'E-Mail-Einladung konnte nicht gesendet werden.';
+      setError(message);
     } finally {
       setInviteSending(false);
     }
-  }, [inviteEmail, room, userName]);
+  }, [inviteEmail, room, userName, userEmail, senderPassword]);
 
   // ============== EFFECTS ==============
 
@@ -1283,6 +1499,31 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     );
   }
 
+  // Reconnecting State
+  if (isReconnecting) {
+    return (
+      <div className={cn('flex flex-col items-center justify-center p-8', className)}>
+        <div className="bg-yellow-50 rounded-lg p-6 text-center max-w-md">
+          <Loader2 className="w-12 h-12 mx-auto text-yellow-500 mb-4 animate-spin" />
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Verbindung wird wiederhergestellt...</h3>
+          <p className="text-yellow-600 mb-4">
+            Versuch {reconnectAttemptsRef.current} von {maxReconnectAttempts}
+          </p>
+          <Button 
+            onClick={() => {
+              setIsReconnecting(false);
+              reconnectAttemptsRef.current = 0;
+              setMeetingState('idle');
+            }} 
+            variant="outline"
+          >
+            Abbrechen
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Error State
   if (meetingState === 'error') {
     return (
@@ -1291,9 +1532,35 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           <X className="w-12 h-12 mx-auto text-red-500 mb-4" />
           <h3 className="text-lg font-semibold text-red-800 mb-2">Fehler</h3>
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => setMeetingState('idle')} variant="outline">
-            Erneut versuchen
-          </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3 justify-center">
+              <Button 
+                onClick={() => {
+                  // Seite neu laden für sauberen Neustart
+                  window.location.reload();
+                }} 
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                Seite aktualisieren
+              </Button>
+              <Button 
+                onClick={() => {
+                  reconnectAttemptsRef.current = 0;
+                  setError(null);
+                  setMeetingState('idle');
+                }} 
+                variant="outline"
+              >
+                Zurück
+              </Button>
+            </div>
+            {/* Hinweis für Berechtigungsprobleme */}
+            {error?.includes('Berechtigung') && (
+              <p className="text-xs text-gray-500 mt-2">
+                Tipp: Klicken Sie auf das Kamera-Symbol in der Adressleiste Ihres Browsers, um die Berechtigungen zu ändern.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1381,12 +1648,12 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         {/* Video Grid */}
         <div className="flex-1 relative p-4 min-h-0">
           {/* Remote Video (Main) */}
-          <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden">
+          <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             {participants.length === 0 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90">
@@ -1398,13 +1665,13 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
           </div>
 
           {/* Local Video (PiP) */}
-          <div className="absolute bottom-6 right-6 w-48 h-36 bg-gray-700 rounded-lg overflow-hidden shadow-lg">
+          <div className="absolute bottom-6 right-6 w-48 h-36 bg-gray-700 rounded-lg overflow-hidden shadow-lg flex items-center justify-center">
             <video
               ref={localVideoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover scale-x-[-1]"
+              className="w-full h-full object-contain scale-x-[-1]"
             />
             {!videoEnabled && (
               <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
@@ -1725,10 +1992,75 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
         </div>
       )}
 
+      {/* Meeting Bereit Modal (Google Meet Style) */}
+      {showMeetingReadyModal && room && (
+        <div className="fixed bottom-6 left-6 z-50 animate-in slide-in-from-left-5 duration-300">
+          <div className="bg-white rounded-lg shadow-2xl p-5 w-[380px] border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-medium text-gray-900">Ihre Besprechung ist bereit</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMeetingReadyModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 h-auto"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Teilnehmer hinzufügen Button */}
+            <Button
+              onClick={() => {
+                setShowMeetingReadyModal(false);
+                setShowInviteModal(true);
+              }}
+              className="w-auto mb-4 bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Teilnehmer hinzufügen
+            </Button>
+            
+            <p className="text-sm text-gray-600 mb-3">
+              Sie können diesen Besprechungslink auch mit anderen teilen, die an der Besprechung teilnehmen sollen
+            </p>
+            
+            {/* Meeting Link */}
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 mb-3">
+              <span className="text-sm text-gray-700 truncate flex-1">
+                {room.url}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyMeetingLink}
+                className="shrink-0 h-8 w-8 p-0"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-500" />}
+              </Button>
+            </div>
+            
+            {/* Hinweis */}
+            <div className="flex items-start gap-2 text-xs text-gray-500">
+              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                <Users className="w-3 h-3 text-gray-400" />
+              </div>
+              <span>
+                Für Nutzer, die diesen Besprechungslink nutzen, müssen Sie erst eine Teilnahmeanfrage genehmigen.
+              </span>
+            </div>
+            
+            {/* Teilnahme erfolgt als */}
+            <p className="text-xs text-gray-400 mt-3">
+              Teilnahme erfolgt als {userEmail || userName}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Mail Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Per E-Mail einladen</h3>
               <Button
@@ -1742,10 +2074,11 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
             </div>
             
             <p className="text-sm text-gray-600 mb-4">
-              Sende eine Einladung per E-Mail an einen Teilnehmer.
+              Wähle einen Kontakt oder gib eine E-Mail-Adresse ein.
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+              {/* E-Mail Eingabe */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   E-Mail-Adresse
@@ -1759,6 +2092,80 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
                 />
               </div>
               
+              {/* Kontakte */}
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Oder wähle einen Kontakt
+                </label>
+                
+                {/* Kontakt-Suche */}
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    value={contactSearchQuery}
+                    onChange={(e) => setContactSearchQuery(e.target.value)}
+                    placeholder="Kontakt suchen..."
+                    className="w-full pl-9"
+                  />
+                </div>
+                
+                {/* Kontaktliste */}
+                <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg min-h-[150px] max-h-[200px]">
+                  {contactsLoading ? (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Kontakte werden geladen...
+                    </div>
+                  ) : filteredContacts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm p-4">
+                      {contacts.length === 0 ? (
+                        <>
+                          <User className="w-8 h-8 mb-2 text-gray-300" />
+                          <span>Keine Kontakte vorhanden</span>
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-8 h-8 mb-2 text-gray-300" />
+                          <span>Keine Treffer für &quot;{contactSearchQuery}&quot;</span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {filteredContacts.slice(0, 50).map((contact) => (
+                        <button
+                          key={contact.id}
+                          onClick={() => selectContact(contact)}
+                          className={cn(
+                            "w-full px-3 py-2 text-left hover:bg-teal-50 transition-colors flex items-center gap-3",
+                            inviteEmail === contact.email && "bg-teal-50"
+                          )}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm truncate">
+                              {contact.displayName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
+                            </div>
+                            {(contact.displayName || contact.firstName || contact.lastName) && (
+                              <div className="text-xs text-gray-500 truncate">{contact.email}</div>
+                            )}
+                            {contact.company && (
+                              <div className="text-xs text-gray-400 truncate">{contact.company}</div>
+                            )}
+                          </div>
+                          {inviteEmail === contact.email && (
+                            <Check className="w-4 h-4 text-teal-600 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
               {inviteSuccess && (
                 <div className="flex items-center gap-2 text-green-600 text-sm">
                   <CheckCircle className="w-4 h-4" />
@@ -1766,7 +2173,7 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
                 </div>
               )}
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowInviteModal(false)}

@@ -560,23 +560,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return _EmailListItem(
             message: message,
             onTap: () async {
-              final result = await Navigator.push<Map<String, dynamic>>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EmailDetailScreen(
-                    uid: message.uid,
-                    mailbox: _currentMailbox,
-                  ),
-                ),
-              );
-              // Wenn eine E-Mail gelöscht wurde, sofort aus Liste entfernen
-              if (result != null && result['deleted'] == true) {
-                setState(() {
-                  _messages.removeWhere((m) => m.uid == result['uid']);
-                });
+              // Prüfe ob aktueller Ordner ein Entwürfe-Ordner ist
+              final isDraft = _currentMailbox.toLowerCase() == 'drafts' ||
+                  _currentMailbox.toLowerCase() == 'entwürfe' ||
+                  _currentMailbox.toLowerCase().contains('draft');
+
+              if (isDraft) {
+                // Bei Entwürfen: Direkt Compose-Screen zum Bearbeiten öffnen
+                final result = await EmailComposeScreen.show(
+                  context,
+                  draftMessage: message,
+                  draftUid: message.uid,
+                  mode: ComposeMode.draft,
+                );
+                // Wenn der Entwurf gesendet oder gelöscht wurde, Liste aktualisieren
+                if (result == true) {
+                  _loadMessages();
+                }
               } else {
-                // E-Mail wurde gelesen - Liste neu laden für Realtime-Update
-                _loadMessages();
+                // Bei normalen Nachrichten: Detail-Screen öffnen
+                final result = await Navigator.push<Map<String, dynamic>>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EmailDetailScreen(
+                      uid: message.uid,
+                      mailbox: _currentMailbox,
+                    ),
+                  ),
+                );
+                // Wenn eine E-Mail gelöscht wurde, sofort aus Liste entfernen
+                if (result != null && result['deleted'] == true) {
+                  setState(() {
+                    _messages.removeWhere((m) => m.uid == result['uid']);
+                  });
+                } else {
+                  // E-Mail wurde gelesen - Liste neu laden für Realtime-Update
+                  _loadMessages();
+                }
               }
             },
             onStarTap: () => _toggleStar(message),

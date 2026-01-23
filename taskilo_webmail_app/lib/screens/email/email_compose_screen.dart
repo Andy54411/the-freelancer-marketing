@@ -6,25 +6,32 @@ import 'dart:io';
 import 'package:html_editor_enhanced/html_editor.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/api_provider.dart'; // ✅ Riverpod Provider
+import '../../services/api_service.dart'; // ApiService Import
 import '../../models/email_models.dart';
 import 'widgets/email_editor.dart';
 import 'widgets/email_autocomplete.dart';
 
-enum ComposeMode { newEmail, reply, replyAll, forward }
+enum ComposeMode { newEmail, reply, replyAll, forward, draft }
 
 class EmailComposeScreen extends StatefulWidget {
   final EmailMessage? replyTo;
+  final EmailMessage? draftMessage;
+  final int? draftUid;
   final ComposeMode mode;
 
   const EmailComposeScreen({
     super.key,
     this.replyTo,
+    this.draftMessage,
+    this.draftUid,
     this.mode = ComposeMode.newEmail,
   });
 
   static Future<bool?> show(
     BuildContext context, {
     EmailMessage? replyTo,
+    EmailMessage? draftMessage,
+    int? draftUid,
     ComposeMode mode = ComposeMode.newEmail,
   }) {
     return showModalBottomSheet<bool>(
@@ -32,7 +39,12 @@ class EmailComposeScreen extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (context) => _ComposeBottomSheet(replyTo, mode),
+      builder: (context) => _ComposeBottomSheet(
+        replyTo,
+        mode,
+        draftMessage: draftMessage,
+        draftUid: draftUid,
+      ),
     );
   }
 
@@ -43,9 +55,16 @@ class EmailComposeScreen extends StatefulWidget {
 class _ComposeBottomSheet extends ConsumerStatefulWidget {
   // ✅ ConsumerStatefulWidget
   final EmailMessage? replyTo;
+  final EmailMessage? draftMessage;
+  final int? draftUid;
   final ComposeMode mode;
 
-  const _ComposeBottomSheet(this.replyTo, this.mode);
+  const _ComposeBottomSheet(
+    this.replyTo,
+    this.mode, {
+    this.draftMessage,
+    this.draftUid,
+  });
 
   @override
   ConsumerState<_ComposeBottomSheet> createState() =>
@@ -88,12 +107,68 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
     _fromEmail = email ?? '';
     _signatureHtml = sig;
 
+    // Bei Entwürfen: Lade vollständige Nachricht falls nötig
+    if (widget.mode == ComposeMode.draft && widget.draftUid != null) {
+      await _loadDraftDetails(api);
+    }
+
     _initializeFromReply();
 
     setState(() => _isLoading = false);
   }
 
+  /// Lädt die vollständigen Entwurf-Details vom Server
+  Future<void> _loadDraftDetails(ApiService api) async {
+    try {
+      final result = await api.getMessage(
+        mailbox: 'Drafts',
+        uid: widget.draftUid!,
+      );
+
+      if (result['success'] == true && result['message'] != null) {
+        // Parse die Nachricht aus dem Ergebnis
+        final messageData = result['message'] as Map<String, dynamic>;
+        _draftFullMessage = EmailMessage.fromJson(messageData);
+      }
+    } catch (e) {
+      debugPrint('Fehler beim Laden des Entwurfs: $e');
+    }
+  }
+
+  // Vollständige Entwurf-Nachricht nach dem Laden
+  EmailMessage? _draftFullMessage;
+
   void _initializeFromReply() {
+    // Bei Entwürfen: Lade die gespeicherten Daten
+    if (widget.mode == ComposeMode.draft) {
+      // Verwende die vollständige Nachricht falls verfügbar, sonst die ursprüngliche
+      final draft = _draftFullMessage ?? widget.draftMessage;
+      if (draft == null) return;
+
+      // Empfänger laden
+      if (draft.to.isNotEmpty) {
+        _toController.text = draft.to.map((e) => e.email).join(', ');
+      }
+
+      // CC laden
+      if (draft.cc != null && draft.cc!.isNotEmpty) {
+        _ccController.text = draft.cc!.map((e) => e.email).join(', ');
+        _showCcBcc = true;
+      }
+
+      // BCC laden
+      if (draft.bcc != null && draft.bcc!.isNotEmpty) {
+        _bccController.text = draft.bcc!.map((e) => e.email).join(', ');
+        _showCcBcc = true;
+      }
+
+      // Betreff laden
+      _subjectController.text = draft.subject;
+
+      // Body wird später im HTML-Editor geladen
+      return;
+    }
+
     if (widget.replyTo == null) return;
 
     final original = widget.replyTo!;
@@ -140,6 +215,10 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
         break;
 
       case ComposeMode.newEmail:
+        break;
+
+      case ComposeMode.draft:
+        // Bereits oben behandelt
         break;
     }
   }
@@ -243,6 +322,11 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
       );
 
       if (result['success'] == true) {
+        // Bei Entwürfen: Lösche den alten Entwurf nach dem Senden
+        if (widget.mode == ComposeMode.draft && widget.draftUid != null) {
+          await api.deleteMessage(mailbox: 'Drafts', uid: widget.draftUid!);
+        }
+
         if (!mounted) return;
         Navigator.of(context).pop(true); // ✅ true = E-Mail wurde gesendet
         // ✅ Material SnackBar
@@ -290,6 +374,7 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
             : null,
         subject: _subjectController.text,
         body: bodyHtml,
+        existingDraftUid: widget.draftUid,
       );
 
       if (!mounted) return;
@@ -765,6 +850,26 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
   }
 
   Widget _buildBodyField() {
+    // Bei Entwürfen: Lade den gespeicherten Body
+    if (widget.mode == ComposeMode.draft) {
+      // Verwende die vollständige Nachricht falls verfügbar
+      final draft = _draftFullMessage ?? widget.draftMessage;
+      final draftBody =
+          draft?.html ?? draft?.text?.replaceAll('\n', '<br>') ?? '';
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return EmailEditor(
+            controller: _bodyController,
+            focusNode: _editorFocusNode,
+            placeholder: 'E-Mail schreiben...',
+            initialHtml: draftBody,
+            height: constraints.maxHeight,
+          );
+        },
+      );
+    }
+
     final sig = _signatureHtml != null && _signatureHtml!.isNotEmpty
         ? '<br><br>$_signatureHtml'
         : '';

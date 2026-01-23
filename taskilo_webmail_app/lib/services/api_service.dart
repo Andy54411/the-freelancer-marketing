@@ -1348,6 +1348,7 @@ class ApiService {
     List<String>? bcc,
     required String subject,
     required String body,
+    int? existingDraftUid,
   }) async {
     try {
       final response = await _dio.post(
@@ -1362,6 +1363,7 @@ class ApiService {
             'subject': subject,
             'html': body,
           },
+          if (existingDraftUid != null) 'existingDraftUid': existingDraftUid,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -1399,7 +1401,7 @@ class ApiService {
 
   // ==================== CONTACTS ====================
 
-  /// Hole alle Kontakte (CardDAV + E-Mail-Header)
+  /// Hole alle Kontakte aus MongoDB
   Future<Map<String, dynamic>> getContacts({String? search}) async {
     try {
       _logger.i('[getContacts] Start - search: $search');
@@ -1407,13 +1409,17 @@ class ApiService {
         '[getContacts] Auth: email=$_userEmail, hasPwd=${_userPassword != null}, cookieAuth=$_useCookieAuth, masterUser=$_useMasterUser',
       );
 
+      // Bestimme ob Master-Route verwendet werden soll (kein Passwort verfügbar)
+      final useMasterRoute = _useCookieAuth || _useMasterUser || _userPassword == null;
+
       // Nutze search endpoint wenn Suchbegriff vorhanden
       if (search != null && search.isNotEmpty) {
-        _logger.i('[getContacts] Using /contacts/search endpoint');
-        final response = await _dio.post(
-          '/contacts/search',
-          data: {..._authData, 'query': search},
-        );
+        final endpoint = useMasterRoute ? '/contacts/search/master' : '/contacts/search';
+        _logger.i('[getContacts] Using $endpoint endpoint');
+        final data = useMasterRoute 
+            ? {'email': _userEmail, 'query': search}
+            : {..._authData, 'query': search};
+        final response = await _dio.post(endpoint, data: data);
         _logger.i(
           '[getContacts] Response: ${response.statusCode}, contacts: ${response.data['total'] ?? 0}',
         );
@@ -1421,9 +1427,10 @@ class ApiService {
       }
 
       // Alle Kontakte abrufen
-      _logger.i('[getContacts] Using /contacts endpoint');
-      _logger.d('[getContacts] Auth data: ${_authData.keys.toList()}');
-      final response = await _dio.post('/contacts', data: _authData);
+      final endpoint = useMasterRoute ? '/contacts/master' : '/contacts';
+      _logger.i('[getContacts] Using $endpoint endpoint');
+      final data = useMasterRoute ? {'email': _userEmail} : _authData;
+      final response = await _dio.post(endpoint, data: data);
       _logger.i(
         '[getContacts] Response: ${response.statusCode}, contacts: ${response.data['total'] ?? 0}',
       );

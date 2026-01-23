@@ -240,8 +240,22 @@ class Mailbox {
   }
 
   bool get isInbox => specialUse == '\\Inbox' || path.toLowerCase() == 'inbox';
-  bool get isSent => specialUse == '\\Sent';
-  bool get isDrafts => specialUse == '\\Drafts';
-  bool get isTrash => specialUse == '\\Trash';
-  bool get isSpam => specialUse == '\\Junk';
+  bool get isSent =>
+      specialUse == '\\Sent' ||
+      path.toLowerCase() == 'sent' ||
+      path.toLowerCase().contains('gesendet');
+  bool get isDrafts =>
+      specialUse == '\\Drafts' ||
+      path.toLowerCase() == 'drafts' ||
+      path.toLowerCase().contains('entwurf') ||
+      path.toLowerCase().contains('draft');
+  bool get isTrash =>
+      specialUse == '\\Trash' ||
+      path.toLowerCase() == 'trash' ||
+      path.toLowerCase().contains('papierkorb') ||
+      path.toLowerCase().contains('deleted');
+  bool get isSpam =>
+      specialUse == '\\Junk' ||
+      path.toLowerCase() == 'spam' ||
+      path.toLowerCase() == 'junk';
 }

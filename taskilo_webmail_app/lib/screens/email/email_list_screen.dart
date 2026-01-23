@@ -302,19 +302,66 @@ class _EmailListScreenState extends State<EmailListScreen> {
           final message = _messages[index];
           return _EmailListItem(
             message: message,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EmailDetailScreen(
-                  uid: message.uid,
-                  mailbox: _currentMailbox,
-                ),
-              ),
-            ),
+            onTap: () => _openMessage(message),
           );
         },
       ),
     );
+  }
+
+  /// Öffnet eine Nachricht - bei Entwürfen direkt im Compose-Screen
+  Future<void> _openMessage(EmailMessage message) async {
+    // Debug: Zeige alle Mailboxen
+    debugPrint('[EmailList] === MAILBOX DEBUG ===');
+    debugPrint('[EmailList] currentMailbox: $_currentMailbox');
+    for (final mailbox in _mailboxes) {
+      debugPrint(
+        '[EmailList] Mailbox: path=${mailbox.path}, specialUse=${mailbox.specialUse}, isDrafts=${mailbox.isDrafts}',
+      );
+    }
+
+    // Prüfe ob es ein Entwurf ist - suche die Mailbox in der Liste
+    bool isDraft = false;
+    for (final mailbox in _mailboxes) {
+      if (mailbox.path == _currentMailbox && mailbox.isDrafts) {
+        isDraft = true;
+        break;
+      }
+    }
+
+    debugPrint('[EmailList] isDraft result: $isDraft');
+    debugPrint('[EmailList] === END DEBUG ===');
+
+    if (isDraft) {
+      // Bei Entwürfen: Lade die vollständige Nachricht und öffne Compose-Screen
+      final result = await EmailComposeScreen.show(
+        context,
+        draftMessage: message,
+        draftUid: message.uid,
+        mode: ComposeMode.draft,
+      );
+
+      // Wenn der Entwurf gesendet oder gelöscht wurde, Liste aktualisieren
+      if (result == true) {
+        _loadData();
+      }
+    } else {
+      // Bei normalen Nachrichten: Detail-Screen öffnen
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              EmailDetailScreen(uid: message.uid, mailbox: _currentMailbox),
+        ),
+      );
+
+      // Wenn Nachricht gelöscht/verschoben wurde, Liste aktualisieren
+      if (result != null && result is Map) {
+        if (result['deleted'] == true || result['moved'] == true) {
+          _loadData();
+        }
+      }
+    }
   }
 
   IconData _getMailboxIcon(Mailbox mailbox) {

@@ -432,6 +432,19 @@ class SettingsServiceMongo {
    * MongoDB-Dokument zu API-Response mappen
    */
   private mapToResponse(settings: WebmailSettings): UserSettingsResponse {
+    // Sichere Konvertierung von Datum zu Timestamp
+    const getTimestamp = (dateValue: Date | string | number | undefined): number => {
+      if (!dateValue) return Date.now();
+      if (typeof dateValue === 'number') return dateValue;
+      if (typeof dateValue === 'string') return new Date(dateValue).getTime();
+      if (dateValue instanceof Date) return dateValue.getTime();
+      // Falls es ein MongoDB Date-Objekt ist
+      if (typeof (dateValue as any).getTime === 'function') {
+        return (dateValue as any).getTime();
+      }
+      return Date.now();
+    };
+
     return {
       email: settings.email,
       displayName: settings.displayName,
@@ -477,8 +490,8 @@ class SettingsServiceMongo {
       vacation: settings.vacation,
       forwarding: settings.forwarding,
       inbox: settings.inbox,
-      createdAt: settings.createdAt.getTime(),
-      updatedAt: settings.updatedAt.getTime(),
+      createdAt: getTimestamp(settings.createdAt),
+      updatedAt: getTimestamp(settings.updatedAt),
     };
   }
 }

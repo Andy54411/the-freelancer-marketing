@@ -180,7 +180,7 @@ export default function WebmailMeetPage() {
       setShowCreateModal(true);
       toast.success('Besprechungslink erstellt!');
       
-    } catch (error) {
+    } catch {
       toast.error('Link konnte nicht erstellt werden');
     }
   };
@@ -224,7 +224,7 @@ export default function WebmailMeetPage() {
       sessionStorage.setItem(HOST_SESSION_KEY, code);
       router.push(`/webmail/meet?room=${code}`);
       
-    } catch (error) {
+    } catch {
       toast.error('Meeting konnte nicht gestartet werden');
     }
   };
@@ -418,10 +418,11 @@ export default function WebmailMeetPage() {
     }
   };
 
-  const handleMeetingCreated = (room: MeetingRoom) => {
+  const handleMeetingCreated = (_room: MeetingRoom) => {
+    // Room-Info wird aktuell nicht verwendet
   };
 
-  const handleMeetingJoined = (room: MeetingRoom) => {
+  const handleMeetingJoined = (_room: MeetingRoom) => {
     toast.success('Meeting beigetreten');
   };
 
@@ -458,6 +459,7 @@ export default function WebmailMeetPage() {
             userId={currentUserId}
             userName={currentUserName}
             userEmail={currentUserEmail}
+            senderPassword={session?.password}
             isHost={isHost}
             autoJoin={true}
             meetingRef={meetingRef}
@@ -529,7 +531,7 @@ export default function WebmailMeetPage() {
       
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Linke Sidebar - Desktop */}
-        <div className={`hidden md:block flex-shrink-0 border-r pt-4 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden border-r-0'} ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
+        <div className={`hidden md:block shrink-0 border-r pt-4 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden border-r-0'} ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
           {/* Navigation */}
           <nav className="px-2">
             <button
@@ -690,7 +692,7 @@ export default function WebmailMeetPage() {
               <div className={`flex-1 max-w-lg rounded-2xl overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-50'}`}>
                 <div className="flex flex-col items-center text-center">
                   {/* Animierte Illustration */}
-                  <div className={`w-full h-48 md:h-64 flex items-center justify-center ${theme === 'dark' ? 'bg-gradient-to-b from-gray-700 to-gray-800' : 'bg-gradient-to-b from-blue-100 to-blue-50'}`}>
+                  <div className={`w-full h-48 md:h-64 flex items-center justify-center ${theme === 'dark' ? 'bg-linear-to-b from-gray-700 to-gray-800' : 'bg-linear-to-b from-blue-100 to-blue-50'}`}>
                     {(() => {
                       const IllustrationComponent = carouselFeatures[carouselIndex].illustration;
                       return <IllustrationComponent className="w-full h-full max-w-[280px] max-h-[200px]" />;

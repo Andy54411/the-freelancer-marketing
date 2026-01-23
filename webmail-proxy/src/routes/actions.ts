@@ -93,6 +93,7 @@ const SaveDraftSchema = z.object({
     text: z.string().optional().nullable(),
     html: z.string().optional().nullable(),
   }),
+  existingDraftUid: z.number().optional().nullable(),
 });
 
 const DeleteDraftSchema = z.object({
@@ -268,6 +269,16 @@ router.post('/', async (req, res) => {
 
       case 'saveDraft':
         console.log('[ACTIONS] Saving draft');
+        // Wenn ein existierender Entwurf aktualisiert wird, lösche ihn zuerst
+        if (data.existingDraftUid) {
+          console.log('[ACTIONS] Deleting existing draft:', data.existingDraftUid);
+          try {
+            await emailService.deleteDraft(data.existingDraftUid);
+          } catch (deleteError) {
+            console.warn('[ACTIONS] Could not delete existing draft:', deleteError);
+            // Fortfahren auch wenn Löschen fehlschlägt
+          }
+        }
         // Konvertiere null zu undefined für TypeScript-Kompatibilität
         const draftData = {
           subject: data.draft.subject,
