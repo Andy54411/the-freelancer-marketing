@@ -173,10 +173,34 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
   // Meeting Ready Modal (wie Google Meet "Ihre Besprechung ist bereit")
   const [showMeetingReadyModal, setShowMeetingReadyModal] = useState(false);
   
-  // Media State
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [videoEnabled, setVideoEnabled] = useState(true);
+  // Media State - Lade gespeicherte Einstellungen aus localStorage
+  const MEDIA_SETTINGS_KEY = 'taskilo_meeting_media_settings';
+  const getSavedMediaSettings = () => {
+    if (typeof window === 'undefined') return { audio: true, video: true };
+    try {
+      const saved = localStorage.getItem(MEDIA_SETTINGS_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // Ignorieren
+    }
+    return { audio: true, video: true };
+  };
+  const savedSettings = getSavedMediaSettings();
+  const [audioEnabled, setAudioEnabled] = useState(savedSettings.audio);
+  const [videoEnabled, setVideoEnabled] = useState(savedSettings.video);
   const [screenSharing, setScreenSharing] = useState(false);
+  
+  // Speichere Einstellungen wenn sie sich ändern
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(MEDIA_SETTINGS_KEY, JSON.stringify({
+        audio: audioEnabled,
+        video: videoEnabled,
+      }));
+    }
+  }, [audioEnabled, videoEnabled]);
   
   // UI State
   const [showParticipantPanel, setShowParticipantPanel] = useState(false);
@@ -510,11 +534,12 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
     isJoiningRef.current = true;
     logMeeting('Starting join process...');
 
-    // Abbrechen eines vorherigen Join-Vorgangs
-    if (joinAbortControllerRef.current) {
-      joinAbortControllerRef.current.abort();
+    // WICHTIG: Wir brechen NICHT den vorherigen AbortController ab wenn getUserMedia läuft!
+    // Dies verhindert, dass die Berechtigungsabfrage auf mobilen Geräten unterbrochen wird.
+    // Wir erstellen nur einen neuen Controller wenn keiner existiert.
+    if (!joinAbortControllerRef.current) {
+      joinAbortControllerRef.current = new AbortController();
     }
-    joinAbortControllerRef.current = new AbortController();
     const signal = joinAbortControllerRef.current.signal;
 
     try {
@@ -659,9 +684,14 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
       };
 
       setMeetingState('in-meeting');
+      // Reset AbortController nach Erfolg
+      joinAbortControllerRef.current = null;
       
     } catch (err) {
       isJoiningRef.current = false;
+      // Reset AbortController nach Fehler
+      joinAbortControllerRef.current = null;
+      
       const originalMessage = err instanceof Error ? err.message : 'Failed to setup media';
       
       // Benutzerfreundliche Fehlermeldungen für häufige Probleme
