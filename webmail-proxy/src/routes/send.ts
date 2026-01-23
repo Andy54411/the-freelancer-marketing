@@ -16,16 +16,36 @@ const SendMasterRequestSchema = z.object({
 
 router.post('/', async (req, res) => {
   try {
+    console.log('[Send Email] Request received from:', req.ip);
+    console.log('[Send Email] Request body keys:', Object.keys(req.body));
+    console.log('[Send Email] Has email:', !!req.body.email);
+    console.log('[Send Email] Has password:', !!req.body.password);
+    console.log('[Send Email] Password length:', req.body.password?.length || 0);
+    console.log('[Send Email] Has to:', !!req.body.to);
+    console.log('[Send Email] Has subject:', !!req.body.subject);
+    console.log('[Send Email] Full body (sanitized):', {
+      ...req.body,
+      password: req.body.password ? '***' : undefined,
+    });
+    
     const { email, password, ...emailData } = SendRequestSchema.parse(req.body);
+    
+    console.log('[Send Email] Validation passed, sending email from:', email);
     
     const emailService = new EmailService({ email, password });
     const result = await emailService.sendEmail(emailData);
+    
+    console.log('[Send Email] Success! MessageId:', result.messageId);
     
     res.json({
       success: true,
       messageId: result.messageId,
     });
   } catch (error) {
+    console.error('[Send Email] Error:', error);
+    if (error instanceof z.ZodError) {
+      console.error('[Send Email] Validation errors:', JSON.stringify(error.errors, null, 2));
+    }
     const message = error instanceof Error ? error.message : 'Failed to send email';
     res.status(500).json({ success: false, error: message });
   }

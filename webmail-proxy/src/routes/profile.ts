@@ -44,9 +44,20 @@ router.get('/:email', async (req: Request, res: Response) => {
     const profile = await profileService.getProfile(email);
 
     if (!profile) {
-      return res.status(404).json({
-        success: false,
-        error: 'Profil nicht gefunden',
+      // Flutter App Kompatibilität: Leeres Profil statt 404
+      // So kann die App damit umgehen ohne Fehler zu werfen
+      return res.json({
+        success: true,
+        profile: {
+          email: email,
+          firstName: null,
+          lastName: null,
+          phone: null,
+          phoneVerified: false,
+          hasCompany: false,
+          companyId: null,
+          createdAt: null,
+        },
       });
     }
 

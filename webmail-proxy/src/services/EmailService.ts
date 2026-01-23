@@ -19,14 +19,32 @@ export const EmailAttachmentSchema = z.object({
   contentType: z.string().optional().default('application/octet-stream'),
 });
 
+// Helper function to extract email from "Name <email>" format
+const extractEmail = (emailString: string): string => {
+  const match = emailString.match(/<(.+?)>/);
+  return match ? match[1] : emailString;
+};
+
+// Custom email transformer that handles "Name <email>" format
+const emailTransformer = z.string().transform((val) => {
+  if (!val) return val;
+  const extracted = extractEmail(val);
+  // Validate the extracted email
+  const parsed = z.string().email().safeParse(extracted);
+  if (!parsed.success) {
+    throw new Error(`Invalid email: ${val}`);
+  }
+  return extracted;
+});
+
 export const SendEmailSchema = z.object({
-  to: z.union([z.string().email(), z.array(z.string().email())]),
-  cc: z.array(z.string().email()).optional(),
-  bcc: z.array(z.string().email()).optional(),
+  to: z.union([emailTransformer, z.array(emailTransformer)]),
+  cc: z.array(emailTransformer).optional(),
+  bcc: z.array(emailTransformer).optional(),
   subject: z.string(),
-  text: z.string().optional(),
-  html: z.string().optional(),
-  replyTo: z.string().email().optional(),
+  text: z.string().nullable().optional().transform((val) => val ?? undefined),
+  html: z.string().nullable().optional().transform((val) => val ?? undefined),
+  replyTo: emailTransformer.optional(),
   inReplyTo: z.string().optional(),
   references: z.string().optional(),
   attachments: z.array(EmailAttachmentSchema).optional(),
@@ -55,6 +73,7 @@ export interface EmailMessage {
   preview: string;
   hasAttachments: boolean;
   size?: number;
+  mailbox?: string; // Quell-Ordner, wichtig für virtuelle Ordner wie FLAGGED
 }
 
 export interface EmailAddress {
@@ -231,6 +250,11 @@ export class EmailService {
     mailboxPath: string = 'INBOX',
     options: { page?: number; limit?: number } = {}
   ): Promise<{ messages: EmailMessage[]; total: number }> {
+    // Spezialfall: FLAGGED ist ein virtueller Ordner für markierte E-Mails
+    if (mailboxPath === 'FLAGGED') {
+      return this.getFlaggedMessages(options);
+    }
+
     const { page = 1, limit = 50 } = options;
     const client = this.createImapClient();
     const messages: EmailMessage[] = [];
@@ -245,8 +269,9 @@ export class EmailService {
         return { messages: [], total: 0 };
       }
 
-      const start = Math.max(1, total - (page * limit) + 1);
+      // Neueste E-Mails zuerst: Zähle von oben
       const end = Math.max(1, total - ((page - 1) * limit));
+      const start = Math.max(1, end - limit + 1);
       const range = `${start}:${end}`;
 
       for await (const msg of client.fetch(range, {
@@ -272,6 +297,85 @@ export class EmailService {
           preview: msg.source ? this.extractPreview(msg.source.toString()) : '',
           hasAttachments: this.hasAttachments(msg.bodyStructure),
           size: msg.size,
+        });
+      }
+
+      await client.logout();
+      messages.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+      return { messages, total };
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
+  /**
+   * Holt alle markierten (flagged) E-Mails aus dem INBOX-Ordner.
+   * Dies ist ein virtueller Ordner - markierte E-Mails werden per IMAP SEARCH gefunden.
+   */
+  private async getFlaggedMessages(
+    options: { page?: number; limit?: number } = {}
+  ): Promise<{ messages: EmailMessage[]; total: number }> {
+    const { page = 1, limit = 50 } = options;
+    const client = this.createImapClient();
+    const messages: EmailMessage[] = [];
+
+    try {
+      await client.connect();
+      
+      // Suche in INBOX nach markierten E-Mails
+      await client.mailboxOpen('INBOX');
+      
+      // IMAP SEARCH nach \Flagged Flag
+      const searchResult = await client.search({ flagged: true }, { uid: true });
+      
+      // search() kann false zurückgeben wenn keine Ergebnisse
+      const flaggedUids: number[] = searchResult === false ? [] : searchResult;
+      const total = flaggedUids.length;
+
+      if (total === 0) {
+        await client.logout();
+        return { messages: [], total: 0 };
+      }
+
+      // Paginierung: Neueste zuerst
+      const sortedUids = [...flaggedUids].sort((a, b) => b - a);
+      const startIdx = (page - 1) * limit;
+      const paginatedUids = sortedUids.slice(startIdx, startIdx + limit);
+
+      if (paginatedUids.length === 0) {
+        await client.logout();
+        return { messages: [], total };
+      }
+
+      // Hole die E-Mail-Details für die paginierten UIDs
+      const uidRange = paginatedUids.join(',');
+      
+      for await (const msg of client.fetch(uidRange, {
+        uid: true,
+        envelope: true,
+        flags: true,
+        bodyStructure: true,
+        size: true,
+        source: { start: 0, maxLength: 256 },
+      }, { uid: true })) {
+        const envelope = msg.envelope;
+        if (!envelope) continue;
+
+        messages.push({
+          uid: msg.uid,
+          messageId: envelope.messageId || '',
+          subject: envelope.subject || '(Kein Betreff)',
+          from: this.parseAddresses(envelope.from),
+          to: this.parseAddresses(envelope.to),
+          cc: envelope.cc ? this.parseAddresses(envelope.cc) : undefined,
+          date: envelope.date || new Date(),
+          flags: msg.flags ? Array.from(msg.flags) : [],
+          preview: msg.source ? this.extractPreview(msg.source.toString()) : '',
+          hasAttachments: this.hasAttachments(msg.bodyStructure),
+          size: msg.size,
+          mailbox: 'INBOX', // Quell-Ordner für Aktionen
         });
       }
 
@@ -356,16 +460,75 @@ export class EmailService {
     }
   }
 
+  /**
+   * Extrahiert Base64-Data-URLs aus HTML und konvertiert sie zu inline Attachments.
+   * Dies reduziert die E-Mail-Größe erheblich und verhindert, dass Gmail die Nachricht abschneidet.
+   */
+  private extractInlineImages(html: string): {
+    processedHtml: string;
+    inlineAttachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }>;
+  } {
+    const inlineAttachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }> = [];
+    let imageCounter = 0;
+    
+    // Regex für data:image URLs
+    const dataUrlRegex = /src=["']data:(image\/[^;]+);base64,([^"']+)["']/gi;
+    
+    const processedHtml = html.replace(dataUrlRegex, (match, mimeType, base64Data) => {
+      imageCounter++;
+      const extension = mimeType.split('/')[1] || 'png';
+      const filename = `inline-image-${imageCounter}.${extension}`;
+      const cid = `image${imageCounter}@taskilo.de`;
+      
+      inlineAttachments.push({
+        filename,
+        content: Buffer.from(base64Data, 'base64'),
+        contentType: mimeType,
+        cid,
+      });
+      
+      return `src="cid:${cid}"`;
+    });
+    
+    return { processedHtml, inlineAttachments };
+  }
+
   async sendEmail(input: SendEmailInput): Promise<{ success: boolean; messageId?: string }> {
     const validated = SendEmailSchema.parse(input);
     const transport = this.createSmtpTransport();
 
+    // Extract inline images from HTML to reduce email size
+    let processedHtml = validated.html;
+    let inlineAttachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }> = [];
+    
+    if (validated.html) {
+      const result = this.extractInlineImages(validated.html);
+      processedHtml = result.processedHtml;
+      inlineAttachments = result.inlineAttachments;
+      
+      if (inlineAttachments.length > 0) {
+        console.log(`[Send Email] Extracted ${inlineAttachments.length} inline images from HTML`);
+      }
+    }
+
     // Prepare attachments for nodemailer format
-    const attachments = validated.attachments?.map(att => ({
+    const regularAttachments = validated.attachments?.map(att => ({
       filename: att.filename,
       content: Buffer.from(att.content, 'base64'),
       contentType: att.contentType,
-    }));
+    })) || [];
+    
+    // Combine regular and inline attachments
+    const allAttachments = [
+      ...regularAttachments,
+      ...inlineAttachments.map(att => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+        cid: att.cid,
+        contentDisposition: 'inline' as const,
+      })),
+    ];
 
     const mailOptions = {
       from: this.credentials.email,
@@ -374,20 +537,32 @@ export class EmailService {
       bcc: validated.bcc,
       subject: validated.subject,
       text: validated.text,
-      html: validated.html,
+      html: processedHtml,
       replyTo: validated.replyTo,
       inReplyTo: validated.inReplyTo,
       references: validated.references,
-      attachments,
+      attachments: allAttachments.length > 0 ? allAttachments : undefined,
     };
 
     const result = await transport.sendMail(mailOptions);
 
     // Copy sent email to Sent folder via IMAP APPEND
     try {
+      // Convert inline attachments for appendToSentFolder format
+      const sentFolderAttachments = [
+        ...(validated.attachments || []),
+        ...inlineAttachments.map(att => ({
+          filename: att.filename,
+          content: att.content.toString('base64'),
+          contentType: att.contentType,
+          cid: att.cid,
+        })),
+      ];
+      
       await this.appendToSentFolder({
         ...mailOptions,
-        attachments: validated.attachments,
+        html: processedHtml,
+        attachments: sentFolderAttachments.length > 0 ? sentFolderAttachments : undefined,
       });
     } catch (appendError) {
       // Log but don't fail - email was sent successfully
@@ -411,7 +586,7 @@ export class EmailService {
     replyTo?: string;
     inReplyTo?: string;
     references?: string;
-    attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+    attachments?: Array<{ filename: string; content: string; contentType?: string; cid?: string }>;
   }): Promise<void> {
     const client = this.createImapClient();
 
@@ -433,55 +608,109 @@ export class EmailService {
       rawMessage += `Message-ID: ${messageId}\r\n`;
       rawMessage += `MIME-Version: 1.0\r\n`;
       
-      // Check if we have attachments
-      if (mailOptions.attachments && mailOptions.attachments.length > 0) {
-        // Multipart message with attachments
-        rawMessage += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n`;
-        rawMessage += `\r\n`;
-        rawMessage += `--${boundary}\r\n`;
+      // Determine message structure
+      const inlineAttachments = mailOptions.attachments?.filter(att => att.cid) || [];
+      const regularAttachments = mailOptions.attachments?.filter(att => !att.cid) || [];
+      const hasInlineAttachments = inlineAttachments.length > 0;
+      const hasRegularAttachments = regularAttachments.length > 0;
+      const hasHtml = !!mailOptions.html;
+      const hasText = !!mailOptions.text;
+      
+      if (hasRegularAttachments || hasInlineAttachments) {
+        // Multipart/mixed for regular attachments, or multipart/related for inline images
+        const mixedBoundary = boundary;
+        const relatedBoundary = `----=_Related_${Date.now()}_${Math.random().toString(36).substring(2)}`;
         
-        // Body part
-        if (mailOptions.html) {
-          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
-          rawMessage += `Content-Transfer-Encoding: quoted-printable\r\n`;
-          rawMessage += `\r\n`;
-          rawMessage += mailOptions.html;
-        } else {
-          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
-          rawMessage += `Content-Transfer-Encoding: quoted-printable\r\n`;
-          rawMessage += `\r\n`;
-          rawMessage += mailOptions.text || '';
+        if (hasRegularAttachments) {
+          rawMessage += `Content-Type: multipart/mixed; boundary="${mixedBoundary}"\r\n\r\n`;
+          rawMessage += `--${mixedBoundary}\r\n`;
         }
-        rawMessage += `\r\n`;
         
-        // Attachment parts
-        for (const att of mailOptions.attachments) {
-          rawMessage += `--${boundary}\r\n`;
-          rawMessage += `Content-Type: ${att.contentType || 'application/octet-stream'}; name="${att.filename}"\r\n`;
-          rawMessage += `Content-Disposition: attachment; filename="${att.filename}"\r\n`;
-          rawMessage += `Content-Transfer-Encoding: base64\r\n`;
-          rawMessage += `\r\n`;
-          
-          // Split base64 content into 76-character lines (RFC 2045)
-          const base64Content = att.content;
-          for (let i = 0; i < base64Content.length; i += 76) {
-            rawMessage += base64Content.substring(i, i + 76) + '\r\n';
+        // If we have inline attachments, wrap HTML in multipart/related
+        if (hasInlineAttachments && hasHtml) {
+          if (hasRegularAttachments) {
+            rawMessage += `Content-Type: multipart/related; boundary="${relatedBoundary}"\r\n\r\n`;
+          } else {
+            rawMessage += `Content-Type: multipart/related; boundary="${relatedBoundary}"\r\n\r\n`;
           }
-        }
-        
-        // End boundary
-        rawMessage += `--${boundary}--\r\n`;
-      } else {
-        // Simple message without attachments
-        if (mailOptions.html) {
+          rawMessage += `--${relatedBoundary}\r\n`;
           rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
-          rawMessage += `\r\n`;
-          rawMessage += mailOptions.html;
+          rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+          rawMessage += mailOptions.html + '\r\n';
+          
+          // Inline attachments
+          for (const att of inlineAttachments) {
+            rawMessage += `--${relatedBoundary}\r\n`;
+            rawMessage += `Content-Type: ${att.contentType || 'image/png'}; name="${att.filename}"\r\n`;
+            rawMessage += `Content-Disposition: inline; filename="${att.filename}"\r\n`;
+            rawMessage += `Content-Transfer-Encoding: base64\r\n`;
+            rawMessage += `Content-ID: <${att.cid}>\r\n\r\n`;
+            
+            const base64Content = att.content;
+            for (let i = 0; i < base64Content.length; i += 76) {
+              rawMessage += base64Content.substring(i, i + 76) + '\r\n';
+            }
+          }
+          rawMessage += `--${relatedBoundary}--\r\n`;
+        } else if (hasHtml && hasText) {
+          const altBoundary = `----=_Alt_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+          rawMessage += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`;
+          rawMessage += `--${altBoundary}\r\n`;
+          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+          rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+          rawMessage += mailOptions.text + '\r\n';
+          rawMessage += `--${altBoundary}\r\n`;
+          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+          rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+          rawMessage += mailOptions.html + '\r\n';
+          rawMessage += `--${altBoundary}--\r\n`;
+        } else if (hasHtml) {
+          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+          rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+          rawMessage += mailOptions.html + '\r\n';
         } else {
           rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
-          rawMessage += `\r\n`;
-          rawMessage += mailOptions.text || '';
+          rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+          rawMessage += (mailOptions.text || '') + '\r\n';
         }
+        
+        // Regular Attachments
+        if (hasRegularAttachments) {
+          for (const att of regularAttachments) {
+            rawMessage += `--${mixedBoundary}\r\n`;
+            rawMessage += `Content-Type: ${att.contentType || 'application/octet-stream'}; name="${att.filename}"\r\n`;
+            rawMessage += `Content-Disposition: attachment; filename="${att.filename}"\r\n`;
+            rawMessage += `Content-Transfer-Encoding: base64\r\n\r\n`;
+            
+            const base64Content = att.content;
+            for (let i = 0; i < base64Content.length; i += 76) {
+              rawMessage += base64Content.substring(i, i + 76) + '\r\n';
+            }
+          }
+          rawMessage += `--${mixedBoundary}--\r\n`;
+        }
+      } else if (hasHtml && hasText) {
+        // Multipart/alternative for text + html without attachments
+        rawMessage += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
+        rawMessage += `--${boundary}\r\n`;
+        rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+        rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+        rawMessage += mailOptions.text + '\r\n';
+        rawMessage += `--${boundary}\r\n`;
+        rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+        rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+        rawMessage += mailOptions.html + '\r\n';
+        rawMessage += `--${boundary}--\r\n`;
+      } else if (hasHtml) {
+        // HTML only
+        rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+        rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+        rawMessage += mailOptions.html;
+      } else {
+        // Text only
+        rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+        rawMessage += `Content-Transfer-Encoding: 8bit\r\n\r\n`;
+        rawMessage += (mailOptions.text || '');
       }
 
       // Append to Sent folder with \Seen flag
@@ -526,6 +755,41 @@ export class EmailService {
         await client.messageFlagsRemove(uid.toString(), ['\\Flagged'], { uid: true });
       }
 
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
+  /**
+   * Add a custom keyword (label) to a message
+   * IMAP Keywords are used for labels like $Important, $label_work, $snoozed_<timestamp>, $Muted
+   */
+  async addKeyword(mailboxPath: string, uid: number, keyword: string): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+      await client.messageFlagsAdd(uid.toString(), [keyword], { uid: true });
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a custom keyword (label) from a message
+   */
+  async removeKeyword(mailboxPath: string, uid: number, keyword: string): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+      await client.messageFlagsRemove(uid.toString(), [keyword], { uid: true });
       await client.logout();
     } catch (error) {
       await client.logout().catch(() => {});

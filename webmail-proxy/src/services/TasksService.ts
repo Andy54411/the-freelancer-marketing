@@ -28,6 +28,10 @@ export interface TaskResponse {
   starred: boolean;
   priority: 'low' | 'medium' | 'high' | null;
   repeat: RepeatConfig | null;
+  emailRef?: {
+    mailbox: string;
+    uid: number;
+  };
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -54,6 +58,10 @@ export interface CreateTaskInput {
   starred?: boolean;
   priority?: 'low' | 'medium' | 'high' | null;
   repeat?: RepeatConfig | null;
+  emailRef?: {
+    mailbox: string;
+    uid: number;
+  };
 }
 
 export interface UpdateTaskInput {
@@ -343,6 +351,7 @@ class TasksService {
       starred: input.starred || false,
       priority: input.priority || null,
       repeat: input.repeat || null,
+      emailRef: input.emailRef || undefined,
       order: newOrder,
       createdAt: now,
       updatedAt: now,

@@ -168,6 +168,11 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   
+  // Revolut Webhook ist öffentlich (wird von Revolut direkt aufgerufen, hat eigene Signatur-Verifizierung)
+  if (req.path === '/payment/revolut-webhook') {
+    return next();
+  }
+  
   const apiKey = req.headers['x-api-key'] as string;
   
   if (!apiKey || !secureCompare(apiKey, API_KEY)) {
@@ -212,6 +217,7 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/turn', turnRouter);
 app.use('/api/recording', recordingRouter);
 app.use('/api/meeting', meetingRouter);
+app.use('/api/meet', meetingRouter); // Flutter App Kompatibilität
 app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 app.use('/api/photos', photosRouter);

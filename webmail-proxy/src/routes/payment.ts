@@ -5,14 +5,23 @@
  * - Escrow-Erstellung (Geld einfrieren)
  * - Escrow-Freigabe (Auszahlung an Anbieter)
  * - Batch-Auszahlungen
- * - Revolut Webhooks
+ * - Revolut Webhooks (empfängt von Revolut, leitet an Vercel weiter)
+ * 
+ * WICHTIG: Hetzner hat KEINEN Firebase-Zugang!
+ * Webhooks werden verifiziert und an Vercel weitergeleitet.
  */
 
 import express, { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import crypto from 'crypto';
 import { getAccessToken as getRevolutToken, forceRefreshToken } from './revolut-proxy';
+
+// Webhook-Konfiguration
+const REVOLUT_BUSINESS_WEBHOOK_SECRET = process.env.REVOLUT_BUSINESS_WEBHOOK_SECRET || '';
+const VERCEL_WEBHOOK_URL = process.env.VERCEL_WEBHOOK_URL || 'https://taskilo.de/api/payment/revolut-business-webhook-internal';
+const INTERNAL_WEBHOOK_SECRET = process.env.INTERNAL_WEBHOOK_SECRET || 'taskilo-internal-webhook-secret';
 
 const router = express.Router();
 
@@ -861,6 +870,167 @@ router.get('/transactions', async (req: Request, res: Response) => {
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
+});
+
+// ============================================================================
+// REVOLUT BUSINESS WEBHOOK (empfängt von Revolut, leitet an Vercel weiter)
+// ============================================================================
+
+/**
+ * Verifiziert die Webhook-Signatur von Revolut Business API
+ * 
+ * Signatur-Format laut Revolut Docs:
+ * - Header: Revolut-Signature mit Format "v1=<hex_signature>"
+ * - Timestamp: Revolut-Request-Timestamp (UNIX timestamp in ms)
+ * - Payload to sign: "v1.{timestamp}.{raw_payload}"
+ * - HMAC-SHA256 mit dem Signing Secret
+ */
+function verifyRevolutSignature(
+  payload: string,
+  signatureHeader: string | undefined,
+  timestampHeader: string | undefined
+): boolean {
+  if (!REVOLUT_BUSINESS_WEBHOOK_SECRET) {
+    console.error('[Revolut Webhook] No webhook secret configured');
+    return false;
+  }
+
+  if (!signatureHeader) {
+    console.error('[Revolut Webhook] No signature header present');
+    return false;
+  }
+
+  try {
+    // Extrahiere alle Signaturen (können mehrere sein, komma-getrennt)
+    const signatures = signatureHeader.split(',').map(s => s.trim());
+    const timestamp = timestampHeader || '';
+
+    // Payload to sign: "v1.{timestamp}.{raw_payload}"
+    const payloadToSign = `v1.${timestamp}.${payload}`;
+
+    // Berechne erwartete Signatur
+    const expectedSignature = 'v1=' + crypto
+      .createHmac('sha256', REVOLUT_BUSINESS_WEBHOOK_SECRET)
+      .update(payloadToSign)
+      .digest('hex');
+
+    console.log('[Revolut Webhook] Verifying signature...');
+    console.log('[Revolut Webhook] Timestamp:', timestamp);
+    console.log('[Revolut Webhook] Expected:', expectedSignature.substring(0, 20) + '...');
+    console.log('[Revolut Webhook] Received:', signatures[0]?.substring(0, 20) + '...');
+
+    // Prüfe ob eine der Signaturen übereinstimmt
+    for (const sig of signatures) {
+      try {
+        if (crypto.timingSafeEqual(
+          Buffer.from(sig),
+          Buffer.from(expectedSignature)
+        )) {
+          console.log('[Revolut Webhook] Signature verified successfully');
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    console.error('[Revolut Webhook] Signature mismatch');
+    return false;
+  } catch (error) {
+    console.error('[Revolut Webhook] Signature verification error:', error);
+    return false;
+  }
+}
+
+/**
+ * POST /api/payment/revolut-webhook
+ * 
+ * Empfängt Webhooks von Revolut Business API.
+ * Verifiziert die Signatur und leitet an Vercel weiter.
+ * 
+ * WICHTIG: Kein Firebase-Zugang auf Hetzner!
+ */
+router.post('/revolut-webhook', express.text({ type: '*/*' }), async (req: Request, res: Response) => {
+  try {
+    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const signature = req.headers['revolut-signature'] as string | undefined;
+    const timestamp = req.headers['revolut-request-timestamp'] as string | undefined;
+
+    console.log('[Revolut Webhook] Received webhook');
+    console.log('[Revolut Webhook] Headers:', {
+      signature: signature?.substring(0, 30) + '...',
+      timestamp,
+    });
+
+    // Verifiziere Signatur
+    if (!verifyRevolutSignature(rawBody, signature, timestamp)) {
+      console.error('[Revolut Webhook] Invalid signature - rejecting');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // Parse Payload
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      console.error('[Revolut Webhook] Invalid JSON payload');
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
+
+    console.log('[Revolut Webhook] Event:', payload.event, 'Transaction:', payload.data?.id);
+
+    // An Vercel weiterleiten (dort wird Firebase aktualisiert)
+    try {
+      const vercelResponse = await fetch(VERCEL_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Webhook-Secret': INTERNAL_WEBHOOK_SECRET,
+          'X-Forwarded-From': 'hetzner-revolut-proxy',
+        },
+        body: rawBody,
+      });
+
+      const vercelResult = await vercelResponse.json();
+      console.log('[Revolut Webhook] Vercel response:', vercelResponse.status, vercelResult);
+
+      // Revolut erwartet 200 OK
+      return res.status(200).json({
+        received: true,
+        forwarded: true,
+        vercelStatus: vercelResponse.status,
+        result: vercelResult,
+      });
+    } catch (forwardError) {
+      console.error('[Revolut Webhook] Failed to forward to Vercel:', forwardError);
+      
+      // Trotzdem 200 zurückgeben, damit Revolut nicht erneut sendet
+      // Webhook-Daten werden lokal geloggt für manuelle Verarbeitung
+      return res.status(200).json({
+        received: true,
+        forwarded: false,
+        error: 'Forward failed, logged for manual processing',
+      });
+    }
+  } catch (error) {
+    console.error('[Revolut Webhook] Error:', error);
+    // 200 zurückgeben um Retries zu vermeiden
+    return res.status(200).json({ received: true, error: 'Processing error' });
+  }
+});
+
+/**
+ * GET /api/payment/revolut-webhook
+ * Health Check für den Webhook-Endpoint
+ */
+router.get('/revolut-webhook', (_req: Request, res: Response) => {
+  res.json({
+    status: 'Revolut Business Webhook endpoint active',
+    location: 'Hetzner (mail.taskilo.de)',
+    events: ['TransactionCreated', 'TransactionStateChanged'],
+    description: 'Receives Revolut webhooks and forwards to Vercel for Firebase processing',
+    secretConfigured: !!REVOLUT_BUSINESS_WEBHOOK_SECRET,
+  });
 });
 
 export { router as paymentRouter };

@@ -86,12 +86,12 @@ const SaveDraftSchema = z.object({
   password: z.string().min(1),
   action: z.literal('saveDraft'),
   draft: z.object({
-    to: z.union([z.string(), z.array(z.string())]).optional(),
-    cc: z.array(z.string()).optional(),
-    bcc: z.array(z.string()).optional(),
+    to: z.union([z.string(), z.array(z.string())]).optional().nullable(),
+    cc: z.array(z.string()).optional().nullable(),
+    bcc: z.array(z.string()).optional().nullable(),
     subject: z.string().default(''),
-    text: z.string().optional(),
-    html: z.string().optional(),
+    text: z.string().optional().nullable(),
+    html: z.string().optional().nullable(),
   }),
 });
 
@@ -99,6 +99,50 @@ const DeleteDraftSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
   action: z.literal('deleteDraft'),
+  uid: z.number(),
+});
+
+// E-Mail Labels Schemas
+const AddLabelSchema = BaseSchema.extend({
+  action: z.literal('addLabel'),
+  uid: z.number(),
+  label: z.string(),
+});
+
+const RemoveLabelSchema = BaseSchema.extend({
+  action: z.literal('removeLabel'),
+  uid: z.number(),
+  label: z.string(),
+});
+
+// Spam Schema
+const MarkSpamSchema = BaseSchema.extend({
+  action: z.literal('markSpam'),
+  uid: z.number(),
+  targetMailbox: z.string().default('Junk'),
+});
+
+// Important Schema
+const MarkImportantSchema = BaseSchema.extend({
+  action: z.literal('markImportant'),
+  uid: z.number(),
+});
+
+const MarkUnimportantSchema = BaseSchema.extend({
+  action: z.literal('markUnimportant'),
+  uid: z.number(),
+});
+
+// Snooze Schema
+const SnoozeSchema = BaseSchema.extend({
+  action: z.literal('snooze'),
+  uid: z.number(),
+  snoozeUntil: z.string(), // ISO DateTime
+});
+
+// Mute Schema
+const MuteSchema = BaseSchema.extend({
+  action: z.literal('mute'),
   uid: z.number(),
 });
 
@@ -145,6 +189,13 @@ const ActionSchema = z.discriminatedUnion('action', [
   RenameMailboxSchema,
   SaveDraftSchema,
   DeleteDraftSchema,
+  AddLabelSchema,
+  RemoveLabelSchema,
+  MarkSpamSchema,
+  MarkImportantSchema,
+  MarkUnimportantSchema,
+  SnoozeSchema,
+  MuteSchema,
 ]);
 
 const MasterActionSchema = z.discriminatedUnion('action', [
@@ -217,12 +268,59 @@ router.post('/', async (req, res) => {
 
       case 'saveDraft':
         console.log('[ACTIONS] Saving draft');
-        const draftResult = await emailService.saveDraft(data.draft);
+        // Konvertiere null zu undefined für TypeScript-Kompatibilität
+        const draftData = {
+          subject: data.draft.subject,
+          to: data.draft.to ?? undefined,
+          cc: data.draft.cc ?? undefined,
+          bcc: data.draft.bcc ?? undefined,
+          text: data.draft.text ?? undefined,
+          html: data.draft.html ?? undefined,
+        };
+        const draftResult = await emailService.saveDraft(draftData);
         return res.json({ success: true, uid: draftResult.uid });
 
       case 'deleteDraft':
         console.log('[ACTIONS] Deleting draft:', data.uid);
         await emailService.deleteDraft(data.uid);
+        break;
+
+      case 'addLabel':
+        console.log('[ACTIONS] Adding label:', data.label, 'to message:', data.uid);
+        // Labels werden als IMAP Keywords gespeichert
+        await emailService.addKeyword(data.mailbox, data.uid, `$label_${data.label}`);
+        break;
+
+      case 'removeLabel':
+        console.log('[ACTIONS] Removing label:', data.label, 'from message:', data.uid);
+        await emailService.removeKeyword(data.mailbox, data.uid, `$label_${data.label}`);
+        break;
+
+      case 'markSpam':
+        console.log('[ACTIONS] Marking as spam and moving to:', data.targetMailbox);
+        // Verschiebe in Spam-Ordner
+        await emailService.moveMessage(data.mailbox, data.uid, data.targetMailbox);
+        break;
+
+      case 'markImportant':
+        console.log('[ACTIONS] Marking as important:', data.uid);
+        await emailService.addKeyword(data.mailbox, data.uid, '$Important');
+        break;
+
+      case 'markUnimportant':
+        console.log('[ACTIONS] Marking as unimportant:', data.uid);
+        await emailService.removeKeyword(data.mailbox, data.uid, '$Important');
+        break;
+
+      case 'snooze':
+        console.log('[ACTIONS] Snoozing message until:', data.snoozeUntil);
+        // Snooze wird als Keyword mit Timestamp gespeichert
+        await emailService.addKeyword(data.mailbox, data.uid, `$snoozed_${data.snoozeUntil}`);
+        break;
+
+      case 'mute':
+        console.log('[ACTIONS] Muting conversation:', data.uid);
+        await emailService.addKeyword(data.mailbox, data.uid, '$Muted');
         break;
     }
     

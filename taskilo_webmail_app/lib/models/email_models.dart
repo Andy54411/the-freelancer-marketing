@@ -1,3 +1,33 @@
+/// Hilfsfunktion zum robusten Parsen von Datumswerten
+DateTime _parseDate(dynamic dateValue) {
+  if (dateValue == null) return DateTime.now();
+
+  if (dateValue is DateTime) return dateValue;
+
+  if (dateValue is String) {
+    try {
+      return DateTime.parse(dateValue);
+    } catch (_) {
+      // Fallback: Versuche alternatives Parsing
+      try {
+        // Manchmal sendet das Backend Unix-Timestamps als String
+        final timestamp = int.tryParse(dateValue);
+        if (timestamp != null) {
+          return DateTime.fromMillisecondsSinceEpoch(timestamp);
+        }
+      } catch (_) {}
+      return DateTime.now();
+    }
+  }
+
+  if (dateValue is int) {
+    // Unix timestamp in Millisekunden
+    return DateTime.fromMillisecondsSinceEpoch(dateValue);
+  }
+
+  return DateTime.now();
+}
+
 /// User Model für eingeloggten Webmail-Benutzer
 class User {
   final String email;
@@ -5,12 +35,7 @@ class User {
   final String? avatarUrl;
   final DateTime? lastLogin;
 
-  User({
-    required this.email,
-    this.displayName,
-    this.avatarUrl,
-    this.lastLogin,
-  });
+  User({required this.email, this.displayName, this.avatarUrl, this.lastLogin});
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
@@ -61,6 +86,8 @@ class EmailMessage {
   final String? text;
   final String? html;
   final List<EmailAttachment>? attachments;
+  final String?
+  mailbox; // Quell-Ordner, wichtig für virtuelle Ordner wie FLAGGED
 
   EmailMessage({
     required this.uid,
@@ -78,15 +105,16 @@ class EmailMessage {
     this.text,
     this.html,
     this.attachments,
+    this.mailbox,
   });
 
   bool get isRead => flags.contains('\\Seen');
   bool get isStarred => flags.contains('\\Flagged');
   bool get isDraft => flags.contains('\\Draft');
-  
+
   /// Alias für html für Kompatibilität
   String? get bodyHtml => html;
-  
+
   /// Alias für text für Kompatibilität
   String? get bodyText => text;
 
@@ -103,15 +131,15 @@ class EmailMessage {
           .toList(),
       cc: json['cc'] != null
           ? (json['cc'] as List)
-              .map((e) => EmailAddress.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => EmailAddress.fromJson(e as Map<String, dynamic>))
+                .toList()
           : null,
       bcc: json['bcc'] != null
           ? (json['bcc'] as List)
-              .map((e) => EmailAddress.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => EmailAddress.fromJson(e as Map<String, dynamic>))
+                .toList()
           : null,
-      date: DateTime.parse(json['date'] as String),
+      date: _parseDate(json['date']),
       flags: List<String>.from(json['flags'] as List),
       preview: json['preview'] as String,
       hasAttachments: json['hasAttachments'] as bool,
@@ -120,9 +148,10 @@ class EmailMessage {
       html: json['html'] as String?,
       attachments: json['attachments'] != null
           ? (json['attachments'] as List)
-              .map((e) => EmailAttachment.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => EmailAttachment.fromJson(e as Map<String, dynamic>))
+                .toList()
           : null,
+      mailbox: json['mailbox'] as String?,
     );
   }
 }
@@ -141,7 +170,7 @@ class EmailAddress {
   }
 
   String get displayName => name ?? address;
-  
+
   /// Alias für address für Kompatibilität
   String get email => address;
 }
@@ -173,7 +202,7 @@ class EmailAttachment {
       data: json['data'] as String?,
     );
   }
-  
+
   /// Alias für contentType für Kompatibilität
   String get mimeType => contentType;
 }

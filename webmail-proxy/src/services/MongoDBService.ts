@@ -237,6 +237,10 @@ export interface Task {
   starred: boolean;
   priority: 'low' | 'medium' | 'high' | null;
   repeat: RepeatConfig | null;
+  emailRef?: {
+    mailbox: string;
+    uid: number;
+  };
   order: number;
   createdAt: Date;
   updatedAt: Date;

@@ -30,7 +30,9 @@ class _EmailEditorState extends State<EmailEditor> {
   @override
   void initState() {
     super.initState();
-    // Initial HTML wird über controller.setText() gesetzt
+    if (widget.onInit != null) {
+      widget.onInit!();
+    }
   }
 
   @override
@@ -55,9 +57,7 @@ class _EmailEditorState extends State<EmailEditor> {
         height: widget.height ?? 500,
         decoration: const BoxDecoration(),
       ),
-      callbacks: Callbacks(
-        onInit: widget.onInit,
-      ),
+      callbacks: Callbacks(onInit: widget.onInit),
       plugins: const [],
     );
   }
@@ -86,7 +86,7 @@ class EmailEditorUtils {
   static Future<String> toPlainText(HtmlEditorController controller) async {
     final html = await controller.getText();
     return html
-        .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+        .replaceAll(RegExp(r'<br\s*/?>'),'\n')
         .replaceAll(RegExp(r'<[^>]*>'), '')
         .replaceAll('&nbsp;', ' ')
         .replaceAll('&amp;', '&')

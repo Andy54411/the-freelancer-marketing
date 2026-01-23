@@ -1137,4 +1137,53 @@ router.post('/notifications/email', async (req: Request, res: Response) => {
   }
 });
 
+// ==================== CONVERSATIONS KOMPATIBILITÄT ====================
+// Diese Routen mappen auf /spaces für Flutter-App-Kompatibilität
+
+/**
+ * GET /chat/conversations
+ * Alias für /spaces - Flutter-App-Kompatibilität
+ */
+router.get('/conversations', async (req: Request, res: Response) => {
+  try {
+    const userId = req.query.userId as string;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId required' });
+    }
+    
+    const email = userId.toLowerCase();
+    
+    // Spaces finden, wo User Creator oder Mitglied ist
+    const spaces = await mongoService.spaces
+      .find({
+        $or: [
+          { creatorEmail: email },
+          { 'members.email': email },
+        ],
+      })
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    res.json({
+      success: true,
+      conversations: spaces.map(space => ({
+        id: space._id?.toString(),
+        name: space.name,
+        description: space.description,
+        emoji: space.emoji,
+        members: space.members,
+        createdBy: space.creatorEmail,
+        createdAt: space.createdAt,
+        updatedAt: space.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('[Chat] Error getting conversations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Laden der Konversationen',
+    });
+  }
+});
+
 export default router;

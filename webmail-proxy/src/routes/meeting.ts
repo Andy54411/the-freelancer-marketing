@@ -12,6 +12,80 @@ const router: Router = Router();
 
 // ============== ROOM ENDPOINTS ==============
 
+// ============== FLUTTER APP KOMPATIBILITÄT (vor /:code!) ==============
+
+/**
+ * GET /api/meeting/meetings - Meetings des Users abrufen
+ * WICHTIG: Muss VOR /:code definiert sein!
+ */
+router.get('/meetings', async (req: Request, res: Response) => {
+  try {
+    const userId = req.query.userId as string;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId required' });
+    }
+    
+    // Aktive Meetings des Users abrufen
+    const stats = meetingRoomService.getStats();
+    
+    // Da MeetingRoomService in-memory ist, geben wir hier
+    // eine leere Liste zurück (Meetings werden on-demand erstellt)
+    return res.json({
+      success: true,
+      meetings: [],
+      totalActive: stats.activeRooms,
+    });
+  } catch (error) {
+    console.error('[MEETING API] Get meetings error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Fehler beim Laden der Meetings',
+    });
+  }
+});
+
+/**
+ * POST /api/meeting/meetings - Neues Meeting erstellen
+ * WICHTIG: Muss VOR /:code definiert sein!
+ */
+router.post('/meetings', async (req: Request, res: Response) => {
+  try {
+    const { userId, title } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId required' });
+    }
+    
+    const room = meetingRoomService.createRoom(userId, {
+      name: title || 'Neues Meeting',
+      type: 'instant',
+    });
+    
+    const iceServers = turnService.getICEServers(userId);
+    
+    return res.json({
+      success: true,
+      meeting: {
+        id: room.id,
+        code: room.code,
+        name: room.name,
+        url: meetingRoomService.getMeetingUrl(room),
+        type: room.type,
+        status: room.status,
+        createdAt: room.createdAt.toISOString(),
+      },
+      iceServers,
+    });
+  } catch (error) {
+    console.error('[MEETING API] Create meeting error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Fehler beim Erstellen des Meetings',
+    });
+  }
+});
+
+// ============== STANDARD ROOM ENDPOINTS ==============
+
 /**
  * POST /api/meeting/create - Neuen Meeting-Raum erstellen
  */

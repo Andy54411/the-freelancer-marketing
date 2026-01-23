@@ -15,7 +15,7 @@ class EmailListScreen extends StatefulWidget {
 
 class _EmailListScreenState extends State<EmailListScreen> {
   final ApiService _apiService = ApiService();
-  
+
   List<Mailbox> _mailboxes = [];
   List<EmailMessage> _messages = [];
   String _currentMailbox = 'INBOX';
@@ -55,7 +55,8 @@ class _EmailListScreenState extends State<EmailListScreen> {
 
       // Lade Nachrichten
       await _loadMessages();
-    } catch (e) { // Fehler ignorieren 
+    } catch (e) {
+      // Fehler ignorieren
       setState(() => _error = e.toString());
     }
 
@@ -69,6 +70,12 @@ class _EmailListScreenState extends State<EmailListScreen> {
         _messages = (result['messages'] as List)
             .map((e) => EmailMessage.fromJson(e as Map<String, dynamic>))
             .toList();
+        // Sortiere nach Datum (neueste zuerst) - mit Millisekunden für präzise Sortierung
+        _messages.sort(
+          (a, b) => b.date.millisecondsSinceEpoch.compareTo(
+            a.date.millisecondsSinceEpoch,
+          ),
+        );
       });
     }
   }
@@ -94,9 +101,16 @@ class _EmailListScreenState extends State<EmailListScreen> {
           _messages = (result['messages'] as List)
               .map((e) => EmailMessage.fromJson(e as Map<String, dynamic>))
               .toList();
+          // Sortiere nach Datum (neueste zuerst) - mit Millisekunden für präzise Sortierung
+          _messages.sort(
+            (a, b) => b.date.millisecondsSinceEpoch.compareTo(
+              a.date.millisecondsSinceEpoch,
+            ),
+          );
         });
       }
-    } catch (e) { // Fehler ignorieren 
+    } catch (e) {
+      // Fehler ignorieren
       setState(() => _error = e.toString());
     }
 
@@ -137,20 +151,23 @@ class _EmailListScreenState extends State<EmailListScreen> {
             icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: _toggleSearch,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
       drawer: _buildDrawer(),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         heroTag: 'emailListFab',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const EmailComposeScreen()),
-        ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EmailComposeScreen()),
+          );
+          // Wenn E-Mail gesendet wurde (result == true), lade Liste neu
+          if (result == true) {
+            _loadData();
+          }
+        },
         backgroundColor: AppColors.emailRed,
         child: const Icon(Icons.edit, color: Colors.white),
       ),
@@ -170,10 +187,7 @@ class _EmailListScreenState extends State<EmailListScreen> {
                   const SizedBox(width: 12),
                   const Text(
                     'Mail',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -187,18 +201,27 @@ class _EmailListScreenState extends State<EmailListScreen> {
                   return ListTile(
                     leading: Icon(
                       _getMailboxIcon(mailbox),
-                      color: isSelected ? AppColors.emailRed : AppColors.textSecondary,
+                      color: isSelected
+                          ? AppColors.emailRed
+                          : AppColors.textSecondary,
                     ),
                     title: Text(
                       _getMailboxName(mailbox),
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected ? AppColors.emailRed : AppColors.textPrimary,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? AppColors.emailRed
+                            : AppColors.textPrimary,
                       ),
                     ),
                     trailing: mailbox.unseen > 0
                         ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.emailRed,
                               borderRadius: BorderRadius.circular(12),
@@ -263,10 +286,7 @@ class _EmailListScreenState extends State<EmailListScreen> {
             const SizedBox(height: 16),
             const Text(
               'Keine E-Mails',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -320,24 +340,21 @@ class _EmailListItem extends StatelessWidget {
   final EmailMessage message;
   final VoidCallback onTap;
 
-  const _EmailListItem({
-    required this.message,
-    required this.onTap,
-  });
+  const _EmailListItem({required this.message, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isUnread = !message.isRead;
-    
+
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isUnread ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
-          border: const Border(
-            bottom: BorderSide(color: AppColors.divider),
-          ),
+          color: isUnread
+              ? AppColors.primary.withValues(alpha: 0.05)
+              : AppColors.surface,
+          border: const Border(bottom: BorderSide(color: AppColors.divider)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,7 +372,7 @@ class _EmailListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            
+
             // Content
             Expanded(
               child: Column(
@@ -368,7 +385,9 @@ class _EmailListItem extends StatelessWidget {
                         child: Text(
                           message.from.first.displayName,
                           style: TextStyle(
-                            fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isUnread
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: AppColors.textPrimary,
                           ),
                           maxLines: 1,
@@ -379,25 +398,29 @@ class _EmailListItem extends StatelessWidget {
                         timeago.format(message.date, locale: 'de'),
                         style: TextStyle(
                           fontSize: 12,
-                          color: isUnread ? AppColors.primary : AppColors.textSecondary,
+                          color: isUnread
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  
+
                   // Subject
                   Text(
                     message.subject,
                     style: TextStyle(
-                      fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
+                      fontWeight: isUnread
+                          ? FontWeight.w500
+                          : FontWeight.normal,
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  
+
                   // Preview
                   Text(
                     message.preview,
@@ -411,7 +434,7 @@ class _EmailListItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Indicators
             if (message.hasAttachments || message.isStarred) ...[
               const SizedBox(width: 8),
@@ -420,7 +443,11 @@ class _EmailListItem extends StatelessWidget {
                   if (message.isStarred)
                     const Icon(Icons.star, size: 18, color: Colors.amber),
                   if (message.hasAttachments)
-                    const Icon(Icons.attach_file, size: 18, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.attach_file,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
                 ],
               ),
             ],

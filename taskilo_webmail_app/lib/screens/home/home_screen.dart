@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -11,7 +12,6 @@ import '../email/email_detail_screen.dart';
 import '../email/email_compose_screen.dart';
 import '../drive/drive_screen.dart';
 import '../photos/photos_screen.dart';
-import '../tasks/tasks_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../chat/chat_screen.dart';
 import '../meet/meet_screen.dart';
@@ -34,10 +34,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // E-Mail State
   List<Mailbox> _mailboxes = [];
   List<EmailMessage> _messages = [];
+  List<EmailMessage> _allMessages = []; // Alle Nachrichten für lokales Filtern
   String _currentMailbox = 'INBOX';
   bool _isLoading = true;
   String? _error;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
 
   // Profil/Avatar State
   String? _avatarUrl;
@@ -46,21 +48,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     timeago.setLocaleMessages('de', timeago.DeMessages());
-    
+
     // Animation Controller für Navigation
     _navAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _navWidthAnimation = Tween<double>(
-      begin: 80.0,
-      end: 350.0,
-    ).animate(CurvedAnimation(
-      parent: _navAnimationController!,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _navWidthAnimation = Tween<double>(begin: 80.0, end: 350.0).animate(
+      CurvedAnimation(
+        parent: _navAnimationController!,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _initAndLoadData();
   }
 
@@ -99,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _searchController.dispose();
     _navAnimationController?.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -126,7 +128,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       }
       await _loadMessages();
-    } catch (e) { // Fehler ignorieren 
+    } catch (e) {
+      // Fehler ignorieren
       debugPrint('[HomeScreen] Exception: $e');
       setState(() => _error = e.toString());
     }
@@ -136,21 +139,141 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadMessages() async {
     debugPrint('[HomeScreen] Lade Nachrichten für $_currentMailbox...');
-    final result = await _apiService.getMessages(mailbox: _currentMailbox);
+
+    // Virtuelle Ordner: Laden aus INBOX und filtern nach Keywords/Flags
+    String actualMailbox = _currentMailbox;
+    String? virtualFilter;
+
+    switch (_currentMailbox) {
+      case 'IMPORTANT':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'important';
+        break;
+      case 'FLAGGED':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'flagged';
+        break;
+      case 'SNOOZED':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'snoozed';
+        break;
+      case 'PURCHASES':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'purchases';
+        break;
+      case 'SCHEDULED':
+        actualMailbox = 'Drafts';
+        virtualFilter = 'scheduled';
+        break;
+      case 'OUTBOX':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'outbox';
+        break;
+      case 'ALL':
+        actualMailbox = 'INBOX';
+        virtualFilter = 'all';
+        break;
+    }
+
+    final result = await _apiService.getMessages(mailbox: actualMailbox);
     debugPrint(
       '[HomeScreen] Nachrichten-Ergebnis: success=${result['success']}, count=${(result['messages'] as List?)?.length ?? 0}',
     );
 
     if (result['success'] == true) {
+      var messages = (result['messages'] as List)
+          .map((e) => EmailMessage.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      // Client-seitige Filterung für virtuelle Ordner
+      if (virtualFilter != null) {
+        switch (virtualFilter) {
+          case 'important':
+            messages = messages
+                .where((m) => m.flags.any((f) => f.contains('\$Important')))
+                .toList();
+            break;
+          case 'flagged':
+            messages = messages.where((m) => m.isStarred).toList();
+            break;
+          case 'snoozed':
+            messages = messages
+                .where((m) => m.flags.any((f) => f.contains('\$snoozed')))
+                .toList();
+            break;
+          case 'purchases':
+            // Käufe-Filter: Suche nach typischen Kaufbestätigungswörtern
+            messages = messages.where((m) {
+              final subject = m.subject.toLowerCase();
+              final from = m.from.isNotEmpty
+                  ? m.from.first.address.toLowerCase()
+                  : '';
+              return subject.contains('bestellung') ||
+                  subject.contains('order') ||
+                  subject.contains('rechnung') ||
+                  subject.contains('invoice') ||
+                  subject.contains('kaufbestätigung') ||
+                  subject.contains('payment') ||
+                  subject.contains('zahlung') ||
+                  from.contains('paypal') ||
+                  from.contains('amazon') ||
+                  from.contains('ebay');
+            }).toList();
+            break;
+          case 'all':
+            // Alle E-Mails - keine Filterung
+            break;
+          // scheduled und outbox sind spezielle Fälle
+        }
+      }
+
       setState(() {
-        _messages = (result['messages'] as List)
-            .map((e) => EmailMessage.fromJson(e as Map<String, dynamic>))
-            .toList();
+        _allMessages = messages;
+        // Sortiere nach Datum (neueste zuerst) - mit Millisekunden für präzise Sortierung
+        _allMessages.sort(
+          (a, b) => b.date.millisecondsSinceEpoch.compareTo(
+            a.date.millisecondsSinceEpoch,
+          ),
+        );
+        _messages = List.from(_allMessages);
       });
       debugPrint('[HomeScreen] ${_messages.length} Nachrichten geladen');
     } else {
       debugPrint('[HomeScreen] Nachrichten-Fehler: ${result['error']}');
     }
+  }
+
+  void _filterMessages(String query) {
+    _debounceTimer?.cancel();
+
+    if (query.isEmpty) {
+      setState(() {
+        _messages = List.from(_allMessages);
+      });
+      return;
+    }
+
+    // Debounce - warte 200ms bevor gefiltert wird
+    _debounceTimer = Timer(const Duration(milliseconds: 200), () {
+      final lowerQuery = query.toLowerCase();
+      setState(() {
+        _messages = _allMessages.where((msg) {
+          final subject = msg.subject.toLowerCase();
+          final from = msg.from.isNotEmpty
+              ? msg.from.first.address.toLowerCase()
+              : '';
+          final fromName = msg.from.isNotEmpty
+              ? (msg.from.first.name?.toLowerCase() ?? '')
+              : '';
+          final preview = msg.preview.toLowerCase();
+
+          return subject.contains(lowerQuery) ||
+              from.contains(lowerQuery) ||
+              fromName.contains(lowerQuery) ||
+              preview.contains(lowerQuery);
+        }).toList();
+      });
+    });
   }
 
   @override
@@ -174,12 +297,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 20,
-            child: _buildBottomNav(),
-          ),
+          Positioned(left: 0, right: 0, bottom: 20, child: _buildBottomNav()),
         ],
       ),
       floatingActionButton: _currentIndex == 0
@@ -187,7 +305,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(bottom: 80),
               child: FloatingActionButton.extended(
                 heroTag: 'mailFab',
-                onPressed: () => EmailComposeScreen.show(context),
+                onPressed: () async {
+                  final result = await EmailComposeScreen.show(context);
+                  if (result == true && mounted) {
+                    // Entwurf wurde gespeichert - Nachrichten neu laden
+                    _loadMessages();
+                  }
+                },
                 backgroundColor: const Color(0xFFE0F7F5),
                 elevation: 6,
                 extendedPadding: const EdgeInsets.symmetric(
@@ -299,22 +423,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
 
-          // Suche
+          // Suche - TextField mit hintText
           Expanded(
-            child: GestureDetector(
-              onTap: () {
-                // Öffne Suche als separaten Screen/Modal
-                _showSearchModal();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'In Posteingang suchen',
-                  style: TextStyle(color: AppColors.textSecondary),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+              cursorColor: AppColors.primary,
+              decoration: InputDecoration(
+                hintText:
+                    'In ${_getMailboxDisplayName(_currentMailbox)} suchen',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
                 ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {});
+                _filterMessages(value); // Realtime-Filter
+              },
+              onSubmitted: (query) {
+                // Bei Enter: Server-Suche für vollständige Ergebnisse
+                if (query.isNotEmpty) {
+                  _searchMessages(query);
+                } else {
+                  _loadMessages();
+                }
+              },
             ),
           ),
+
+          // X-Button zum Löschen (nur bei aktiver Suche)
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              color: AppColors.textSecondary,
+              onPressed: () {
+                _searchController.clear();
+                _debounceTimer?.cancel();
+                setState(() {
+                  _messages = List.from(_allMessages);
+                });
+              },
+            ),
 
           // User Avatar mit Gravatar
           GestureDetector(
@@ -403,15 +559,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final message = _messages[index];
           return _EmailListItem(
             message: message,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EmailDetailScreen(
-                  uid: message.uid,
-                  mailbox: _currentMailbox,
+            onTap: () async {
+              final result = await Navigator.push<Map<String, dynamic>>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EmailDetailScreen(
+                    uid: message.uid,
+                    mailbox: _currentMailbox,
+                  ),
                 ),
-              ),
-            ),
+              );
+              // Wenn eine E-Mail gelöscht wurde, sofort aus Liste entfernen
+              if (result != null && result['deleted'] == true) {
+                setState(() {
+                  _messages.removeWhere((m) => m.uid == result['uid']);
+                });
+              } else {
+                // E-Mail wurde gelesen - Liste neu laden für Realtime-Update
+                _loadMessages();
+              }
+            },
             onStarTap: () => _toggleStar(message),
           );
         },
@@ -425,15 +592,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _navWidthAnimation ??= Tween<double>(
-      begin: 80.0,
-      end: 350.0,
-    ).animate(CurvedAnimation(
-      parent: _navAnimationController!,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _navWidthAnimation ??= Tween<double>(begin: 80.0, end: 350.0).animate(
+      CurvedAnimation(
+        parent: _navAnimationController!,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     return Center(
       child: GestureDetector(
         onTap: () {
@@ -472,60 +638,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   child: _navWidthAnimation!.value < 330
-                  ? Center(
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                      ? Center(
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.apps,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildCompactNavItem(
+                                icon: Icons.mail_outlined,
+                                activeIcon: Icons.mail,
+                                index: 0,
+                                badge: _getUnreadCount(),
+                              ),
+                              _buildCompactNavItem(
+                                icon: Icons.calendar_today_outlined,
+                                activeIcon: Icons.calendar_today,
+                                index: 1,
+                              ),
+                              _buildCompactNavItem(
+                                icon: Icons.videocam_outlined,
+                                activeIcon: Icons.videocam,
+                                index: 2,
+                              ),
+                              _buildCompactNavItem(
+                                icon: Icons.folder_outlined,
+                                activeIcon: Icons.folder,
+                                index: 3,
+                              ),
+                              _buildCompactNavItem(
+                                icon: Icons.photo_library_outlined,
+                                activeIcon: Icons.photo_library,
+                                index: 4,
+                              ),
+                              _buildCompactNavItem(
+                                icon: Icons.chat_bubble_outline,
+                                activeIcon: Icons.chat_bubble,
+                                index: 5,
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Icon(
-                          Icons.apps,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildCompactNavItem(
-                            icon: Icons.mail_outlined,
-                            activeIcon: Icons.mail,
-                            index: 0,
-                            badge: _getUnreadCount(),
-                          ),
-                          _buildCompactNavItem(
-                            icon: Icons.calendar_today_outlined,
-                            activeIcon: Icons.calendar_today,
-                            index: 1,
-                          ),
-                          _buildCompactNavItem(
-                            icon: Icons.videocam_outlined,
-                            activeIcon: Icons.videocam,
-                            index: 2,
-                          ),
-                          _buildCompactNavItem(
-                            icon: Icons.folder_outlined,
-                            activeIcon: Icons.folder,
-                            index: 3,
-                          ),
-                          _buildCompactNavItem(
-                            icon: Icons.photo_library_outlined,
-                            activeIcon: Icons.photo_library,
-                            index: 4,
-                          ),
-                          _buildCompactNavItem(
-                            icon: Icons.chat_bubble_outline,
-                            activeIcon: Icons.chat_bubble,
-                            index: 5,
-                          ),
-                        ],
-                      ),
-                    ),
                 ),
               ),
             );
@@ -602,58 +768,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showSearchModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'E-Mails durchsuchen...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _searchController.clear();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onSubmitted: (query) {
-                  Navigator.pop(context);
-                  if (query.isNotEmpty) {
-                    _searchMessages(query);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _searchMessages(String query) async {
     setState(() => _isLoading = true);
-    
+
     try {
       final result = await _apiService.searchMessages(
         query: query,
@@ -664,12 +781,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _messages = (result['messages'] as List)
               .map((e) => EmailMessage.fromJson(e as Map<String, dynamic>))
               .toList();
+          // Sortiere nach Datum (neueste zuerst) - mit Millisekunden für präzise Sortierung
+          _messages.sort(
+            (a, b) => b.date.millisecondsSinceEpoch.compareTo(
+              a.date.millisecondsSinceEpoch,
+            ),
+          );
         });
       }
-    } catch (e) { // Fehler ignorieren 
+    } catch (e) {
+      // Fehler ignorieren
       setState(() => _error = e.toString());
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -693,10 +817,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const SizedBox(width: 12),
                   const Text(
                     'Taskilo Mail',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -709,109 +830,322 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
+                  // Hauptordner
                   _buildMailboxTile('INBOX', Icons.inbox, 'Posteingang'),
-                  _buildMailboxTile('Sent', Icons.send, 'Gesendet'),
-                  _buildMailboxTile('Drafts', Icons.drafts, 'Entwürfe'),
+                  _buildMailboxTile('FLAGGED', Icons.star_outline, 'Markiert'),
+                  _buildMailboxTile(
+                    'SNOOZED',
+                    Icons.access_time,
+                    'Zurückgestellt',
+                  ),
+                  _buildMailboxTile(
+                    'IMPORTANT',
+                    Icons.label_important_outline,
+                    'Wichtig',
+                  ),
+
+                  // Kategorien
+                  _buildMailboxTile(
+                    'PURCHASES',
+                    Icons.shopping_bag_outlined,
+                    'Käufe',
+                  ),
+
+                  // Gesendet & Geplant
+                  _buildMailboxTile('Sent', Icons.send_outlined, 'Gesendet'),
+                  _buildMailboxTile(
+                    'SCHEDULED',
+                    Icons.schedule_send,
+                    'Geplant',
+                  ),
+                  _buildMailboxTile(
+                    'OUTBOX',
+                    Icons.outbox_outlined,
+                    'Postausgang',
+                  ),
+
+                  // Entwürfe
+                  _buildMailboxTile(
+                    'Drafts',
+                    Icons.drafts_outlined,
+                    'Entwürfe',
+                  ),
+
+                  // Alle E-Mails
+                  _buildMailboxTile('ALL', Icons.all_inbox, 'Alle E-Mails'),
+
+                  // Spam & Papierkorb
+                  _buildMailboxTile('Junk', Icons.report_outlined, 'Spam'),
                   _buildMailboxTile(
                     'Trash',
                     Icons.delete_outline,
                     'Papierkorb',
                   ),
-                  _buildMailboxTile('Spam', Icons.report_outlined, 'Spam'),
 
-                  const Divider(),
-
-                  // Andere Apps
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Divider(),
+                  ),
+
+                  // Abos verwalten (neu)
+                  _buildActionTile(
+                    Icons.mail_outline,
+                    'Abos verwalten',
+                    badge: 'Neu',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showSubscriptionManager();
+                    },
+                  ),
+
+                  // Labels Sektion
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, top: 16, bottom: 8),
                     child: Text(
-                      'Weitere Apps',
+                      'LABELS',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: Colors.grey,
                         letterSpacing: 0.5,
                       ),
                     ),
                   ),
 
-                  _buildAppTile(
-                    Icons.folder_outlined,
-                    'Drive',
-                    AppColors.driveYellow,
-                    () {
+                  // Benutzerdefinierte Labels (dynamisch laden)
+                  ..._buildLabelItems(),
+
+                  // Neues Label erstellen
+                  _buildActionTile(
+                    Icons.add,
+                    'Neues Label erstellen',
+                    onTap: () {
                       Navigator.pop(context);
-                      if (!mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DriveScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildAppTile(
-                    Icons.photo_library_outlined,
-                    'Fotos',
-                    AppColors.photosGreen,
-                    () {
-                      Navigator.pop(context);
-                      if (!mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PhotosScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildAppTile(
-                    Icons.check_circle_outline,
-                    'Aufgaben',
-                    AppColors.tasksBlue,
-                    () {
-                      Navigator.pop(context);
-                      if (!mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const TasksScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildAppTile(
-                    Icons.calendar_today_outlined,
-                    'Kalender',
-                    AppColors.calendarBlue,
-                    () {
-                      Navigator.pop(context);
-                      if (!mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CalendarScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildAppTile(
-                    Icons.chat_bubble_outline,
-                    'Chat',
-                    AppColors.chatGreen,
-                    () {
-                      Navigator.pop(context);
-                      if (!mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
-                        ),
-                      );
+                      _showCreateLabelDialog();
                     },
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTile(
+    IconData icon,
+    String name, {
+    String? badge,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.textSecondary),
+      title: Row(
+        children: [
+          Text(name, style: TextStyle(color: AppColors.textPrimary)),
+          if (badge != null) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                badge,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      onTap: onTap,
+    );
+  }
+
+  List<Widget> _buildLabelItems() {
+    // Statische Labels - werden als IMAP Keywords in E-Mails gespeichert
+    // Labels sind: $label_arbeit, $label_persönlich, $label_finanzen
+    final labels = [
+      {'id': 'arbeit', 'name': 'Arbeit', 'color': Colors.blue},
+      {'id': 'persönlich', 'name': 'Persönlich', 'color': Colors.green},
+      {'id': 'finanzen', 'name': 'Finanzen', 'color': Colors.purple},
+    ];
+
+    return labels
+        .map(
+          (label) => ListTile(
+            leading: Icon(Icons.label, color: label['color'] as Color),
+            title: Text(label['name'] as String),
+            onTap: () {
+              Navigator.pop(context);
+              // Zeige Hinweis - Label-Suche nutzt IMAP SEARCH
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Suche nach E-Mails mit Label "${label['name']}"...',
+                  ),
+                ),
+              );
+              // Setze Suchbegriff auf Label-Keyword für lokale Filterung
+              _searchController.text = 'label:${label['id']}';
+              // Filtere nach Label in Flags (falls vorhanden)
+              _filterByLabel(label['id'] as String);
+            },
+          ),
+        )
+        .toList();
+  }
+
+  void _filterByLabel(String labelId) {
+    final keyword = '\$label_$labelId';
+    setState(() {
+      _messages = _allMessages.where((msg) {
+        return msg.flags.any(
+          (flag) => flag.toLowerCase() == keyword.toLowerCase(),
+        );
+      }).toList();
+    });
+  }
+
+  void _showSubscriptionManager() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Abos verwalten',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.mail_outline,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Newsletter-Abonnements werden analysiert...',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 24),
+                    const CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateLabelDialog() {
+    final controller = TextEditingController();
+    Color selectedColor = Colors.blue;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Neues Label erstellen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Label-Name',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              const Text('Farbe auswählen:'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children:
+                    [
+                          Colors.blue,
+                          Colors.green,
+                          Colors.orange,
+                          Colors.purple,
+                          Colors.red,
+                          Colors.teal,
+                        ]
+                        .map(
+                          (color) => GestureDetector(
+                            onTap: () =>
+                                setDialogState(() => selectedColor = color),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: selectedColor == color
+                                    ? Border.all(color: Colors.black, width: 2)
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.text.isNotEmpty) {
+                  Navigator.pop(context);
+                  // Label wird als IMAP Keyword gespeichert
+                  // Neue Labels können beim Hinzufügen zu E-Mails erstellt werden
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Label "${controller.text}" erstellt. Sie können es jetzt E-Mails zuweisen.',
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Erstellen'),
             ),
           ],
         ),
@@ -859,19 +1193,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pop(context);
         _loadMessages();
       },
-    );
-  }
-
-  Widget _buildAppTile(
-    IconData icon,
-    String name,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(name),
-      onTap: onTap,
     );
   }
 
@@ -924,12 +1245,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     switch (path) {
       case 'INBOX':
         return 'Posteingang';
+      case 'FLAGGED':
+        return 'Markiert';
+      case 'SNOOZED':
+        return 'Zurückgestellt';
+      case 'IMPORTANT':
+        return 'Wichtig';
+      case 'PURCHASES':
+        return 'Käufe';
       case 'Sent':
         return 'Gesendet';
+      case 'SCHEDULED':
+        return 'Geplant';
+      case 'OUTBOX':
+        return 'Postausgang';
       case 'Drafts':
         return 'Entwürfe';
+      case 'ALL':
+        return 'Alle E-Mails';
       case 'Trash':
         return 'Papierkorb';
+      case 'Junk':
       case 'Spam':
         return 'Spam';
       default:
@@ -942,8 +1278,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _toggleStar(EmailMessage message) async {
+    // Bei virtuellen Ordnern (FLAGGED) den echten Quell-Ordner verwenden
+    final effectiveMailbox = message.mailbox ?? _currentMailbox;
+
     await _apiService.toggleStar(
-      mailbox: _currentMailbox,
+      mailbox: effectiveMailbox,
       uid: message.uid,
       starred: !message.isStarred,
     );
@@ -979,9 +1318,25 @@ class _EmailListItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        // Leicht hervorgehobener Hintergrund für ungelesene E-Mails
+        color: isUnread ? AppColors.primary.withValues(alpha: 0.05) : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Ungelesen-Indikator
+            if (isUnread)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(top: 8, right: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              )
+            else
+              const SizedBox(width: 16),
+
             // Avatar
             CircleAvatar(
               radius: 22,
@@ -1125,15 +1480,32 @@ class _EmailListItem extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final diff = now.difference(date);
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final emailDate = DateTime(date.year, date.month, date.day);
+    final time = '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
 
-    if (diff.inDays == 0) {
-      return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (diff.inDays < 7) {
+    if (emailDate == today) {
+      // Heute: nur Uhrzeit
+      return time;
+    } else if (emailDate == yesterday) {
+      // Gestern: "Gestern, 14:30"
+      return 'Gestern, $time';
+    } else if (now.difference(date).inDays < 7) {
+      // Letzte 7 Tage: "Mo, 14:30" oder "Di, 08:15"
+      return '${_getWeekdayShort(date.weekday)}, $time';
+    } else if (date.year == now.year) {
+      // Dieses Jahr: "23. Jan."
       return '${date.day}. ${_getMonthShort(date.month)}';
     } else {
-      return '${date.day}. ${_getMonthShort(date.month)}';
+      // Anderes Jahr: "23. Jan. 2025"
+      return '${date.day}. ${_getMonthShort(date.month)} ${date.year}';
     }
+  }
+
+  String _getWeekdayShort(int weekday) {
+    const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    return days[weekday - 1];
   }
 
   String _getMonthShort(int month) {

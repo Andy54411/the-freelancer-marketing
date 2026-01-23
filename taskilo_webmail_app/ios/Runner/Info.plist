@@ -57,5 +57,12 @@
 	<string>Taskilo Webmail kann Ihren Standort nutzen, um standortbezogene Informationen in E-Mails einzufügen.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Taskilo Webmail kann Ihren Standort nutzen, um standortbezogene Informationen in E-Mails einzufügen.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

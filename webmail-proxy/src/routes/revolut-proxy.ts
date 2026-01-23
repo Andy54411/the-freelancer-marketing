@@ -82,6 +82,25 @@ function saveTokens(): void {
 // Beim Start Tokens laden
 loadStoredTokens();
 
+/**
+ * GET /auth-url
+ * Generiert die Authorization URL für den Revolut OAuth Flow
+ */
+router.get('/auth-url', (_req: Request, res: Response) => {
+  const redirectUri = 'https://taskilo.de/api/revolut/oauth/callback';
+  const state = `taskilo_${Date.now()}`;
+  
+  const authUrl = `https://business.revolut.com/app-confirm?client_id=${REVOLUT_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}`;
+  
+  res.json({
+    success: true,
+    authUrl,
+    instructions: 'Öffne diese URL im Browser und autorisiere die App. Nach der Autorisierung wirst du zu taskilo.de/api/revolut/oauth/callback weitergeleitet.',
+    redirectUri,
+    state,
+  });
+});
+
 // Private Key laden
 function getPrivateKey(): string {
   const keyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || '/opt/taskilo/certs/revolut/private.key';

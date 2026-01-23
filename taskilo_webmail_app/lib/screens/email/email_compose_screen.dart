@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../providers/api_provider.dart'; // ✅ Riverpod Provider
 import '../../models/email_models.dart';
 import 'widgets/email_editor.dart';
+import 'widgets/email_autocomplete.dart';
 
 enum ComposeMode { newEmail, reply, replyAll, forward }
 
@@ -21,12 +22,12 @@ class EmailComposeScreen extends StatefulWidget {
     this.mode = ComposeMode.newEmail,
   });
 
-  static Future<void> show(
+  static Future<bool?> show(
     BuildContext context, {
     EmailMessage? replyTo,
     ComposeMode mode = ComposeMode.newEmail,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -243,7 +244,7 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
 
       if (result['success'] == true) {
         if (!mounted) return;
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true); // ✅ true = E-Mail wurde gesendet
         // ✅ Material SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -284,13 +285,16 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
         cc: _ccController.text.isNotEmpty
             ? _ccController.text.split(',').map((e) => e.trim()).toList()
             : null,
+        bcc: _bccController.text.isNotEmpty
+            ? _bccController.text.split(',').map((e) => e.trim()).toList()
+            : null,
         subject: _subjectController.text,
         body: bodyHtml,
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop();
-      // ✅ Material SnackBar
+      Navigator.of(context).pop(true); // true = Entwurf wurde gespeichert
+      // Material SnackBar
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Entwurf wurde gespeichert')),
       );
@@ -642,20 +646,10 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
           const Text('An', style: TextStyle(fontSize: 16, color: Colors.black)),
           const SizedBox(width: 16),
           Expanded(
-            child: TextField(
+            child: EmailAutocomplete(
               controller: _toController,
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                hintText: '',
-              ),
+              label: '',
+              showLabel: false,
             ),
           ),
           if (!_showCcBcc) ...[
@@ -686,20 +680,10 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
           const Text('Cc', style: TextStyle(fontSize: 16, color: Colors.black)),
           const SizedBox(width: 16),
           Expanded(
-            child: TextField(
+            child: EmailAutocomplete(
               controller: _ccController,
-              style: const TextStyle(fontSize: 16),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                hintText: '',
-              ),
+              label: '',
+              showLabel: false,
             ),
           ),
         ],
@@ -723,20 +707,10 @@ class _ComposeBottomSheetState extends ConsumerState<_ComposeBottomSheet> {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: TextField(
+            child: EmailAutocomplete(
               controller: _bccController,
-              style: const TextStyle(fontSize: 16),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                hintText: '',
-              ),
+              label: '',
+              showLabel: false,
             ),
           ),
         ],

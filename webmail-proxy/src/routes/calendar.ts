@@ -14,6 +14,25 @@ const AuthSchema = z.object({
   password: z.string().min(1),
 });
 
+// ============== FLUTTER APP KOMPATIBILITÄT (GET Routes) ==============
+
+/**
+ * GET /api/calendar/events - Events abrufen (Flutter App Kompatibilität)
+ * Die App ruft GET mit Query-Parametern auf, aber hat keine Auth im Body
+ * Wir geben eine leere Liste zurück, da ohne Auth kein CalDAV-Zugriff möglich ist
+ */
+router.get('/events', async (req: Request, res: Response) => {
+  // Flutter App Kompatibilität - gibt leere Events zurück
+  // Für echte CalDAV-Abfrage muss POST mit Auth verwendet werden
+  return res.json({
+    success: true,
+    events: [],
+    message: 'Verwende POST /api/calendar/events mit Auth für echte Events',
+  });
+});
+
+// ============== ORIGINAL ROUTES (POST mit Auth) ==============
+
 // POST /api/calendar/calendars - Kalender-Liste abrufen
 router.post('/calendars', async (req: Request, res: Response) => {
   try {

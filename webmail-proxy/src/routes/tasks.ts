@@ -492,4 +492,47 @@ router.delete('/completed', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /tasks/from-email
+ * Task aus E-Mail erstellen
+ */
+router.post('/from-email', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { mailbox, uid, title } = req.body;
+
+    if (!title || typeof title !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Titel ist erforderlich',
+      });
+    }
+
+    // Erstelle Task mit E-Mail-Referenz
+    const task = await tasksService.createTask(userId, {
+      title: title,
+      notes: `Erstellt aus E-Mail (UID: ${uid}, Ordner: ${mailbox})`,
+      starred: true, // E-Mail-Tasks automatisch als wichtig markieren
+      priority: 'medium',
+      emailRef: {
+        mailbox,
+        uid,
+      },
+    });
+
+    res.json({
+      success: true,
+      task,
+      message: 'Aufgabe aus E-Mail erstellt',
+    });
+  } catch (error) {
+    console.error('[Tasks] Error creating task from email:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Erstellen der Aufgabe',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+    });
+  }
+});
+
 export default router;
