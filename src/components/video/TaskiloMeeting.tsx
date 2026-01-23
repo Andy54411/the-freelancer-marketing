@@ -1536,28 +1536,39 @@ export const TaskiloMeeting: React.FC<TaskiloMeetingProps> = ({
             <div className="flex gap-3 justify-center">
               <Button 
                 onClick={() => {
-                  // Seite neu laden für sauberen Neustart
-                  window.location.reload();
+                  // Erneut versuchen - einfach zum idle-State zurück, damit joinMeeting erneut aufgerufen wird
+                  reconnectAttemptsRef.current = 0;
+                  setError(null);
+                  setMeetingState('idle');
+                  // Wenn wir einen roomCode haben, direkt wieder beitreten
+                  if (lastRoomCodeRef.current) {
+                    setTimeout(() => {
+                      if (joinMeetingRef.current) {
+                        joinMeetingRef.current(lastRoomCodeRef.current!);
+                      }
+                    }, 100);
+                  }
                 }} 
                 className="bg-teal-500 hover:bg-teal-600 text-white"
               >
-                Seite aktualisieren
+                Erneut versuchen
               </Button>
               <Button 
                 onClick={() => {
                   reconnectAttemptsRef.current = 0;
                   setError(null);
+                  lastRoomCodeRef.current = null;
                   setMeetingState('idle');
                 }} 
                 variant="outline"
               >
-                Zurück
+                Abbrechen
               </Button>
             </div>
             {/* Hinweis für Berechtigungsprobleme */}
             {error?.includes('Berechtigung') && (
               <p className="text-xs text-gray-500 mt-2">
-                Tipp: Klicken Sie auf das Kamera-Symbol in der Adressleiste Ihres Browsers, um die Berechtigungen zu ändern.
+                Bitte erlauben Sie den Kamera-/Mikrofon-Zugriff wenn die Abfrage erscheint.
               </p>
             )}
           </div>
