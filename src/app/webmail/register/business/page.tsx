@@ -139,23 +139,34 @@ function BusinessRegistrationContent() {
             </p>
             <div className="space-y-2">
               {employeeOptions.map((option) => (
-                <label 
+                <button
                   key={option.value}
-                  className="flex items-center gap-3 cursor-pointer group py-1"
+                  type="button"
                   onClick={() => setEmployeeCount(option.value)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-all text-left",
+                    employeeCount === option.value
+                      ? "border-[#14ad9f] bg-teal-50/50"
+                      : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                  )}
                 >
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
                     employeeCount === option.value 
-                      ? "border-[#1a73e8]" 
+                      ? "border-[#14ad9f]" 
                       : "border-gray-400"
                   )}>
                     {employeeCount === option.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#1a73e8]" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#14ad9f]" />
                     )}
                   </div>
-                  <span className="text-[15px] text-gray-700">{option.label}</span>
-                </label>
+                  <span className={cn(
+                    "text-[15px]",
+                    employeeCount === option.value ? "text-gray-900 font-medium" : "text-gray-700"
+                  )}>
+                    {option.label}
+                  </span>
+                </button>
               ))}
             </div>
           </div>
