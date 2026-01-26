@@ -40,8 +40,8 @@ function DomainSelectionContent() {
       // Zur Domain-Suche Seite
       router.push(`/webmail/register/business/domain/search?${params.toString()}`);
     } else {
-      // Zur Domain-Bestätigungs-Seite
-      router.push(`/webmail/register/business/domain/confirm?${params.toString()}`);
+      // Direkt zur bestehenden Domain Eingabe & Verifizierung
+      router.push(`/webmail/register/business/domain/existing?${params.toString()}`);
     }
   };
 
