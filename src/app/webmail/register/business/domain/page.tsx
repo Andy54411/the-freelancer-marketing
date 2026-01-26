@@ -40,8 +40,8 @@ function DomainSelectionContent() {
       // Zur Domain-Suche Seite
       router.push(`/webmail/register/business/domain/search?${params.toString()}`);
     } else {
-      // Zur bestehenden Domain Verifizierung
-      router.push(`/webmail/register/business/domain/existing?${params.toString()}`);
+      // Zur Domain-Bestätigungs-Seite
+      router.push(`/webmail/register/business/domain/confirm?${params.toString()}`);
     }
   };
 
@@ -89,15 +89,22 @@ function DomainSelectionContent() {
               className={cn(
                 "relative text-left p-8 rounded-xl border-2 transition-all duration-200 hover:shadow-md",
                 selectedOption === 'new'
-                  ? "border-[#1a73e8] bg-blue-50/30"
+                  ? "border-[#14ad9f] bg-teal-50 border-[3px]"
                   : "border-gray-200 bg-gray-50 hover:border-gray-300"
               )}
             >
+              {/* Selection Checkmark */}
+              {selectedOption === 'new' && (
+                <div className="absolute top-4 right-4 bg-[#14ad9f] rounded-full p-1">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+              )}
+              
               {/* Icon Container */}
               <div className="mb-6 flex justify-center">
                 <div className="relative w-24 h-24 bg-white rounded-xl flex items-center justify-center shadow-sm">
                   <div className="relative">
-                    <div className="absolute -top-2 -right-2 bg-blue-500 rounded-full p-2">
+                    <div className="absolute -top-2 -right-2 bg-[#14ad9f] rounded-full p-2">
                       <Search className="w-4 h-4 text-white" />
                     </div>
                     <Globe className="w-12 h-12 text-gray-400" />
@@ -121,18 +128,25 @@ function DomainSelectionContent() {
               className={cn(
                 "relative text-left p-8 rounded-xl border-2 transition-all duration-200 hover:shadow-md",
                 selectedOption === 'existing'
-                  ? "border-[#1a73e8] bg-blue-50/30"
+                  ? "border-[#14ad9f] bg-teal-50 border-[3px]"
                   : "border-gray-200 bg-white hover:border-gray-300"
               )}
             >
+              {/* Selection Checkmark */}
+              {selectedOption === 'existing' && (
+                <div className="absolute top-4 right-4 bg-[#14ad9f] rounded-full p-1">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+              )}
+              
               {/* Icon Container */}
               <div className="mb-6 flex justify-center">
                 <div className="relative w-24 h-24 bg-white rounded-xl flex items-center justify-center shadow-sm">
                   <div className="relative">
-                    <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2">
+                    <div className="absolute -top-2 -right-2 bg-[#14ad9f] rounded-full p-2">
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
-                    <Globe className="w-12 h-12 text-blue-500" />
+                    <Globe className="w-12 h-12 text-[#14ad9f]" />
                   </div>
                 </div>
               </div>
@@ -148,17 +162,17 @@ function DomainSelectionContent() {
             </button>
           </div>
 
-          {/* Continue Button - Google Workspace Stil */}
+          {/* Continue Button - Taskilo Farbe */}
           <div className="flex justify-end mt-10">
             <button
               onClick={handleContinue}
               disabled={!selectedOption || isLoading}
-              className={cn(
-                "px-6 py-3 rounded-full font-medium transition-all text-[14px] bg-[#1a73e8] text-white shadow-sm",
-                selectedOption && !isLoading
-                  ? "hover:bg-[#1557b0] hover:shadow cursor-pointer"
-                  : "opacity-40 cursor-not-allowed"
-              )}
+              style={{ 
+                backgroundColor: selectedOption && !isLoading ? '#14ad9f' : '#14ad9f',
+                opacity: selectedOption && !isLoading ? 1 : 0.4,
+                color: 'white'
+              }}
+              className="px-6 py-3 rounded-full font-medium transition-all text-[14px] shadow-sm hover:shadow disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
