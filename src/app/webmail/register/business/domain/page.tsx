@@ -154,10 +154,10 @@ function DomainSelectionContent() {
               onClick={handleContinue}
               disabled={!selectedOption || isLoading}
               className={cn(
-                "px-6 py-3 rounded-full font-medium transition-all text-[14px]",
-                selectedOption
-                  ? "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm hover:shadow"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                "px-6 py-3 rounded-full font-medium transition-all text-[14px] bg-[#1a73e8] text-white shadow-sm",
+                selectedOption && !isLoading
+                  ? "hover:bg-[#1557b0] hover:shadow cursor-pointer"
+                  : "opacity-40 cursor-not-allowed"
               )}
             >
               {isLoading ? (
