@@ -66,8 +66,8 @@ function DNSVerifyContent() {
     
     try {
       // DNS-Status vom Backend abrufen
-      const apiUrl = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
-      const apiKey = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
+      const apiUrl = 'https://mail.taskilo.de/webmail-api';
+      const apiKey = '2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076';
       
       const response = await fetch(`${apiUrl}/api/dns/verify`, {
         method: 'POST',
@@ -161,7 +161,7 @@ function DNSVerifyContent() {
           {/* Loading State */}
           {isChecking && (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="w-12 h-12 animate-spin text-[#1a73e8] mb-4" />
+              <Loader2 className="w-12 h-12 animate-spin text-[#14ad9f] mb-4" />
               <p className="text-gray-600">DNS-Einträge werden überprüft...</p>
             </div>
           )}

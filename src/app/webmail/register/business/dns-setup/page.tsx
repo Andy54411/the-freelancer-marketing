@@ -97,8 +97,15 @@ function DNSSetupContent() {
       const country = searchParams.get('country') || '';
 
       // DNS-Konfiguration im Backend speichern
-      const apiUrl = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
-      const apiKey = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
+      const apiUrl = 'https://mail.taskilo.de/webmail-api';
+      const apiKey = '2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076';
+      
+      console.log('DNS Setup Request:', {
+        url: `${apiUrl}/api/dns/setup`,
+        domain,
+        userId: email,
+        companyName: company,
+      });
       
       const dnsResponse = await fetch(`${apiUrl}/api/dns/setup`, {
         method: 'POST',
@@ -116,17 +123,29 @@ function DNSSetupContent() {
         }),
       });
 
+      console.log('DNS Response Status:', dnsResponse.status);
+
       if (!dnsResponse.ok) {
-        const errorData = await dnsResponse.json().catch(() => ({}));
-        console.error('DNS API Error:', errorData);
-        throw new Error(errorData.error || 'DNS-Konfiguration konnte nicht gespeichert werden');
+        const errorText = await dnsResponse.text();
+        console.error('DNS API Error Response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        throw new Error(`DNS API Fehler (${dnsResponse.status}): ${errorData.error || errorText || 'Unbekannter Fehler'}`);
       }
+
+      const result = await dnsResponse.json();
+      console.log('DNS Setup Success:', result);
 
       // Zur DNS-Verifizierungs-Seite weiterleiten
       router.push(`/webmail/register/business/dns-verify?domain=${domain}&email=${email}&company=${company}&plan=${plan}&amount=${amount}`);
     } catch (error) {
       console.error('DNS Setup error:', error);
-      alert('Fehler beim Speichern der DNS-Konfiguration. Bitte versuchen Sie es erneut.');
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      alert(`Fehler beim Speichern der DNS-Konfiguration:\n\n${errorMessage}\n\nBitte versuchen Sie es erneut oder kontaktieren Sie den Support.`);
     } finally {
       setIsVerifying(false);
     }
@@ -221,7 +240,7 @@ function DNSSetupContent() {
                     id="otherHost"
                     checked={useOtherHost}
                     onChange={(e) => setUseOtherHost(e.target.checked)}
-                    className="w-4 h-4 text-[#1a73e8] border-gray-300 rounded focus:ring-[#1a73e8]"
+                    className="w-4 h-4 text-[#14ad9f] border-gray-300 rounded focus:ring-[#14ad9f]"
                   />
                   <label htmlFor="otherHost" className="text-sm text-gray-700">
                     Meine Domain verwendet einen anderen Host
@@ -230,13 +249,13 @@ function DNSSetupContent() {
               </div>
 
               {/* Info Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 mb-6">
-                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-teal-50 border border-[#14ad9f] rounded-xl p-4 flex items-start gap-3 mb-6">
+                <Info className="w-5 h-5 text-[#14ad9f] flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-gray-800">
                   <p className="font-medium mb-1">
                     Halten Sie zuerst Ihre Konto-ID und das Passwort bereit, das Sie für die Anmeldung bei
                     Ihrem Domainhost brauchen. Sie wissen nicht, wer Ihr Domainhost ist?{' '}
-                    <a href="https://support.google.com/a/answer/48323" className="text-[#1a73e8] hover:underline">
+                    <a href="https://support.google.com/a/answer/48323" className="text-[#14ad9f] hover:underline">
                       Domainhost identifizieren
                     </a>
                   </p>
@@ -266,7 +285,7 @@ function DNSSetupContent() {
               {/* TXT-Eintrag für Verifizierung */}
               <div className="mb-8">
                 <button
-                  className="flex items-center gap-2 text-[#1a73e8] font-medium mb-4"
+                  className="flex items-center gap-2 text-[#14ad9f] font-medium mb-4"
                 >
                   TXT-Eintrag
                   <ChevronDown className="w-5 h-5" />
@@ -345,7 +364,7 @@ function DNSSetupContent() {
 
               {/* MX & CNAME Records */}
               <div className="mb-8">
-                <button className="flex items-center gap-2 text-[#1a73e8] font-medium mb-4">
+                <button className="flex items-center gap-2 text-[#14ad9f] font-medium mb-4">
                   E-Mail-Einträge (MX & CNAME)
                   <ChevronDown className="w-5 h-5" />
                 </button>
@@ -493,7 +512,7 @@ function DNSSetupContent() {
                 <input
                   type="checkbox"
                   id="confirmDNS"
-                  className="mt-1 w-4 h-4 text-[#1a73e8] border-gray-300 rounded focus:ring-[#1a73e8]"
+                  className="mt-1 w-4 h-4 text-[#14ad9f] border-gray-300 rounded focus:ring-[#14ad9f]"
                 />
                 <label htmlFor="confirmDNS" className="text-sm text-gray-700">
                   Kehren Sie hierher zurück und bestätigen Sie die Eingabe des Codes, wenn Sie den Code bei Ihrem Domainhost aktualisiert haben
