@@ -160,61 +160,61 @@ function BusinessRegistrationContent() {
             </div>
           </div>
 
-            {/* Region Select */}
-            <div className="mb-8">
-              <label htmlFor="region" className="block text-sm text-[#5f6368] mb-2">
-                Region
-              </label>
-              {isLoadingRegion ? (
-                <div className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-50 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  <span className="text-gray-400 text-sm">Region wird erkannt...</span>
+          {/* Region Select */}
+          <div className="mb-8">
+            <label htmlFor="region" className="block text-sm text-[#5f6368] mb-2">
+              Region
+            </label>
+            {isLoadingRegion ? (
+              <div className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-50 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                <span className="text-gray-400 text-sm">Region wird erkannt...</span>
+              </div>
+            ) : (
+              <div className="relative">
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white cursor-pointer"
+                  id="region"
+                >
+                  {regionOptions.map((regionOption) => (
+                    <option key={regionOption} value={regionOption}>
+                      {regionOption}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-              ) : (
-                <div className="relative">
-                  <select
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white cursor-pointer"
-                    id="region"
-                  >
-                    {regionOptions.map((regionOption) => (
-                      <option key={regionOption} value={regionOption}>
-                        {regionOption}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* Continue Button - Google Workspace Stil */}
-            <div className="flex justify-start">
-              <button
-                onClick={handleContinue}
-                disabled={!companyName || !employeeCount || isLoading}
-                className={cn(
-                  "px-6 py-2.5 rounded font-medium transition-all text-sm",
-                  companyName && employeeCount
-                    ? "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                )}
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Wird geladen...
-                  </span>
-                ) : (
-                  'Weiter'
-                )}
-              </button>
-            </div>
+          {/* Continue Button - Google Workspace Stil */}
+          <div className="flex justify-start">
+            <button
+              onClick={handleContinue}
+              disabled={!companyName || !employeeCount || isLoading}
+              className={cn(
+                "px-6 py-2.5 rounded font-medium transition-all text-sm",
+                companyName && employeeCount
+                  ? "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              )}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Wird geladen...
+                </span>
+              ) : (
+                'Weiter'
+              )}
+            </button>
+          </div>
         </div>
       </main>
     </div>
