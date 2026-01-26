@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Eye, EyeOff, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -129,38 +129,48 @@ function UsernameContent() {
 
           {/* Title */}
           <h1 className="text-[32px] font-normal text-gray-900 mb-4 leading-tight">
-            Nutzernamen erstellen
+            E-Mail-Adresse erstellen
           </h1>
           
-          <p className="text-[15px] text-gray-700 leading-relaxed mb-8 flex items-center gap-2">
-            Mit dem Nutzernamen melden Sie sich in Ihrem Taskilo Webmail-Konto an und erstellen Ihre geschäftliche E-Mail-Adresse.
-            <HelpCircle className="w-4 h-4 text-gray-400" />
+          <p className="text-[15px] text-gray-700 leading-relaxed mb-8">
+            Wählen Sie den ersten Teil Ihrer geschäftlichen E-Mail-Adresse bei <span className="font-medium">{domain || 'ihredomain.de'}</span>. Sie können diese E-Mail-Adresse für die Anmeldung und den Empfang von Nachrichten verwenden.
           </p>
 
-          {/* Username Input */}
+          {/* Email/Username Input */}
           <div className="mb-6">
             <label htmlFor="username" className="block text-sm text-[#5f6368] mb-2">
-              Nutzername
+              E-Mail-Adresse
             </label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value.toLowerCase());
-                setErrors({ ...errors, username: undefined });
-              }}
-              onBlur={validateForm}
-              className={cn(
-                "w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] transition-all text-base",
-                errors.username ? "border-red-500" : "border-gray-300"
-              )}
-              placeholder="nutzername"
-              maxLength={64}
-            />
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value.toLowerCase());
+                    setErrors({ ...errors, username: undefined });
+                  }}
+                  onBlur={validateForm}
+                  className={cn(
+                    "w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] transition-all text-base",
+                    errors.username ? "border-red-500" : "border-gray-300"
+                  )}
+                  placeholder="info"
+                  maxLength={64}
+                />
+              </div>
+              <span className="text-base text-gray-700 font-medium whitespace-nowrap">
+                @{domain || 'ihredomain.de'}
+              </span>
+            </div>
             <div className="flex justify-between items-center mt-2">
-              {errors.username && (
+              {errors.username ? (
                 <p className="text-xs text-red-600">{errors.username}</p>
+              ) : (
+                <p className="text-xs text-[#5f6368]">
+                  Nur Kleinbuchstaben, Zahlen, Punkt, Unterstrich und Bindestrich erlaubt
+                </p>
               )}
               <p className="text-xs text-[#5f6368] ml-auto">
                 {username.length}/64
