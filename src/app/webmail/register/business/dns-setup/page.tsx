@@ -117,48 +117,12 @@ function DNSSetupContent() {
         throw new Error('DNS-Konfiguration konnte nicht gespeichert werden');
       }
 
-      // Zur Zahlung weiterleiten
-      const response = await fetch('/api/webmail/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company,
-          domain,
-          email,
-          username,
-          firstName,
-          lastName,
-          plan,
-          amount: parseFloat(amount),
-          currency: 'EUR',
-          metadata: {
-            employees,
-            region,
-            organizationName,
-            legalName,
-            address,
-            apartment,
-            postalCode,
-            city,
-            country,
-            dnsConfigured: true,
-          },
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Checkout-Erstellung fehlgeschlagen');
-      }
-
-      // Revolut Checkout URL öffnen
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-      }
+      // Zur DNS-Verifizierungs-Seite weiterleiten
+      router.push(`/webmail/register/business/dns-verify?domain=${domain}&email=${email}&company=${company}&plan=${plan}&amount=${amount}`);
     } catch (error) {
-      console.error('Payment error:', error);
-      alert('Fehler beim Starten des Zahlungsvorgangs. Bitte versuchen Sie es erneut.');
+      console.error('DNS Setup error:', error);
+      alert('Fehler beim Speichern der DNS-Konfiguration. Bitte versuchen Sie es erneut.');
+    } finally {
       setIsVerifying(false);
     }
   };

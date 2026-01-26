@@ -9,6 +9,7 @@ import Image from 'next/image';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const domain = searchParams.get('domain') || '';
+  const paymentCompleted = searchParams.get('payment') === 'completed';
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -37,11 +38,13 @@ function SuccessContent() {
 
           {/* Title */}
           <h1 className="text-[40px] font-normal text-gray-900 mb-4 leading-tight">
-            Willkommen bei Taskilo Webmail!
+            {paymentCompleted ? 'Willkommen bei Taskilo Webmail!' : 'Registrierung abgeschlossen!'}
           </h1>
           
           <p className="text-[18px] text-gray-700 leading-relaxed mb-8">
-            Ihr Konto wurde erfolgreich erstellt. Sie können jetzt mit Ihrer 14-tägigen kostenlosen Testphase beginnen.
+            {paymentCompleted 
+              ? 'Ihr Konto wurde erfolgreich erstellt. Sie können jetzt mit Ihrer 14-tägigen kostenlosen Testphase beginnen.'
+              : 'Ihre DNS-Konfiguration wurde gespeichert. Wir überprüfen Ihre DNS-Einträge und benachrichtigen Sie per E-Mail.'}
           </p>
 
           {/* Info Box */}
@@ -52,24 +55,37 @@ function SuccessContent() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Nächste Schritte
                 </h3>
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#14ad9f] font-bold">1.</span>
-                    <span>Überprüfen Sie Ihre E-Mail-Adresse für wichtige Informationen zur Einrichtung</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#14ad9f] font-bold">2.</span>
-                    <span>Melden Sie sich in Ihrem Taskilo Webmail-Konto an</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#14ad9f] font-bold">3.</span>
-                    <span>Konfigurieren Sie Ihre Domain für E-Mail-Empfang (DNS-Einstellungen)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#14ad9f] font-bold">4.</span>
-                    <span>Laden Sie Ihr Team ein und erstellen Sie weitere E-Mail-Adressen</span>
-                  </li>
-                </ul>
+                {paymentCompleted ? (
+                  <ul className="space-y-3 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">1.</span>
+                      <span>Überprüfen Sie Ihre E-Mail-Adresse für wichtige Informationen zur Einrichtung</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">2.</span>
+                      <span>Melden Sie sich in Ihrem Taskilo Webmail-Konto an</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">3.</span>
+                      <span>Laden Sie Ihr Team ein und erstellen Sie weitere E-Mail-Adressen</span>
+                    </li>
+                  </ul>
+                ) : (
+                  <ul className="space-y-3 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">1.</span>
+                      <span>Wir überprüfen Ihre DNS-Einträge (kann bis zu 48 Stunden dauern)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">2.</span>
+                      <span>Sie erhalten eine E-Mail mit dem Verifizierungsstatus</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#14ad9f] font-bold">3.</span>
+                      <span>Nach erfolgreicher Verifizierung können Sie Ihr Konto aktivieren</span>
+                    </li>
+                  </ul>
+                )}
               </div>
             </div>
 
@@ -82,22 +98,32 @@ function SuccessContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {paymentCompleted ? (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/webmail"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-base transition-all shadow-md hover:shadow-lg"
+                style={{ backgroundColor: '#14ad9f', color: 'white' }}
+              >
+                Zu Ihrem Posteingang
+              </Link>
+              
+              <Link
+                href="/webmail/settings/domain"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-base transition-all border-2 border-gray-300 hover:border-gray-400 bg-white text-gray-700"
+              >
+                Domain-Einstellungen
+              </Link>
+            </div>
+          ) : (
             <Link
-              href="/webmail"
+              href="/"
               className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-base transition-all shadow-md hover:shadow-lg"
               style={{ backgroundColor: '#14ad9f', color: 'white' }}
             >
-              Zu Ihrem Posteingang
+              Zurück zur Startseite
             </Link>
-            
-            <Link
-              href="/webmail/settings/domain"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-full font-semibold text-base transition-all border-2 border-gray-300 hover:border-gray-400 bg-white text-gray-700"
-            >
-              Domain einrichten
-            </Link>
-          </div>
+          )}
 
           {/* Support */}
           <div className="mt-12 pt-8 border-t border-gray-200">
