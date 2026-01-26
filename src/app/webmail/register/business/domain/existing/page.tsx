@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Globe, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -37,6 +37,7 @@ function ExistingDomainContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validationSuccess, setValidationSuccess] = useState(false);
+  const [showDomainHelp, setShowDomainHelp] = useState(false);
 
   // Domain-Format validieren und auf Duplikate prüfen
   const validateDomain = async () => {
@@ -130,16 +131,29 @@ function ExistingDomainContent() {
           </button>
 
           {/* Title - Google Workspace Stil */}
-          <h1 className="text-[32px] font-normal text-gray-900 mb-4 leading-tight">
+          <h1 className="text-[32px] font-normal text-gray-900 mb-4 leading-tight flex items-center gap-3">
             Wie lautet der Domainname Ihres Unternehmens?
+            <button 
+              onClick={() => setShowDomainHelp(!showDomainHelp)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Info zur Domain"
+            >
+              <HelpCircle className="w-6 h-6" />
+            </button>
           </h1>
           
+          {/* Domain Help Tooltip */}
+          {showDomainHelp && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded text-sm text-blue-900">
+              <p className="leading-relaxed">
+                Die Domain ist in Webadressen der Teil, der nach dem &quot;www&quot; steht, z. B. www.IhrUnternehmen.de, und in E-Mail-Adressen der Teil, der nach dem @-Zeichen steht, z. B. nutzername@IhrUnternehmen.de
+              </p>
+            </div>
+          )}
+          
           <div className="mb-8">
-            <p className="text-[15px] text-gray-700 leading-relaxed mb-2">
-              Geben Sie den Domainnamen Ihres Unternehmens ein. Damit können Sie benutzerdefinierte E-Mail-Adressen erstellen, z. B. info@IhrUnternehmen.de.
-            </p>
             <p className="text-[15px] text-gray-700 leading-relaxed">
-              <span className="text-[#14ad9f] cursor-pointer hover:underline">Wir erklären Ihnen später Schritt für Schritt, wie Sie die Inhaberschaft für diese Domain bestätigen.</span>
+              Geben Sie den Domainnamen Ihres Unternehmens ein. Damit können Sie benutzerdefinierte E-Mail-Adressen erstellen, z. B. info@IhrUnternehmen.de.
             </p>
           </div>
 
