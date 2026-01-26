@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
 
     // Revolut Merchant API Aufruf über Hetzner Proxy
     const WEBMAIL_API_URL = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
-    const WEBMAIL_API_SECRET = process.env.WEBMAIL_API_SECRET;
+    const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY;
 
-    if (!WEBMAIL_API_SECRET) {
-      console.error('WEBMAIL_API_SECRET nicht gesetzt');
+    if (!WEBMAIL_API_KEY) {
+      console.error('WEBMAIL_API_KEY nicht gesetzt');
       return NextResponse.json(
         { success: false, error: 'Server-Konfigurationsfehler' },
         { status: 500 }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': WEBMAIL_API_SECRET,
+        'x-api-key': WEBMAIL_API_KEY,
       },
       body: JSON.stringify({
         customer: {
