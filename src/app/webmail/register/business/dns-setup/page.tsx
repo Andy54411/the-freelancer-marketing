@@ -78,9 +78,7 @@ function DNSSetupContent() {
   const handleVerify = async () => {
     setIsVerifying(true);
     
-    // DNS-Einträge in DB speichern für spätere Verifizierung
     try {
-      // Zur Zahlung weiterleiten
       const company = searchParams.get('company') || '';
       const email = searchParams.get('recoveryEmail') || searchParams.get('email') || '';
       const username = searchParams.get('username') || '';
@@ -98,6 +96,28 @@ function DNSSetupContent() {
       const city = searchParams.get('city') || '';
       const country = searchParams.get('country') || '';
 
+      // DNS-Konfiguration im Backend speichern
+      const dnsResponse = await fetch(`${process.env.NEXT_PUBLIC_WEBMAIL_API_URL}/api/dns/setup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '',
+        },
+        body: JSON.stringify({
+          domain,
+          userId: email,
+          companyName: company,
+          dnsRecords,
+          selectedHost: selectedHost || 'Other',
+          status: 'pending',
+        }),
+      });
+
+      if (!dnsResponse.ok) {
+        throw new Error('DNS-Konfiguration konnte nicht gespeichert werden');
+      }
+
+      // Zur Zahlung weiterleiten
       const response = await fetch('/api/webmail/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

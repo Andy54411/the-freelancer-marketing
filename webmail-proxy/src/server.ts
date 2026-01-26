@@ -33,6 +33,7 @@ import { storageRouter } from './routes/storage';
 import { combinedStorageRouter } from './routes/combined-storage';
 import { ericRouter } from './routes/eric';
 import { domainsRouter } from './routes/domains';
+import dnsRouter from './routes/dns';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -248,6 +249,9 @@ app.use('/api/eric', ericRouter);
 
 // API Routes - Custom Domains (eigene E-Mail-Domains)
 app.use('/api/domains', domainsRouter);
+
+// API Routes - DNS Setup (DNS-Konfiguration für Domains)
+app.use('/api/dns', dnsRouter);
 
 // API Routes - Mobileconfig (signierte Apple Profile, ÖFFENTLICH)
 app.use('/api/mobileconfig', mobileconfigRouter);
