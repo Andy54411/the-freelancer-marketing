@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': WEBMAIL_API_SECRET,
+        'x-api-key': WEBMAIL_API_SECRET,
       },
       body: JSON.stringify({
         customer: {

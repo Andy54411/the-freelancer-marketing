@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.WEBMAIL_API_SECRET}`,
+        'x-api-key': process.env.WEBMAIL_API_SECRET || '',
       },
       body: JSON.stringify({ domain }),
     });
