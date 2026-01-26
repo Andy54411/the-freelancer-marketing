@@ -559,6 +559,8 @@ class ProfileServiceMongo {
       accountStatus: profile.accountStatus || 'active',
       suspended: profile.suspended || false,
       blocked: profile.blocked || false,
+      // Verknüpfte Konten
+      linkedAccounts: profile.linkedAccounts || [],
     };
   }
 }
