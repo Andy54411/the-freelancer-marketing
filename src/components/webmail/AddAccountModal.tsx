@@ -10,6 +10,7 @@ interface AddAccountModalProps {
   onClose: () => void;
   onAccountAdded: (email: string) => void;
   isDark?: boolean;
+  initialEmail?: string;
 }
 
 export function AddAccountModal({
@@ -17,8 +18,9 @@ export function AddAccountModal({
   onClose,
   onAccountAdded,
   isDark = false,
+  initialEmail,
 }: AddAccountModalProps) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,13 +39,15 @@ export function AddAccountModal({
   // Reset State wenn Modal schließt
   useEffect(() => {
     if (!isOpen) {
-      setEmail('');
+      setEmail(initialEmail || '');
       setPassword('');
       setError(null);
       setSuccess(false);
       setShowPassword(false);
+    } else if (initialEmail) {
+      setEmail(initialEmail);
     }
-  }, [isOpen]);
+  }, [isOpen, initialEmail]);
 
   // Klick außerhalb schließt Modal
   useEffect(() => {

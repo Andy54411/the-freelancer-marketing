@@ -121,6 +121,7 @@ export function MailHeader({
   const [showMobileSetup, setShowMobileSetup] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [addAccountEmail, setAddAccountEmail] = useState<string | undefined>();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   
   // Multi-Account Switch Handler
@@ -129,6 +130,10 @@ export function MailHeader({
     if (account) {
       // Seite neu laden um mit neuem Account zu starten
       window.location.reload();
+    } else {
+      // Account nicht in lokaler Session - Login erforderlich
+      setAddAccountEmail(email);
+      setShowAddAccountModal(true);
     }
   };
   
@@ -427,6 +432,7 @@ export function MailHeader({
           }}
           onAddAccount={() => {
             setShowProfileModal(false);
+            setAddAccountEmail(undefined);
             setShowAddAccountModal(true);
           }}
           onSwitchAccount={handleSwitchAccount}
@@ -436,9 +442,13 @@ export function MailHeader({
         {/* Add Account Modal */}
         <AddAccountModal
           isOpen={showAddAccountModal}
-          onClose={() => setShowAddAccountModal(false)}
+          onClose={() => {
+            setShowAddAccountModal(false);
+            setAddAccountEmail(undefined);
+          }}
           onAccountAdded={handleAccountAdded}
           isDark={isDark}
+          initialEmail={addAccountEmail}
         />
       </header>
     );
@@ -546,6 +556,7 @@ export function MailHeader({
           }}
           onAddAccount={() => {
             setShowProfileModal(false);
+            setAddAccountEmail(undefined);
             setShowAddAccountModal(true);
           }}
           onSwitchAccount={handleSwitchAccount}
@@ -555,9 +566,13 @@ export function MailHeader({
         {/* Add Account Modal */}
         <AddAccountModal
           isOpen={showAddAccountModal}
-          onClose={() => setShowAddAccountModal(false)}
+          onClose={() => {
+            setShowAddAccountModal(false);
+            setAddAccountEmail(undefined);
+          }}
           onAccountAdded={handleAccountAdded}
           isDark={isDark}
+          initialEmail={addAccountEmail}
         />
       </header>
     );
@@ -914,6 +929,7 @@ export function MailHeader({
         }}
         onAddAccount={() => {
           setShowProfileModal(false);
+          setAddAccountEmail(undefined);
           setShowAddAccountModal(true);
         }}
         onSwitchAccount={handleSwitchAccount}
@@ -923,9 +939,13 @@ export function MailHeader({
       {/* Add Account Modal */}
       <AddAccountModal
         isOpen={showAddAccountModal}
-        onClose={() => setShowAddAccountModal(false)}
+        onClose={() => {
+          setShowAddAccountModal(false);
+          setAddAccountEmail(undefined);
+        }}
         onAccountAdded={handleAccountAdded}
         isDark={isDark}
+        initialEmail={addAccountEmail}
       />
     </header>
   );
