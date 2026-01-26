@@ -31,49 +31,9 @@ function VerifyDomainContent() {
   const country = searchParams.get('country') || '';
 
   const handleStart = async () => {
-    // Jetzt zur Zahlung weiterleiten
-    try {
-      const response = await fetch('/api/webmail/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company,
-          domain,
-          email: recoveryEmail,
-          username,
-          firstName,
-          lastName,
-          plan,
-          amount: parseFloat(amount),
-          currency: 'EUR',
-          metadata: {
-            employees,
-            region,
-            organizationName,
-            legalName,
-            address,
-            apartment,
-            postalCode,
-            city,
-            country,
-          },
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Checkout-Erstellung fehlgeschlagen');
-      }
-
-      // Revolut Checkout URL öffnen
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Fehler beim Starten des Zahlungsvorgangs. Bitte versuchen Sie es erneut.');
-    }
+    // Direkt zur DNS-Setup Seite
+    const params = new URLSearchParams(searchParams.toString());
+    router.push(`/webmail/register/business/dns-setup?${params.toString()}`);
   };
 
   return (
