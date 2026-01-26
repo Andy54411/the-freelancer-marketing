@@ -323,13 +323,13 @@ function OrganizationContent() {
               <div className="flex justify-end gap-4 mt-8">
                 <button
                   onClick={handleCancel}
-                  className="px-6 py-3 text-[#1a73e8] font-medium hover:bg-blue-50 rounded-lg transition-colors"
+                  className="px-6 py-3 text-[#14ad9f] font-medium hover:bg-teal-50 rounded-lg transition-colors"
                 >
                   Abbrechen
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-6 py-3 bg-[#1a73e8] text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-3 bg-[#14ad9f] text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   Speichern
                 </button>

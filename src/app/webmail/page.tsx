@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase/clients';
 import { getWebmailCredentials } from '@/lib/webmail-session';
+import { getCurrentAccount, addAccount, removeAccount } from '@/lib/webmail-multi-session';
 
 // ============ HYDRATION DEBUG LOGGING ============
 const HYDRATION_DEBUG = false;
@@ -189,8 +190,8 @@ function WebmailPageContent() {
     const checkSession = async () => {
       hydrationLog('checkSession_START');
       
-      // 1. Prüfe Cookie (direkter Webmail-Login)
-      const savedCredentials = getCookie();
+      // 1. Prüfe Multi-Session Cookie (mit Legacy-Migration)
+      const savedCredentials = getCurrentAccount();
       hydrationLog('checkSession_COOKIE_RESULT', { 
         hasCookie: !!savedCredentials,
         hasEmail: !!savedCredentials?.email
@@ -277,8 +278,8 @@ function WebmailPageContent() {
               if (data.success) {
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
-                // Setze auch Cookie für konsistente Session
-                setCookie(localCredentials.email, localCredentials.password, true);
+                // Speichere in Multi-Session für konsistente Session
+                addAccount({ email: localCredentials.email, password: localCredentials.password });
                 setIsConnected(true);
                 setIsCheckingSession(false);
                 unsubscribe();
@@ -289,7 +290,7 @@ function WebmailPageContent() {
               if (localCredentials.email.includes('@') && localCredentials.password.length > 0) {
                 setEmail(localCredentials.email);
                 setPassword(localCredentials.password);
-                setCookie(localCredentials.email, localCredentials.password, true);
+                addAccount({ email: localCredentials.email, password: localCredentials.password });
                 setIsConnected(true);
                 setIsCheckingSession(false);
                 unsubscribe();
@@ -341,7 +342,7 @@ function WebmailPageContent() {
       const data = await response.json();
 
       if (data.success) {
-        setCookie(email, password, rememberMe);
+        addAccount({ email, password });
         
         // Versuche Admin-Passwort zu synchronisieren (falls User ein Admin ist)
         try {
@@ -367,10 +368,12 @@ function WebmailPageContent() {
   };
 
   const handleLogout = useCallback(() => {
-    deleteCookie();
+    if (email) {
+      removeAccount(email);
+    }
     setIsConnected(false);
     setPassword('');
-  }, []);
+  }, [email]);
 
   const _handleEmailCreated = (createdEmail: string) => {
     setEmail(createdEmail);

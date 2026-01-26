@@ -11,6 +11,9 @@ const checkoutSchema = z.object({
   plan: z.enum(['monthly', 'yearly']),
   amount: z.number().positive(),
   currency: z.string().default('EUR'),
+  employees: z.string().optional(),
+  region: z.string().optional(),
+  trialDays: z.number().default(14),
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +35,22 @@ export async function POST(request: NextRequest) {
 
     const data = validation.data;
 
-    // Revolut Merchant API Aufruf über Hetzner Proxy
+    // Success URL mit allen Parametern für die Weiterleitung
+    const successParams = new URLSearchParams({
+      company: data.company,
+      domain: data.domain,
+      email: data.email,
+      username: data.username,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      plan: data.plan,
+      amount: String(data.amount),
+      employees: data.employees || '',
+      region: data.region || 'Deutschland',
+      payment: 'completed',
+    });
+
+    // Revolut Subscription API über Hetzner Proxy
     const WEBMAIL_API_URL = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
     const WEBMAIL_API_KEY = process.env.WEBMAIL_API_KEY;
 
@@ -44,40 +62,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${WEBMAIL_API_URL}/api/revolut/create-checkout`, {
+    // Nutze die neue Subscription API mit 14-Tage Trial
+    const response = await fetch(`${WEBMAIL_API_URL}/api/revolut/create-subscription`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': WEBMAIL_API_KEY,
       },
       body: JSON.stringify({
-        customer: {
-          email: data.email,
-          name: `${data.firstName} ${data.lastName}`,
-        },
-        amount: Math.round(data.amount * 100), // Cent
-        currency: data.currency,
-        description: `Taskilo Webmail ${data.plan === 'yearly' ? 'Jährlich' : 'Monatlich'} - ${data.domain}`,
-        metadata: {
-          company: data.company,
-          domain: data.domain,
-          username: data.username,
-          plan: data.plan,
-          type: 'webmail_subscription',
-        },
-        successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/webmail/register/business/success?domain=${data.domain}`,
-        cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/webmail/register/business/checkout?${new URLSearchParams(body).toString()}`,
+        customerEmail: data.email,
+        customerName: `${data.firstName} ${data.lastName}`,
+        plan: data.plan,
+        domain: data.domain,
+        company: data.company,
+        successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/webmail/register/business/organization?${successParams.toString()}`,
+        cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/webmail/register/business/checkout?${successParams.toString()}`,
       }),
     });
 
     const result = await response.json();
 
-    if (!response.ok) {
-      console.error('Revolut Checkout Error:', result);
+    if (!response.ok || !result.success) {
+      console.error('Revolut Subscription Error:', result);
       return NextResponse.json(
         { 
           success: false, 
-          error: result.error || 'Checkout-Erstellung fehlgeschlagen' 
+          error: result.error || 'Subscription-Erstellung fehlgeschlagen' 
         },
         { status: response.status }
       );
@@ -86,7 +96,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       checkoutUrl: result.checkoutUrl,
-      checkoutId: result.checkoutId,
+      subscriptionId: result.subscriptionId,
+      customerId: result.customerId,
     });
 
   } catch (error) {

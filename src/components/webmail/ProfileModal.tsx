@@ -12,6 +12,7 @@ import {
   LogOut,
   Cloud,
 } from 'lucide-react';
+import { getAllAccounts } from '@/lib/webmail-multi-session';
 
 interface LinkedAccount {
   email: string;
@@ -134,18 +135,43 @@ export function ProfileModal({
     }
   }, [userEmail, isOpen]);
 
-  // Verknüpfte Konten laden
+  // Verknüpfte Konten laden (kombiniert lokale Multi-Session + API)
   const loadLinkedAccounts = useCallback(async () => {
     if (!userEmail || !isOpen) return;
 
     try {
-      const response = await fetch(`/api/webmail/linked-accounts?email=${encodeURIComponent(userEmail)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setLinkedAccounts(data.data);
+      // 1. Lokale Multi-Session Accounts laden (ohne aktuellen User)
+      const localAccounts = getAllAccounts()
+        .filter(a => a.email !== userEmail)
+        .map(a => ({
+          email: a.email,
+          name: a.name || a.email.split('@')[0],
+          profileImage: a.profileImage,
+        }));
+
+      // 2. API-basierte verknüpfte Konten laden
+      let apiAccounts: LinkedAccount[] = [];
+      try {
+        const response = await fetch(`/api/webmail/linked-accounts?email=${encodeURIComponent(userEmail)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            apiAccounts = data.data;
+          }
         }
+      } catch {
+        // API-Fehler ignorieren
       }
+
+      // 3. Kombinieren und Duplikate entfernen
+      const combined = [...localAccounts];
+      apiAccounts.forEach(apiAcc => {
+        if (!combined.some(local => local.email === apiAcc.email)) {
+          combined.push(apiAcc);
+        }
+      });
+
+      setLinkedAccounts(combined);
     } catch {
       // Verknüpfte Konten konnten nicht geladen werden
     }

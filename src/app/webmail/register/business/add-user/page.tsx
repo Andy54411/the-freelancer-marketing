@@ -86,6 +86,7 @@ function AddUserContent() {
       username,
       firstName,
       lastName,
+      recoveryEmail: formData.recoveryEmail || email,
       plan,
       amount,
       employees,
@@ -218,7 +219,7 @@ function AddUserContent() {
             <button
               onClick={handleAddUser}
               disabled={!formData.firstName || !formData.lastName || !formData.username || !formData.recoveryEmail || isLoading}
-              className="w-full max-w-md px-8 py-4 bg-gray-300 text-gray-500 rounded-full font-semibold transition-all disabled:cursor-not-allowed hover:enabled:bg-[#1a73e8] hover:enabled:text-white"
+              className="w-full max-w-md px-8 py-4 bg-[#14ad9f] text-white rounded-full font-semibold transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed hover:enabled:bg-teal-700"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -226,13 +227,13 @@ function AddUserContent() {
                   Wird verarbeitet...
                 </span>
               ) : (
-                'Nutzer hinzugefügt'
+                'Nutzer hinzufügen'
               )}
             </button>
 
             <button
               onClick={handleSkip}
-              className="text-[#1a73e8] font-medium hover:underline"
+              className="text-[#14ad9f] font-medium hover:underline"
             >
               Überspringen
             </button>

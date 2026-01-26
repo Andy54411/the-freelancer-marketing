@@ -1,4 +1,4 @@
-# TASKILO - VOLLSTÄNDIGE FEATURE-ÜBERSICHT FÜR INVESTOREN
+# TASKILO - VOLLSTÄNDIGE
 
 **Stand:** Januar 2026  
 **Plattform:** Web-App (Next.js) + Mobile/Desktop App (Flutter)
@@ -102,6 +102,14 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 - Signaturen
 - Anhänge
 - Ungelesene Zähler
+
+**Multi-Account System (Google-Style):**
+- Mehrere E-Mail-Konten verknüpfen
+- Schnelles Konto-Wechseln mit einem Klick
+- Jedes Konto behält eigene Inbox
+- Bidirektionale Konto-Verknüpfung
+- Multi-Session Cookie-Management
+- Legacy-Account Migration
 
 ### 7. WHATSAPP BUSINESS (Premium-Modul)
 - WhatsApp Business Integration

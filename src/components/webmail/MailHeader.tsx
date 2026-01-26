@@ -33,6 +33,8 @@ import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 import { MobileSetupModal } from './MobileSetupModal';
 import { ProfileModal } from './ProfileModal';
+import { AddAccountModal } from './AddAccountModal';
+import { switchAccount, getAllAccounts, type WebmailAccount } from '@/lib/webmail-multi-session';
 
 // Debug-Logging für Hydration
 const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
@@ -118,7 +120,26 @@ export function MailHeader({
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showMobileSetup, setShowMobileSetup] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Multi-Account Switch Handler
+  const handleSwitchAccount = (email: string) => {
+    const account = switchAccount(email);
+    if (account) {
+      // Seite neu laden um mit neuem Account zu starten
+      window.location.reload();
+    }
+  };
+  
+  // Account hinzugefügt Handler
+  const handleAccountAdded = (email: string) => {
+    // Optional: Direkt zum neuen Account wechseln
+    const account = switchAccount(email);
+    if (account) {
+      window.location.reload();
+    }
+  };
   
   mailHeaderLog('STATE_INITIALIZED', {
     isDark,
@@ -406,8 +427,17 @@ export function MailHeader({
           }}
           onAddAccount={() => {
             setShowProfileModal(false);
-            router.push('/webmail/add-account');
+            setShowAddAccountModal(true);
           }}
+          onSwitchAccount={handleSwitchAccount}
+          isDark={isDark}
+        />
+
+        {/* Add Account Modal */}
+        <AddAccountModal
+          isOpen={showAddAccountModal}
+          onClose={() => setShowAddAccountModal(false)}
+          onAccountAdded={handleAccountAdded}
           isDark={isDark}
         />
       </header>
@@ -516,8 +546,17 @@ export function MailHeader({
           }}
           onAddAccount={() => {
             setShowProfileModal(false);
-            router.push('/webmail/add-account');
+            setShowAddAccountModal(true);
           }}
+          onSwitchAccount={handleSwitchAccount}
+          isDark={isDark}
+        />
+
+        {/* Add Account Modal */}
+        <AddAccountModal
+          isOpen={showAddAccountModal}
+          onClose={() => setShowAddAccountModal(false)}
+          onAccountAdded={handleAccountAdded}
           isDark={isDark}
         />
       </header>
@@ -875,8 +914,17 @@ export function MailHeader({
         }}
         onAddAccount={() => {
           setShowProfileModal(false);
-          router.push('/webmail/add-account');
+          setShowAddAccountModal(true);
         }}
+        onSwitchAccount={handleSwitchAccount}
+        isDark={isDark}
+      />
+
+      {/* Add Account Modal */}
+      <AddAccountModal
+        isOpen={showAddAccountModal}
+        onClose={() => setShowAddAccountModal(false)}
+        onAccountAdded={handleAccountAdded}
         isDark={isDark}
       />
     </header>

@@ -186,6 +186,31 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   
+  // Revolut Init-Plans ist öffentlich (einmaliger Initialisierungsaufruf)
+  if (req.path === '/revolut/init-plans') {
+    return next();
+  }
+  
+  // Revolut Create-Subscription ist öffentlich (wird vom Checkout aufgerufen)
+  if (req.path === '/revolut/create-subscription') {
+    return next();
+  }
+  
+  // Revolut Register-Webhook ist öffentlich (einmaliger Aufruf)
+  if (req.path === '/revolut/register-webhook') {
+    return next();
+  }
+  
+  // Revolut Process-Subscriptions ist öffentlich (Cron-Job)
+  if (req.path === '/revolut/process-subscriptions') {
+    return next();
+  }
+  
+  // Revolut Subscription-Stats ist öffentlich (Admin Dashboard)
+  if (req.path === '/revolut/subscription-stats') {
+    return next();
+  }
+  
   const apiKey = req.headers['x-api-key'] as string;
   
   if (!apiKey || !secureCompare(apiKey, API_KEY)) {

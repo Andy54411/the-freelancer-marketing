@@ -71,27 +71,68 @@ function CheckoutContent() {
   const [selectedPlan, setSelectedPlan] = useState<BillingCycle>('yearly');
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedPlanData = plans.find(p => p.id === selectedPlan);
 
   const handlePayment = async () => {
     setIsProcessing(true);
+    setError(null);
     
-    // Weiterleitung zur Organisation/Kontaktdaten Seite
-    const params = new URLSearchParams({
-      company,
-      domain,
-      email,
-      username,
-      firstName,
-      lastName,
-      plan: selectedPlan,
-      amount: String(selectedPlanData?.price || 0),
-      employees,
-      region,
-    });
-    
-    router.push(`/webmail/register/business/organization?${params.toString()}`);
+    try {
+      // Revolut Checkout erstellen
+      const response = await fetch('/api/webmail/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company,
+          domain,
+          email,
+          username,
+          firstName,
+          lastName,
+          plan: selectedPlan,
+          amount: selectedPlanData?.price || 9.99,
+          currency: 'EUR',
+          employees,
+          region,
+          trialDays: 14,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(result.error || 'Fehler beim Erstellen des Checkouts');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Checkout URL öffnen - Revolut Zahlungsseite
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        // Fallback: Weiter zur Organization-Seite wenn kein Checkout nötig
+        const params = new URLSearchParams({
+          company,
+          domain,
+          email,
+          username,
+          firstName,
+          lastName,
+          plan: selectedPlan,
+          amount: String(selectedPlanData?.price || 0),
+          employees,
+          region,
+        });
+        router.push(`/webmail/register/business/organization?${params.toString()}`);
+      }
+    } catch (err) {
+      setError('Verbindungsfehler. Bitte versuchen Sie es erneut.');
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -202,9 +243,9 @@ function CheckoutContent() {
           </div>
 
           {/* Trial Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-6 mb-8">
             <div className="flex items-start gap-4">
-              <div className="bg-blue-500 rounded-full p-3">
+              <div className="bg-[#14ad9f] rounded-full p-3">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -213,13 +254,21 @@ function CheckoutContent() {
                 </h3>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   Testen Sie alle Funktionen von Taskilo Webmail 14 Tage lang völlig kostenlos. 
-                  Sie können jederzeit während der Testphase kündigen. Nach Ablauf der Testphase 
+                  <strong className="text-gray-900"> Kreditkarte erforderlich</strong> - Sie können 
+                  jederzeit während der Testphase kündigen. Nach Ablauf der Testphase 
                   wird automatisch das von Ihnen gewählte Abo ({selectedPlanData?.name}) aktiviert 
                   und die Zahlung über Revolut abgebucht.
                 </p>
               </div>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
 
           {/* Summary */}
           <div className="bg-gray-50 rounded-xl p-6 mb-8">

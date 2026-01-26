@@ -75,7 +75,7 @@ function VerifyDomainContent() {
             {/* Step 1 */}
             <div className="flex items-start gap-6">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#14ad9f] flex items-center justify-center">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -121,7 +121,7 @@ function VerifyDomainContent() {
           <div className="flex justify-center">
             <button
               onClick={handleStart}
-              className="px-8 py-4 bg-[#1a73e8] text-white rounded-full font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+              className="px-8 py-4 bg-[#14ad9f] text-white rounded-full font-semibold hover:bg-teal-700 transition-colors shadow-md hover:shadow-lg"
             >
               Jetzt loslegen
             </button>
