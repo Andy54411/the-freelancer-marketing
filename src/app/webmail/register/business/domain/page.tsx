@@ -78,40 +78,40 @@ function DomainSelectionContent() {
           </h1>
           
           <p className="text-[15px] text-gray-700 leading-relaxed mb-8">
-            Sie benötigen eine <span className="underline decoration-dotted cursor-help" title="z.B. beispiel.de">Domain</span> wie beispiel.de, um den E-Mail-Dienst und ein Taskilo Workspace-Konto für Ihr Unternehmen einzurichten.
+            Sie benötigen eine <span className="underline decoration-dotted cursor-help" title="z.B. beispiel.de">Domain</span> wie beispiel.de, um den E-Mail-Dienst und ein Google Workspace-Konto für Ihr Unternehmen einzurichten
           </p>
 
-          {/* Options */}
-          <div className="space-y-4 mb-8">
+          {/* Options - Google Workspace Grid Layout */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
             {/* Option 1: New Domain */}
             <button
               onClick={() => setSelectedOption('new')}
               className={cn(
-                "w-full text-left p-6 rounded-lg border transition-all duration-200",
+                "relative text-left p-8 rounded-xl border-2 transition-all duration-200 hover:shadow-md",
                 selectedOption === 'new'
-                  ? "border-[#1a73e8] bg-blue-50/50 ring-1 ring-[#1a73e8]"
-                  : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                  ? "border-[#1a73e8] bg-blue-50/30"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
               )}
             >
-              <div className="flex items-start gap-4">
-                <div className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                  selectedOption === 'new'
-                    ? "border-[#1a73e8]"
-                    : "border-gray-400"
-                )}>
-                  {selectedOption === 'new' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#1a73e8]" />
-                  )}
+              {/* Icon Container */}
+              <div className="mb-6 flex justify-center">
+                <div className="relative w-24 h-24 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="relative">
+                    <div className="absolute -top-2 -right-2 bg-blue-500 rounded-full p-2">
+                      <Search className="w-4 h-4 text-white" />
+                    </div>
+                    <Globe className="w-12 h-12 text-gray-400" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-medium text-gray-900 mb-1">
-                    Neue benutzerdefinierte Domain erhalten
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Neue Domain kaufen und online Ihre Marke aufbauen
-                  </p>
-                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-[15px] font-normal text-gray-900 mb-2 leading-snug">
+                  Neue benutzerdefinierte Domain erhalten
+                </h3>
+                <p className="text-[13px] text-gray-600 leading-relaxed">
+                  Neue Domain kaufen und online Ihre Marke aufbauen
+                </p>
               </div>
             </button>
 
@@ -119,44 +119,44 @@ function DomainSelectionContent() {
             <button
               onClick={() => setSelectedOption('existing')}
               className={cn(
-                "w-full text-left p-6 rounded-lg border transition-all duration-200",
+                "relative text-left p-8 rounded-xl border-2 transition-all duration-200 hover:shadow-md",
                 selectedOption === 'existing'
-                  ? "border-[#1a73e8] bg-blue-50/50 ring-1 ring-[#1a73e8]"
-                  : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                  ? "border-[#1a73e8] bg-blue-50/30"
+                  : "border-gray-200 bg-white hover:border-gray-300"
               )}
             >
-              <div className="flex items-start gap-4">
-                <div className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                  selectedOption === 'existing'
-                    ? "border-[#1a73e8]"
-                    : "border-gray-400"
-                )}>
-                  {selectedOption === 'existing' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#1a73e8]" />
-                  )}
+              {/* Icon Container */}
+              <div className="mb-6 flex justify-center">
+                <div className="relative w-24 h-24 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="relative">
+                    <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <Globe className="w-12 h-12 text-blue-500" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-medium text-gray-900 mb-1">
-                    Mit bestehender Domain einrichten
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Bereits vorhandene Domain verwenden
-                  </p>
-                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-[15px] font-normal text-gray-900 mb-2 leading-snug">
+                  Mit bestehender Domain einrichten
+                </h3>
+                <p className="text-[13px] text-gray-600 leading-relaxed">
+                  Bereits vorhandene Domain verwenden
+                </p>
               </div>
             </button>
           </div>
 
-          {/* Continue Button - Taskilo Stil */}
-          <div className="flex justify-start mt-10">
+          {/* Continue Button - Google Workspace Stil */}
+          <div className="flex justify-end mt-10">
             <button
               onClick={handleContinue}
               disabled={!selectedOption || isLoading}
               className={cn(
-                "px-8 py-3.5 rounded-full font-medium transition-all text-[15px]",
+                "px-6 py-3 rounded-full font-medium transition-all text-[14px]",
                 selectedOption
-                  ? "bg-[#14ad9f] text-white hover:bg-teal-700 shadow-md hover:shadow-lg"
+                  ? "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm hover:shadow"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               )}
             >
