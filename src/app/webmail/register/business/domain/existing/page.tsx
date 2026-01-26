@@ -99,8 +99,8 @@ function ExistingDomainContent() {
       domain: domain.toLowerCase().trim(),
     });
     
-    // Weiter zur Verifizierung/DNS-Setup
-    router.push(`/webmail/register/business/verify?${params.toString()}`);
+    // Weiter zur Username-Erstellung
+    router.push(`/webmail/register/business/username?${params.toString()}`);
   };
 
   return (
