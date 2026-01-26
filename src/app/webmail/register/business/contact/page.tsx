@@ -138,16 +138,16 @@ function ContactFormContent() {
             </div>
           </div>
 
-          {/* Continue Button - Google Workspace Stil */}
-          <div className="flex justify-start">
+          {/* Continue Button - Taskilo Stil */}
+          <div className="flex justify-start mt-10">
             <button
               onClick={handleContinue}
               disabled={!isFormValid || isLoading}
               className={cn(
-                "px-6 py-2.5 rounded font-medium transition-all text-sm",
+                "px-8 py-3.5 rounded-full font-medium transition-all text-[15px]",
                 isFormValid
-                  ? "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-[#14ad9f] text-white hover:bg-teal-700 shadow-md hover:shadow-lg"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
               )}
             >
               {isLoading ? (

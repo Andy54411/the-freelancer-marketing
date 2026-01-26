@@ -263,11 +263,11 @@ function DomainSearchContent() {
 
           {/* Continue Button */}
           {selectedDomain && (
-            <div className="flex justify-start">
+            <div className="flex justify-start mt-10">
               <button
                 onClick={handleContinue}
                 disabled={isLoading}
-                className="px-6 py-2.5 rounded font-medium bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm transition-all text-sm"
+                className="px-8 py-3.5 rounded-full font-medium bg-[#14ad9f] text-white hover:bg-teal-700 shadow-md hover:shadow-lg transition-all text-[15px]"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
