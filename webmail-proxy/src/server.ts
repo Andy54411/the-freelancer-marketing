@@ -181,6 +181,11 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   
+  // DNS Check Endpoint ist öffentlich (wird von Cron-Job aufgerufen)
+  if (req.path === '/dns/check-pending') {
+    return next();
+  }
+  
   const apiKey = req.headers['x-api-key'] as string;
   
   if (!apiKey || !secureCompare(apiKey, API_KEY)) {
