@@ -31,6 +31,7 @@ import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
 import { combinedStorageRouter } from './routes/combined-storage';
 import { ericRouter } from './routes/eric';
+import { domainsRouter } from './routes/domains';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -163,6 +164,11 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   
+  // Domain-Check ist öffentlich (für Registrierungsprozess)
+  if (req.path === '/domains/check' && req.method === 'POST') {
+    return next();
+  }
+  
   // Photos /view und /download sind öffentlich (werden vom Browser direkt aufgerufen)
   if (req.path.match(/^\/photos\/[^/]+\/(view|download)$/)) {
     return next();
@@ -235,6 +241,9 @@ app.use('/api/revolut-proxy', revolutProxyRouter);
 
 // API Routes - ERiC Proxy (ELSTER Steuerübermittlung)
 app.use('/api/eric', ericRouter);
+
+// API Routes - Custom Domains (eigene E-Mail-Domains)
+app.use('/api/domains', domainsRouter);
 
 // API Routes - Mobileconfig (signierte Apple Profile, ÖFFENTLICH)
 app.use('/api/mobileconfig', mobileconfigRouter);

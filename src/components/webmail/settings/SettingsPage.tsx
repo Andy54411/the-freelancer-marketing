@@ -16,6 +16,7 @@ import { ChatSettings } from './ChatSettings';
 import { AdvancedSettings } from './AdvancedSettings';
 import { OfflineSettings } from './OfflineSettings';
 import { ThemesSettings } from './ThemesSettings';
+import { DomainsSettings } from './DomainsSettings';
 import { getSettings, saveSettings } from '@/lib/webmail-settings-api';
 
 interface SettingsPageProps {
@@ -158,6 +159,8 @@ export function SettingsPage({
         return <OfflineSettings {...props} />;
       case 'themes':
         return <ThemesSettings {...props} />;
+      case 'domains':
+        return <DomainsSettings {...props} />;
       default:
         return null;
     }

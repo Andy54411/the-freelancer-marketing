@@ -311,6 +311,205 @@ export class MailcowService {
       },
     };
   }
+
+  // ============================================
+  // DOMAIN MANAGEMENT METHODS
+  // ============================================
+
+  /**
+   * Add a new domain to Mailcow
+   * Required for custom customer domains (e.g., @company.de)
+   */
+  async addDomain(domain: string, options?: {
+    description?: string;
+    aliases?: number;
+    mailboxes?: number;
+    quotaMB?: number;
+    backupmx?: boolean;
+    relayHost?: string;
+  }): Promise<MailcowApiResponse<{ domain: string }>> {
+    // Validate domain format
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\.[a-zA-Z]{2,}$/;
+    if (!domainRegex.test(domain)) {
+      return { success: false, error: 'Ungültiges Domain-Format' };
+    }
+
+    const result = await this.request('/add/domain', 'POST', {
+      domain: domain.toLowerCase(),
+      description: options?.description || `Kunden-Domain: ${domain}`,
+      aliases: options?.aliases || 100,
+      mailboxes: options?.mailboxes || 50,
+      maxquota: options?.quotaMB || 10240, // 10 GB default
+      quota: options?.quotaMB || 10240,
+      active: 1,
+      restart_sogo: 1,
+      backupmx: options?.backupmx ? 1 : 0,
+      relay_host: options?.relayHost || '',
+      relay_all_recipients: 0,
+      gal: 1, // Global Address List
+    });
+
+    if (result.success) {
+      return {
+        success: true,
+        data: { domain: domain.toLowerCase() },
+      };
+    }
+
+    return result as MailcowApiResponse<{ domain: string }>;
+  }
+
+  /**
+   * Get domain information
+   */
+  async getDomain(domain: string): Promise<MailcowApiResponse<{
+    domain: string;
+    active: boolean;
+    mailboxCount: number;
+    aliasCount: number;
+    quotaUsed: number;
+    quotaTotal: number;
+    createdAt: string;
+  }>> {
+    const result = await this.request<Record<string, unknown>>(`/get/domain/${domain}`);
+    
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'Domain nicht gefunden' };
+    }
+
+    const data = result.data;
+    return {
+      success: true,
+      data: {
+        domain: String(data.domain_name || domain),
+        active: Boolean(data.active),
+        mailboxCount: Number(data.mboxes_in_domain) || 0,
+        aliasCount: Number(data.aliases_in_domain) || 0,
+        quotaUsed: Number(data.bytes_total) || 0,
+        quotaTotal: Number(data.quota) || 0,
+        createdAt: String(data.created || new Date().toISOString()),
+      },
+    };
+  }
+
+  /**
+   * Delete a domain from Mailcow
+   * WARNING: This will delete all mailboxes and aliases on this domain!
+   */
+  async deleteDomain(domain: string): Promise<MailcowApiResponse> {
+    // First check if domain exists
+    const domainInfo = await this.getDomain(domain);
+    if (!domainInfo.success) {
+      return { success: false, error: 'Domain nicht gefunden' };
+    }
+
+    // Check if domain has mailboxes
+    if (domainInfo.data && domainInfo.data.mailboxCount > 0) {
+      return {
+        success: false,
+        error: `Domain hat noch ${domainInfo.data.mailboxCount} Postfächer. Bitte zuerst alle Postfächer löschen.`,
+      };
+    }
+
+    return this.request('/delete/domain', 'POST', {
+      items: [domain],
+    });
+  }
+
+  /**
+   * Get DKIM key for a domain
+   * Returns the public DKIM key that needs to be added to DNS
+   */
+  async getDKIMKey(domain: string): Promise<MailcowApiResponse<{
+    selector: string;
+    publicKey: string;
+    dnsRecord: string;
+  }>> {
+    const result = await this.request<Record<string, unknown>>(`/get/dkim/${domain}`);
+    
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'DKIM nicht gefunden' };
+    }
+
+    const data = result.data;
+    const selector = String(data.dkim_selector || 'dkim');
+    const publicKey = String(data.pubkey || '');
+
+    // Format DNS record value
+    const dnsRecord = `v=DKIM1; k=rsa; p=${publicKey}`;
+
+    return {
+      success: true,
+      data: {
+        selector,
+        publicKey,
+        dnsRecord,
+      },
+    };
+  }
+
+  /**
+   * Generate new DKIM key for a domain
+   */
+  async generateDKIM(domain: string, keySize: 1024 | 2048 = 2048): Promise<MailcowApiResponse> {
+    return this.request('/add/dkim', 'POST', {
+      domains: domain,
+      dkim_selector: 'dkim',
+      key_size: keySize,
+    });
+  }
+
+  /**
+   * Update domain settings
+   */
+  async updateDomain(domain: string, settings: {
+    active?: boolean;
+    description?: string;
+    aliases?: number;
+    mailboxes?: number;
+    quotaMB?: number;
+  }): Promise<MailcowApiResponse> {
+    const attr: Record<string, unknown> = {};
+    
+    if (settings.active !== undefined) attr.active = settings.active ? 1 : 0;
+    if (settings.description !== undefined) attr.description = settings.description;
+    if (settings.aliases !== undefined) attr.aliases = settings.aliases;
+    if (settings.mailboxes !== undefined) attr.mailboxes = settings.mailboxes;
+    if (settings.quotaMB !== undefined) {
+      attr.maxquota = settings.quotaMB;
+      attr.quota = settings.quotaMB;
+    }
+
+    return this.request('/edit/domain', 'POST', {
+      items: [domain],
+      attr,
+    });
+  }
+
+  /**
+   * List all domains in Mailcow
+   */
+  async listDomains(): Promise<MailcowApiResponse<Array<{
+    domain: string;
+    active: boolean;
+    mailboxCount: number;
+    aliasCount: number;
+  }>>> {
+    const result = await this.request<Array<Record<string, unknown>>>('/get/domain/all');
+    
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'Domains konnten nicht abgerufen werden' };
+    }
+
+    const domains = result.data.map((d) => ({
+      domain: String(d.domain_name || ''),
+      active: Boolean(d.active),
+      mailboxCount: Number(d.mboxes_in_domain) || 0,
+      aliasCount: Number(d.aliases_in_domain) || 0,
+    }));
+
+    return { success: true, data: domains };
+  }
 }
 
 // Singleton instance

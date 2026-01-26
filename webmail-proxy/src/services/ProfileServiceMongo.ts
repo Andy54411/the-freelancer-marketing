@@ -26,6 +26,8 @@ export interface ProfileResponse {
   twoFactorMethod: 'sms' | 'authenticator' | null;
   loginHistory: LoginEntryResponse[];
   trustedDevices: TrustedDeviceResponse[];
+  linkedAccounts?: LinkedAccountResponse[];
+  storageUsedBytes?: number;
   createdAt: number;
   updatedAt: number;
   // Company-Sync Daten
@@ -47,6 +49,12 @@ export interface ProfileResponse {
   accountStatus?: string;
   suspended?: boolean;
   blocked?: boolean;
+}
+
+export interface LinkedAccountResponse {
+  email: string;
+  name: string;
+  addedAt: string;
 }
 
 export interface LoginEntryResponse {
@@ -114,6 +122,7 @@ interface ExtendedProfile extends WebmailProfile {
   accountStatus?: string;
   suspended?: boolean;
   blocked?: boolean;
+  linkedAccounts?: Array<{ email: string; name: string; addedAt: string }>;
 }
 
 class ProfileServiceMongo {

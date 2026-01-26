@@ -12,6 +12,7 @@ export { ChatSettings } from './ChatSettings';
 export { AdvancedSettings } from './AdvancedSettings';
 export { OfflineSettings } from './OfflineSettings';
 export { ThemesSettings } from './ThemesSettings';
+export { DomainsSettings } from './DomainsSettings';
 
 // Types and Constants
 export {

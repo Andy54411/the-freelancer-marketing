@@ -71,9 +71,22 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function setCookie(email: string, password: string, remember: boolean): void {
-  // Altes Cookie löschen auf allen Domains
+  // KRITISCH: Alle möglichen alten Cookies löschen um Konflikte zu vermeiden
+  // Ohne Domain (nur für aktuelle Domain)
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  // Mit .taskilo.de Domain
   document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  // Mit taskilo.de Domain (ohne Punkt)
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  // Mit mail.taskilo.de Domain
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=mail.taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=mail.taskilo.de; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  // Mit www.taskilo.de Domain
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=www.taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=www.taskilo.de; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   
   const encoded = encodeCredentials(email, password);
   const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
@@ -86,7 +99,7 @@ function setCookie(email: string, password: string, remember: boolean): void {
     const cookieStr = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax`;
     document.cookie = cookieStr;
   } else {
-    // Produktion: .taskilo.de Domain mit Secure (HTTPS)
+    // Produktion: .taskilo.de Domain mit Secure (HTTPS) - für ALLE Subdomains
     document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; domain=.taskilo.de; SameSite=Lax; Secure`;
   }
 }

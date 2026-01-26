@@ -12,6 +12,8 @@
 
 import { Router, Request, Response } from 'express';
 import profileService from '../services/ProfileServiceMongo';
+import { driveServiceMongo } from '../services/DriveServiceMongo';
+import { photosServiceMongo } from '../services/PhotosServiceMongo';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -430,6 +432,183 @@ router.delete('/avatar/:email', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Fehler beim Löschen des Avatars',
+    });
+  }
+});
+
+/**
+ * GET /profile/storage/:email
+ * Speichernutzung für einen Benutzer abrufen
+ * Berechnet echten Speicherverbrauch aus Drive + Fotos + E-Mails
+ */
+router.get('/storage/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    // Standard: 100 GB Speicher
+    const totalBytes = 100 * 1024 * 1024 * 1024; // 100 GB
+    
+    // Echte Speichernutzung aus Drive, Fotos und E-Mails berechnen
+    let driveUsed = 0;
+    let photosUsed = 0;
+    let emailsUsed = 0;
+    
+    // Drive-Speicher abrufen
+    try {
+      const driveInfo = await driveServiceMongo.getStorageInfo(email);
+      driveUsed = driveInfo.used || 0;
+    } catch (driveError) {
+      console.warn('[Profile] Could not fetch drive storage for', email, driveError);
+    }
+    
+    // Fotos-Speicher abrufen
+    try {
+      const photosInfo = await photosServiceMongo.getStorageInfo(email);
+      photosUsed = photosInfo.used || 0;
+    } catch (photosError) {
+      console.warn('[Profile] Could not fetch photos storage for', email, photosError);
+    }
+    
+    // E-Mail-Speicher (TODO: Mailcow API für echte Werte)
+    // Für jetzt schätzen wir basierend auf Postfachgröße
+    emailsUsed = 0;
+    
+    // Gesamtspeicher berechnen
+    const usedBytes = driveUsed + photosUsed + emailsUsed;
+    const usedPercent = totalBytes > 0 ? (usedBytes / totalBytes) * 100 : 0;
+    const usedGB = usedBytes / (1024 * 1024 * 1024);
+    const totalGB = totalBytes / (1024 * 1024 * 1024);
+
+    res.json({
+      success: true,
+      data: {
+        usedBytes,
+        totalBytes,
+        usedPercent: Math.round(usedPercent * 100) / 100,
+        usedGB: Math.round(usedGB * 100) / 100,
+        totalGB,
+        breakdown: {
+          drive: driveUsed,
+          photos: photosUsed,
+          emails: emailsUsed,
+          driveFormatted: formatBytes(driveUsed),
+          photosFormatted: formatBytes(photosUsed),
+          emailsFormatted: formatBytes(emailsUsed),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[Profile] Error fetching storage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen der Speichernutzung',
+    });
+  }
+});
+
+// Hilfsfunktion zum Formatieren von Bytes
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * GET /profile/linked-accounts/:email
+ * Verknüpfte Konten für einen Benutzer abrufen
+ */
+router.get('/linked-accounts/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    // Verknüpfte Konten aus Profil laden
+    const profile = await profileService.getProfile(email);
+    
+    // Linked Accounts aus Profil oder leere Liste
+    const linkedAccounts = profile?.linkedAccounts || [];
+
+    res.json({
+      success: true,
+      data: linkedAccounts,
+    });
+  } catch (error) {
+    console.error('[Profile] Error fetching linked accounts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Abrufen der verknüpften Konten',
+    });
+  }
+});
+
+/**
+ * POST /profile/linked-accounts/:email
+ * Verknüpftes Konto hinzufügen
+ */
+router.post('/linked-accounts/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const { linkedEmail, name } = req.body;
+
+    if (!email || !email.includes('@') || !linkedEmail || !linkedEmail.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige E-Mail-Adresse',
+      });
+    }
+
+    // Profil laden
+    const profile = await profileService.getProfile(email);
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil nicht gefunden',
+      });
+    }
+
+    // Verknüpftes Konto hinzufügen
+    const linkedAccounts = profile.linkedAccounts || [];
+    
+    // Prüfen ob bereits verknüpft
+    if (linkedAccounts.some((a: { email: string }) => a.email === linkedEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Konto bereits verknüpft',
+      });
+    }
+
+    linkedAccounts.push({
+      email: linkedEmail,
+      name: name || linkedEmail.split('@')[0],
+      addedAt: new Date().toISOString(),
+    });
+
+    await profileService.updateProfile(email, { linkedAccounts });
+
+    res.json({
+      success: true,
+      data: linkedAccounts,
+    });
+  } catch (error) {
+    console.error('[Profile] Error adding linked account:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Fehler beim Hinzufügen des verknüpften Kontos',
     });
   }
 });

@@ -149,8 +149,16 @@ export interface WebmailProfile {
   twoFactorMethod: 'sms' | 'authenticator' | null;
   loginHistory: LoginEntry[];
   trustedDevices: TrustedDevice[];
+  linkedAccounts?: LinkedAccount[];
+  storageUsedBytes?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface LinkedAccount {
+  email: string;
+  name: string;
+  addedAt: string;
 }
 
 export interface LoginEntry {
@@ -521,6 +529,45 @@ export interface WebmailCache {
   updatedAt: Date;
 }
 
+// ==================== CUSTOM DOMAIN INTERFACES ====================
+
+export interface CustomDomain {
+  _id?: ObjectId;
+  id: string;
+  email: string;                    // E-Mail des Besitzers
+  domain: string;                   // Die Custom Domain (z.B. meinefirma.de)
+  status: 'pending' | 'verifying' | 'verified' | 'active' | 'failed' | 'suspended';
+  verificationCode: string;         // TXT Record zur Verifizierung
+  verificationMethod: 'txt_record';
+  dnsProvider: 'hetzner' | 'inwx' | 'external';
+  dnsRecordsCreated: boolean;
+  mailcowDomainAdded: boolean;
+  dkimSelector: string | null;
+  dkimPublicKey: string | null;
+  maxMailboxes: number;
+  maxAliases: number;
+  quotaMB: number;
+  verifiedAt: Date | null;
+  activatedAt: Date | null;
+  errorMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CustomDomainMailbox {
+  _id?: ObjectId;
+  id: string;
+  domainId: string;
+  email: string;                    // Vollständige E-Mail z.B. info@meinefirma.de
+  localPart: string;                // Nur der Teil vor dem @ (z.B. info)
+  name: string;
+  quotaMB: number;
+  active: boolean;
+  mailcowMailboxId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 class MongoDBService {
   private client: MongoClient | null = null;
   private db: Db | null = null;
@@ -554,6 +601,9 @@ class MongoDBService {
   private _newsletterTracking: Collection<NewsletterTracking> | null = null;
   // Cache Collection
   private _cache: Collection<WebmailCache> | null = null;
+  // Custom Domain Collections
+  private _customDomains: Collection<CustomDomain> | null = null;
+  private _customDomainMailboxes: Collection<CustomDomainMailbox> | null = null;
 
   /**
    * Verbindet mit MongoDB
@@ -695,6 +745,9 @@ class MongoDBService {
       this._newsletterTracking = this.db.collection('webmail_newsletter_tracking');
       // Cache Collection
       this._cache = this.db.collection('webmail_cache');
+      // Custom Domain Collections
+      this._customDomains = this.db.collection('webmail_custom_domains');
+      this._customDomainMailboxes = this.db.collection('webmail_custom_domain_mailboxes');
 
       // Indizes erstellen
       await this.createIndexes();
@@ -795,6 +848,17 @@ class MongoDBService {
       await this._newsletterTracking?.createIndex({ campaignId: 1 });
       await this._newsletterTracking?.createIndex({ subscriberId: 1 });
 
+      // Custom Domains
+      await this._customDomains?.createIndex({ id: 1 }, { unique: true });
+      await this._customDomains?.createIndex({ email: 1 });
+      await this._customDomains?.createIndex({ domain: 1 }, { unique: true });
+      await this._customDomains?.createIndex({ status: 1 });
+
+      // Custom Domain Mailboxes
+      await this._customDomainMailboxes?.createIndex({ id: 1 }, { unique: true });
+      await this._customDomainMailboxes?.createIndex({ domainId: 1 });
+      await this._customDomainMailboxes?.createIndex({ email: 1 }, { unique: true });
+
       console.log('[MongoDB] Indizes erstellt');
     } catch (error) {
       console.error('[MongoDB] Fehler beim Erstellen der Indizes:', error);
@@ -823,7 +887,7 @@ class MongoDBService {
   /**
    * Stellt sicher, dass eine Verbindung besteht
    */
-  private async ensureConnection(): Promise<void> {
+  async ensureConnection(): Promise<void> {
     if (!this.isConnected) {
       try {
         await this.connect();
@@ -943,6 +1007,17 @@ class MongoDBService {
   getCacheCollection(): Collection<WebmailCache> {
     if (!this._cache) throw new Error('MongoDB nicht verbunden');
     return this._cache;
+  }
+
+  // Custom Domain Collection Getters
+  getCustomDomainsCollection(): Collection<CustomDomain> {
+    if (!this._customDomains) throw new Error('MongoDB nicht verbunden');
+    return this._customDomains;
+  }
+
+  getCustomDomainMailboxesCollection(): Collection<CustomDomainMailbox> {
+    if (!this._customDomainMailboxes) throw new Error('MongoDB nicht verbunden');
+    return this._customDomainMailboxes;
   }
 
   // Generischer Collection Getter für beliebige Collections

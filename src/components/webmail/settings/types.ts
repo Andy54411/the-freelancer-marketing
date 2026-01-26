@@ -250,6 +250,7 @@ export const settingsTabs = [
   { id: 'labels', label: 'Labels' },
   { id: 'inbox', label: 'Posteingang' },
   { id: 'accounts', label: 'Konten & Import' },
+  { id: 'domains', label: 'Eigene Domains' },
   { id: 'filters', label: 'Filter & blockierte Adressen' },
   { id: 'forwarding', label: 'Weiterleitung & POP/IMAP' },
   { id: 'addons', label: 'Add-ons' },

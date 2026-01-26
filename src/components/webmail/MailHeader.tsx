@@ -32,6 +32,7 @@ import {
 import { MailSearchFilter, SearchFilters } from './MailSearchFilter';
 import { AppLauncher } from './AppLauncher';
 import { MobileSetupModal } from './MobileSetupModal';
+import { ProfileModal } from './ProfileModal';
 
 // Debug-Logging für Hydration
 const mailHeaderLog = (_step: string, _data?: Record<string, unknown>) => {
@@ -116,6 +117,7 @@ export function MailHeader({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showMobileSetup, setShowMobileSetup] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   
   mailHeaderLog('STATE_INITIALIZED', {
@@ -369,33 +371,45 @@ export function MailHeader({
           {/* Apps Grid */}
           <AppLauncher isDarkMode={isDark} companyId={companyId} />
           
-          {/* Avatar */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="ml-1 sm:ml-2 w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
-                {profileImage ? (
-                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
-                ) : (
-                  userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium">{userEmail}</p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={toggleTheme}>
-                {isDark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                {isDark ? 'Light Mode' : 'Dark Mode'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Abmelden
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Avatar - Google Style Modal */}
+          <button 
+            onClick={() => setShowProfileModal(true)}
+            className="ml-1 sm:ml-2 w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden"
+          >
+            {profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+            ) : (
+              userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
+            )}
+          </button>
         </div>
+
+        {/* Profile Modal für isPhotosStyle */}
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          userEmail={userEmail}
+          userName={userEmail.split('@')[0]}
+          profileImage={profileImage}
+          onLogout={() => {
+            setShowProfileModal(false);
+            if (onLogout) onLogout();
+          }}
+          onManageAccount={() => {
+            setShowProfileModal(false);
+            router.push('/webmail/settings');
+          }}
+          onChangePhoto={() => {
+            setShowProfileModal(false);
+            if (onSettingsClick) onSettingsClick();
+          }}
+          onAddAccount={() => {
+            setShowProfileModal(false);
+            router.push('/webmail/add-account');
+          }}
+          isDark={isDark}
+        />
       </header>
     );
   }
@@ -467,33 +481,45 @@ export function MailHeader({
           {/* Apps Grid */}
           <AppLauncher isDarkMode={isDark} companyId={companyId} />
           
-          {/* Avatar */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden">
-                {profileImage ? (
-                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
-                ) : (
-                  userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium">{userEmail}</p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={toggleTheme}>
-                {isDark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                {isDark ? 'Light Mode' : 'Dark Mode'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Abmelden
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Avatar - Google Style Modal */}
+          <button 
+            onClick={() => setShowProfileModal(true)}
+            className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium cursor-pointer ring-2 ring-transparent hover:ring-teal-200 focus:outline-none overflow-hidden"
+          >
+            {profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+            ) : (
+              userInitial || userEmail?.charAt(0)?.toUpperCase() || 'U'
+            )}
+          </button>
         </div>
+
+        {/* Profile Modal für isMeetStyle */}
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          userEmail={userEmail}
+          userName={userEmail.split('@')[0]}
+          profileImage={profileImage}
+          onLogout={() => {
+            setShowProfileModal(false);
+            if (onLogout) onLogout();
+          }}
+          onManageAccount={() => {
+            setShowProfileModal(false);
+            router.push('/webmail/settings');
+          }}
+          onChangePhoto={() => {
+            setShowProfileModal(false);
+            if (onSettingsClick) onSettingsClick();
+          }}
+          onAddAccount={() => {
+            setShowProfileModal(false);
+            router.push('/webmail/add-account');
+          }}
+          isDark={isDark}
+        />
       </header>
     );
   }
@@ -801,69 +827,23 @@ export function MailHeader({
         {/* Apps Grid Button - Auf allen Bildschirmen sichtbar */}
         <AppLauncher hasTheme={isDark} companyId={companyId} isDarkMode={isDark} />
 
-        {/* User Profile - Gmail Style Ring - IMMER sichtbar */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="p-0.5 rounded-full hover:bg-gray-200/60 transition-colors shrink-0"
-              aria-label={`Konto: ${userEmail}`}
-            >
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all overflow-hidden">
-                {profileImage ? (
-                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-white font-medium text-xs sm:text-sm">
-                    {userInitial || userEmail.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 sm:w-72">
-            <div className="px-4 py-3 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white font-medium">
-                      {userInitial || userEmail.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {userEmail.split('@')[0]}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{userEmail}</p>
-                </div>
-              </div>
-            </div>
-            <div className="py-2">
-              <DropdownMenuItem>Konto verwalten</DropdownMenuItem>
-              <DropdownMenuItem>Weiteres Konto hinzufuegen</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onSelect={() => setShowMobileSetup(true)}
-                className="cursor-pointer"
-              >
-                <Smartphone className="h-4 w-4 mr-2" />
-                E-Mail auf Handy einrichten
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onSelect={(e) => {
-                  e.preventDefault();
-                  if (onLogout) onLogout();
-                }}
-                className="text-red-600 focus:text-red-600 cursor-pointer"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Abmelden
-              </DropdownMenuItem>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* User Profile - Google Style - IMMER sichtbar */}
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="p-0.5 rounded-full hover:bg-gray-200/60 transition-colors shrink-0"
+          aria-label={`Konto: ${userEmail}`}
+        >
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all overflow-hidden">
+            {profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profileImage} alt="Profil" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white font-medium text-xs sm:text-sm">
+                {userInitial || userEmail.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+        </button>
       </div>
 
       {/* Mobile Setup Modal */}
@@ -872,6 +852,32 @@ export function MailHeader({
         onClose={() => setShowMobileSetup(false)}
         userEmail={userEmail}
         userName={userEmail.split('@')[0]}
+      />
+
+      {/* Profile Modal - Google Style */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        userEmail={userEmail}
+        userName={userEmail.split('@')[0]}
+        profileImage={profileImage}
+        onLogout={() => {
+          setShowProfileModal(false);
+          if (onLogout) onLogout();
+        }}
+        onManageAccount={() => {
+          setShowProfileModal(false);
+          router.push('/webmail/settings');
+        }}
+        onChangePhoto={() => {
+          setShowProfileModal(false);
+          if (onSettingsClick) onSettingsClick();
+        }}
+        onAddAccount={() => {
+          setShowProfileModal(false);
+          router.push('/webmail/add-account');
+        }}
+        isDark={isDark}
       />
     </header>
   );

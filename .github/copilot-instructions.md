@@ -14,6 +14,7 @@
 - [ ] Zod-Validierung für Inputs?
 - [ ] @/ Pfade statt relative Imports?
 - [ ] Moderne Best Practices recherchiert? (fetch_webpage bei Unsicherheit!)
+- [ ] **Webmail-Feature? → Hetzner webmail-proxy, NICHT Firebase!**
 
 ---
 
@@ -62,6 +63,18 @@
 | **Verzeichnis lokal** | `/Users/andystaudinger/Tasko/webmail-proxy/` + `/Users/andystaudinger/Tasko/taskilo-ki/` |
 | **Verzeichnis Server** | `/opt/taskilo/webmail-proxy/`, `/opt/taskilo/taskilo-ki/` |
 | **Container** | `taskilo-webmail-proxy`, `taskilo-redis`, `taskilo-coturn`, **`taskilo-ki`** |
+| **Daten-Speicher** | `/opt/taskilo/webmail-proxy/data/` - JSON-Dateien für Domains, Settings, etc. |
+
+**KRITISCH - WEBMAIL = 100% HETZNER!**
+- **ALLE Webmail-Daten werden auf Hetzner gespeichert, NIEMALS in Firebase/Firestore!**
+- E-Mails → Mailcow IMAP/SMTP
+- Kontakte → `/opt/taskilo/webmail-proxy/data/contacts/`
+- Kalender → `/opt/taskilo/webmail-proxy/data/calendar/`
+- Custom Domains → `/opt/taskilo/webmail-proxy/data/domains/`
+- Drive/Dateien → `/opt/taskilo/webmail-proxy/data/drive/`
+- Einstellungen → `/opt/taskilo/webmail-proxy/data/settings/`
+- Backend-Logik gehört in `webmail-proxy/src/` (TypeScript/Express)
+- Vercel `/api/webmail/*` sind nur PROXIES zu Hetzner!
 
 ### 2.1 TASKILO-KI (mail.taskilo.de:8000) - EIGENE KI
 | Was | Details |
@@ -82,7 +95,7 @@
 |-----|---------|
 | **Dienste** | Firestore, Authentication, Storage, Cloud Functions |
 | **Collections** | users, companies, customers, invoices, escrows, etc. |
-| **NICHT für Webmail** | Webmail nutzt Hetzner IMAP, NICHT Firebase! |
+| **NICHT für Webmail** | Webmail nutzt Hetzner, NICHT Firebase! Keine Ausnahmen! |
 
 ### 4. REVOLUT ESCROW-SYSTEM (Zahlungen)
 | Was | Details |
@@ -699,6 +712,7 @@ const db = getFirestore();
 - DATEIEN LÖSCHEN - NIEMALS ohne explizite Benutzeranfrage
 - UMLAUT-FEHLER - Deutsche Umlaute IMMER korrekt (ä, ö, ü, ß)
 - **FIRESTORE IN KI** - NIEMALS Firebase/Firestore in `taskilo-ki/` verwenden! NUR lokale Dateien auf Hetzner!
+- **FIRESTORE FÜR WEBMAIL-DATEN** - NIEMALS Firebase/Firestore für Webmail-bezogene Daten! E-Mails, Domains, Kontakte, Kalender, Drive = NUR Hetzner!
 - **FIRESTORE IN WEBMAIL APP** - NIEMALS Firebase in `taskilo_webmail_app/` verwenden! NUR Hetzner APIs!
 - **NEUE SCRIPTS** - NIEMALS neue Scripts erstellen ohne vorher `/scripts/` zu prüfen!
 - **ROOT-LEVEL BIO/DESCRIPTION** - NIEMALS! NUR `step3.bio` ist Master!
