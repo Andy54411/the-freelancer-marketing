@@ -97,11 +97,14 @@ function DNSSetupContent() {
       const country = searchParams.get('country') || '';
 
       // DNS-Konfiguration im Backend speichern
-      const dnsResponse = await fetch(`${process.env.NEXT_PUBLIC_WEBMAIL_API_URL}/api/dns/setup`, {
+      const apiUrl = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de/webmail-api';
+      const apiKey = process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '';
+      
+      const dnsResponse = await fetch(`${apiUrl}/api/dns/setup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_WEBMAIL_API_KEY || '',
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           domain,
@@ -114,7 +117,9 @@ function DNSSetupContent() {
       });
 
       if (!dnsResponse.ok) {
-        throw new Error('DNS-Konfiguration konnte nicht gespeichert werden');
+        const errorData = await dnsResponse.json().catch(() => ({}));
+        console.error('DNS API Error:', errorData);
+        throw new Error(errorData.error || 'DNS-Konfiguration konnte nicht gespeichert werden');
       }
 
       // Zur DNS-Verifizierungs-Seite weiterleiten
@@ -156,7 +161,7 @@ function DNSSetupContent() {
             </div>
             {/* Progress Bar */}
             <div className="w-full bg-gray-200 h-1 rounded-full">
-              <div className="bg-[#1a73e8] h-1 rounded-full" style={{ width: '50%' }}></div>
+              <div className="bg-[#14ad9f] h-1 rounded-full" style={{ width: '50%' }}></div>
             </div>
           </div>
         </div>
@@ -241,7 +246,7 @@ function DNSSetupContent() {
               <button
                 onClick={() => !selectedHost ? setUseOtherHost(true) : null}
                 disabled={!selectedHost && !useOtherHost}
-                className="px-8 py-4 bg-[#1a73e8] text-white rounded-full font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="px-8 py-4 bg-[#14ad9f] text-white rounded-full font-semibold hover:bg-[#0d8a7f] transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
               >
                 Weiter
               </button>
@@ -498,7 +503,7 @@ function DNSSetupContent() {
               <button
                 onClick={handleVerify}
                 disabled={isVerifying}
-                className="px-8 py-4 bg-[#1a73e8] text-white rounded-full font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-4 bg-[#14ad9f] text-white rounded-full font-semibold hover:bg-[#0d8a7f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isVerifying ? (
                   <span className="flex items-center justify-center gap-2">
