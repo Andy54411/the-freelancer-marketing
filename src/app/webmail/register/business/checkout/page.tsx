@@ -28,7 +28,7 @@ const plans: Plan[] = [
     billing: 'Pro Monat',
     features: [
       'Professionelle E-Mail-Adresse',
-      'Taskilo Drive (30 GB Speicher)',
+      '2 TB Cloud-Speicher pro Nutzer',
       'Kalender & Kontakte',
       'Video-Konferenzen',
       'Taskilo Workspace',
@@ -44,7 +44,7 @@ const plans: Plan[] = [
     savings: 'Spare 21 € pro Jahr',
     features: [
       'Professionelle E-Mail-Adresse',
-      'Taskilo Drive (30 GB Speicher)',
+      '2 TB Cloud-Speicher pro Nutzer',
       'Kalender & Kontakte',
       'Video-Konferenzen',
       'Taskilo Workspace',
@@ -77,39 +77,21 @@ function CheckoutContent() {
   const handlePayment = async () => {
     setIsProcessing(true);
     
-    try {
-      // Revolut Merchant Checkout initiieren
-      const response = await fetch('/api/webmail/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company,
-          domain,
-          email,
-          username,
-          firstName,
-          lastName,
-          plan: selectedPlan,
-          amount: selectedPlanData?.price || 0,
-          currency: 'EUR',
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Checkout-Erstellung fehlgeschlagen');
-      }
-
-      // Revolut Checkout URL öffnen
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      setIsProcessing(false);
-      alert('Fehler beim Starten des Zahlungsvorgangs. Bitte versuchen Sie es erneut.');
-    }
+    // Weiterleitung zur Organisation/Kontaktdaten Seite
+    const params = new URLSearchParams({
+      company,
+      domain,
+      email,
+      username,
+      firstName,
+      lastName,
+      plan: selectedPlan,
+      amount: String(selectedPlanData?.price || 0),
+      employees,
+      region,
+    });
+    
+    router.push(`/webmail/register/business/organization?${params.toString()}`);
   };
 
   return (
@@ -291,10 +273,7 @@ function CheckoutContent() {
                   Wird verarbeitet...
                 </span>
               ) : (
-                <>
-                  <CreditCard className="w-5 h-5 inline-block mr-2" />
-                  Kostenlos testen und Zahlungsmethode hinterlegen
-                </>
+                '14 Tage kostenlos testen'
               )}
             </button>
 
