@@ -27,6 +27,7 @@ import tasksRouter from './routes/tasks';
 import chatRouter from './routes/chat';
 import keysRouter from './routes/keys';
 import { revolutProxyRouter } from './routes/revolut-proxy';
+import revolutRouter from './routes/revolut';
 import { mobileconfigRouter } from './routes/mobileconfig';
 import { storageRouter } from './routes/storage';
 import { combinedStorageRouter } from './routes/combined-storage';
@@ -175,7 +176,7 @@ app.use('/api', (req, res, next) => {
   }
   
   // Revolut Webhook ist öffentlich (wird von Revolut direkt aufgerufen, hat eigene Signatur-Verifizierung)
-  if (req.path === '/payment/revolut-webhook') {
+  if (req.path === '/payment/revolut-webhook' || req.path === '/revolut/webhook') {
     return next();
   }
   
@@ -238,6 +239,9 @@ app.use('/api/payment', paymentRouter);
 
 // API Routes - Revolut Proxy (alle Revolut API-Aufrufe über Hetzner)
 app.use('/api/revolut-proxy', revolutProxyRouter);
+
+// API Routes - Revolut Merchant (Checkout & Subscriptions)
+app.use('/api/revolut', revolutRouter);
 
 // API Routes - ERiC Proxy (ELSTER Steuerübermittlung)
 app.use('/api/eric', ericRouter);

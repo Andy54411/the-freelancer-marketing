@@ -91,7 +91,7 @@ function UsernameContent() {
       // TODO: API-Call für Registrierung
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simuliert API-Call
       
-      router.push(`/webmail/register/business/complete?${params.toString()}`);
+      router.push(`/webmail/register/business/checkout?${params.toString()}`);
     } catch (error) {
       console.error('Registration error:', error);
       setIsLoading(false);
