@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { X, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, Building2, User, ArrowLeft } from 'lucide-react';
 import { addAccount, isAccountLinked, getCurrentAccount } from '@/lib/webmail-multi-session';
+
+type ModalView = 'options' | 'login';
 
 interface AddAccountModalProps {
   isOpen: boolean;
@@ -20,6 +23,8 @@ export function AddAccountModal({
   isDark = false,
   initialEmail,
 }: AddAccountModalProps) {
+  const router = useRouter();
+  const [view, setView] = useState<ModalView>(initialEmail ? 'login' : 'options');
   const [email, setEmail] = useState(initialEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,6 +55,8 @@ export function AddAccountModal({
       setPassword('');
       setError(null);
       setSuccess(false);
+      // Wenn initialEmail vorhanden, direkt zum Login, sonst Optionen zeigen
+      setView(initialEmail ? 'login' : 'options');
     }
   }, [isOpen, initialEmail]);
 
@@ -178,12 +185,25 @@ export function AddAccountModal({
           "flex items-center justify-between px-6 py-4 border-b",
           isDark ? "border-gray-600/50" : "border-gray-200"
         )}>
-          <h2 className={cn(
-            "text-lg font-semibold",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            Konto hinzufügen
-          </h2>
+          <div className="flex items-center gap-3">
+            {view === 'login' && !initialEmail && (
+              <button
+                onClick={() => setView('options')}
+                className={cn(
+                  "p-1.5 rounded-full transition-colors",
+                  isDark ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-500"
+                )}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <h2 className={cn(
+              "text-lg font-semibold",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              {view === 'options' ? 'Konto hinzufügen' : 'Anmelden'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className={cn(
@@ -215,7 +235,120 @@ export function AddAccountModal({
                 {email} wurde erfolgreich verknüpft.
               </p>
             </div>
+          ) : view === 'options' ? (
+            /* Options View - Auswahl zwischen Login, Business, Personal */
+            <div className="space-y-3">
+              <p className={cn(
+                "text-sm mb-4",
+                isDark ? "text-gray-400" : "text-gray-600"
+              )}>
+                Wähle eine Option:
+              </p>
+
+              {/* Bestehendes Konto hinzufügen */}
+              <button
+                onClick={() => setView('login')}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                  isDark 
+                    ? "border-gray-600 hover:border-[#8ab4f8] hover:bg-white/5" 
+                    : "border-gray-200 hover:border-[#14ad9f] hover:bg-gray-50"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0",
+                  isDark ? "bg-[#8ab4f8]/20" : "bg-[#14ad9f]/10"
+                )}>
+                  <Mail className={cn("w-6 h-6", isDark ? "text-[#8ab4f8]" : "text-[#14ad9f]")} />
+                </div>
+                <div>
+                  <h3 className={cn(
+                    "font-semibold",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    Bestehendes Konto hinzufügen
+                  </h3>
+                  <p className={cn(
+                    "text-sm",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    Mit einem vorhandenen Taskilo Webmail Konto anmelden
+                  </p>
+                </div>
+              </button>
+
+              {/* Neuen Business Workspace erstellen */}
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push('/webmail/register/business');
+                }}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                  isDark 
+                    ? "border-gray-600 hover:border-[#8ab4f8] hover:bg-white/5" 
+                    : "border-gray-200 hover:border-[#14ad9f] hover:bg-gray-50"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0",
+                  isDark ? "bg-amber-500/20" : "bg-amber-100"
+                )}>
+                  <Building2 className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className={cn(
+                    "font-semibold",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    Business Workspace erstellen
+                  </h3>
+                  <p className={cn(
+                    "text-sm",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    Eigene Domain nutzen (z.B. name@deine-firma.de)
+                  </p>
+                </div>
+              </button>
+
+              {/* Neues persönliches Konto erstellen */}
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push('/webmail/register');
+                }}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                  isDark 
+                    ? "border-gray-600 hover:border-[#8ab4f8] hover:bg-white/5" 
+                    : "border-gray-200 hover:border-[#14ad9f] hover:bg-gray-50"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0",
+                  isDark ? "bg-blue-500/20" : "bg-blue-100"
+                )}>
+                  <User className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className={cn(
+                    "font-semibold",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    Persönliches Konto erstellen
+                  </h3>
+                  <p className={cn(
+                    "text-sm",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    Kostenloses @taskilo.de Konto anlegen
+                  </p>
+                </div>
+              </button>
+            </div>
           ) : (
+            /* Login View */
             <>
               <p className={cn(
                 "text-sm mb-6",
@@ -338,20 +471,22 @@ export function AddAccountModal({
                 </button>
               </form>
 
-              {/* Hinweis */}
-              <p className={cn(
-                "text-xs text-center mt-4",
-                isDark ? "text-gray-500" : "text-gray-400"
-              )}>
-                Noch kein Konto?{' '}
-                <a 
-                  href="/webmail/register" 
-                  className="text-[#14ad9f] hover:underline"
-                  onClick={onClose}
-                >
-                  Jetzt erstellen
-                </a>
-              </p>
+              {/* Hinweis - nur wenn von Options-View gekommen */}
+              {!initialEmail && (
+                <p className={cn(
+                  "text-xs text-center mt-4",
+                  isDark ? "text-gray-500" : "text-gray-400"
+                )}>
+                  Neues Konto erstellen?{' '}
+                  <button 
+                    type="button"
+                    onClick={() => setView('options')}
+                    className="text-[#14ad9f] hover:underline"
+                  >
+                    Zurück zu Optionen
+                  </button>
+                </p>
+              )}
             </>
           )}
         </div>
