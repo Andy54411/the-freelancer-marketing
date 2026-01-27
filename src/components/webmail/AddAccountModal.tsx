@@ -301,7 +301,7 @@ export function AddAccountModal({
       <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div 
-          className="absolute inset-0 bg-black/60 backdrop-blur-md"
+          className="absolute inset-0 bg-black/50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -466,12 +466,12 @@ export function AddAccountModal({
                   </motion.button>
 
                   {/* Divider mit "oder" */}
-                  <div className="flex items-center gap-4 py-2">
-                    <div className={cn("flex-1 h-px", isDark ? "bg-gray-700" : "bg-gray-200")} />
-                    <span className={cn("text-sm font-medium", isDark ? "text-gray-500" : "text-gray-400")}>
+                  <div className="flex items-center gap-4 py-3">
+                    <div className={cn("flex-1 h-px", isDark ? "bg-gray-600" : "bg-gray-300")} />
+                    <span className={cn("text-sm font-semibold uppercase tracking-wider", isDark ? "text-gray-300" : "text-gray-600")}>
                       oder neu erstellen
                     </span>
-                    <div className={cn("flex-1 h-px", isDark ? "bg-gray-700" : "bg-gray-200")} />
+                    <div className={cn("flex-1 h-px", isDark ? "bg-gray-600" : "bg-gray-300")} />
                   </div>
 
                   {/* Option 2: Business Workspace */}
