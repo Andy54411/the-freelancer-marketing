@@ -505,6 +505,19 @@ export function DomainsSettings({ settings: _settings, onSettingsChange: _onSett
   const [verifyingDomains, setVerifyingDomains] = useState<Set<string>>(new Set());
   const [activatingDomains, setActivatingDomains] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  
+  // Aktivierungs-Modal State
+  const [activateModal, setActivateModal] = useState<{
+    show: boolean;
+    domainId: string;
+    domainName: string;
+  } | null>(null);
+  const [activateMailbox, setActivateMailbox] = useState({
+    localPart: '',
+    name: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   // Domains laden
   const loadDomains = useCallback(async () => {
@@ -622,17 +635,61 @@ export function DomainsSettings({ settings: _settings, onSettingsChange: _onSett
     }
   };
 
-  // Domain aktivieren
-  const handleActivate = async (domainId: string) => {
+  // Domain aktivieren - öffnet Modal für Mailbox-Erstellung
+  const handleActivate = (domainId: string) => {
+    const domain = domains.find(d => d.id === domainId);
+    if (!domain) return;
+    
+    setActivateMailbox({
+      localPart: 'info',
+      name: domain.domain.split('.')[0],
+      password: '',
+      confirmPassword: '',
+    });
+    setActivateModal({
+      show: true,
+      domainId,
+      domainName: domain.domain,
+    });
+  };
+  
+  // Domain aktivieren mit Mailbox
+  const handleActivateWithMailbox = async () => {
+    if (!activateModal) return;
+    
+    // Validierung
+    if (!activateMailbox.localPart.trim()) {
+      setError('E-Mail-Präfix erforderlich');
+      return;
+    }
+    if (!activateMailbox.password || activateMailbox.password.length < 8) {
+      setError('Passwort muss mindestens 8 Zeichen haben');
+      return;
+    }
+    if (activateMailbox.password !== activateMailbox.confirmPassword) {
+      setError('Passwörter stimmen nicht überein');
+      return;
+    }
+    
     try {
-      setActivatingDomains(prev => new Set(prev).add(domainId));
-      const response = await fetch(`/api/webmail/domains/${domainId}/activate`, {
+      setActivatingDomains(prev => new Set(prev).add(activateModal.domainId));
+      const response = await fetch(`/api/webmail/domains/${activateModal.domainId}/activate`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          primaryMailbox: {
+            localPart: activateMailbox.localPart.trim().toLowerCase(),
+            name: activateMailbox.name.trim() || activateMailbox.localPart,
+            password: activateMailbox.password,
+          },
+        }),
       });
       const result = await response.json();
       
       if (result.success) {
+        setActivateModal(null);
         await loadDomains();
+        await loadMailboxes(activateModal.domainId);
       } else {
         setError(result.error || 'Aktivierung fehlgeschlagen');
       }
@@ -641,7 +698,7 @@ export function DomainsSettings({ settings: _settings, onSettingsChange: _onSett
     } finally {
       setActivatingDomains(prev => {
         const next = new Set(prev);
-        next.delete(domainId);
+        next.delete(activateModal.domainId);
         return next;
       });
     }
@@ -764,6 +821,104 @@ export function DomainsSettings({ settings: _settings, onSettingsChange: _onSett
         onAdd={handleAddDomain}
         isAdding={isAdding}
       />
+
+      {/* Activate Domain Modal - Mailbox erstellen */}
+      {activateModal?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl">
+            <h2 className="text-xl font-semibold mb-2">Domain aktivieren</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Erstellen Sie Ihr erstes E-Mail-Postfach für <strong>{activateModal.domainName}</strong>
+            </p>
+            
+            <div className="space-y-4">
+              {/* E-Mail-Adresse */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail-Adresse</label>
+                <div className="flex items-center">
+                  <Input
+                    value={activateMailbox.localPart}
+                    onChange={(e) => setActivateMailbox(prev => ({ ...prev, localPart: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '') }))}
+                    placeholder="info"
+                    className="rounded-r-none"
+                  />
+                  <span className="bg-gray-200 text-gray-600 px-3 py-2 text-sm rounded-r-lg border border-l-0 whitespace-nowrap">
+                    @{activateModal.domainName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Anzeigename</label>
+                <Input
+                  value={activateMailbox.name}
+                  onChange={(e) => setActivateMailbox(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Max Mustermann"
+                />
+              </div>
+
+              {/* Passwort */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
+                <Input
+                  type="password"
+                  value={activateMailbox.password}
+                  onChange={(e) => setActivateMailbox(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Mindestens 8 Zeichen"
+                />
+              </div>
+
+              {/* Passwort bestätigen */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Passwort bestätigen</label>
+                <Input
+                  type="password"
+                  value={activateMailbox.confirmPassword}
+                  onChange={(e) => setActivateMailbox(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Passwort wiederholen"
+                />
+                {activateMailbox.password && activateMailbox.confirmPassword && activateMailbox.password !== activateMailbox.confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">Passwörter stimmen nicht überein</p>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 justify-end pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setActivateModal(null)}
+                  disabled={activatingDomains.has(activateModal.domainId)}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handleActivateWithMailbox}
+                  disabled={
+                    activatingDomains.has(activateModal.domainId) ||
+                    !activateMailbox.localPart.trim() ||
+                    activateMailbox.password.length < 8 ||
+                    activateMailbox.password !== activateMailbox.confirmPassword
+                  }
+                  className="bg-[#14ad9f] hover:bg-teal-700"
+                >
+                  {activatingDomains.has(activateModal.domainId) ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Aktivierung...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Domain aktivieren
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

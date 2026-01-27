@@ -547,10 +547,16 @@ class CustomDomainService {
 
   /**
    * Domain aktivieren (Mailcow + DNS einrichten)
+   * Optional: Primäre Mailbox mit erstellen
    */
-  async activateDomain(domainId: string, useHetznerDNS: boolean = false): Promise<ServiceResponse<{
+  async activateDomain(
+    domainId: string, 
+    useHetznerDNS: boolean = false,
+    primaryMailbox?: { localPart: string; name: string; password: string }
+  ): Promise<ServiceResponse<{
     activated: boolean;
     dkimRecord?: DNSRecord;
+    mailbox?: { email: string };
   }>> {
     await mongoDBService.ensureConnection();
     const collection = mongoDBService.getCustomDomainsCollection();
@@ -627,11 +633,26 @@ class CustomDomainService {
       }
     );
 
+    // 5. Optional: Primäre Mailbox erstellen
+    let createdMailbox: { email: string } | undefined;
+    if (primaryMailbox) {
+      const mailboxResult = await this.createMailbox(
+        domainId,
+        primaryMailbox.localPart,
+        primaryMailbox.name,
+        primaryMailbox.password
+      );
+      if (mailboxResult.success && mailboxResult.data) {
+        createdMailbox = { email: mailboxResult.data.mailbox.email };
+      }
+    }
+
     return {
       success: true,
       data: {
         activated: true,
         dkimRecord,
+        mailbox: createdMailbox,
       },
     };
   }

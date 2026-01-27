@@ -253,6 +253,7 @@ router.post('/:id/verify', async (req: Request, res: Response) => {
 /**
  * POST /api/domains/:id/activate
  * Domain aktivieren (Mailcow + DNS)
+ * Optional: primaryMailbox mit erstellen
  */
 router.post('/:id/activate', async (req: Request, res: Response) => {
   try {
@@ -271,7 +272,15 @@ router.post('/:id/activate', async (req: Request, res: Response) => {
     }
 
     const useHetznerDNS = req.body.useHetznerDNS === true;
-    const result = await customDomainService.activateDomain(req.params.id, useHetznerDNS);
+    
+    // Optional: Primäre Mailbox mit erstellen
+    const primaryMailbox = req.body.primaryMailbox ? {
+      localPart: String(req.body.primaryMailbox.localPart || '').toLowerCase().trim(),
+      name: String(req.body.primaryMailbox.name || '').trim(),
+      password: String(req.body.primaryMailbox.password || ''),
+    } : undefined;
+    
+    const result = await customDomainService.activateDomain(req.params.id, useHetznerDNS, primaryMailbox);
     
     if (!result.success) {
       return res.status(400).json(result);
