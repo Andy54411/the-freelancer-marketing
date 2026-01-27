@@ -36,16 +36,20 @@ export function AddAccountModal({
     }
   }, [isOpen]);
 
-  // Reset State wenn Modal schließt
+  // Reset State wenn Modal öffnet/schließt
   useEffect(() => {
     if (!isOpen) {
-      setEmail(initialEmail || '');
+      // Reset beim Schließen
       setPassword('');
       setError(null);
       setSuccess(false);
       setShowPassword(false);
-    } else if (initialEmail) {
-      setEmail(initialEmail);
+    } else {
+      // Beim Öffnen: Email auf initialEmail setzen (oder leer wenn undefined)
+      setEmail(initialEmail || '');
+      setPassword('');
+      setError(null);
+      setSuccess(false);
     }
   }, [isOpen, initialEmail]);
 
