@@ -312,7 +312,7 @@ export function ProfileModal({
                 : "border-gray-300 text-[#1a73e8] hover:bg-gray-50"
             )}
           >
-            Taskilo-Konto verwalten
+            Konto verwalten
           </button>
         </div>
 
