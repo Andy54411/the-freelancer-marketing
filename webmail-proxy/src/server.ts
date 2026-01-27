@@ -34,6 +34,7 @@ import { combinedStorageRouter } from './routes/combined-storage';
 import { ericRouter } from './routes/eric';
 import { domainsRouter } from './routes/domains';
 import dnsRouter from './routes/dns';
+import { externalSendRouter } from './routes/external-send';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -67,6 +68,37 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
 ];
+
+// Cache für dynamische External Domain Origins
+let externalDomainOrigins: Set<string> = new Set();
+let externalOriginsLastFetch = 0;
+const EXTERNAL_ORIGINS_CACHE_TTL = 60000; // 1 Minute
+
+// Lädt erlaubte Origins aus MongoDB (External Domains)
+async function refreshExternalDomainOrigins(): Promise<void> {
+  try {
+    const mongoDBService = await import('./services/MongoDBService').then(m => m.default);
+    const domains = await mongoDBService.listExternalDomains();
+    const origins = new Set<string>();
+    
+    for (const domain of domains) {
+      if (domain.active && domain.allowedOrigins) {
+        domain.allowedOrigins.forEach(o => origins.add(o));
+      }
+    }
+    
+    externalDomainOrigins = origins;
+    externalOriginsLastFetch = Date.now();
+    console.log(`[CORS] ${origins.size} external domain origins geladen`);
+  } catch (error) {
+    console.error('[CORS] Fehler beim Laden der External Domain Origins:', error);
+  }
+}
+
+// Initiales Laden der External Domains (async, non-blocking)
+setTimeout(() => refreshExternalDomainOrigins(), 5000);
+// Refresh alle 5 Minuten
+setInterval(() => refreshExternalDomainOrigins(), 5 * 60 * 1000);
 
 // Security Middleware (ZUERST)
 app.use(ipBlockMiddleware);
@@ -126,11 +158,22 @@ app.use(cors({
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin) return callback(null, true);
     
+    // Statische erlaubte Origins prüfen
     if (ALLOWED_ORIGINS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+    
+    // Dynamische External Domain Origins prüfen
+    if (externalDomainOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    
+    // Für lokale Entwicklung: localhost immer erlauben
+    if (origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));
@@ -163,6 +206,11 @@ app.use('/api/settings', settingsRouter);
 app.use('/api', (req, res, next) => {
   // Registration-, Profile-, Phone-Verification-, Newsletter-, Settings-, Combined-Storage- und Mobileconfig-Endpunkte überspringen (sind öffentlich)
   if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification') || req.path.startsWith('/newsletter') || req.path.startsWith('/settings') || req.path.startsWith('/combined-storage') || req.path.startsWith('/mobileconfig')) {
+    return next();
+  }
+  
+  // External Send ist öffentlich (Authentifizierung erfolgt über registrierte Domains)
+  if (req.path.startsWith('/send/external')) {
     return next();
   }
   
@@ -245,6 +293,7 @@ app.use('/api/mailboxes', mailboxesRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/message', messageRouter);
 app.use('/api/send', sendRouter);
+app.use('/api/send/external', externalSendRouter);
 app.use('/api/actions', actionsRouter);
 app.use('/api/test', testRouter);
 

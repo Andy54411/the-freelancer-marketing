@@ -568,6 +568,27 @@ export interface CustomDomainMailbox {
   updatedAt: Date;
 }
 
+/**
+ * External Domain Configuration
+ * Für Kunden-Websites die den Webmail-Proxy für E-Mail-Versand nutzen möchten.
+ * Z.B. Kontaktformulare, automatische Benachrichtigungen, Newsletter.
+ */
+export interface ExternalDomain {
+  _id?: ObjectId;
+  domain: string;                   // z.B. 'the-freelancer-marketing.de'
+  smtpEmail: string;                // z.B. 'info@the-freelancer-marketing.de'
+  smtpPassword: string;             // SMTP-Passwort (verschlüsselt speichern!)
+  smtpHost: string;                 // z.B. 'mail.taskilo.de'
+  smtpPort: number;                 // z.B. 587
+  fromName: string;                 // z.B. 'The Freelancer Marketing'
+  allowedOrigins: string[];         // z.B. ['https://the-freelancer-marketing.de']
+  emailsSent: number;               // Statistik: Anzahl gesendeter E-Mails
+  lastSentAt: Date | null;          // Letzte E-Mail gesendet am
+  active: boolean;                  // Domain aktiv?
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 class MongoDBService {
   private client: MongoClient | null = null;
   private db: Db | null = null;
@@ -604,6 +625,8 @@ class MongoDBService {
   // Custom Domain Collections
   private _customDomains: Collection<CustomDomain> | null = null;
   private _customDomainMailboxes: Collection<CustomDomainMailbox> | null = null;
+  // External Domain Collections (für Kunden-Websites)
+  private _externalDomains: Collection<ExternalDomain> | null = null;
 
   /**
    * Verbindet mit MongoDB
@@ -748,6 +771,8 @@ class MongoDBService {
       // Custom Domain Collections
       this._customDomains = this.db.collection('webmail_custom_domains');
       this._customDomainMailboxes = this.db.collection('webmail_custom_domain_mailboxes');
+      // External Domain Collections (für Kunden-Websites)
+      this._externalDomains = this.db.collection('webmail_external_domains');
 
       // Indizes erstellen
       await this.createIndexes();
@@ -772,6 +797,9 @@ class MongoDBService {
 
       // Profiles - eindeutiger Index auf Email
       await this._profiles?.createIndex({ email: 1 }, { unique: true });
+
+      // External Domains - eindeutiger Index auf Domain
+      await this._externalDomains?.createIndex({ domain: 1 }, { unique: true });
 
       // Drive Users
       await this._driveUsers?.createIndex({ email: 1 }, { unique: true });
@@ -1018,6 +1046,99 @@ class MongoDBService {
   getCustomDomainMailboxesCollection(): Collection<CustomDomainMailbox> {
     if (!this._customDomainMailboxes) throw new Error('MongoDB nicht verbunden');
     return this._customDomainMailboxes;
+  }
+
+  // External Domain Collection Getter
+  getExternalDomainsCollection(): Collection<ExternalDomain> {
+    if (!this._externalDomains) throw new Error('MongoDB nicht verbunden');
+    return this._externalDomains;
+  }
+
+  // ==================== EXTERNAL DOMAIN METHODS ====================
+
+  /**
+   * Lädt die Konfiguration einer externen Domain für E-Mail-Versand.
+   * @param domain - Domain-Name (z.B. 'the-freelancer-marketing.de')
+   */
+  async getExternalDomain(domain: string): Promise<ExternalDomain | null> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    return collection.findOne({ domain: domain.toLowerCase(), active: true });
+  }
+
+  /**
+   * Inkrementiert die E-Mail-Statistik für eine externe Domain.
+   * @param domain - Domain-Name
+   */
+  async incrementExternalDomainStats(domain: string): Promise<void> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    await collection.updateOne(
+      { domain: domain.toLowerCase() },
+      { 
+        $inc: { emailsSent: 1 },
+        $set: { lastSentAt: new Date(), updatedAt: new Date() }
+      }
+    );
+  }
+
+  /**
+   * Registriert eine neue externe Domain für E-Mail-Versand.
+   * @param domainConfig - Domain-Konfiguration
+   */
+  async registerExternalDomain(domainConfig: Omit<ExternalDomain, '_id' | 'emailsSent' | 'lastSentAt' | 'createdAt' | 'updatedAt'>): Promise<ExternalDomain> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    
+    const now = new Date();
+    const doc: ExternalDomain = {
+      ...domainConfig,
+      domain: domainConfig.domain.toLowerCase(),
+      emailsSent: 0,
+      lastSentAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    const result = await collection.insertOne(doc);
+    return { ...doc, _id: result.insertedId };
+  }
+
+  /**
+   * Listet alle registrierten externen Domains.
+   */
+  async listExternalDomains(): Promise<ExternalDomain[]> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    return collection.find({}).toArray();
+  }
+
+  /**
+   * Aktualisiert eine externe Domain-Konfiguration.
+   * @param domain - Domain-Name
+   * @param updates - Zu aktualisierende Felder
+   */
+  async updateExternalDomain(domain: string, updates: Partial<ExternalDomain>): Promise<boolean> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    
+    const result = await collection.updateOne(
+      { domain: domain.toLowerCase() },
+      { $set: { ...updates, updatedAt: new Date() } }
+    );
+    
+    return result.modifiedCount > 0;
+  }
+
+  /**
+   * Löscht eine externe Domain-Registrierung.
+   * @param domain - Domain-Name
+   */
+  async deleteExternalDomain(domain: string): Promise<boolean> {
+    await this.ensureConnection();
+    const collection = this.getExternalDomainsCollection();
+    const result = await collection.deleteOne({ domain: domain.toLowerCase() });
+    return result.deletedCount > 0;
   }
 
   // Generischer Collection Getter für beliebige Collections
