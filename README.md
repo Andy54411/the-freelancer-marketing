@@ -2,6 +2,13 @@
 
 Taskilo ist eine moderne Plattform, die Kunden mit verifizierten Dienstleistern verbindet. Von Handwerk bis Haushaltsservice - finden Sie den perfekten Anbieter für Ihr Projekt.
 
+---
+
+**🚀 Entwickelt von [The Freelancer Marketing](https://the-freelancer.marketing)**  
+*Full-Stack Development • Next.js • Supabase • Firebase*
+
+---
+
 ## 🧹 Projekt-Wartung
 
 **Für Entwickler:** Nutzen Sie unsere [Cleanup-Tools](docs/guides/CLEANUP_README.md) um ungenutzte Dateien und Komponenten zu identifizieren und sicher zu entfernen.
@@ -53,4 +60,14 @@ src/
 
 Die Anwendung wird automatisch auf Vercel deployed. Jeder Push auf den main Branch löst ein neues Deployment aus.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📫 Kontakt & Entwicklung
+
+Dieses Projekt wurde entwickelt von **[The Freelancer Marketing Ltd](https://the-freelancer.marketing)**.
+
+Interesse an einem ähnlichen Projekt? [Kontakt aufnehmen →](https://the-freelancer.marketing/contact)
+
+---
+
+*© 2026 Taskilo. Entwickelt mit ❤️ und modernem Tech Stack.*
