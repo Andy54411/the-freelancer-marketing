@@ -84,11 +84,11 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // 3. Origin prüfen (CORS)
+    // 3. Origin prüfen (CORS) - Server-to-Server Anfragen erlauben (kein Origin Header)
     const origin = req.headers.origin || req.headers.referer;
-    if (domainConfig.allowedOrigins && domainConfig.allowedOrigins.length > 0) {
+    if (origin && domainConfig.allowedOrigins && domainConfig.allowedOrigins.length > 0) {
       const isAllowed = domainConfig.allowedOrigins.some(allowed => 
-        origin?.includes(allowed.replace('https://', '').replace('http://', ''))
+        origin.includes(allowed.replace('https://', '').replace('http://', ''))
       );
       
       if (!isAllowed && process.env.NODE_ENV === 'production') {
@@ -99,6 +99,7 @@ router.post('/', async (req, res) => {
         });
       }
     }
+    // Kein Origin Header = Server-to-Server Aufruf (z.B. von Vercel) = erlaubt
     
     // 4. Rate-Limiting
     const now = Date.now();
