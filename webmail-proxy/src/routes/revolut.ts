@@ -1221,7 +1221,7 @@ router.get('/subscription-stats', async (req, res) => {
 
     return res.json({
       success: true,
-      stats: stats.reduce((acc, s) => ({ ...acc, [s._id as string]: s.count }), {}),
+      stats: stats.reduce((acc: Record<string, number>, s: { _id: string; count: number }) => ({ ...acc, [s._id as string]: s.count }), {}),
       mrr: Math.round(mrr * 100) / 100,
       activeSubscriptions: {
         monthly: revenue.monthlyCount,
