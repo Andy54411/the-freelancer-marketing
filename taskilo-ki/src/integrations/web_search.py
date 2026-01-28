@@ -136,9 +136,12 @@ class WebSearchService:
     
     async def _init_session(self):
         if self._session is None:
+            # Nutze einen echten Browser User-Agent (manche Seiten blockieren Bots)
             self._session = aiohttp.ClientSession(
                 headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; Taskilo-KI/1.0; +https://taskilo.de)"
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
                 }
             )
     
@@ -146,6 +149,20 @@ class WebSearchService:
         if self._session:
             await self._session.close()
             self._session = None
+    
+    async def _get_response_text(self, response: aiohttp.ClientResponse) -> str:
+        """Liest Response-Text mit Encoding-Fallback (UTF-8 → Latin-1 → ignore)"""
+        try:
+            return await response.text(encoding='utf-8')
+        except UnicodeDecodeError:
+            try:
+                # Viele deutsche Seiten nutzen noch Latin-1
+                raw = await response.read()
+                return raw.decode('latin-1')
+            except Exception:
+                # Letzte Rettung: ignoriere ungültige Zeichen
+                raw = await response.read()
+                return raw.decode('utf-8', errors='ignore')
     
     def _get_cache_key(self, query: str) -> str:
         """Generiert Cache-Key für Query"""
@@ -244,7 +261,7 @@ class WebSearchService:
                 if response.status != 200:
                     return results
                 
-                html = await response.text()
+                html = await self._get_response_text(response)
                 soup = BeautifulSoup(html, "html.parser")
                 
                 for result_div in soup.find_all("div", class_="result", limit=num_results):
@@ -274,62 +291,75 @@ class WebSearchService:
     
     async def scrape_bmf(self, query: str) -> List[SearchResult]:
         """
-        Scrapt das Bundesfinanzministerium direkt.
-        Primäre Quelle für offizielle Steuerinformationen.
+        Scrapt mehrere offizielle Steuerquellen.
+        BMF nutzt JavaScript, daher nutzen wir alternative öffentliche Quellen.
         """
         await self._init_session()
         
         results = []
-        base_url = "https://www.bundesfinanzministerium.de"
         
-        # Verschiedene BMF-Bereiche durchsuchen
-        search_paths = [
-            f"/Suche?query={quote_plus(query)}&view=renderSearch&from=0",
-            "/Themen/Steuern",
-        ]
-        
+        # 1. gesetze-im-internet.de - Offizielle Gesetzestexte
         try:
-            for path in search_paths:
-                url = base_url + path
-                
-                async with self._session.get(url, timeout=20) as response:
-                    if response.status != 200:
-                        continue
-                    
-                    html = await response.text()
+            # Mapping von Keywords zu Gesetzeskürzeln
+            gesetz_mapping = {
+                "einkommensteuer": "estg",
+                "einkommen": "estg",
+                "lohnsteuer": "estg",
+                "umsatzsteuer": "ustg",
+                "mehrwertsteuer": "ustg",
+                "mwst": "ustg",
+                "gewerbesteuer": "gewstg",
+                "körperschaftsteuer": "kstg",
+                "abgabenordnung": "ao",
+                "steuer": "estg",
+            }
+            
+            query_lower = query.lower()
+            target_gesetz = "estg"  # Default: Einkommensteuergesetz
+            for keyword, gesetz in gesetz_mapping.items():
+                if keyword in query_lower:
+                    target_gesetz = gesetz
+                    break
+            
+            gesetz_url = f"https://www.gesetze-im-internet.de/{target_gesetz}/index.html"
+            
+            async with self._session.get(gesetz_url, timeout=15) as response:
+                if response.status == 200:
+                    html = await self._get_response_text(response)
                     soup = BeautifulSoup(html, "html.parser")
                     
-                    # Suche nach Artikeln und Links
-                    for article in soup.find_all(["article", "div"], class_=re.compile(r"teaser|result|article|content"), limit=10):
-                        title_elem = article.find(["h2", "h3", "h4", "a"])
-                        link_elem = article.find("a", href=True)
-                        snippet_elem = article.find(["p", "div"], class_=re.compile(r"text|excerpt|teaser"))
-                        
-                        if title_elem and link_elem:
-                            title = title_elem.get_text(strip=True)
-                            href = link_elem.get("href", "")
-                            
-                            if not title or len(title) < 5:
-                                continue
-                            
-                            full_url = urljoin(base_url, href)
-                            snippet = snippet_elem.get_text(strip=True)[:300] if snippet_elem else ""
-                            
-                            # Prüfe Relevanz zur Anfrage
-                            if self._is_relevant_to_query(title + " " + snippet, query):
-                                result = SearchResult(
-                                    title=title,
-                                    url=full_url,
-                                    snippet=snippet,
-                                    source="bmf",
-                                    relevance_score=0.95,  # Offizielle Quelle
-                                )
-                                results.append(result)
-                                
+                    # Finde Titel des Gesetzes
+                    title_elem = soup.find("h1") or soup.find("title")
+                    title = title_elem.get_text(strip=True)[:100] if title_elem else target_gesetz.upper()
+                    
+                    result = SearchResult(
+                        title=f"Gesetzestext: {title}",
+                        url=gesetz_url,
+                        snippet=f"Offizieller Gesetzestext auf gesetze-im-internet.de - Aktuelle Fassung",
+                        source="gesetze-im-internet",
+                        relevance_score=0.95,
+                    )
+                    results.append(result)
+                    
         except Exception as e:
-            logger.warning(f"[WebSearch] BMF-Scraping fehlgeschlagen: {e}")
+            logger.warning(f"[WebSearch] gesetze-im-internet.de Fehler: {e}")
         
-        return results[:5]  # Max 5 Ergebnisse
+        # 2. Finanzministerium Startseite als Fallback
+        try:
+            async with self._session.get("https://www.bundesfinanzministerium.de/Web/DE/Themen/Steuern/steuern.html", timeout=15) as response:
+                if response.status == 200:
+                    result = SearchResult(
+                        title="Bundesfinanzministerium - Thema Steuern",
+                        url="https://www.bundesfinanzministerium.de/Web/DE/Themen/Steuern/steuern.html",
+                        snippet="Offizielle Informationen des Bundesfinanzministeriums zu Steuerthemen",
+                        source="bmf",
+                        relevance_score=0.9,
+                    )
+                    results.append(result)
+        except Exception as e:
+            pass
+                                
+        return results[:5]
     
     def _is_relevant_to_query(self, text: str, query: str) -> bool:
         """Prüft ob Text relevant zur Suchanfrage ist"""
@@ -344,34 +374,118 @@ class WebSearchService:
         await self._init_session()
         
         results = []
-        search_url = f"https://dejure.org/dienste/recht?text={quote_plus(query)}"
+        
+        # Mapping für bekannte Steuergesetze
+        gesetz_mapping = {
+            "einkommensteuer": ("EStG", "Einkommensteuergesetz"),
+            "einkommen": ("EStG", "Einkommensteuergesetz"),
+            "lohnsteuer": ("EStG", "Einkommensteuergesetz"),
+            "steuer sparen": ("EStG", "Einkommensteuergesetz"),
+            "steuern sparen": ("EStG", "Einkommensteuergesetz"),
+            "umsatzsteuer": ("UStG", "Umsatzsteuergesetz"),
+            "mehrwertsteuer": ("UStG", "Umsatzsteuergesetz"),
+            "mwst": ("UStG", "Umsatzsteuergesetz"),
+            "vorsteuer": ("UStG", "Umsatzsteuergesetz"),
+            "gewerbesteuer": ("GewStG", "Gewerbesteuergesetz"),
+            "körperschaftsteuer": ("KStG", "Körperschaftsteuergesetz"),
+            "abgabenordnung": ("AO", "Abgabenordnung"),
+            "kleinunternehmer": ("UStG", "Umsatzsteuergesetz § 19"),
+            "abschreibung": ("EStG", "Einkommensteuergesetz - AfA"),
+            "steuer": ("EStG", "Einkommensteuergesetz"),
+        }
+        
+        query_lower = query.lower()
         
         try:
-            async with self._session.get(search_url, timeout=15) as response:
-                if response.status != 200:
-                    return results
-                
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
-                
-                # Finde Gesetzes-Links
-                for link in soup.find_all("a", href=re.compile(r"/gesetze/"), limit=5):
-                    title = link.get_text(strip=True)
-                    href = link.get("href", "")
+            # Finde passendes Gesetz
+            for keyword, (gesetz_kuerzel, gesetz_name) in gesetz_mapping.items():
+                if keyword in query_lower:
+                    url = f"https://dejure.org/gesetze/{gesetz_kuerzel}"
                     
-                    if title and href and len(title) > 3:
-                        full_url = f"https://dejure.org{href}" if href.startswith("/") else href
-                        
-                        result = SearchResult(
-                            title=title,
-                            url=full_url,
-                            snippet=f"Gesetzestext: {title}",
-                            source="dejure",
-                            relevance_score=0.9,
-                        )
-                        results.append(result)
+                    async with self._session.get(url, timeout=15) as response:
+                        if response.status == 200:
+                            result = SearchResult(
+                                title=f"dejure.org - {gesetz_name}",
+                                url=url,
+                                snippet=f"Vollständiger Gesetzestext des {gesetz_name} mit Paragraphen-Übersicht",
+                                source="dejure",
+                                relevance_score=0.9,
+                            )
+                            results.append(result)
+                            break
+            
+            # Default: EStG wenn nichts passt
+            if not results:
+                result = SearchResult(
+                    title="dejure.org - Einkommensteuergesetz (EStG)",
+                    url="https://dejure.org/gesetze/EStG",
+                    snippet="Vollständiger Gesetzestext des Einkommensteuergesetzes",
+                    source="dejure",
+                    relevance_score=0.85,
+                )
+                results.append(result)
+                
         except Exception as e:
             logger.warning(f"[WebSearch] Dejure-Scraping fehlgeschlagen: {e}")
+        
+        return results
+    
+    async def scrape_finanztip(self, query: str) -> List[SearchResult]:
+        """Scrapt finanztip.de für verständliche Steuer-Ratgeber"""
+        await self._init_session()
+        
+        results = []
+        
+        # Bekannte Finanztip-Seiten zu Steuerthemen
+        finanztip_pages = {
+            "steuer": "https://www.finanztip.de/steuern/",
+            "einkommensteuer": "https://www.finanztip.de/einkommensteuertarif/",
+            "grundfreibetrag": "https://www.finanztip.de/grundfreibetrag/",
+            "steuererklaerung": "https://www.finanztip.de/steuererklaerung/",
+            "steuererklärung": "https://www.finanztip.de/steuererklaerung/",
+            "werbungskosten": "https://www.finanztip.de/werbungskosten/",
+            "homeoffice": "https://www.finanztip.de/homeoffice-pauschale/",
+            "home office": "https://www.finanztip.de/homeoffice-pauschale/",
+            "sonderausgaben": "https://www.finanztip.de/sonderausgaben/",
+            "absetzen": "https://www.finanztip.de/werbungskosten/",
+            "kleinunternehmer": "https://www.finanztip.de/kleinunternehmerregelung/",
+        }
+        
+        query_lower = query.lower()
+        matched_url = None
+        
+        for keyword, url in finanztip_pages.items():
+            if keyword in query_lower:
+                matched_url = url
+                break
+        
+        if not matched_url:
+            matched_url = "https://www.finanztip.de/steuern/"
+        
+        try:
+            async with self._session.get(matched_url, timeout=15) as response:
+                if response.status == 200:
+                    html = await self._get_response_text(response)
+                    soup = BeautifulSoup(html, "html.parser")
+                    
+                    # Hole Titel und Meta-Description
+                    title_elem = soup.find("h1") or soup.find("title")
+                    title = title_elem.get_text(strip=True)[:80] if title_elem else "Finanztip Steuer-Ratgeber"
+                    
+                    meta_desc = soup.find("meta", attrs={"name": "description"})
+                    snippet = meta_desc.get("content", "")[:200] if meta_desc else "Unabhängiger Steuer-Ratgeber"
+                    
+                    result = SearchResult(
+                        title=f"Finanztip: {title}",
+                        url=matched_url,
+                        snippet=snippet,
+                        source="finanztip",
+                        relevance_score=0.85,
+                    )
+                    results.append(result)
+                    
+        except Exception as e:
+            logger.warning(f"[WebSearch] Finanztip-Scraping fehlgeschlagen: {e}")
         
         return results
     
@@ -380,37 +494,176 @@ class WebSearchService:
         await self._init_session()
         
         results = []
-        search_url = f"https://www.haufe.de/suche?query={quote_plus(query)}&filter=steuern"
+        
+        # Haufe Steuern-Startseite hat strukturierte Teaser
+        urls_to_try = [
+            "https://www.haufe.de/steuern",
+            f"https://www.haufe.de/suche?query={quote_plus(query)}&filter=steuern"
+        ]
         
         try:
-            async with self._session.get(search_url, timeout=15) as response:
-                if response.status != 200:
-                    return results
-                
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
-                
-                for article in soup.find_all(["article", "div"], class_=re.compile(r"teaser|result|item"), limit=5):
-                    title_elem = article.find(["h2", "h3", "a"])
-                    link_elem = article.find("a", href=True)
+            for url in urls_to_try:
+                async with self._session.get(url, timeout=15) as response:
+                    if response.status != 200:
+                        continue
                     
-                    if title_elem and link_elem:
-                        title = title_elem.get_text(strip=True)
-                        href = link_elem.get("href", "")
+                    html = await self._get_response_text(response)
+                    soup = BeautifulSoup(html, "html.parser")
+                    
+                    # Haufe nutzt "teaser-v2" Container
+                    for teaser in soup.find_all("div", class_=re.compile(r"teaser-v2|article-highlight"), limit=10):
+                        title_elem = teaser.find(class_=re.compile(r"teaser-v2__title|article-highlight__header"))
+                        text_elem = teaser.find(class_=re.compile(r"teaser-v2__text"))
+                        link_elem = teaser.find("a", href=True)
                         
-                        if title and len(title) > 5:
-                            full_url = urljoin("https://www.haufe.de", href)
+                        if title_elem and link_elem:
+                            title = title_elem.get_text(strip=True)
+                            href = link_elem.get("href", "")
+                            snippet = text_elem.get_text(strip=True)[:200] if text_elem else ""
                             
-                            result = SearchResult(
-                                title=title,
-                                url=full_url,
-                                snippet="",
-                                source="haufe",
-                                relevance_score=0.85,
-                            )
-                            results.append(result)
+                            if title and len(title) > 5:
+                                full_url = urljoin("https://www.haufe.de", href)
+                                
+                                # Prüfe Relevanz zur Query
+                                if self._is_relevant_to_query(title + " " + snippet, query) or len(results) < 3:
+                                    result = SearchResult(
+                                        title=title,
+                                        url=full_url,
+                                        snippet=snippet,
+                                        source="haufe",
+                                        relevance_score=0.85,
+                                    )
+                                    results.append(result)
+                    
+                    if results:
+                        break  # Genug Ergebnisse gefunden
+                        
         except Exception as e:
             logger.warning(f"[WebSearch] Haufe-Scraping fehlgeschlagen: {e}")
+        
+        return results[:5]
+    
+    async def scrape_vlh(self, query: str) -> List[SearchResult]:
+        """Scrapt VLH (Vereinigte Lohnsteuerhilfe) - verständliche Steuer-Artikel"""
+        await self._init_session()
+        
+        results = []
+        
+        # VLH Steuer-ABC Mapping
+        vlh_pages = {
+            "kinderfreibetrag": "https://www.vlh.de/wissen-service/steuer-abc/kinderfreibetrag.html",
+            "werbungskosten": "https://www.vlh.de/arbeiten-pendeln/beruf/werbungskosten.html",
+            "steuererklärung": "https://www.vlh.de/wissen-service/steuer-abc/steuererklaerung-abgeben.html",
+            "homeoffice": "https://www.vlh.de/arbeiten-pendeln/beruf/homeoffice-pauschale.html",
+            "home office": "https://www.vlh.de/arbeiten-pendeln/beruf/homeoffice-pauschale.html",
+            "pendlerpauschale": "https://www.vlh.de/arbeiten-pendeln/pendeln/pendlerpauschale.html",
+            "sonderausgaben": "https://www.vlh.de/wissen-service/steuer-abc/sonderausgaben.html",
+            "außergewöhnliche belastungen": "https://www.vlh.de/krankheit-pflege/krankheit/aussergewoehnliche-belastungen.html",
+            "steuer": "https://www.vlh.de/wissen-service/steuer-abc.html",
+        }
+        
+        query_lower = query.lower()
+        matched_url = "https://www.vlh.de/wissen-service/steuer-abc.html"  # Default
+        
+        for keyword, url in vlh_pages.items():
+            if keyword in query_lower:
+                matched_url = url
+                break
+        
+        try:
+            async with self._session.get(matched_url, timeout=15) as response:
+                if response.status == 200:
+                    html = await self._get_response_text(response)
+                    soup = BeautifulSoup(html, "html.parser")
+                    
+                    # Hole Titel
+                    title_elem = soup.find("h1") or soup.find("title")
+                    title = title_elem.get_text(strip=True)[:80] if title_elem else "VLH Steuer-Ratgeber"
+                    
+                    # Hole ersten Artikel-Absatz
+                    intro = soup.find("p", class_=re.compile(r"intro|lead|text"))
+                    snippet = intro.get_text(strip=True)[:200] if intro else "Verständliche Steuertipps von der VLH"
+                    
+                    result = SearchResult(
+                        title=f"VLH: {title}",
+                        url=matched_url,
+                        snippet=snippet,
+                        source="vlh",
+                        relevance_score=0.85,
+                    )
+                    results.append(result)
+                    
+                    # Hole weitere Artikel von der Seite
+                    for tile in soup.find_all("h3", class_=re.compile(r"tile__headline"), limit=5):
+                        tile_title = tile.get_text(strip=True)
+                        parent_link = tile.find_parent("a")
+                        if parent_link and parent_link.get("href"):
+                            href = parent_link.get("href")
+                            full_url = f"https://www.vlh.de{href}" if href.startswith("/") else href
+                            
+                            result = SearchResult(
+                                title=tile_title,
+                                url=full_url,
+                                snippet="",
+                                source="vlh",
+                                relevance_score=0.8,
+                            )
+                            results.append(result)
+                            
+        except Exception as e:
+            logger.warning(f"[WebSearch] VLH-Scraping fehlgeschlagen: {e}")
+        
+        return results[:5]
+    
+    async def scrape_buzer(self, query: str) -> List[SearchResult]:
+        """Scrapt buzer.de für Gesetzestexte mit Änderungshistorie"""
+        await self._init_session()
+        
+        results = []
+        
+        # Mapping von Stichworten zu Gesetzes-IDs auf buzer.de
+        gesetz_ids = {
+            "einkommensteuer": ("4499", "EStG"),
+            "einkommen": ("4499", "EStG"),
+            "lohnsteuer": ("4499", "EStG"),
+            "umsatzsteuer": ("4605", "UStG"),
+            "mehrwertsteuer": ("4605", "UStG"),
+            "gewerbesteuer": ("4622", "GewStG"),
+            "körperschaftsteuer": ("4498", "KStG"),
+            "abgabenordnung": ("4614", "AO"),
+            "steuer": ("4499", "EStG"),  # Default
+        }
+        
+        query_lower = query.lower()
+        gesetz_id, gesetz_name = "4499", "EStG"  # Default: EStG
+        
+        for keyword, (gid, gname) in gesetz_ids.items():
+            if keyword in query_lower:
+                gesetz_id, gesetz_name = gid, gname
+                break
+        
+        try:
+            url = f"https://www.buzer.de/gesetz/{gesetz_id}/index.htm"
+            
+            async with self._session.get(url, timeout=15) as response:
+                if response.status == 200:
+                    html = await self._get_response_text(response)
+                    soup = BeautifulSoup(html, "html.parser")
+                    
+                    title_elem = soup.find("title")
+                    title = title_elem.get_text(strip=True) if title_elem else gesetz_name
+                    
+                    result = SearchResult(
+                        title=f"buzer.de - {title} (mit Änderungshistorie)",
+                        url=url,
+                        snippet=f"Kompletter Gesetzestext mit allen Änderungen und Historie für {gesetz_name}",
+                        source="buzer",
+                        relevance_score=0.9,
+                    )
+                    results.append(result)
+                    
+        except Exception as e:
+            logger.warning(f"[WebSearch] buzer.de-Scraping fehlgeschlagen: {e}")
         
         return results
     
@@ -426,15 +679,34 @@ class WebSearchService:
                 if response.status != 200:
                     return None
                 
-                html = await response.text()
+                html = await self._get_response_text(response)
                 soup = BeautifulSoup(html, "html.parser")
                 
                 # Entferne Script und Style
-                for script in soup(["script", "style", "nav", "footer", "header"]):
+                for script in soup(["script", "style", "nav", "footer", "header", "aside"]):
                     script.decompose()
                 
-                # Hole Hauptinhalt
-                main_content = soup.find("main") or soup.find("article") or soup.find("body")
+                # Spezielle Selektoren für bekannte Seiten
+                main_content = None
+                
+                if "haufe.de" in url:
+                    # Haufe: Artikel-Content in article-body
+                    main_content = soup.find("div", class_="article-body") or soup.find("article")
+                elif "finanztip.de" in url:
+                    # Finanztip: Content in article
+                    main_content = soup.find("article") or soup.find("main")
+                elif "vlh.de" in url:
+                    # VLH: Content im Hauptbereich
+                    main_content = soup.find("main") or soup.find("article")
+                elif "bundesfinanzministerium.de" in url:
+                    # BMF: Content-Bereich
+                    main_content = soup.find("div", class_="content") or soup.find("main")
+                elif "dejure.org" in url:
+                    # dejure: Gesetzestext
+                    main_content = soup.find("div", id="inhalt") or soup.find("article")
+                else:
+                    # Generisch
+                    main_content = soup.find("main") or soup.find("article") or soup.find("body")
                 
                 if main_content:
                     text = main_content.get_text(separator="\n", strip=True)
@@ -443,7 +715,7 @@ class WebSearchService:
                     text = re.sub(r' {2,}', ' ', text)
                     return text[:10000]  # Limit auf 10k Zeichen
         except Exception as e:
-            print(f"[WebSearch] URL-Scraping fehlgeschlagen für {url}: {e}")
+            logger.warning(f"[WebSearch] URL-Scraping fehlgeschlagen für {url}: {e}")
         
         return None
     
@@ -477,10 +749,13 @@ class WebSearchService:
         
         # Parallel alle Quellen durchsuchen (KEIN Google!)
         search_tasks = [
-            self.scrape_bmf(query),            # Primär: Bundesfinanzministerium
-            self.scrape_dejure(query),          # Gesetzestexte
-            self.scrape_haufe(query),           # Steuernews
-            self.search_duckduckgo(query, num_results // 2),  # Fallback
+            self.scrape_bmf(query),             # Offizielle Gesetze (gesetze-im-internet.de)
+            self.scrape_dejure(query),          # Gesetzestexte (dejure.org)
+            self.scrape_buzer(query),           # Gesetze mit Änderungshistorie (buzer.de)
+            self.scrape_haufe(query),           # Aktuelle Steuernews (haufe.de)
+            self.scrape_finanztip(query),       # Verständliche Ratgeber (finanztip.de)
+            self.scrape_vlh(query),             # VLH Steuer-ABC (vlh.de)
+            self.search_duckduckgo(query, num_results // 3),  # Fallback für aktuelle News
         ]
         
         results_lists = await asyncio.gather(*search_tasks, return_exceptions=True)
@@ -488,13 +763,14 @@ class WebSearchService:
         # Ergebnisse zusammenführen
         all_results: List[SearchResult] = []
         sources_used = []
+        source_names = ["gesetze-im-internet", "dejure", "buzer", "haufe", "finanztip", "vlh", "duckduckgo"]
         
         for i, results in enumerate(results_lists):
             if isinstance(results, Exception):
-                logger.warning(f"[WebSearch] Quelle {i} fehlgeschlagen: {results}")
+                logger.warning(f"[WebSearch] Quelle {source_names[i]} fehlgeschlagen: {results}")
                 continue
             if results:
-                sources_used.append(["bmf", "dejure", "haufe", "duckduckgo"][i])
+                sources_used.append(source_names[i])
                 all_results.extend(results)
         
         # Nach Relevanz sortieren
@@ -607,6 +883,10 @@ class WebSearchService:
         sources: List[SearchResult]
     ) -> str:
         """Formatiert die Antwort aus den recherchierten Teilen"""
+        # Falls keine answer_parts, nutze snippets
+        if not answer_parts:
+            answer_parts = [s.snippet for s in sources if s.snippet and len(s.snippet) > 30]
+        
         if not answer_parts:
             return "Ich konnte keine spezifische Antwort finden. Bitte konsultieren Sie einen Steuerberater."
         
