@@ -111,17 +111,6 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 - Multi-Session Cookie-Management
 - Legacy-Account Migration
 
-**External Domain Email Service (NEU):**
-- Kunden versenden E-Mails über ihre eigene Domain
-- Keine eigene SMTP-Infrastruktur nötig
-- REST-API für Website-Kontaktformulare
-- Multi-Tenant: Beliebig viele Kunden-Domains
-- Rate-Limiting (100 Mails/Std pro Domain)
-- CORS-Schutz mit dynamischen Origin-Listen
-- MongoDB-basierte Domain-Konfiguration
-- Statistik-Tracking (emailsSent, lastSentAt)
-- Ersetzt externe Dienste wie Resend/SendGrid
-
 ### 7. WHATSAPP BUSINESS (Premium-Modul)
 - WhatsApp Business Integration
 - Team-Postfach
@@ -503,7 +492,6 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 
 ### ZUSATZ-EINNAHMEN
 - Webmail-Hosting (mailcow auf Hetzner)
-- **External Domain Email Service** (5-199€/Monat je nach Volumen)
 - Taskilo Drive (Storage > 5GB)
 - Taskilo Meet (> 50 Minuten/Monat)
 - Tasker-Provision (10% auf vermittelte Aufträge)
@@ -519,12 +507,11 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 
 ### BACKEND
 - **Hosting**: Vercel (Next.js), Hetzner (E-Mail + KI)
-- **Datenbank**: Firebase Firestore + MongoDB (Webmail-Proxy)
+- **Datenbank**: Firebase Firestore
 - **Authentifizierung**: Firebase Auth + OAuth 2.0
-- **E-Mail**: mailcow (Hetzner), IMAP/SMTP, Nodemailer
+- **E-Mail**: mailcow (Hetzner), IMAP/SMTP
 - **Zahlungen**: Revolut Business API (Escrow)
 - **Speicher**: Firebase Storage + Hetzner (Webmail)
-- **Webmail-Proxy**: Express.js + TypeScript (Docker auf Hetzner)
 
 ### KI & ML
 - **Python FastAPI** (Taskilo KI auf Hetzner)
@@ -568,7 +555,6 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 5. **Lokale KI**: Datenschutzfreundlich, keine Cloud-Abhängigkeit
 6. **Escrow-System**: Sicheres Bezahlen für Freelancer-Projekte
 7. **Premium-Module**: Flexibles Abo-Modell
-8. **External Domain Email Service**: E-Mail-Versand als Service für Kunden-Websites
 
 ### VS. WETTBEWERBER
 - **Lexoffice/sevDesk**: Keine E-Mail, kein Marktplatz, keine KI
@@ -584,7 +570,6 @@ Taskilo ist eine **All-in-One Business Management Platform** mit integriertem **
 - ✅ Webmail App Release (iOS, Android, Desktop)
 - ✅ Taskilo KI Integration (Foto-Klassifikation)
 - ✅ Escrow-System (Revolut)
-- ✅ External Domain Email Service (Multi-Tenant E-Mail-API)
 
 ### Q2 2026
 - WhatsApp Team-Postfach (Multi-User)

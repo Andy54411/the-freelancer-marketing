@@ -5,6 +5,8 @@ packages:
   - '.'
   # Das hier ist dein Unter-Projekt für die Firebase Functions
   - 'firebase_functions'
+  # Webmail-Proxy (läuft auf Hetzner Server)
+  - 'webmail-proxy'
 
 # Fix für Dependency-Konflikte zwischen whatsapp-web.js und Next.js
 pnpm:

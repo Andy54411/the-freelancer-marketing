@@ -1219,9 +1219,12 @@ router.get('/subscription-stats', async (req, res) => {
     const revenue = totalRevenue[0] || { monthlyCount: 0, yearlyCount: 0 };
     const mrr = (revenue.monthlyCount * 9.99) + (revenue.yearlyCount * 99 / 12);
 
+    // MongoDB Aggregation Result-Typ explizit definieren
+    const typedStats = stats as Array<{ _id: string; count: number }>;
+
     return res.json({
       success: true,
-      stats: stats.reduce((acc: Record<string, number>, s: { _id: string; count: number }) => ({ ...acc, [s._id as string]: s.count }), {}),
+      stats: typedStats.reduce((acc: Record<string, number>, s) => ({ ...acc, [s._id]: s.count }), {}),
       mrr: Math.round(mrr * 100) / 100,
       activeSubscriptions: {
         monthly: revenue.monthlyCount,
