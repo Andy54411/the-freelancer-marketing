@@ -9,7 +9,8 @@ const ActionSchema = z.object({
   password: z.string().min(1),
   mailbox: z.string().default('INBOX'),
   uid: z.number().optional(),
-  action: z.enum(['markRead', 'markUnread', 'delete', 'permanentDelete', 'move', 'flag', 'saveDraft']),
+  uids: z.array(z.number()).optional(),
+  action: z.enum(['markRead', 'markUnread', 'delete', 'permanentDelete', 'move', 'flag', 'saveDraft', 'bulkDelete', 'bulkPermanentDelete']),
   targetMailbox: z.string().optional(),
   flagged: z.boolean().optional(),
   draft: z.object({
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = ActionSchema.parse(body);
     const { email, password, mailbox, uid, action, targetMailbox, flagged, draft } = data;
+    const uids = data.uids;
 
     // saveDraft direkt an Hetzner-Proxy weiterleiten
     if (action === 'saveDraft') {
@@ -48,6 +50,62 @@ export async function POST(request: NextRequest) {
           password,
           action: 'saveDraft',
           draft,
+        }),
+      });
+
+      const result = await response.json();
+      return NextResponse.json(result, { status: response.ok ? 200 : 500 });
+    }
+
+    // bulkDelete, bulkPermanentDelete und permanentDelete direkt an Hetzner-Proxy weiterleiten
+    if (action === 'bulkDelete' || action === 'bulkPermanentDelete') {
+      if (!uids || uids.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'UIDs array required for bulk actions' },
+          { status: 400 }
+        );
+      }
+
+      const response = await fetch(`${HETZNER_API_URL}/api/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.WEBMAIL_API_KEY || 'taskilo-webmail-secret-key-change-in-production',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          mailbox,
+          action,
+          uids,
+        }),
+      });
+
+      const result = await response.json();
+      return NextResponse.json(result, { status: response.ok ? 200 : 500 });
+    }
+
+    // permanentDelete direkt an Hetzner-Proxy weiterleiten
+    if (action === 'permanentDelete') {
+      if (uid === undefined) {
+        return NextResponse.json(
+          { success: false, error: 'UID required for permanentDelete action' },
+          { status: 400 }
+        );
+      }
+
+      const response = await fetch(`${HETZNER_API_URL}/api/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.WEBMAIL_API_KEY || 'taskilo-webmail-secret-key-change-in-production',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          mailbox,
+          action: 'permanentDelete',
+          uid,
         }),
       });
 
@@ -77,9 +135,6 @@ export async function POST(request: NextRequest) {
         break;
       case 'delete':
         await emailService.deleteMessage(mailbox, uid);
-        break;
-      case 'permanentDelete':
-        await emailService.permanentlyDeleteMessage(mailbox, uid);
         break;
       case 'move':
         if (!targetMailbox) {
