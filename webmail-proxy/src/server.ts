@@ -6,6 +6,7 @@ import { mailboxesRouter } from './routes/mailboxes';
 import { messagesRouter } from './routes/messages';
 import { messageRouter } from './routes/message';
 import { sendRouter } from './routes/send';
+import { externalSendRouter } from './routes/external-send';
 import { actionsRouter } from './routes/actions';
 import { testRouter } from './routes/test';
 import { searchRouter } from './routes/search';
@@ -166,6 +167,11 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   
+  // External Send ist öffentlich (eigene Domain-basierte Authentifizierung über MongoDB)
+  if (req.path === '/send/external' && req.method === 'POST') {
+    return next();
+  }
+  
   // Domain-Check ist öffentlich (für Registrierungsprozess)
   if (req.path === '/domains/check' && req.method === 'POST') {
     return next();
@@ -245,6 +251,7 @@ app.use('/api/mailboxes', mailboxesRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/message', messageRouter);
 app.use('/api/send', sendRouter);
+app.use('/api/send/external', externalSendRouter);
 app.use('/api/actions', actionsRouter);
 app.use('/api/test', testRouter);
 
