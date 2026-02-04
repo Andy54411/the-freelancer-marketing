@@ -105,14 +105,22 @@ export function SettingsPage({
     setIsSaving(true);
     setSaveError(null);
     
+    console.log('[SettingsPage] Speichern gestartet für:', email);
+    console.log('[SettingsPage] Settings zum Speichern:', JSON.stringify(settings, null, 2));
+    console.log('[SettingsPage] Signaturen:', settings.signatures);
+    
     try {
       // Auf Hetzner speichern
       if (email) {
+        console.log('[SettingsPage] API-Aufruf: saveSettings');
         const result = await saveSettings(email, settings);
+        console.log('[SettingsPage] API-Antwort:', result);
         if (!result.success) {
+          console.error('[SettingsPage] Fehler beim Speichern:', result.error);
           setSaveError(result.error || 'Fehler beim Speichern');
           return;
         }
+        console.log('[SettingsPage] Erfolgreich gespeichert!');
       }
       
       // Optional: zusätzlicher onSave-Callback

@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import type { EmailCompose as EmailComposeType, EmailMessage } from './types';
 import { cn } from '@/lib/utils';
-import { getSettings } from '@/lib/webmail-settings-api';
+import { getSettings, invalidateSettingsCache } from '@/lib/webmail-settings-api';
 import type { EmailSignature } from '@/components/webmail/settings/types';
 import { db } from '@/firebase/clients';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
@@ -96,6 +96,8 @@ interface EmailComposeProps {
   className?: string;
   companyId?: string;
   emailProvider?: 'webmail' | 'gmail' | null;
+  // Webmail E-Mail-Adresse (optional, sonst aus Cookie)
+  webmailEmail?: string;
   // Multiple compose window support
   _windowId?: string;
   windowIndex?: number;
@@ -244,6 +246,7 @@ export function EmailCompose({
   className,
   companyId,
   emailProvider,
+  webmailEmail,
   _windowId,
   windowIndex = 0,
   isMinimizedExternal,
@@ -302,12 +305,14 @@ export function EmailCompose({
   const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
   const [showTaskiloPhotosPicker, setShowTaskiloPhotosPicker] = useState(false);
   
-  // UserId für Webmail (aus Cookie)
-  const userId = emailProvider === 'webmail' ? getWebmailCookie()?.email : undefined;
+  // UserId für Webmail (Priorität: webmailEmail Prop, dann Cookie)
+  const userId = emailProvider === 'webmail' ? (webmailEmail || getWebmailCookie()?.email) : undefined;
   
   // Signatur State
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
   const [activeSignatureId, setActiveSignatureId] = useState<string | null>(null);
+  // Speichere initialen Body (Signatur), um später zu prüfen ob User Inhalt hinzugefügt hat
+  const initialBodyRef = useRef<string>('');
   
   // Kontakte für Autovervollständigung
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string }>>([]);
@@ -483,40 +488,73 @@ export function EmailCompose({
       }
       
       // Webmail-Signaturen vom Hetzner-Server laden
+      // Priorität: 1. webmailEmail Prop, 2. Cookie
       const webmailCreds = getWebmailCookie();
-      if (!webmailCreds?.email) return;
+      const emailForSettings = webmailEmail || webmailCreds?.email;
+      console.log('[EmailCompose] Webmail Credentials:', webmailCreds);
+      console.log('[EmailCompose] webmailEmail Prop:', webmailEmail);
+      console.log('[EmailCompose] Verwendete E-Mail für Settings:', emailForSettings);
+      if (!emailForSettings) {
+        console.warn('[EmailCompose] Keine Webmail-E-Mail gefunden (weder Prop noch Cookie), Signaturen können nicht geladen werden');
+        return;
+      }
       
       try {
-        const settings = await getSettings(webmailCreds.email);
+        // Cache invalidieren um immer frische Daten zu bekommen
+        invalidateSettingsCache(emailForSettings);
+        console.log('[EmailCompose] Cache invalidiert, lade Settings für:', emailForSettings);
+        const settings = await getSettings(emailForSettings);
+        console.log('[EmailCompose] Settings geladen:', settings);
+        console.log('[EmailCompose] Signaturen im Response:', settings?.signatures);
+        console.log('[EmailCompose] defaultSignatureNewEmail:', settings?.defaultSignatureNewEmail);
+        console.log('[EmailCompose] defaultSignatureReply:', settings?.defaultSignatureReply);
         if (settings?.signatures) {
+          console.log('[EmailCompose] Setze', settings.signatures.length, 'Signaturen');
           setSignatures(settings.signatures);
-          // Setze Standard-Signatur für neue E-Mails
+          // Setze Standard-Signatur für neue E-Mails (nur wenn explizit in Einstellungen gesetzt)
           if (!replyTo && !forwardEmail) {
-            const defaultSig = settings.signatures.find(s => s.id === settings.defaultSignatureNewEmail);
-            if (defaultSig?.content) {
-              setActiveSignatureId(defaultSig.id);
-              // Signatur zum Body hinzufügen wenn leer
-              if (!email.body) {
-                setEmail(prev => ({ ...prev, body: `<br><br>${defaultSig.content}` }));
+            console.log('[EmailCompose] Neue E-Mail erkannt, prüfe Standard-Signatur');
+            console.log('[EmailCompose] defaultSignatureNewEmail Wert:', settings.defaultSignatureNewEmail);
+            if (settings.defaultSignatureNewEmail) {
+              const defaultSig = settings.signatures.find(s => s.id === settings.defaultSignatureNewEmail);
+              console.log('[EmailCompose] Gefundene Standard-Signatur:', defaultSig);
+              if (defaultSig?.content) {
+                setActiveSignatureId(defaultSig.id);
+                // Signatur zum Body hinzufügen wenn leer
+                if (!email.body) {
+                  console.log('[EmailCompose] Füge Signatur zum Body hinzu');
+                  const signatureHtml = `<br><br>${defaultSig.content}`;
+                  // Speichere initialen Body, um später zu prüfen ob User Inhalt hinzugefügt hat
+                  initialBodyRef.current = signatureHtml;
+                  setEmail(prev => ({ ...prev, body: signatureHtml }));
+                  // Auch das contentEditable DOM-Element aktualisieren
+                  if (editorRef.current) {
+                    editorRef.current.innerHTML = signatureHtml;
+                  }
+                }
               }
+            } else {
+              console.log('[EmailCompose] Keine Standard-Signatur in Einstellungen gesetzt');
             }
           } else {
-            // Standard-Signatur für Antworten
-            const replySig = settings.signatures.find(s => s.id === settings.defaultSignatureReply);
-            if (replySig) {
-              setActiveSignatureId(replySig.id);
+            // Standard-Signatur für Antworten (nur wenn explizit gesetzt)
+            if (settings.defaultSignatureReply) {
+              const replySig = settings.signatures.find(s => s.id === settings.defaultSignatureReply);
+              if (replySig) {
+                setActiveSignatureId(replySig.id);
+              }
             }
           }
         }
       } catch (error) {
-        // Signaturen konnten nicht geladen werden
+        console.error('[EmailCompose] Fehler beim Laden der Signaturen:', error);
       }
     };
     
     if (isOpen) {
       loadSignatures();
     }
-  }, [isOpen, replyTo, forwardEmail, emailProvider, companyId]);
+  }, [isOpen, replyTo, forwardEmail, emailProvider, companyId, webmailEmail]);
 
   // Update email state when replyTo or forwardEmail changes
   useEffect(() => {
@@ -836,17 +874,32 @@ export function EmailCompose({
 
   // Check if email has content worth saving as draft
   const hasContent = () => {
-    const plainBody = email.body?.replace(/<[^>]*>/g, '').trim();
-    return !!(email.to?.trim() || email.subject?.trim() || plainBody || attachments.length > 0);
+    // Prüfe ob es echten User-Inhalt gibt (nicht nur die automatisch eingefügte Signatur)
+    const currentBody = email.body?.trim();
+    const initialBody = initialBodyRef.current?.trim();
+    
+    // Body hat Inhalt, wenn er sich von der initialen Signatur unterscheidet
+    // oder wenn keine initiale Signatur gesetzt wurde und Body nicht leer ist
+    const bodyHasUserContent = currentBody && currentBody !== initialBody;
+    
+    return !!(email.to?.trim() || email.subject?.trim() || bodyHasUserContent || attachments.length > 0);
   };
+
+  // Guard gegen doppelte Aufrufe
+  const isClosingRef = useRef(false);
 
   // Handle close - auto-save draft if has content
   const handleCloseWithDraftCheck = async () => {
+    // Verhindere doppelte Aufrufe
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
     if (hasContent()) {
       // Auto-save as draft without asking
       await handleSaveDraft();
     }
     resetAndClose();
+    isClosingRef.current = false;
   };
 
   // Reset form and close

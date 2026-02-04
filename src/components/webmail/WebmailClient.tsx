@@ -269,6 +269,26 @@ const formatEmailDate = (date: Date): { relative: string; absolute: string } => 
   }
 };
 
+// Helper function to strip HTML tags from preview text
+const stripHtmlTags = (html: string | undefined): string => {
+  if (!html) return '';
+  // Entferne vollständige HTML-Tags
+  let withoutTags = html.replace(/<[^>]*>/g, ' ');
+  // Entferne auch unvollständige Tags am Ende (z.B. "<img src=...")
+  withoutTags = withoutTags.replace(/<[^>]*$/g, '');
+  // Entferne einzelne < oder > Zeichen die übrig geblieben sind
+  withoutTags = withoutTags.replace(/[<>]/g, '');
+  // Mehrfache Leerzeichen zu einem zusammenfassen
+  const cleaned = withoutTags.replace(/\s+/g, ' ').trim();
+  // HTML-Entities dekodieren
+  const textarea = typeof document !== 'undefined' ? document.createElement('textarea') : null;
+  if (textarea) {
+    textarea.innerHTML = cleaned;
+    return textarea.value;
+  }
+  return cleaned;
+};
+
 // ===== MEMOIZED EMAIL ITEM COMPONENT - LIKE EMAILCLIENT =====
 interface EmailItemProps {
   email: EmailMessage;
@@ -399,7 +419,7 @@ const EmailItem = memo(({
                   {email.subject || '(Kein Betreff)'}
                 </span>
                 <span className={cn('text-[10px] leading-tight ml-1', getTextClasses(false))}>
-                  {email.preview}
+                  {stripHtmlTags(email.preview)}
                 </span>
               </div>
             </div>
@@ -1208,9 +1228,14 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
     if (!email || !password) return;
 
     // Check if there's any content worth saving
-    const hasContent = composeData.to || composeData.subject || composeData.body;
+    // Body ohne HTML-Tags prüfen und leere br-Tags ignorieren
+    const plainBody = composeData.body
+      ?.replace(/<br\s*\/?>/gi, '') // Entferne br-Tags
+      .replace(/<[^>]*>/g, '') // Entferne alle anderen HTML-Tags
+      .trim();
+    const hasContent = composeData.to || composeData.subject || plainBody;
     if (!hasContent) {
-      // Compose-Fenster schließen
+      // Compose-Fenster schließen ohne zu speichern
       if (windowId) {
         setComposeWindows(prev => prev.filter(w => w.id !== windowId));
       }
@@ -2252,6 +2277,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo, com
           replyTo={window.replyTo ? convertWebmailToEmailClientMessage(window.replyTo) : undefined}
           initialTo={window.initialTo}
           emailProvider="webmail"
+          webmailEmail={email}
         />
       ))}
 
